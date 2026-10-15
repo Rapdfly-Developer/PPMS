@@ -94,7 +94,7 @@ export function PrintFooter({
           <p>Valid only if authenticated by the treating physician.</p>
         </div>
         <div className="text-right text-[10px] text-gray-500">
-          <p>Printed: {printDate}</p>
+          <p suppressHydrationWarning>Printed: {printDate}</p>
           {hospitalName && <p>{hospitalName}</p>}
         </div>
       </div>

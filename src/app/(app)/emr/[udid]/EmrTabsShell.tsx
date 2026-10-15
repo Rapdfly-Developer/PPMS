@@ -101,16 +101,15 @@ export function EmrTabsShell({
     <EMRSaveContext.Provider value={{ savePaused, unpauseSaves }}>
     <EmrOverviewProvider value={overviewMode}>
       <div>
-        <div className={showEditGate ? "pointer-events-none select-none opacity-70" : ""}>
-          <Tabs
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(id) => { setActiveTab(id); }}
-            overviewMode={overviewMode}
-            onOverviewToggle={() => setOverviewMode((v) => !v)}
-            keepMounted
-          />
-        </div>
+        <Tabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onTabChange={(id) => { setActiveTab(id); }}
+          overviewMode={overviewMode}
+          onOverviewToggle={() => setOverviewMode((v) => !v)}
+          keepMounted
+          contentClassName={showEditGate ? "pointer-events-none select-none opacity-70" : undefined}
+        />
         {pluginSlot}
 
         {/* Hidden by clipping, never by unmounting. The wrapper keeps the frame
@@ -164,6 +163,7 @@ export function EmrTabsShell({
               isRefractionist={isRefractionist}
               canPrint={canPrint}
               canPartialDispense={canPartialDispense}
+              finalizedToday={finalizedToday}
             />
           </div>
         )}

@@ -1,6 +1,7 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { startOfDay } from "date-fns";
 import { VisitsListClient } from "./VisitsListClient";
 import { DownloadAllButton } from "./DownloadAllButton";
 
@@ -25,16 +26,43 @@ export default async function PatientVisitsPage({
         where: { appointment: { is: { status: "DISPENSED" } } },
         orderBy: { date: "desc" },
         include: {
-          hospital:    { select: { name: true } },
-          doctor:      { select: { name: true } },
-          generalExam: { select: { chiefComplaint: true } },
-          diagnoses:   { select: { description: true } },
+          hospital:             { select: { name: true } },
+          doctor:               { select: { name: true } },
+          generalExam:          { select: { chiefComplaint: true } },
+          diagnoses:            { select: { description: true } },
+          appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, completedAt: true } },
+          investigationOrders:  { select: { createdAt: true, updatedAt: true, resultRef: true }, orderBy: { createdAt: "asc" } },
         },
       },
     },
   });
 
   if (!patient) notFound();
+
+  const todayStart = startOfDay(new Date());
+
+  const [noShowAppointments, futureAppointments] = await Promise.all([
+    prisma.appointment.findMany({
+      where: {
+        patientId: patient.id,
+        visit:     null,
+        dateTime:  { lt: todayStart },
+        status:    { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
+      },
+      select: { dateTime: true },
+    }),
+    prisma.appointment.findMany({
+      where: {
+        patientId: patient.id,
+        dateTime:  { gte: todayStart },
+        status:    { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
+      },
+      select: { dateTime: true },
+    }),
+  ]);
+
+  const noShowDates    = noShowAppointments.map((a) => a.dateTime.toISOString());
+  const futureApptDates = futureAppointments.map((a) => a.dateTime.toISOString());
 
   const allCount = patient.visits.length;
 
@@ -48,6 +76,24 @@ export default async function PatientVisitsPage({
     doctor:      v.doctor   ?? null,
     generalExam: v.generalExam ?? null,
     diagnoses:   v.diagnoses,
+    timestamps: {
+      bookedAt:                v.appointment?.createdAt?.toISOString()                      ?? null,
+      scheduledAt:             v.appointment?.dateTime?.toISOString()                       ?? null,
+      arrivedAt:               v.appointment?.arrivedAt?.toISOString()                      ?? null,
+      seenAt:                  (v as any).consultationStartedAt?.toISOString()              ?? null,
+      consultationCompletedAt: (v as any).consultationCompletedAt?.toISOString()            ?? null,
+      investigationOrderedAt:  v.investigationOrders?.[0]?.createdAt?.toISOString()         ?? null,
+      reportUploadedAt:        v.investigationOrders
+                                 ?.filter((o) => o.resultRef)
+                                 ?.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())?.[0]
+                                 ?.updatedAt?.toISOString()                                 ?? null,
+      refractionStartedAt:     (v as any).refractionStartedAt?.toISOString()                ?? null,
+      refractionCompletedAt:   (v as any).refractionCompletedAt?.toISOString()              ?? null,
+      refractionPassedOverAt:  (v as any).refractionPassedOverAt?.toISOString()             ?? null,
+      partialDispenseAt:       v.appointment?.partialDispenseAt?.toISOString()              ?? null,
+      dispensedAt:             v.appointment?.completedAt?.toISOString()                   ?? null,
+      finalizedAt:             (v as any).finalizedAt?.toISOString()                        ?? null,
+    },
   }));
 
   const totalVisits = pastVisits.length;
@@ -67,7 +113,13 @@ export default async function PatientVisitsPage({
         )}
       </div>
 
-      <VisitsListClient visits={pastVisits} udid={udid} initialVisitId={visitId} />
+      <VisitsListClient
+        visits={pastVisits}
+        udid={udid}
+        initialVisitId={visitId}
+        noShowDates={noShowDates}
+        futureApptDates={futureApptDates}
+      />
     </div>
   );
 }

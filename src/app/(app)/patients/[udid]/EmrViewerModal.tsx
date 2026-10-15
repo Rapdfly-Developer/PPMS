@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
-import { X, FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2, Activity, FlaskConical, Pill, ClipboardList, CalendarClock, Scissors, BookOpen, AlertCircle } from "lucide-react";
-import { openPdfNative } from "@/lib/open-pdf";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2, Activity, FlaskConical, Pill, ClipboardList, CalendarClock, Scissors, BookOpen, AlertCircle, Eye } from "lucide-react";
+import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
 import { format } from "date-fns";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
+import { CustomPrintModal, type CustomSection } from "@/app/(app)/emr/[udid]/EmrActionBar";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -123,11 +124,12 @@ function InvUploadButton({ orderId, udid, onDone }: { orderId: string; udid: str
   );
 }
 
-function EmrContent({ visit, udid, localResults, onAttach }: {
+function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
   visit: any;
   udid: string;
   localResults: Record<string, string>;
   onAttach: (orderId: string, url: string) => void;
+  viewOnly?: boolean;
 }) {
   const ge   = visit.generalExam;
   const va   = visit.visualAcuity;
@@ -315,7 +317,7 @@ function EmrContent({ visit, udid, localResults, onAttach }: {
                         </>
                       ) : (
                         <>
-                          <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />
+                          {!viewOnly && <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />}
                           <span className={`text-caption px-2 py-0.5 rounded-full font-semibold ${
                             o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
                             : o.status === "ORDERED" ? "bg-teal-50 text-teal-700"
@@ -486,75 +488,162 @@ function VitalCard({ label, value, unit }: { label: string; value: string; unit:
   );
 }
 
-export function VisitDownloadButton({ visitId }: { visitId: string }) {
-  return (
-    <button
-      onClick={() => { void openPdfNative(`/api/visit-summary-pdf/${visitId}`); }}
-      title="Print Visit Summary"
-      className="shrink-0 inline-flex items-center justify-center w-[30px] h-[30px] rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors"
-    >
-      <Printer size={13} />
-    </button>
-  );
-}
-
-export function EmrViewerButton({ visitId, visitNumber, udid }: { visitId: string; visitNumber: number; udid: string }) {
+export function VisitDownloadButton({ visitId, udid }: { visitId: string; udid: string }) {
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [pending, start] = useTransition();
-  const [localResults, setLocalResults] = useState<Record<string, string>>({});
+  const [showCustomPrint, setShowCustomPrint] = useState(false);
+  const [customData, setCustomData] = useState<any>(null);
+  const [fetchingCustom, setFetchingCustom] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ bottom: 0, right: 0 });
+  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
-  const handleOpen = () => {
-    if (data) { setOpen(true); return; }
-    start(async () => {
-      const result = await getVisitEmrData(visitId);
-      setData(result);
-      setOpen(true);
-    });
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setDropdownPos({
+        bottom: window.innerHeight - r.top + 8,
+        right:  window.innerWidth - r.right,
+      });
+    }
+    setOpen((v) => !v);
   };
 
-  const handleAttach = (orderId: string, url: string) => {
-    setLocalResults((prev) => ({ ...prev, [orderId]: url }));
+  const pdfBase     = `/api/prescription-pdf/${visitId}`;
+  const summaryBase = `/api/prescription-pdf/${visitId}/summary`;
+
+  const handleCustomPrint = async () => {
+    setOpen(false);
+    const data = customData ?? await (async () => {
+      setFetchingCustom(true);
+      const d = await getVisitEmrData(visitId);
+      setCustomData(d);
+      setFetchingCustom(false);
+      return d;
+    })();
+    if (!data) return;
+    setShowCustomPrint(true);
   };
+
+  const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
+
+  const customSections: CustomSection[] = customData ? [
+    { id: "cc",      label: "Chief Complaint",        param: "cc",      hasData: !!customData.generalExam?.chiefComplaint },
+    { id: "allergy", label: "Drug Allergy",            param: "allergy", hasData: !!customData.generalExam?.allergies },
+    { id: "va",      label: "Visual Acuity",           param: "va",      hasData: !!customData.visualAcuity },
+    { id: "rx",      label: "Refraction",              param: "rx",      hasData: !!customData.refraction },
+    { id: "iop",     label: "Intra-Ocular Pressure",   param: "iop",     hasData: (customData.iopReadings?.length ?? 0) > 0 },
+    { id: "ant",     label: "Anterior Segment",        param: "ant",     hasData: !!customData.anteriorSegment },
+    { id: "pos",     label: "Posterior Segment",       param: "pos",     hasData: !!customData.posteriorSegment },
+    { id: "dx",      label: "Diagnoses",               param: "dx",      hasData: (customData.diagnoses?.length ?? 0) > 0 },
+    { id: "meds",    label: "Medications",             param: "meds",    hasData: (customData.medications?.length ?? 0) > 0 },
+    { id: "inv",     label: "Investigations",          param: "inv",     hasData: (customData.investigationOrders?.length ?? 0) > 0 },
+  ] : [];
 
   return (
     <>
-      <button
-        onClick={handleOpen}
-        disabled={pending}
-        className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-60"
-      >
-        {pending ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
-        Visit Summary
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 z-[60] flex items-start justify-center bg-black/50 p-4 overflow-y-auto" onClick={() => setOpen(false)}>
-          <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal header */}
-            <div className="sticky top-0 flex items-center justify-between px-5 py-4 bg-[var(--color-primary-800)] text-white rounded-t-2xl z-10">
-              <p className="font-semibold text-sm">Visit #{visitNumber} Summary</p>
-              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/15 transition-colors">
-                <X size={15} />
-              </button>
-            </div>
-
-            {/* Modal body */}
-            <div className="px-5 py-5 max-h-[80vh] overflow-y-auto">
-              {data ? (
-                <EmrContent visit={data} udid={udid} localResults={localResults} onAttach={handleAttach} />
-              ) : (
-                <div className="flex items-center justify-center py-16">
-                  <Loader2 size={24} className="animate-spin text-[var(--color-primary-600)]" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {showCustomPrint && customData && (
+        <CustomPrintModal
+          summaryBase={summaryBase}
+          spv={spv}
+          sections={customSections}
+          visitId={visitId}
+          onClose={() => setShowCustomPrint(false)}
+        />
       )}
+      <div className="relative shrink-0" ref={ref}>
+        <button
+          ref={btnRef}
+          onClick={handleToggle}
+          title="Print options"
+          disabled={fetchingCustom}
+          className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-60"
+        >
+          {fetchingCustom ? <Loader2 size={13} className="animate-spin" /> : <Printer size={13} />}
+        </button>
+
+        {open && (
+          <div
+            className="fixed w-52 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-[200]"
+            style={{ bottom: dropdownPos.bottom, right: dropdownPos.right }}
+          >
+            <button
+              type="button"
+              onClick={() => { setOpen(false); void openPdfNative(pdfBase); }}
+              className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              <Printer size={14} className="text-[var(--color-primary-600)] shrink-0" />
+              <div>
+                <p className="font-medium">Print Long Summary</p>
+                <p className="text-xs text-[var(--color-ink-400)]">Full Rx in browser</p>
+              </div>
+            </button>
+            <div className="border-t border-[var(--color-border)]" />
+            <a
+              href={`${pdfBase}?dl=1`}
+              download
+              onClick={(e) => { setOpen(false); if (isNativeShell()) { e.preventDefault(); void openPdfNative(`${pdfBase}?dl=1`); } }}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              <Download size={14} className="text-[var(--color-primary-600)] shrink-0" />
+              <div>
+                <p className="font-medium">Download PDF</p>
+                <p className="text-xs text-[var(--color-ink-400)]">Save full EMR to device</p>
+              </div>
+            </a>
+            <div className="border-t border-[var(--color-border)]" />
+            <button
+              type="button"
+              onClick={() => { setOpen(false); void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`); }}
+              className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              <FileText size={14} className="text-[var(--color-primary-600)] shrink-0" />
+              <div>
+                <p className="font-medium">Print Short Summary</p>
+                <p className="text-xs text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
+              </div>
+            </button>
+            <div className="border-t border-[var(--color-border)]" />
+            <button
+              type="button"
+              onClick={handleCustomPrint}
+              className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            >
+              <FileText size={14} className="text-[var(--color-primary-600)] shrink-0" />
+              <div>
+                <p className="font-medium">Custom Print</p>
+                <p className="text-xs text-[var(--color-ink-400)]">Choose sections to include</p>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
     </>
+  );
+}
+
+export function EmrViewerButton({ visitId, visitNumber, udid, visitDate }: { visitId: string; visitNumber: number; udid: string; visitDate: string }) {
+  const returnTo = typeof window !== "undefined"
+    ? encodeURIComponent(window.location.pathname + window.location.search)
+    : encodeURIComponent(`/patients/${udid}/visits`);
+
+  const isToday = new Date(visitDate).toDateString() === new Date().toDateString();
+  const source  = isToday ? "" : "&source=view-only";
+
+  return (
+    <a
+      href={`/emr/${udid}?visit=${visitId}${source}&returnTo=${returnTo}`}
+      className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-orange-100 text-orange-700 hover:bg-orange-500 hover:text-white transition-colors"
+    >
+      <Eye size={12} />
+      View EMR
+    </a>
   );
 }

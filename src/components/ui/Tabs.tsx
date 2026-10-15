@@ -14,6 +14,7 @@ export function Tabs({
   overviewMode = false,
   onOverviewToggle,
   keepMounted = false,
+  contentClassName,
 }: {
   tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean; tabBarHidden?: boolean }[];
   defaultTab?: string;
@@ -23,6 +24,7 @@ export function Tabs({
   overviewMode?: boolean;
   onOverviewToggle?: () => void;
   keepMounted?: boolean;
+  contentClassName?: string;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const requestedActive = controlledActive ?? internalActive;
@@ -266,7 +268,7 @@ export function Tabs({
 
       {/* ══ Shared content panel ═════════════════════════════════════════════ */}
       {keepMounted ? (
-        <div>
+        <div className={contentClassName || undefined}>
           {renderableTabs.map((tab) => (
             <div
               key={tab.id}
@@ -285,7 +287,7 @@ export function Tabs({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-            className={overviewMode ? "emr-overview-active" : undefined}
+            className={clsx(overviewMode ? "emr-overview-active" : undefined, contentClassName)}
           >
             {activeTab?.content}
           </motion.div>

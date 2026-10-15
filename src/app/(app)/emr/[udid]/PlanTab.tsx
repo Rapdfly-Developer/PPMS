@@ -2770,7 +2770,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                 <button
                   key={inv}
                   type="button"
+                  disabled={readOnly}
                   onClick={() => {
+                    if (readOnly) return;
                     if (added) {
                       const orderId = invOrderMap.get(key)!;
                       setInvOrderMap((prev) => { const m = new Map(prev); m.delete(key); return m; });
@@ -2790,9 +2792,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     }
                   }}
                   className={`flex items-center gap-1 text-caption px-2.5 py-0.5 rounded-full border transition-colors ${
-                    added
-                      ? "bg-[#0F766E] border-[#0F766E] text-white hover:bg-[#0D6862] cursor-pointer"
-                      : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
+                    readOnly
+                      ? added
+                        ? "bg-[#0F766E] border-[#0F766E] text-white cursor-default opacity-80"
+                        : "bg-white border-[#B2DEDA] text-[#0F766E] cursor-default opacity-60"
+                      : added
+                        ? "bg-[#0F766E] border-[#0F766E] text-white hover:bg-[#0D6862] cursor-pointer"
+                        : "bg-white border-[#B2DEDA] text-[#0F766E] hover:bg-[#DCF3F1] hover:border-[#0F766E] cursor-pointer"
                   }`}
                 >
                   {added && <Check size={10} />}

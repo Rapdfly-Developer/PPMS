@@ -359,6 +359,10 @@ function ShortContent({ complaint, diagnoses, emrData }: {
   const hasMeds = emrData?.medications?.length > 0;
   const followUpInv = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
   const hasFollowUp = followUpInv.length > 0;
+  const reRCp = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.re, {}) : {};
+  const leRCp = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.le, {}) : {};
+  const RC_FIELDS = ["sph", "cyl", "axis", "nearSph", "nearCyl"] as const;
+  const hasRC = RC_FIELDS.some((f) => (reRCp[f] && reRCp[f] !== "") || (leRCp[f] && leRCp[f] !== ""));
 
   if (!complaint && diagnoses.length === 0 && !hasMeds) {
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
@@ -370,16 +374,24 @@ function ShortContent({ complaint, diagnoses, emrData }: {
 
       {/* Chief complaint */}
       {complaint && (
-        <div>
-          <SumHead icon={<FileText size={11} />} label="Chief Complaint" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <FileText size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
           <ComplaintChips value={complaint} wrap />
         </div>
       )}
 
       {/* Diagnosis */}
       {diagnoses.length > 0 && (
-        <div>
-          <SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Stethoscope size={11} className="clinical-diagnosis-text" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Diagnosis</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
           <div className="flex flex-wrap gap-1.5">
             {diagnoses.map((d, i) => (
               <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
@@ -396,15 +408,6 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <SumHead icon={<Pill size={11} />} label="Medications" color="text-teal-500" />
           <DataTable minWidth={360}>
             <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
-            <thead>
-              <tr>
-                <th className={TH}>#</th>
-                <th className={TH}>Drug</th>
-                <th className={TH}>Dose</th>
-                <th className={TH}>Frequency</th>
-                <th className={TH}>Duration</th>
-              </tr>
-            </thead>
             <tbody>
               {emrData.medications.map((m: any, i: number) => (
                 <tr key={i}>
@@ -429,14 +432,41 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasFollowUp && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
-          <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-0">
             {followUpInv.map((o: any, i: number) => (
-              <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 border border-teal-100 text-teal-800 text-caption sm:text-caption font-medium">
-                {o.laterality && <span className="font-bold text-[var(--color-primary-700)]">{o.laterality}</span>}
-                {o.testName}
-                {o.notes && <span className="italic font-normal text-teal-600/70"> · {o.notes}</span>}
-              </span>
+              <div key={i} className="flex items-start gap-0">
+                <span className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-500)] tabular-nums shrink-0">{i + 1}</span>
+                <p className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-700)] font-semibold">
+                  {o.laterality && (
+                    <span className="font-bold text-[var(--color-primary-700)] mr-2">{o.laterality}</span>
+                  )}
+                  {o.testName}
+                  {o.notes && (
+                    <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {o.notes}</span>
+                  )}
+                </p>
+              </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Spectacle Rx */}
+      {hasRC && (
+        <div>
+          <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
+          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+            <DataTable>
+              <Cols widths={COLS_EYE} />
+              <EyeHead />
+              <tbody>
+                <EyeRow label="SPH"      re={reRCp.sph}     le={leRCp.sph} />
+                <EyeRow label="CYL"      re={reRCp.cyl}     le={leRCp.cyl} />
+                <EyeRow label="AXIS"     re={reRCp.axis}    le={leRCp.axis} />
+                <EyeRow label="Near SPH" re={reRCp.nearSph} le={leRCp.nearSph} />
+                <EyeRow label="Near CYL" re={reRCp.nearCyl} le={leRCp.nearCyl} />
+              </tbody>
+            </DataTable>
           </div>
         </div>
       )}

@@ -260,14 +260,14 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
   );
 }
 
-type CustomSection = {
+export type CustomSection = {
   id: string;
   label: string;
   param: string;
   hasData: boolean;
 };
 
-function CustomPrintModal({
+export function CustomPrintModal({
   summaryBase,
   spv,
   sections,
@@ -361,7 +361,7 @@ function CustomPrintModal({
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
   editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
-  canPrint = false, canPartialDispense = false,
+  canPrint = false, canPartialDispense = false, finalizedToday: finalizedTodayProp,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
@@ -375,6 +375,8 @@ export function EmrActionBar({
   isRefractionist?: boolean;
   canPrint?: boolean;
   canPartialDispense?: boolean;
+  /** When provided, overrides the internal isSameDay(finalizedAt) check — use to suppress edit for view-only sources. */
+  finalizedToday?: boolean;
 }) {
   const router = useRouter();
   const { collapsed } = useSidebar();
@@ -411,7 +413,7 @@ export function EmrActionBar({
   }, [passOverDone, router]);
   const closed = visit.status === "CLOSED";
   const isLastTab = currentTabIndex >= totalTabs - 1;
-  const finalizedToday = visit.finalizedAt
+  const finalizedToday = finalizedTodayProp !== undefined ? finalizedTodayProp : visit.finalizedAt
     ? isSameDay(new Date(visit.finalizedAt), new Date())
     : false;
   const autoClosed = closed && !!visit.finalizedBy?.startsWith("SYSTEM");
