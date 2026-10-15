@@ -31,9 +31,15 @@ function TopBarBackBtn() {
 
   if (returnTo) {
     return (
-      <Link href={returnTo} className={BACK_BTN_CLS} title="Go back" aria-label="Go back">
+      <a
+        href={returnTo}
+        onClick={(e) => { e.preventDefault(); router.back(); }}
+        className={BACK_BTN_CLS}
+        title="Go back"
+        aria-label="Go back"
+      >
         <BackBtnContent />
-      </Link>
+      </a>
     );
   }
 
