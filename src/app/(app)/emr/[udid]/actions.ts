@@ -838,6 +838,7 @@ export async function closeVisit(visitId: string, udid: string) {
   revalidatePath("/appointments");
   revalidatePath("/dashboard");
   revalidatePath(`/patients/${udid}`);
+  revalidatePath(`/patients/${udid}/visits`);
 }
 
 export async function markPartialDispense(visitId: string, udid: string, reason?: string) {
