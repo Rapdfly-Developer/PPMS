@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2, Activity, FlaskConical, Pill, ClipboardList, CalendarClock, Scissors, BookOpen, AlertCircle, Eye } from "lucide-react";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
@@ -630,9 +631,10 @@ export function VisitDownloadButton({ visitId, udid }: { visitId: string; udid: 
 }
 
 export function EmrViewerButton({ visitId, visitNumber, udid, visitDate }: { visitId: string; visitNumber: number; udid: string; visitDate: string }) {
-  const returnTo = typeof window !== "undefined"
-    ? encodeURIComponent(window.location.pathname + window.location.search)
-    : encodeURIComponent(`/patients/${udid}/visits`);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
+  const returnTo = encodeURIComponent(search ? `${pathname}?${search}` : pathname);
 
   const isToday = new Date(visitDate).toDateString() === new Date().toDateString();
   const source  = isToday ? "" : "&source=view-only";
