@@ -967,7 +967,7 @@ export function PatientProfileClient({
           </button>
         ) : (
           <Link
-            href={`/patients/${udid}/visits`}
+            href={`/patients/${udid}/visits?returnTo=/patients/${udid}`}
             className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors shadow-sm"
           >
             <ChevronRight size={16} />

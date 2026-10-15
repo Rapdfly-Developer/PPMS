@@ -31,15 +31,14 @@ function TopBarBackBtn() {
 
   if (returnTo) {
     return (
-      <a
-        href={returnTo}
-        onClick={(e) => { e.preventDefault(); router.back(); }}
+      <button
+        onClick={() => router.back()}
         className={BACK_BTN_CLS}
         title="Go back"
         aria-label="Go back"
       >
         <BackBtnContent />
-      </a>
+      </button>
     );
   }
 
