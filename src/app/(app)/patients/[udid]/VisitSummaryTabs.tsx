@@ -498,24 +498,24 @@ function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: str
   const visible = rows.filter((r) => r.re || r.le);
   if (!visible.length) return null;
   return (
-    <div className="inline-block rounded-xl border border-[var(--color-border)] overflow-hidden">
-      <table className="border-collapse">
+    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+      <table className="w-full table-fixed border-collapse">
         <thead>
           <tr className="bg-[var(--color-surface-sunken)]">
-            <th className="px-4 py-2 w-24 border-r border-[var(--color-border)]" />
-            <th className="px-5 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)] w-24">RE</th>
-            <th className="px-5 py-2 text-center text-[10px] font-bold uppercase tracking-widest text-[var(--color-ink-400)] w-24">LE</th>
+            <th className={`${TH} border-r border-[var(--color-border)]`} />
+            <th className={`${TH} text-center border-r border-[var(--color-border)]`}>RE</th>
+            <th className={`${TH} text-center`}>LE</th>
           </tr>
         </thead>
         <tbody>
           {visible.map((row) => (
             <tr key={row.label} className="border-t border-[var(--color-border)]">
-              <td className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--color-ink-400)] bg-[var(--color-surface-sunken)] border-r border-[var(--color-border)]">{row.label}</td>
-              <td className="px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--color-ink-800)] tabular-nums border-r border-[var(--color-border)]">
-                {row.re || <span className="text-[var(--color-ink-300)]">—</span>}
+              <td className={`${TD_MUTED} border-r border-[var(--color-border)]`}>{row.label}</td>
+              <td className={`${TD} text-center tabular-nums border-r border-[var(--color-border)]`}>
+                {row.re || DASH}
               </td>
-              <td className="px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--color-ink-800)] tabular-nums">
-                {row.le || <span className="text-[var(--color-ink-300)]">—</span>}
+              <td className={`${TD} text-center tabular-nums`}>
+                {row.le || DASH}
               </td>
             </tr>
           ))}
