@@ -1264,7 +1264,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
   const [activeDialogDiag, setActiveDialogDiag]     = useState<{ diagnosisDesc: string; laterality?: string; matches: PresetMatch[]; isChanging: boolean } | null>(null);
   const [adviseNotes, setAdviseNotes]       = useState<string>(visit.adviseNotes ?? "");
   const { savePaused } = useEMRSaveContext();
-  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes), undefined, { flushOnUnmount: true, paused: savePaused });
+  useAutoSave(adviseNotes, (notes) => saveAdviseNotes(visit.id, udid, notes), undefined, { flushOnUnmount: true, paused: savePaused || readOnly });
 
   const diagnoses: { icd10Code: string; description: string; laterality?: string }[] = visit.diagnoses ?? [];
   const medications: any[] = visit.medications ?? [];
@@ -1562,10 +1562,10 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
   const legacyProcedureKwKeys = useMemo(() => [procKwKey(doctorId)], [doctorId]);
 
   const { savePaused: minorProcSavePaused } = useEMRSaveContext();
-  useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val), undefined, { flushOnUnmount: true, paused: minorProcSavePaused });
-  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val),        undefined, { flushOnUnmount: true, paused: minorProcSavePaused });
-  useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val),         undefined, { flushOnUnmount: true, paused: minorProcSavePaused });
-  useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val),        undefined, { flushOnUnmount: true, paused: minorProcSavePaused });
+  useAutoSave(laterality, (val) => saveProcedureLaterality(visit.id, udid, val), undefined, { flushOnUnmount: true, paused: minorProcSavePaused || readOnly });
+  useAutoSave(anesthesia, (val) => saveAnesthesiaType(visit.id, udid, val),        undefined, { flushOnUnmount: true, paused: minorProcSavePaused || readOnly });
+  useAutoSave(procInput,  (val) => saveProcedureName(visit.id, udid, val),         undefined, { flushOnUnmount: true, paused: minorProcSavePaused || readOnly });
+  useAutoSave(procNotes,  (val) => saveProcedureNotes(visit.id, udid, val),        undefined, { flushOnUnmount: true, paused: minorProcSavePaused || readOnly });
 
   const filteredAnesthesia = [...ANESTHESIA_KEYWORDS, ...customAnesthesia].filter((kw) =>
     anesthesia.trim() === "" || kw.toLowerCase().includes(anesthesia.toLowerCase())
@@ -2223,7 +2223,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       </div>}
 
       {/* Per-diagnosis protocol prompt cards — shown below search */}
-      {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
+      {!readOnly && pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
         <ProtocolPromptCard
           key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
           diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}

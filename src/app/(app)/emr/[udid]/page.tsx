@@ -53,7 +53,7 @@ export default async function PatientDetailedEMR({
   const { visit: visitIdParam, returnTo, source } = await searchParams;
   // Patients accessed from Patient Library → Total Dispensed are permanently
   // read-only regardless of role, visit date, or any URL param the caller adds.
-  const viewOnlySource = source === "total-dispensed";
+  const viewOnlySource = source === "total-dispensed" || source === "view-only";
   const user = await requirePermission("emr.view");
 
   const patient = await prisma.patient.findUnique({
@@ -588,7 +588,7 @@ export default async function PatientDetailedEMR({
             visit={activeVisit}
             udid={udid}
             patientName={patient.name}
-            showActionBar={!viewOnlySource && (userCan(user, "emr.create") || isRefractionist)}
+            showActionBar={source !== "total-dispensed" && (userCan(user, "emr.create") || isRefractionist)}
             isRefractionist={isRefractionist}
             finalizedToday={finalizedToday}
             canPrint={canPrint}

@@ -9,7 +9,7 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2, RefreshCw,
-  Activity, Sparkles,
+  Activity, Sparkles, Eye,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
@@ -1021,6 +1021,14 @@ export function PatientProfileClient({
               <Clock size={16} />
               Not in Queue Yet
             </button>
+          ) : visits.length > 0 ? (
+            <Link
+              href={`/emr/${udid}?visit=${visits[0].id}&source=view-only&returnTo=${encodeURIComponent(emrReturnTo)}`}
+              className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] transition-colors"
+            >
+              <Eye size={16} />
+              View Last Visit
+            </Link>
           ) : (
             <button
               disabled

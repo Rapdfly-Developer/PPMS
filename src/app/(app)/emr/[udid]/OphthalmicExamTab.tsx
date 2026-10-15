@@ -1583,7 +1583,7 @@ function GonioscopyCard({
   const state = useAutoSave(
     { re, le, reDeg, leDeg, method },
     async (data) => { await saveGonioNotes(visit.id, udid, data); },
-    1500, { flushOnUnmount: true, paused: savePaused }
+    1500, { flushOnUnmount: true, paused: savePaused || !editable }
   );
 
   const empty = { re: "", le: "", reDeg: "", leDeg: "" };
