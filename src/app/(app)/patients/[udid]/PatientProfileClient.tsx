@@ -1027,7 +1027,7 @@ export function PatientProfileClient({
               className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)] border border-[var(--color-border)] hover:bg-[var(--color-surface-raised)] transition-colors"
             >
               <Eye size={16} />
-              View Last Visit
+              View Last Visit EMR
             </Link>
           ) : (
             <button
