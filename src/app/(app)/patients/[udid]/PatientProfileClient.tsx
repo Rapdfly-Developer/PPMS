@@ -263,8 +263,8 @@ function VisitCard({ visit, udid }: { visit: SerialVisit; udid: string }) {
         </div>
         {visit.hasEmrData ? (
           <div className="flex items-center gap-1.5 shrink-0">
-            <EmrViewerButton visitId={visit.id} visitNumber={visit.visitNumber} udid={udid} />
-            <VisitDownloadButton visitId={visit.id} />
+            <EmrViewerButton visitId={visit.id} visitNumber={visit.visitNumber} udid={udid} visitDate={visit.date} />
+            <VisitDownloadButton visitId={visit.id} udid={udid} />
           </div>
         ) : (
           <span
