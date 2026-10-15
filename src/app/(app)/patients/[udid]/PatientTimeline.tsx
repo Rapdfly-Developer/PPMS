@@ -3,18 +3,17 @@
 import { useState, useEffect, useTransition, useMemo } from "react";
 import {
   format,
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, isSameMonth, addMonths, subMonths,
+  startOfMonth, endOfMonth,
+  eachDayOfInterval, isSameDay, getDay, addMonths, subMonths,
 } from "date-fns";
 import {
-  X, Search, Stethoscope, FlaskConical, Scissors,
+  X, Stethoscope, FlaskConical, Scissors,
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
-  Timer, CalendarDays, SlidersHorizontal,
+  Timer, CalendarDays,
   Loader2, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
   ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
-import { TealSelect } from "@/components/ui/TealSelect";
 
 /* ── Config ─────────────────────────────────────────────────────────────────── */
 const EVENT_CFG = {
@@ -339,6 +338,8 @@ function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
 }
 
 /* ── Calendar month grid ─────────────────────────────────────────────────────── */
+const LEGEND_TYPES = ALL_TYPES.filter((t) => t !== "TRANSFER");
+
 function CalendarGrid({
   currentMonth,
   selectedKey,
@@ -356,119 +357,115 @@ function CalendarGrid({
   onNext: () => void;
   onToday: () => void;
 }) {
-  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const today = new Date();
 
-  const cells = useMemo(() => {
-    const start = startOfWeek(startOfMonth(currentMonth));
-    const end   = endOfWeek(endOfMonth(currentMonth));
-    return eachDayOfInterval({ start, end });
+  const days = useMemo(() => {
+    return eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
   }, [currentMonth]);
 
+  const leadingBlanks = getDay(days[0]);
+
   return (
-    <div className="bg-white border-b border-[var(--color-border)] shrink-0">
+    <div className="shrink-0 px-5 pt-4 pb-3 border-b border-[var(--color-border)]"
+      style={{ background: "linear-gradient(160deg, var(--color-primary-50) 0%, #fff 60%)" }}
+    >
       {/* Month navigation */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-[var(--color-border)]">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={onPrev}
-          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+          className="size-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
         >
-          <ChevronLeft size={13} />
+          <ChevronLeft size={14} />
         </button>
 
-        <div className="flex items-center gap-1.5">
-          <h3 className="text-caption sm:text-xs font-bold text-[var(--color-ink-800)]">
-            {format(currentMonth, "MMMM yyyy")}
+        <div className="text-center">
+          <h3 className="text-[15px] font-bold tracking-tight text-[var(--color-ink-800)]">
+            {format(currentMonth, "MMMM")}
           </h3>
-          <button
-            onClick={onToday}
-            className="text-micro sm:text-caption font-semibold px-1.5 py-0.5 rounded-full border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
-          >
-            Today
-          </button>
+          <p className="text-[11px] text-[var(--color-ink-400)] font-medium -mt-0.5">
+            {format(currentMonth, "yyyy")}
+          </p>
         </div>
 
         <button
           onClick={onNext}
-          className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+          className="size-8 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all"
         >
-          <ChevronRight size={13} />
+          <ChevronRight size={14} />
         </button>
       </div>
 
       {/* Day-of-week header */}
-      <div className="grid grid-cols-7 px-2 pt-1.5">
+      <div className="grid grid-cols-7 mb-2">
         {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-micro font-bold text-[var(--color-ink-400)] uppercase tracking-wide pb-0.5">
+          <span key={d} className="text-center text-[9px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">
             {d}
-          </div>
+          </span>
         ))}
       </div>
 
       {/* Date cells */}
-      <div className="grid grid-cols-7 px-2 pb-2 gap-y-0.5">
-        {cells.map((day) => {
-          const key         = format(day, "yyyy-MM-dd");
-          const isThisMonth = isSameMonth(day, currentMonth);
-          const isTod       = key === todayKey;
-          const isSelected  = key === selectedKey;
-          const dayEvents   = eventsByDate[key] ?? [];
-          const hasEvents   = dayEvents.length > 0;
-
-          const types = [...new Set(dayEvents.map((e) => e.type))] as TimelineEventType[];
+      <div className="grid grid-cols-7 gap-y-1.5">
+        {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`b-${i}`} />)}
+        {days.map((day) => {
+          const key        = format(day, "yyyy-MM-dd");
+          const isSelected = key === selectedKey;
+          const isToday    = isSameDay(day, today);
+          const dayEvents  = eventsByDate[key] ?? [];
+          const hasEvents  = dayEvents.length > 0;
+          const types      = [...new Set(dayEvents.map((e) => e.type))] as TimelineEventType[];
 
           return (
-            <button
-              key={key}
-              onClick={() => onSelectDate(key)}
-              className={[
-                "relative flex flex-col items-center py-0.5 rounded-lg transition-all",
-                isSelected
-                  ? "bg-gray-200 text-gray-700 shadow-sm"
-                  : isTod
-                  ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                  : isThisMonth
-                  ? "hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)]"
-                  : "text-[var(--color-ink-300)] hover:bg-[var(--color-surface-sunken)]",
-              ].join(" ")}
-            >
-              {/* Today ring */}
-              {isTod && !isSelected && (
-                <span className="absolute inset-0 rounded-lg ring-2 ring-[var(--color-primary-400)] ring-offset-0 pointer-events-none" />
-              )}
-
-              {/* Date number */}
-              <span className={[
-                "text-caption sm:text-caption font-semibold leading-none",
-                isSelected ? "text-gray-700" : isTod ? "text-[var(--color-primary-700)]" : "",
-              ].join(" ")}>
-                {format(day, "d")}
-              </span>
-
-              {/* Event type dots */}
-              <div className="flex items-center justify-center gap-0.5 mt-0.5 min-h-[5px]">
-                {hasEvents && types.slice(0, 3).map((t) => (
-                  <span
-                    key={t}
-                    className="w-1 h-1 rounded-full shrink-0"
-                    style={{
-                      background: EVENT_CFG[t].dotHex,
-                    }}
-                  />
-                ))}
-              </div>
-            </button>
+            <div key={key} className="flex justify-center">
+              <button
+                disabled={!hasEvents}
+                onClick={() => hasEvents && onSelectDate(key)}
+                className={[
+                  "relative flex flex-col items-center justify-center size-9 rounded-xl transition-all duration-150",
+                  isSelected
+                    ? "bg-[var(--color-primary-600)] text-white shadow-md scale-105"
+                    : hasEvents
+                    ? "bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] cursor-pointer shadow-sm"
+                    : "text-[var(--color-ink-300)] cursor-default",
+                  isToday && !isSelected ? "ring-2 ring-[var(--color-primary-400)] ring-offset-1" : "",
+                ].join(" ")}
+              >
+                <span className={["text-[11px] font-bold leading-none", isSelected ? "text-white" : ""].join(" ")}>
+                  {format(day, "d")}
+                </span>
+                {hasEvents && (
+                  <div className="flex gap-[2px] mt-[3px]">
+                    {types.slice(0, 3).map((t) => (
+                      <span
+                        key={t}
+                        className="w-[5px] h-[5px] rounded-full shrink-0"
+                        style={{ background: isSelected ? "rgba(255,255,255,0.75)" : EVENT_CFG[t].dotHex }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </button>
+            </div>
           );
         })}
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-2.5 flex-wrap px-3 py-1.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-        {ALL_TYPES.map((t) => (
-          <span key={t} className="flex items-center gap-1 text-micro text-[var(--color-ink-400)]">
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
-            {EVENT_CFG[t].label}
-          </span>
-        ))}
+      {/* Today button + Legend */}
+      <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-[var(--color-border)]/60">
+        <button
+          onClick={onToday}
+          className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] shadow-sm transition-all"
+        >
+          Today
+        </button>
+        <div className="flex flex-wrap gap-x-2.5 gap-y-1 justify-end">
+          {LEGEND_TYPES.map((t) => (
+            <span key={t} className="flex items-center gap-1 text-[9px] font-medium text-[var(--color-ink-400)]">
+              <span className="size-1.5 rounded-full inline-block shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
+              {EVENT_CFG[t].label}
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -476,32 +473,20 @@ function CalendarGrid({
 
 /* ── Day events panel ────────────────────────────────────────────────────────── */
 function DayEventsPanel({ selectedKey, dayEvents }: { selectedKey: string; dayEvents: TimelineEvent[] }) {
-  const label = selectedKey
-    ? format(new Date(selectedKey), "EEEE, d MMMM yyyy")
-    : "";
-
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Panel header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-2">
-          <CalendarDays size={13} className="text-[var(--color-primary-500)]" />
-          <span className="text-caption sm:text-xs font-bold text-[var(--color-ink-700)]">{label}</span>
-        </div>
-        {dayEvents.length > 0 && (
-          <span className="text-micro sm:text-caption font-semibold px-2 py-0.5 rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)]">
-            {dayEvents.length} event{dayEvents.length !== 1 ? "s" : ""}
-          </span>
-        )}
+      {/* Date label */}
+      <div className="sticky top-0 z-10 px-5 py-2.5 bg-white/90 backdrop-blur-sm border-b border-[var(--color-border)]">
+        <p className="text-xs font-semibold text-[var(--color-ink-600)]">
+          {selectedKey ? format(new Date(selectedKey), "EEEE, d MMMM yyyy") : ""}
+        </p>
       </div>
 
-      {/* Events */}
       <div className="px-4 py-4">
         {dayEvents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-2 text-[var(--color-ink-400)]">
-            <CalendarDays size={32} className="opacity-25" />
-            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-500)]">No events recorded for this date</p>
-            <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Select a highlighted date to view patient activity</p>
+          <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <CalendarDays size={28} className="text-[var(--color-ink-300)]" />
+            <p className="text-xs text-[var(--color-ink-400)]">No activity on this date</p>
           </div>
         ) : (
           <div className="pl-1">
@@ -536,13 +521,6 @@ export function PatientTimelineModal({
   const [currentMonth,  setCurrentMonth]  = useState(() => new Date());
   const [selectedKey,   setSelectedKey]   = useState(todayKey);
 
-  // Filters
-  const [search,         setSearch]         = useState("");
-  const [typeFilter,     setTypeFilter]     = useState<TimelineEventType | "ALL">("ALL");
-  const [hospitalFilter, setHospitalFilter] = useState("ALL");
-  const [doctorFilter,   setDoctorFilter]   = useState("ALL");
-  const [showFilters,    setShowFilters]    = useState(false);
-
   // Load once when first opened
   useEffect(() => {
     if (!open || loaded || isPending) return;
@@ -566,34 +544,10 @@ export function PatientTimelineModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events]);
 
-  const hospitals = useMemo(() => {
-    if (!events) return [];
-    return [...new Set(events.map((e) => e.hospitalName).filter(Boolean) as string[])].sort();
-  }, [events]);
-
-  const doctors = useMemo(() => {
-    if (!events) return [];
-    return [...new Set(events.map((e) => e.doctorName).filter(Boolean) as string[])].sort();
-  }, [events]);
-
-  const filtered = useMemo(() => {
-    if (!events) return [];
-    return events.filter((ev) => {
-      if (typeFilter !== "ALL" && ev.type !== typeFilter) return false;
-      if (hospitalFilter !== "ALL" && ev.hospitalName !== hospitalFilter) return false;
-      if (doctorFilter   !== "ALL" && ev.doctorName   !== doctorFilter)   return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (!ev.searchText.includes(q) && !ev.title.toLowerCase().includes(q)) return false;
-      }
-      return true;
-    });
-  }, [events, typeFilter, hospitalFilter, doctorFilter, search]);
-
-  // Group filtered events by date key, sorted ascending within each day
+  // Group events by date key, sorted ascending within each day
   const eventsByDate = useMemo(() => {
     const map: Record<string, TimelineEvent[]> = {};
-    for (const ev of filtered) {
+    for (const ev of (events ?? [])) {
       const key = toDateKey(ev.date);
       (map[key] = map[key] ?? []).push(ev);
     }
@@ -601,7 +555,7 @@ export function PatientTimelineModal({
       map[key].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     }
     return map;
-  }, [filtered]);
+  }, [events]);
 
   const dayEvents = eventsByDate[selectedKey] ?? [];
 
@@ -610,94 +564,38 @@ export function PatientTimelineModal({
     setSelectedKey(todayKey);
   }
 
-  function clearFilters() {
-    setSearch(""); setTypeFilter("ALL"); setHospitalFilter("ALL"); setDoctorFilter("ALL");
-  }
-
   if (!open) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: "rgba(0,0,0,0.55)" }}
+      className="fixed inset-0 z-50"
+      style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       {/* Panel */}
-      <div className="absolute inset-y-0 right-0 w-full max-w-2xl bg-[var(--color-surface)] flex flex-col shadow-2xl">
+      <div className="absolute inset-y-0 right-0 w-full max-w-[400px] bg-[var(--color-surface)] flex flex-col shadow-2xl">
 
         {/* Header */}
         <div
           className="flex items-center gap-3 px-5 py-4 text-white shrink-0"
           style={{ background: "linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-600) 100%)" }}
         >
-          <Timer size={18} />
+          <Timer size={16} className="opacity-80" />
           <div className="flex-1 min-w-0">
-            <p className="text-caption sm:text-xs text-white/70 font-medium">Patient History Timeline</p>
-            <h2 className="text-heading-sm sm:text-base font-bold leading-tight">{patientName}</h2>
+            <p className="text-[10px] text-white/60 font-medium uppercase tracking-widest">History</p>
+            <h2 className="text-sm font-bold leading-tight truncate">{patientName}</h2>
           </div>
           {events && (
-            <span className="text-caption sm:text-xs bg-white/15 px-2 py-0.5 rounded-full font-semibold">
-              {filtered.length} / {events.length} events
+            <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-full font-semibold">
+              {events.length} visits
             </span>
           )}
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/15 transition-colors"
+            className="size-7 flex items-center justify-center rounded-full hover:bg-white/15 transition-colors"
           >
-            <X size={16} />
+            <X size={14} />
           </button>
-        </div>
-
-        {/* Search + type chips */}
-        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-white shrink-0 space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)]" />
-              <input
-                type="text"
-                placeholder="Search diagnosis, medication, test, hospital…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm border border-[var(--color-border)] rounded-lg outline-none focus:border-[var(--color-primary-400)] bg-[var(--color-surface-sunken)]"
-              />
-            </div>
-            <button
-              onClick={() => setShowFilters((p) => !p)}
-              className={`shrink-0 flex items-center gap-1 px-3 py-2 rounded-lg text-caption sm:text-xs font-semibold border transition-colors ${showFilters ? "bg-[var(--color-primary-50)] border-[var(--color-primary-400)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-600)]"}`}
-            >
-              <SlidersHorizontal size={12} /> Filters
-            </button>
-          </div>
-
-          {/* Advanced filters */}
-          {showFilters && (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <TealSelect
-                value={hospitalFilter}
-                onChange={setHospitalFilter}
-                options={[
-                  { value: "ALL", label: "All Hospitals" },
-                  ...hospitals.map((h) => ({ value: h, label: h })),
-                ]}
-              />
-              <TealSelect
-                value={doctorFilter}
-                onChange={setDoctorFilter}
-                options={[
-                  { value: "ALL", label: "All Doctors" },
-                  ...doctors.map((d) => ({ value: d, label: d })),
-                ]}
-              />
-              {(hospitalFilter !== "ALL" || doctorFilter !== "ALL" || search) && (
-                <button
-                  onClick={clearFilters}
-                  className="col-span-2 text-caption sm:text-xs text-[var(--color-primary-600)] hover:underline text-left"
-                >
-                  Clear all filters
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Body */}
