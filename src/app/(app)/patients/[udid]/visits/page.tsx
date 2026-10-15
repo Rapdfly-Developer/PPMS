@@ -1,7 +1,6 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { startOfDay } from "date-fns";
 import { VisitsListClient } from "./VisitsListClient";
 import { DownloadAllButton } from "./DownloadAllButton";
 
@@ -37,22 +36,19 @@ export default async function PatientVisitsPage({
 
   if (!patient) notFound();
 
-  const todayStart = startOfDay(new Date());
-  const allCount   = patient.visits.length;
+  const allCount = patient.visits.length;
 
-  const pastVisits = patient.visits
-    .map((v, i) => ({
-      id:          v.id,
-      visitNumber: allCount - i,
-      date:        v.date.toISOString(),
-      status:      v.status,
-      visitType:   v.visitType ?? null,
-      hospital:    v.hospital ?? null,
-      doctor:      v.doctor   ?? null,
-      generalExam: v.generalExam ?? null,
-      diagnoses:   v.diagnoses,
-    }))
-    .filter((v) => new Date(v.date) < todayStart);
+  const pastVisits = patient.visits.map((v, i) => ({
+    id:          v.id,
+    visitNumber: allCount - i,
+    date:        v.date.toISOString(),
+    status:      v.status,
+    visitType:   v.visitType ?? null,
+    hospital:    v.hospital ?? null,
+    doctor:      v.doctor   ?? null,
+    generalExam: v.generalExam ?? null,
+    diagnoses:   v.diagnoses,
+  }));
 
   const totalVisits = pastVisits.length;
 
