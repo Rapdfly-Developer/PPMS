@@ -455,7 +455,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasRC && (
         <div>
           <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
-          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden max-w-xs">
             <DataTable>
               <Cols widths={COLS_EYE} />
               <EyeHead />
@@ -745,17 +745,19 @@ function LongContent({
 
           {hasRC && (
             <Block label="Refraction / Spectacle Rx">
-              <DataTable>
-                <Cols widths={COLS_EYE} />
-                <EyeHead />
-                <tbody>
-                  <EyeRow label="SPH"      re={reRCp.sph}     le={leRCp.sph} />
-                  <EyeRow label="CYL"      re={reRCp.cyl}     le={leRCp.cyl} />
-                  <EyeRow label="AXIS"     re={reRCp.axis}    le={leRCp.axis} />
-                  <EyeRow label="Near SPH" re={reRCp.nearSph} le={leRCp.nearSph} />
-                  <EyeRow label="Near CYL" re={reRCp.nearCyl} le={leRCp.nearCyl} />
-                </tbody>
-              </DataTable>
+              <div className="max-w-xs">
+                <DataTable>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead />
+                  <tbody>
+                    <EyeRow label="SPH"      re={reRCp.sph}     le={leRCp.sph} />
+                    <EyeRow label="CYL"      re={reRCp.cyl}     le={leRCp.cyl} />
+                    <EyeRow label="AXIS"     re={reRCp.axis}    le={leRCp.axis} />
+                    <EyeRow label="Near SPH" re={reRCp.nearSph} le={leRCp.nearSph} />
+                    <EyeRow label="Near CYL" re={reRCp.nearCyl} le={leRCp.nearCyl} />
+                  </tbody>
+                </DataTable>
+              </div>
             </Block>
           )}
 
