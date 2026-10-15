@@ -289,6 +289,24 @@ export default async function PatientProfilePage({
     }));
   }
 
+  /* ── Prepend today's finalized visit to longitudinal list ───────────── */
+  if (todayVisitSummary) {
+    longitudinalVisits = [
+      {
+        id:             todayVisitSummary.id,
+        date:           todayVisitSummary.date,
+        visitType:      todayVisitSummary.visitType,
+        hospitalName:   todayVisitSummary.hospitalName,
+        chiefComplaint: todayVisitSummary.chiefComplaint,
+        diagnoses:      todayVisitSummary.diagnoses.map((d) => ({ description: d.description, status: d.status, laterality: d.laterality })),
+        medications:    todayVisitSummary.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage, frequency: m.frequency, duration: m.duration })),
+        investigations: todayVisitSummary.investigations.map((i) => ({ testName: i.testName, status: i.status })),
+        followUpDate:   todayVisitSummary.followUpDate,
+      },
+      ...longitudinalVisits,
+    ];
+  }
+
   /* ── Banner info ──────────────────────────────────────────────────────── */
   // Aadhaar — decrypt and mask; skip the all-zeros placeholder (no Aadhaar given)
   let aadhaarMasked: string | null = null;
