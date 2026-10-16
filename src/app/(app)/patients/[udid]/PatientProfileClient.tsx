@@ -532,7 +532,7 @@ function LastVisitSummarySection({
                       })
                       .map((d) => (
                         <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-caption sm:text-caption border">
-                          {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
+                          {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                           {d.description}
                         </span>
                       ))}
@@ -557,15 +557,6 @@ function LastVisitSummarySection({
                   <Block label="Medications">
                     <DataTable minWidth={360}>
                       <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
-                      <thead>
-                        <tr>
-                          <th className={TH}>#</th>
-                          <th className={TH}>Drug</th>
-                          <th className={TH}>Dose</th>
-                          <th className={TH}>Frequency</th>
-                          <th className={TH}>Duration</th>
-                        </tr>
-                      </thead>
                       <tbody>
                         {summary.medications.map((m, idx) => (
                           <tr key={m.id}>

@@ -1063,7 +1063,7 @@ function LongContent({
               .map((d: any, i: number) => (
                 <div key={i} className="py-1 border-b border-[var(--color-border)] last:border-0">
                   <span className="clinical-diagnosis-text text-caption sm:text-caption">
-                    {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
+                    {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
                     {d.description}
                     {d.icd10Code && <span className="font-mono text-micro text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
                   </span>
