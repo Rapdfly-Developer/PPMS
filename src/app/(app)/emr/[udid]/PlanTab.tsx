@@ -7,7 +7,6 @@ import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
 import { DispositionToggle, FollowUpdatesPanel } from "./DispositionPanel";
 import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
@@ -1543,7 +1542,6 @@ function parseProcedureList(raw: string): string[] {
 function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
   const [open,           setOpen]           = useState(false);
-  const [procInPrint, setProcInPrint] = useCustomPrintPref(visit.id, "proc");
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [customAnesthesia, setCustomAnesthesia] = useState<string[]>(() => typeof window === "undefined" ? [] : getCustomAnesthesia());
@@ -1597,10 +1595,6 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
             <History size={12} /> History
           </button>
         )}
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] shrink-0">
-          <input type="checkbox" checked={procInPrint} onChange={(e) => setProcInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
       </div>
       {open && <div className="mt-4">
 
@@ -1919,7 +1913,6 @@ type EditDraft = { drugName: string; dosage: string; frequency: string; duration
 
 function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
   const [pending, startTransition] = useTransition();
-  const [medsInPrint, setMedsInPrint] = useCustomPrintPref(visit.id, "meds");
   const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -2127,10 +2120,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
       <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
         <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input type="checkbox" checked={medsInPrint} onChange={(e) => setMedsInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
         {!readOnly && (
           <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
             {medications.length > 0 && (

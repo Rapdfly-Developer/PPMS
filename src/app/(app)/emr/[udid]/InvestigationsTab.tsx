@@ -10,7 +10,6 @@ import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "./actions";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { useAutoSave } from "@/lib/useAutoSave";
-import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { format } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
@@ -498,7 +497,6 @@ function NewInvestigations({
   visit: any; udid: string; todayOrders: any[]; onOrdered: () => void;
 }) {
   const [viewUrl, setViewUrl] = useState<string | null>(null);
-  const [invInPrint, setInvInPrint] = useCustomPrintPref(visit.id, "inv");
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
   const [selected, setSelected] = useState<string[]>([]);
   const [priority, setPriority] = useState("ROUTINE");
@@ -693,12 +691,6 @@ function NewInvestigations({
             >
               {pending ? "Placing…" : `Place Order${selected.length > 1 ? "s" : ""}`}
             </button>
-          </div>
-          <div className="flex justify-end">
-            <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-              <input type="checkbox" checked={invInPrint} onChange={(e) => setInvInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-              Add to custom print
-            </label>
           </div>
         </div>
       </Card>

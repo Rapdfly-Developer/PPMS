@@ -10,7 +10,6 @@ import { Tabs } from "@/components/ui/Tabs";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { useAutoSave, SaveIndicator, AutoSaveSharedLock } from "@/lib/useAutoSave";
-import { useCustomPrintPref } from "@/lib/useCustomPrintPref";
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
 import {
@@ -49,21 +48,6 @@ import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 import { fileHref } from "@/lib/file-href";
 
-function AddToCustomPrint({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
-  return (
-    <div className="flex justify-end mt-3">
-      <label className="inline-flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(event) => onChange(event.target.checked)}
-          className="accent-[var(--color-primary-600)]"
-        />
-        Add to custom print
-      </label>
-    </div>
-  );
-}
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, canEditRefraction, canEditColour, canEditIOP, canEditAnterior, canEditGonioscopy, canEditPosterior, canViewVA, canViewRefraction, canViewColour, canViewIOP, canViewAnterior, canViewPosterior }: {
   visit: any; priorVisits: any[]; udid: string; role: string;
@@ -220,7 +204,6 @@ const NEAR_COLS = [
 function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const va = visit.visualAcuity;
   const [testMethod, setTestMethod] = useState(va?.testMethod ?? "Snellen");
-  const [vaInPrint, setVaInPrint] = useCustomPrintPref(visit.id, "va");
   const [re, setRe] = useState(
     parseJSON(va?.re, { unaided: "", pinhole: "", bestCorrected: "", nearUnaided: "", nearPinhole: "", nearBestCorrected: "" })
   );
@@ -401,12 +384,6 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
           </tbody>
         </table>
       </div>
-      <div className="flex justify-end mt-3">
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input type="checkbox" checked={vaInPrint} onChange={(e) => setVaInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
-      </div>
     </Card>
   );
 }
@@ -517,8 +494,6 @@ function ArSlipUpload({
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
-  const [rxInPrint, setRxInPrint] = useCustomPrintPref(visit.id, "rx");
-
   // ── Types ──────────────────────────────────────────────────────────────────
   type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
   const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
@@ -914,7 +889,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {rxToast && (
         <Toast message="Previous record loaded successfully." onDone={() => setRxToast(false)} />
       )}
-      <AddToCustomPrint checked={rxInPrint} onChange={setRxInPrint} />
     </Card>
   );
 }
@@ -929,8 +903,6 @@ const CS_METHODS = ["Pelli-Robson", "Mars Letter CS", "Vistech", "FACT"] as cons
 
 function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const cv = visit.colourVisionCS;
-  const [cvInPrint, setCvInPrint] = useCustomPrintPref(visit.id, "cv");
-  const [csInPrint, setCsInPrint] = useCustomPrintPref(visit.id, "cs");
   const storedRe = parseJSON(cv?.re, {}) as any;
   const storedLe = parseJSON(cv?.le, {}) as any;
 
@@ -1083,7 +1055,6 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             {editable && <p className="px-3 pb-2 text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
-        <AddToCustomPrint checked={cvInPrint} onChange={setCvInPrint} />
       </Card>
 
       {/* Contrast Vision */}
@@ -1161,7 +1132,6 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
             {editable && <p className="px-3 pb-2 text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
-        <AddToCustomPrint checked={csInPrint} onChange={setCsInPrint} />
       </Card>
       {cvLoadToast && <Toast message="Previous record loaded." onDone={() => setCvLoadToast(false)} />}
     </div>
@@ -1171,7 +1141,6 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
 /* ── IOP ──────────────────────────────────────────────────────────────── */
 
 function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: string; editable: boolean; priorVisits: any[] }) {
-  const [iopInPrint, setIopInPrint] = useCustomPrintPref(visit.id, "iop");
   const [re, setRe] = useState("");
   const [le, setLe] = useState("");
   const [method, setMethod] = useState<string>(IOP_METHODS[0]);
@@ -1298,7 +1267,6 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
         </div>
       </div>
       {iopLoadToast && <Toast message="IOP values loaded into form." onDone={() => setIopLoadToast(false)} />}
-      <AddToCustomPrint checked={iopInPrint} onChange={setIopInPrint} />
     </Card>
   );
 }
@@ -1545,7 +1513,6 @@ function GonioscopyCard({
   editable: boolean;
   priorVisits: any[];
 }) {
-  const [gonioInPrint, setGonioInPrint] = useCustomPrintPref(visit.id, "gonio");
   // method is a single shared key: one technique is used for the exam, not one
   // per eye. gonioNotes is free-form JSON, so this needs no migration and older
   // records simply parse with an empty method.
@@ -1770,7 +1737,6 @@ function GonioscopyCard({
       )}
 
       {loadToast && <Toast message="Gonioscopy record loaded." onDone={() => setLoadToast(false)} />}
-      <AddToCustomPrint checked={gonioInPrint} onChange={setGonioInPrint} />
     </Card>
   );
 }
@@ -1912,7 +1878,6 @@ function findPriorSegment(
 
 function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const as_ = visit.anteriorSegment;
-  const [antInPrint, setAntInPrint] = useCustomPrintPref(visit.id, "ant");
   const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(as_?.le, {}));
   const [confirmImport, setConfirmImport] = useState(false);
@@ -2110,13 +2075,6 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
       {importToast && (
         <Toast message="Previous values imported." onDone={() => setImportToast(false)} />
       )}
-      <div className="flex justify-end mt-3">
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input type="checkbox" checked={antInPrint} onChange={(e) => setAntInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
-      </div>
-
     </Card>
   );
 }
@@ -2159,7 +2117,6 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   const ps = visit.posteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(ps?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(ps?.le, {}));
-  const [posInPrint, setPosInPrint] = useCustomPrintPref(visit.id, "pos");
   const [confirmImport, setConfirmImport] = useState(false);
   const [importToast, setImportToast] = useState(false);
 
@@ -2372,13 +2329,6 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
       {importToast && (
         <Toast message="Previous values imported." onDone={() => setImportToast(false)} />
       )}
-      <div className="flex justify-end mt-3">
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input type="checkbox" checked={posInPrint} onChange={(e) => setPosInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
-      </div>
-
     </Card>
   );
 }
@@ -2386,7 +2336,6 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 /* ── Diplopia / Hess / Retinoscopy / Tear Film ───────────────────────────── */
 
 function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
-  const [diplopiaInPrint, setDiplopiaInPrint] = useCustomPrintPref(visit.id, "diplopia");
   const dc = visit.diplopiaChart;
   const [grid, setGrid] = useState<Record<string, { status: string; notes?: string }>>(parseJSON(dc?.grid, {}));
 
@@ -2407,13 +2356,11 @@ function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; edi
         grid={grid}
         onChange={(pos, status) => editable && setGrid({ ...grid, [pos]: { ...(grid[pos] ?? {}), status } })}
       />
-      <AddToCustomPrint checked={diplopiaInPrint} onChange={setDiplopiaInPrint} />
     </Card>
   );
 }
 
 function HessCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
-  const [hessInPrint, setHessInPrint] = useCustomPrintPref(visit.id, "hess");
   const hc = visit.hessChart;
   const [grid, setGrid] = useState<Record<string, any>>(parseJSON(hc?.grid, {}));
   const [interpretation, setInterpretation] = useState(hc?.interpretation ?? "");
@@ -2444,7 +2391,6 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
         <textarea disabled={!editable} value={interpretation} onChange={(e) => setInterpretation(e.target.value)} rows={2}
           className="mt-1 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm" />
       </div>
-      <AddToCustomPrint checked={hessInPrint} onChange={setHessInPrint} />
     </Card>
   );
 }
@@ -2452,8 +2398,6 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
 function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
-  const [retinoInPrint, setRetinoInPrint] = useCustomPrintPref(visit.id, "retino");
-
   const r = visit.retinoscopy;
   const [re, setRe] = useState<RxFields>(() => parseJSON(r?.re, emptyRx));
   const [le, setLe] = useState<RxFields>(() => parseJSON(r?.le, emptyRx));
@@ -2586,12 +2530,6 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
         {eyeFields(re, setRe)}
         {eyeFields(le, setLe)}
       </EyeColumns>
-      <div className="flex justify-end mt-3">
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input type="checkbox" checked={retinoInPrint} onChange={(e) => setRetinoInPrint(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-          Add to custom print
-        </label>
-      </div>
       {copyToast    && <Toast message="Refraction data imported successfully." onDone={() => setCopyToast(false)} />}
       {noDataToast  && <Toast message="No Refraction data available."          onDone={() => setNoDataToast(false)} />}
     </Card>
@@ -2599,7 +2537,6 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
 }
 
 function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
-  const [tearInPrint, setTearInPrint] = useCustomPrintPref(visit.id, "tear");
   const tf = visit.tearFilm;
   const [data, setData] = useState({
     tbutRe: tf?.tbutRe ?? "", tbutLe: tf?.tbutLe ?? "",
@@ -2719,7 +2656,6 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
           {tfInput("Schirmer's 2 – with anaesthetic (mm)", "schirmer2Le")}
         </div>
       </EyeColumns>
-      <AddToCustomPrint checked={tearInPrint} onChange={setTearInPrint} />
     </Card>
   );
 }
@@ -2727,7 +2663,6 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
 /* ── Lacrimal Sac ─────────────────────────────────────────────────────────── */
 
 function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
-  const [lacrimalInPrint, setLacrimalInPrint] = useCustomPrintPref(visit.id, "lacrimal");
   const ls = visit.lacrimalSac;
   const storedRe = parseJSON(ls?.re, {}) as any;
   const storedLe = parseJSON(ls?.le, {}) as any;
@@ -2825,7 +2760,6 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           <ChipGroup options={LACRIMAL_SAC_CHIPS} value={leChips} onChange={editable ? setLeChips : () => {}} chipClassName="chip-sm" />
         </div>
       </div>
-      <AddToCustomPrint checked={lacrimalInPrint} onChange={setLacrimalInPrint} />
     </Card>
   );
 }
