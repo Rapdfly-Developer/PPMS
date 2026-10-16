@@ -532,7 +532,7 @@ function LastVisitSummarySection({
                       })
                       .map((d) => (
                         <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-caption sm:text-caption border">
-                          {d.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1">{d.laterality}</span>}
+                          {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                           {d.description}
                         </span>
                       ))}
