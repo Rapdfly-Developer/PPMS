@@ -501,28 +501,39 @@ function EyeHead({ first = "" }: { first?: string }) {
 function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: string | null }[] }) {
   const visible = rows.filter((r) => r.re || r.le);
   if (!visible.length) return null;
+  const hasRe = visible.some((r) => r.re);
+  const hasLe = visible.some((r) => r.le);
+  const TH_CELL = "px-3 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)] last:border-r-0";
+  const TD_EYE  = "px-3 py-2 align-middle text-caption font-semibold text-[var(--color-primary-700)] border-r border-[var(--color-border)] whitespace-nowrap";
+  const TD_VAL  = "px-3 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums border-r border-[var(--color-border)] last:border-r-0";
   return (
-    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
-      <table className="w-full table-fixed border-collapse">
+    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden overflow-x-auto">
+      <table className="w-full border-collapse">
         <thead>
           <tr className="bg-[var(--color-surface-sunken)]">
-            <th className="px-4 py-2 text-left text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)]" />
-            <th className="px-4 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)]">RE</th>
-            <th className="px-4 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">LE</th>
+            <th className={TH_CELL} />
+            {visible.map((col) => (
+              <th key={col.label} className={TH_CELL}>{col.label}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {visible.map((row) => (
-            <tr key={row.label} className="border-t border-[var(--color-border)]">
-              <td className="px-4 py-2 align-middle text-caption text-[var(--color-ink-500)] border-r border-[var(--color-border)]">{row.label}</td>
-              <td className="px-4 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums border-r border-[var(--color-border)]">
-                {row.re || DASH}
-              </td>
-              <td className="px-4 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums">
-                {row.le || DASH}
-              </td>
+          {hasRe && (
+            <tr className="border-t border-[var(--color-border)]">
+              <td className={TD_EYE}>Right Eye</td>
+              {visible.map((col) => (
+                <td key={col.label} className={TD_VAL}>{col.re || DASH}</td>
+              ))}
             </tr>
-          ))}
+          )}
+          {hasLe && (
+            <tr className="border-t border-[var(--color-border)]">
+              <td className={TD_EYE}>Left Eye</td>
+              {visible.map((col) => (
+                <td key={col.label} className={TD_VAL}>{col.le || DASH}</td>
+              ))}
+            </tr>
+          )}
         </tbody>
       </table>
     </div>
