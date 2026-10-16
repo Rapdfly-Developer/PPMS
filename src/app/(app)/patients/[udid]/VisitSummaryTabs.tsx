@@ -9,10 +9,12 @@ import { fileHref } from "@/lib/file-href";
 
 type Tab = "short" | "long" | "ai";
 
+type DiagItem = { description: string; laterality?: string | null };
+
 interface Props {
   visitId: string;
   complaint: string | null;
-  diagnoses: string[];
+  diagnoses: DiagItem[];
   /** Optional richer short view (used by the patient profile's Last Visit Summary). */
   shortContent?: React.ReactNode;
   /** Omit the top divider when the host card already provides one. */
@@ -296,12 +298,12 @@ export function VisitSummaryTabBody({
   aiNotice: string | null;
   aiError: string | null;
   complaint: string | null;
-  diagnoses: string[];
+  diagnoses: DiagItem[];
   shortContent?: React.ReactNode;
   /** When provided, replaces the default AIContent when the ai tab is active. */
   aiContent?: React.ReactNode;
 }) {
-  const diagList = diagnoses.filter(Boolean);
+  const diagList = diagnoses.filter((d) => d.description);
   // Merge shortData into emrData shape for ShortContent when emrData isn't loaded yet.
   const shortEmrData = emrData ?? shortData ?? null;
   if (loading) {
@@ -354,7 +356,7 @@ function SumHead({ icon, label, color = "text-[var(--color-ink-400)]" }: { icon:
 
 /* ─── Short ─── */
 function ShortContent({ complaint, diagnoses, emrData }: {
-  complaint: string | null; diagnoses: string[]; emrData?: any;
+  complaint: string | null; diagnoses: DiagItem[]; emrData?: any;
 }) {
   const hasMeds = emrData?.medications?.length > 0;
   const followUpInv = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
@@ -395,7 +397,9 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <div className="flex flex-wrap gap-1.5">
             {diagnoses.map((d, i) => (
               <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
-                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />{d}
+                <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                {d.laterality && <span className="font-bold text-[var(--color-primary-700)]">{d.laterality}</span>}
+                {d.description}
               </span>
             ))}
           </div>
@@ -580,7 +584,7 @@ function LongContent({
 }: {
   data: any;
   complaint: string | null;
-  diagnoses: string[];
+  diagnoses: DiagItem[];
 }) {
   if (!data) return <ShortContent complaint={complaint} diagnoses={diagnoses} />;
 

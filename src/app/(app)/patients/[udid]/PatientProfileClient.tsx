@@ -491,7 +491,7 @@ function LastVisitSummarySection({
             aiNotice={tabState.aiNotice}
             aiError={tabState.aiError}
             complaint={summary.chiefComplaint}
-            diagnoses={summary.diagnoses.map((d) => d.description)}
+            diagnoses={summary.diagnoses}
             shortContent={
               <div className="space-y-4">
                 {/* Same table grammar as the Long tab — shared column templates

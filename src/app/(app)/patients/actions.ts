@@ -124,6 +124,7 @@ export type TimelineEvent = {
     diagnoses?: { description: string; icd10Code: string; laterality?: string | null; provisional: boolean; status: string }[];
     medications?: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null }[];
     // CONSULTATION — timestamp trail
+    isWalkIn?: boolean;
     bookedAt?: string | null;           // Appointment.createdAt
     scheduledAt?: string | null;        // Appointment.dateTime
     arrivedAt?: string | null;          // Appointment.arrivedAt
@@ -171,7 +172,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
         dispense:           { select: { shortSummary: true } },
-        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true } },
+        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true } },
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -211,6 +212,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         diagnoses:   v.diagnoses,
         medications: v.medications,
         // Timestamp trail
+        isWalkIn:          v.appointment?.isWalkIn ?? false,
         bookedAt:          v.appointment?.createdAt?.toISOString()          ?? null,
         scheduledAt:       v.appointment?.dateTime?.toISOString()           ?? null,
         arrivedAt:         v.appointment?.arrivedAt?.toISOString()          ?? null,

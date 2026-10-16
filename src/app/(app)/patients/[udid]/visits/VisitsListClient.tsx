@@ -32,10 +32,11 @@ export interface VisitRow {
   date:        string;
   status:      string;
   visitType:   string | null;
+  isWalkIn:    boolean;
   hospital:    { name: string } | null;
   doctor:      { name: string } | null;
   generalExam: { chiefComplaint: string | null } | null;
-  diagnoses:   { description: string }[];
+  diagnoses:   { description: string; laterality: string | null }[];
   timestamps:  VisitTimestamps;
 }
 
@@ -191,9 +192,9 @@ type TsStep  = { key: keyof VisitTimestamps; label: string; group: TsGroup };
 const TS_STEPS: TsStep[] = [
   { key: "bookedAt",                label: "Booked",            group: "booking"  },
   { key: "scheduledAt",             label: "Appt. Time",        group: "booking"  },
-  { key: "arrivedAt",               label: "Arrived",           group: "clinical" },
-  { key: "seenAt",                  label: "Doctor Seen",       group: "clinical" },
-  { key: "consultationCompletedAt", label: "Finalized",         group: "clinical" },
+  { key: "arrivedAt",               label: "Arrival Time",      group: "clinical" },
+  { key: "seenAt",                  label: "Consult. Start",    group: "clinical" },
+  { key: "consultationCompletedAt", label: "Consult. End",      group: "clinical" },
   { key: "investigationOrderedAt",  label: "Inv. Ordered",      group: "clinical" },
   { key: "reportUploadedAt",        label: "Report Upload",     group: "clinical" },
   { key: "refractionStartedAt",     label: "Refraction Start",  group: "clinical" },
@@ -219,8 +220,14 @@ const DURATION_METRICS: { label: string; from: keyof VisitTimestamps; to: keyof 
   { label: "Total Visit",     from: "arrivedAt",           to: "finalizedAt"             },
 ];
 
-function TimestampSection({ ts }: { ts: VisitTimestamps }) {
-  const active = TS_STEPS.filter((s) => ts[s.key]);
+function TimestampSection({ ts, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boolean }) {
+  const active = TS_STEPS
+    .filter((s) => ts[s.key])
+    .filter((s) => isWalkIn ? s.group !== "booking" : true)
+    .map((s) => ({
+      ...s,
+      label: isWalkIn && s.key === "arrivedAt" ? "Walk-in Time" : s.label,
+    }));
   if (active.length === 0) return null;
 
   const durations = DURATION_METRICS
@@ -326,8 +333,8 @@ export function VisitsListClient({
               )}
             </div>
 
-            {/* Calendar + Timestamps stacked — capped on desktop so card height follows the right panel */}
-            <div className="p-3 space-y-3 overflow-y-auto lg:max-h-[360px]">
+            {/* Calendar */}
+            <div className="p-3 overflow-y-auto lg:max-h-[320px] shrink-0">
               <MiniCalendar
                 visits={visits}
                 noShowDates={noShowDates}
@@ -335,7 +342,10 @@ export function VisitsListClient({
                 selectedIdx={selectedIdx}
                 onSelect={setSelectedIdx}
               />
-              <TimestampSection ts={v.timestamps} />
+            </div>
+            {/* Timestamps — always visible below calendar */}
+            <div className="px-3 pb-3">
+              <TimestampSection ts={v.timestamps} isWalkIn={v.isWalkIn} />
             </div>
 
             {/* Actions */}
@@ -359,7 +369,7 @@ export function VisitsListClient({
               key={v.id}
               visitId={v.id}
               complaint={v.generalExam?.chiefComplaint ?? null}
-              diagnoses={v.diagnoses.map((d) => d.description)}
+              diagnoses={v.diagnoses}
               bare
             />
           </div>
