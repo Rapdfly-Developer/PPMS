@@ -206,10 +206,17 @@ export type LastVisitSummary = {
   hospitalName: string | null;
   doctorName: string | null;
   chiefComplaint: string | null;
+  allergies: string | null;
   diagnoses: { id: string; description: string; icd10Code: string; laterality: string | null; status: string; provisional: boolean }[];
   medications: { id: string; drugName: string; dosage: string | null; frequency: string | null; duration: string | null; laterality: string | null }[];
   investigations: { id: string; category: string; testName: string; priority: string; laterality: string | null; status: string; notes: string | null; resultRef: string | null; createdAt: string }[];
+  procedureName: string | null;
+  procedureNotes: string | null;
+  procedureLaterality: string | null;
   followUpDate: string | null;
+  inViewOf: string | null;
+  referralEnabled: boolean;
+  referralNote: string | null;
 };
 
 export type LongitudinalVisit = {
@@ -508,6 +515,13 @@ function LastVisitSummarySection({
                   </div>
                 )}
 
+                {summary.allergies && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-red-600 shrink-0">Drug Allergy</span>
+                    <span className="text-caption font-bold text-red-600">{summary.allergies}</span>
+                  </div>
+                )}
+
                 {summary.diagnoses.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
@@ -523,6 +537,20 @@ function LastVisitSummarySection({
                         </span>
                       ))}
                   </div>
+                )}
+
+                {summary.procedureName && (
+                  <Block label="Minor Procedure">
+                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
+                      {summary.procedureLaterality && (
+                        <span className="font-bold text-[var(--color-primary-700)] mr-2">{summary.procedureLaterality}</span>
+                      )}
+                      {summary.procedureName}
+                      {summary.procedureNotes && (
+                        <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {summary.procedureNotes}</span>
+                      )}
+                    </p>
+                  </Block>
                 )}
 
                 {summary.medications.length > 0 && (
@@ -586,12 +614,23 @@ function LastVisitSummarySection({
                   <Block label="Follow-up">
                     <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
                       {format(new Date(summary.followUpDate), "EEEE, dd MMM yyyy")}
+                      {summary.inViewOf && (
+                        <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {summary.inViewOf}</span>
+                      )}
+                    </p>
+                  </Block>
+                )}
+
+                {summary.referralEnabled && (
+                  <Block label="Referral">
+                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
+                      {summary.referralNote || "Referred"}
                     </p>
                   </Block>
                 )}
 
                 {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0
-                  && summary.investigations.length === 0 && !summary.followUpDate && (
+                  && summary.investigations.length === 0 && !summary.followUpDate && !summary.referralEnabled && (
                   <p className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">
                     No clinical data recorded for this visit.
                   </p>

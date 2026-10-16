@@ -358,13 +358,17 @@ function SumHead({ icon, label, color = "text-[var(--color-ink-400)]" }: { icon:
 function ShortContent({ complaint, diagnoses, emrData }: {
   complaint: string | null; diagnoses: DiagItem[]; emrData?: any;
 }) {
-  const hasMeds = emrData?.medications?.length > 0;
-  const followUpInv = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
-  const hasFollowUp = followUpInv.length > 0;
-  const reRCp = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.re, {}) : {};
-  const leRCp = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.le, {}) : {};
-  const RC_FIELDS = ["sph", "cyl", "axis", "nearSph", "nearCyl"] as const;
-  const hasRC = RC_FIELDS.some((f) => (reRCp[f] && reRCp[f] !== "") || (leRCp[f] && leRCp[f] !== ""));
+  const allergy      = emrData?.generalExam?.allergies as string | null | undefined;
+  const hasMeds      = emrData?.medications?.length > 0;
+  const hasProcedure = !!emrData?.procedureName;
+  const investigations = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
+  const hasInv       = investigations.length > 0;
+  const reRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.re, {}) : {};
+  const leRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.le, {}) : {};
+  const RC_FIELDS    = ["sph", "cyl", "axis", "nearSph", "nearCyl"] as const;
+  const hasRC        = RC_FIELDS.some((f) => (reRCp[f] && reRCp[f] !== "") || (leRCp[f] && leRCp[f] !== ""));
+  const hasFollowUp  = !!emrData?.followUpDate;
+  const hasReferral  = !!emrData?.referralEnabled;
 
   if (!complaint && diagnoses.length === 0 && !hasMeds) {
     return <EmptyNote>No clinical data recorded for this visit.</EmptyNote>;
@@ -374,7 +378,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
   return (
     <div className="space-y-4">
 
-      {/* Chief complaint */}
+      {/* 1. Chief complaint */}
       {complaint && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
@@ -386,7 +390,19 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* Diagnosis */}
+      {/* 2. Allergy — red bold */}
+      {allergy && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <AlertCircle size={11} className="text-red-600" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-red-600">Drug Allergy</span>
+            <span className="text-micro font-bold text-red-300">·</span>
+          </span>
+          <span className="text-caption font-bold text-red-600">{allergy}</span>
+        </div>
+      )}
+
+      {/* 3. Diagnosis */}
       {diagnoses.length > 0 && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
@@ -406,7 +422,27 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* Medications */}
+      {/* 4. Minor procedure with notes */}
+      {hasProcedure && (
+        <div>
+          <SumHead icon={<Microscope size={11} />} label="Minor Procedure" color="text-[var(--color-ink-400)]" />
+          <div className="space-y-0">
+            <div className="flex items-start gap-0">
+              <p className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-700)] font-semibold">
+                {emrData.procedureLaterality && (
+                  <span className="font-bold text-[var(--color-primary-700)] mr-2">{emrData.procedureLaterality}</span>
+                )}
+                {emrData.procedureName}
+                {emrData.procedureNotes && (
+                  <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {emrData.procedureNotes}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Medications */}
       {hasMeds && (
         <div>
           <SumHead icon={<Pill size={11} />} label="Medications" color="text-teal-500" />
@@ -432,12 +468,26 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* Pending follow-up investigations */}
-      {hasFollowUp && (
+      {/* 6. Spectacle Rx */}
+      {hasRC && (
+        <div>
+          <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
+          <RxTable rows={[
+            { label: "SPH",      re: reRCp.sph,     le: leRCp.sph },
+            { label: "CYL",      re: reRCp.cyl,     le: leRCp.cyl },
+            { label: "AXIS",     re: reRCp.axis,    le: leRCp.axis },
+            { label: "Near SPH", re: reRCp.nearSph, le: leRCp.nearSph },
+            { label: "Near CYL", re: reRCp.nearCyl, le: leRCp.nearCyl },
+          ]} />
+        </div>
+      )}
+
+      {/* 7. Investigations */}
+      {hasInv && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
           <div className="space-y-0">
-            {followUpInv.map((o: any, i: number) => (
+            {investigations.map((o: any, i: number) => (
               <div key={i} className="flex items-start gap-0">
                 <span className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-500)] tabular-nums shrink-0">{i + 1}</span>
                 <p className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-700)] font-semibold">
@@ -455,17 +505,34 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* Spectacle Rx */}
-      {hasRC && (
-        <div>
-          <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
-          <RxTable rows={[
-            { label: "SPH",      re: reRCp.sph,     le: leRCp.sph },
-            { label: "CYL",      re: reRCp.cyl,     le: leRCp.cyl },
-            { label: "AXIS",     re: reRCp.axis,    le: leRCp.axis },
-            { label: "Near SPH", re: reRCp.nearSph, le: leRCp.nearSph },
-            { label: "Near CYL", re: reRCp.nearCyl, le: leRCp.nearCyl },
-          ]} />
+      {/* 8. Follow-up with in view of */}
+      {hasFollowUp && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Follow-up</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption text-[var(--color-ink-700)] font-semibold">
+            {new Date(emrData.followUpDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
+          {emrData.inViewOf && (
+            <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {emrData.inViewOf}</span>
+          )}
+        </div>
+      )}
+
+      {/* 9. Referral with in view of */}
+      {hasReferral && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <BookOpen size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Referral</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption text-[var(--color-ink-700)] font-semibold">
+            {emrData.referralNote || "Referred"}
+          </span>
         </div>
       )}
 

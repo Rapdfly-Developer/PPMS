@@ -201,6 +201,8 @@ const TS_STEPS: TsStep[] = [
   { key: "refractionCompletedAt",   label: "Refraction Done",   group: "clinical" },
   { key: "refractionPassedOverAt",  label: "Passed Over",       group: "clinical" },
   { key: "partialDispenseAt",       label: "Partial Dispense",  group: "dispense" },
+  { key: "dispensedAt",             label: "Consult. End",       group: "dispense" },
+  { key: "finalizedAt",             label: "Finalized",          group: "dispense" },
 ];
 
 function fmtDuration(fromIso: string | null, toIso: string | null): string | null {
@@ -301,7 +303,7 @@ export function VisitsListClient({
         <div className="flex flex-col lg:flex-row">
 
           {/* ── Left grey panel ─────────────────────────────────────── */}
-          <div className="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+          <div className="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-[var(--color-surface-sunken)] lg:max-h-[500px]">
 
             {/* Visit header */}
             <div className="px-4 py-3.5 border-b border-[var(--color-border)]">
@@ -333,19 +335,20 @@ export function VisitsListClient({
               )}
             </div>
 
-            {/* Calendar */}
-            <div className="p-3 overflow-y-auto lg:max-h-[320px] shrink-0">
-              <MiniCalendar
-                visits={visits}
-                noShowDates={noShowDates}
-                futureApptDates={futureApptDates}
-                selectedIdx={selectedIdx}
-                onSelect={setSelectedIdx}
-              />
-            </div>
-            {/* Timestamps — always visible below calendar */}
-            <div className="px-3 pb-3">
-              <TimestampSection ts={v.timestamps} isWalkIn={v.isWalkIn} />
+            {/* Calendar + Timestamps — scrollable together */}
+            <div className="overflow-y-auto flex-1 min-h-0">
+              <div className="p-3">
+                <MiniCalendar
+                  visits={visits}
+                  noShowDates={noShowDates}
+                  futureApptDates={futureApptDates}
+                  selectedIdx={selectedIdx}
+                  onSelect={setSelectedIdx}
+                />
+              </div>
+              <div className="px-3 pb-3">
+                <TimestampSection ts={v.timestamps} isWalkIn={v.isWalkIn} />
+              </div>
             </div>
 
             {/* Actions */}

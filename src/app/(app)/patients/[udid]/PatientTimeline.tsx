@@ -318,7 +318,7 @@ function CalendarGrid({
       </div>
 
       {/* Date cells */}
-      <div className="grid grid-cols-7 gap-y-0">
+      <div className="grid grid-cols-7 gap-1">
         {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`b-${i}`} />)}
         {days.map((day) => {
           const key        = format(day, "yyyy-MM-dd");
@@ -334,11 +334,11 @@ function CalendarGrid({
               disabled={!hasEvents}
               onClick={() => hasEvents && onSelectDate(key)}
               className={[
-                  "relative flex flex-col items-center justify-center w-full h-10 rounded-xl transition-all duration-150",
+                  "relative flex flex-col items-center justify-center w-full h-9 rounded-xl transition-all duration-150",
                   isSelected
-                    ? "bg-[var(--color-primary-600)] text-white shadow-md scale-105"
+                    ? "bg-[var(--color-primary-600)] text-white shadow-sm"
                     : hasEvents
-                    ? "bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] cursor-pointer shadow-sm"
+                    ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] cursor-pointer"
                     : "text-[var(--color-ink-300)] cursor-default",
                   isToday && !isSelected ? "ring-2 ring-[var(--color-primary-400)] ring-offset-1" : "",
                 ].join(" ")}
@@ -347,12 +347,12 @@ function CalendarGrid({
                   {format(day, "d")}
                 </span>
                 {hasEvents && (
-                  <div className="flex gap-[2px] mt-[3px]">
+                  <div className="flex gap-[3px] mt-[3px]">
                     {types.slice(0, 3).map((t) => (
                       <span
                         key={t}
-                        className="w-[5px] h-[5px] rounded-full shrink-0"
-                        style={{ background: isSelected ? "rgba(255,255,255,0.75)" : EVENT_CFG[t].dotHex }}
+                        className="w-[4px] h-[4px] rounded-full shrink-0"
+                        style={{ background: isSelected ? "rgba(255,255,255,0.8)" : EVENT_CFG[t].dotHex }}
                       />
                     ))}
                   </div>
@@ -370,7 +370,7 @@ function CalendarGrid({
         >
           Today
         </button>
-        <div className="flex flex-wrap gap-x-2.5 gap-y-1 justify-end">
+        <div className="flex flex-wrap gap-x-2 gap-y-1 justify-end">
           {LEGEND_TYPES.map((t) => (
             <span key={t} className="flex items-center gap-1 text-[9px] font-medium text-[var(--color-ink-400)]">
               <span className="size-1.5 rounded-full inline-block shrink-0" style={{ background: EVENT_CFG[t].dotHex }} />
