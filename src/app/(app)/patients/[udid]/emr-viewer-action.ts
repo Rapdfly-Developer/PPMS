@@ -20,6 +20,8 @@ export async function getVisitEmrData(visitId: string) {
       diagnoses:         { orderBy: { createdAt: "asc" } },
       medications:       { orderBy: { createdAt: "asc" } },
       investigationOrders: { orderBy: { createdAt: "asc" } },
+      tearFilm:            true,
+      lacrimalSac:         true,
     },
   });
   if (!visit) return null;

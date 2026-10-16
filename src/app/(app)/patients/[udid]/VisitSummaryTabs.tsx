@@ -673,6 +673,8 @@ function LongContent({
   const iop = data.iopReadings as any[] | undefined;
   const ant = data.anteriorSegment;
   const pos = data.posteriorSegment;
+  const tf  = data.tearFilm;
+  const ls  = data.lacrimalSac;
 
   // pastMedicalHistory is stored as PmhEntry[] ({name,sinceNum,sinceUnit}) by the
   // EMR tab. Older records may be bare string[]. Normalise both to {name, since?}.
@@ -682,49 +684,97 @@ function LongContent({
     typeof item === "string" ? { name: item } : { name: (item as any).name ?? "", sinceNum: (item as any).sinceNum, sinceUnit: (item as any).sinceUnit }
   ).filter((e) => e.name) : [];
 
-  // Parse RE/LE JSON once so guards can check actual field values, not raw strings.
-  const reVAp   = va  ? parseJSON<Record<string, string>>(va.re,  {}) : {};
-  const leVAp   = va  ? parseJSON<Record<string, string>>(va.le,  {}) : {};
-  const reRCp   = rc  ? parseJSON<Record<string, string>>(rc.re,  {}) : {};
-  const leRCp   = rc  ? parseJSON<Record<string, string>>(rc.le,  {}) : {};
-  const reCVraw = cv  ? parseJSON<Record<string, string>>(cv.re,  {}) : {};
-  const leCVraw = cv  ? parseJSON<Record<string, string>>(cv.le,  {}) : {};
+  // VA
+  const reVAp = va ? parseJSON<Record<string, string>>(va.re, {}) : {};
+  const leVAp = va ? parseJSON<Record<string, string>>(va.le, {}) : {};
 
-  // Format colour vision: "Ishihara: 16/17" or just the result string.
+  // Colour vision + contrast sensitivity (both live in colourVisionCS.re / .le JSON)
+  const reCVraw = cv ? parseJSON<Record<string, string>>(cv.re, {}) : {};
+  const leCVraw = cv ? parseJSON<Record<string, string>>(cv.le, {}) : {};
   const fmtCV = (eye: Record<string, string>) =>
     eye.result ? (eye.cvMethod ? `${eye.cvMethod}: ${eye.result}` : eye.result) : null;
   const reCVResult = fmtCV(reCVraw);
   const leCVResult = fmtCV(leCVraw);
+  const fmtCS = (eye: Record<string, string>) =>
+    (eye as any).csResult ? ((eye as any).csMethod ? `${(eye as any).csMethod}: ${(eye as any).csResult}` : (eye as any).csResult) : null;
+  const reCSResult = fmtCS(reCVraw);
+  const leCSResult = fmtCS(leCVraw);
+  const csNotes = (reCVraw as any).csNotes || (leCVraw as any).csNotes || null;
+
+  // Multi-method refraction: handles v1 (flat re/le) and v2 ({_v:2, methods:{...}})
+  type CorrEntry = { label: string; method?: string; re: Record<string, string>; le: Record<string, string> };
+  function parseCorrections(rx: any): CorrEntry[] {
+    if (!rx) return [];
+    const res: CorrEntry[] = [];
+    const reRaw = parseJSON<any>(rx.re, {});
+    if (reRaw._v === 2) {
+      const methods = reRaw.methods ?? {};
+      Object.entries(methods as Record<string, any>).forEach(([method, entry]) => {
+        if (Object.values((entry as any).re || {}).some(Boolean))
+          res.push({ label: "Correction 1", method, re: (entry as any).re || {}, le: (entry as any).le || {} });
+      });
+    } else if (Object.values(reRaw).some((v: any) => v)) {
+      res.push({ label: "Correction 1", method: reRaw.method, re: reRaw, le: parseJSON<any>(rx.le, {}) });
+    }
+    const extras = parseJSON<any[]>(rx.extraCorrections, []);
+    extras.forEach((ex: any) => {
+      if (ex._v === 2) {
+        const methods = ex.methods ?? {};
+        Object.entries(methods as Record<string, any>).forEach(([method, entry]) => {
+          if (Object.values((entry as any).re || {}).some(Boolean))
+            res.push({ label: ex.label || "Extra Correction", method, re: (entry as any).re || {}, le: (entry as any).le || {} });
+        });
+      } else {
+        if (Object.values(ex.re || {}).some(Boolean))
+          res.push({ label: ex.label || "Extra Correction", method: ex.re?.method, re: ex.re || {}, le: ex.le || {} });
+      }
+    });
+    return res;
+  }
+  const corrections = parseCorrections(rc);
+
+  // Gonioscopy (Visit scalar: gonioNotes JSON {re, le, reDeg, leDeg, method})
+  const gonioRaw = parseJSON<{ re?: string; le?: string; reDeg?: string; leDeg?: string; method?: string }>(data.gonioNotes, {});
+  const hasGonio = !!(gonioRaw.re || gonioRaw.le);
+
+  // Lacrimal sac syringing
+  const parseLacrimal = (raw: string | null | undefined) => {
+    const p = parseJSON<any>(raw, {});
+    return Array.isArray(p) ? { chips: p as string[], freeText: "" } : { chips: (p.chips ?? []) as string[], freeText: (p.freeText ?? "") as string };
+  };
+  const lsRe = parseLacrimal(ls?.re);
+  const lsLe = parseLacrimal(ls?.le);
 
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
-  const hasPMH      = pmhList.length > 0 || g?.pmhOtherText || g?.allergies || g?.familyHistory;
+  const hasPMH      = pmhList.length > 0 || g?.pmhOtherText || g?.allergies || g?.nkda;
   const hasDiag     = data.diagnoses?.length > 0;
   const hasMeds     = data.medications?.length > 0;
   const hasInv      = data.investigationOrders?.length > 0;
-  // VA: check parsed values, not raw JSON strings (empty object = truthy string but no data).
-  const hasVA = Object.values({ ...reVAp, ...leVAp }).some((v) => v && v !== "");
-  // Refraction: same guard.
-  const hasRC = Object.values({ ...reRCp, ...leRCp }).some((v) => v && v !== "");
-  // Colour vision: only show if at least one side has a non-empty result.
-  const hasCV = !!(reCVResult || leCVResult);
+  const hasVA       = Object.values({ ...reVAp, ...leVAp }).some((v) => v && v !== "");
+  const hasRC       = corrections.length > 0;
+  const hasCV       = !!(reCVResult || leCVResult);
+  const hasCS       = !!(reCSResult || leCSResult);
   const hasIOP      = iop && iop.length > 0;
+  const hasTear     = !!(tf && (tf.tbutRe != null || tf.tbutLe != null || tf.schirmer1Re != null || tf.schirmer1Le != null || tf.schirmer2Re != null || tf.schirmer2Le != null));
+  const hasLacrimal = !!(lsRe.chips.length || lsRe.freeText || lsLe.chips.length || lsLe.freeText);
+  const hasProc     = !!data.procedureName;
   const antReParsed = ant ? parsedEyeSegment(ant.re) : null;
   const antLeParsed = ant ? parsedEyeSegment(ant.le) : null;
   const hasAnt      = !!(antReParsed || antLeParsed);
   const posReParsed = pos ? parsedEyeSegment(pos.re) : null;
   const posLeParsed = pos ? parsedEyeSegment(pos.le) : null;
   const hasPost     = !!(pos && (posReParsed || posLeParsed || pos.notes));
-  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasIOP || hasAnt || hasPost;
-  const hasFollowUp = !!(data.followUpDate || data.advice || data.referral);
+  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost;
+  const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
 
-  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasIOP && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp;
+  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
   if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
 
   const vitals = [
     ["BP", g?.bp],
     ["Pulse", g?.pulse],
     ["Weight", g?.weight],
-    ["Temperature", g?.temperature],
+    ["Temp", g?.temperature],
   ].filter(([, v]) => !!v) as [string, string][];
 
   return (
@@ -740,8 +790,8 @@ function LongContent({
           )}
 
           {g?.chiefComplaint && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1.5">Chief Complaint</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint ·</span>
               <ComplaintChips value={g.chiefComplaint} wrap />
             </div>
           )}
@@ -755,7 +805,7 @@ function LongContent({
         </LongSection>
       )}
 
-      {/* ── 1b. Past Medical History / Allergies ─────────────────────── */}
+      {/* ── 2. Past Medical History / Allergies ──────────────────────── */}
       {hasPMH && (
         <LongSection head={<SumHead icon={<BookOpen size={11} />} label="Past Medical History" />}>
           {pmhList.length > 0 && (
@@ -773,40 +823,32 @@ function LongContent({
               )}
             </div>
           )}
-          {g?.allergies && (
+          {(g?.allergies || g?.nkda) && (
             <div>
               <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Allergies</p>
-              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
-                {g.nkda ? <span className="text-green-700 font-medium">NKDA</span> : g.allergies}
+              <p className="text-caption sm:text-caption">
+                {g.nkda ? <span className="text-green-700 font-medium">NKDA</span> : <span className="text-red-600 font-bold">{g.allergies}</span>}
               </p>
-            </div>
-          )}
-          {g?.familyHistory && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Family History</p>
-              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{g.familyHistory}</p>
             </div>
           )}
         </LongSection>
       )}
 
-      {/* ── 2. Examination Findings ───────────────────────────────────── */}
+      {/* ── 3. Examination Findings ───────────────────────────────────── */}
       {hasExam && (
         <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-teal-500" />}>
 
           {hasVitals && (
             <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
-              <DataTable minWidth={260}>
-                <Cols widths={COLS_PAIR} />
-                <tbody>
-                  {vitals.map(([k, v]) => (
-                    <tr key={k}>
-                      <td className={TD_MUTED}>{k}</td>
-                      <td className={`${TD} font-medium`}>{v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </DataTable>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
+                {vitals.map(([k, v], i) => (
+                  <span key={k}>
+                    {i > 0 && <span className="mx-1.5 text-[var(--color-ink-300)]">·</span>}
+                    <span className="text-[var(--color-ink-400)]">{k}:</span>{" "}
+                    <span className="font-medium">{v}</span>
+                  </span>
+                ))}
+              </p>
             </Block>
           )}
 
@@ -816,65 +858,139 @@ function LongContent({
                 <Cols widths={COLS_EYE} />
                 <EyeHead />
                 <tbody>
-                  <EyeRow label="Distance Unaided"   re={reVAp.unaided}       le={leVAp.unaided} />
-                  <EyeRow label="Distance Pinhole"   re={reVAp.pinhole}       le={leVAp.pinhole} />
-                  <EyeRow label="Best Corrected"     re={reVAp.bestCorrected} le={leVAp.bestCorrected} />
-                  <EyeRow label="Near Unaided"       re={reVAp.nearUnaided}   le={leVAp.nearUnaided} />
+                  <EyeRow label="Distance Unaided"    re={reVAp.unaided}           le={leVAp.unaided} />
+                  <EyeRow label="Distance Pinhole"    re={reVAp.pinhole}           le={leVAp.pinhole} />
+                  <EyeRow label="Best Corrected"      re={reVAp.bestCorrected}     le={leVAp.bestCorrected} />
+                  <EyeRow label="Near Unaided"        re={reVAp.nearUnaided}       le={leVAp.nearUnaided} />
                   <EyeRow label="Near Best Corrected" re={reVAp.nearBestCorrected} le={leVAp.nearBestCorrected} />
                 </tbody>
               </DataTable>
             </Block>
           )}
 
-          {hasIOP && (
-            <Block label="Intraocular Pressure">
-              <DataTable>
-                <Cols widths={COLS_EYE} />
-                <thead>
-                  <tr>
-                    <th className={TH}>Method</th>
-                    <th className={TH}>RE (mmHg)</th>
-                    <th className={TH}>LE (mmHg)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {iop!.map((r: any, i: number) => (
-                    <tr key={i}>
-                      <td className={TD_MUTED}>{r.method || "—"}</td>
-                      <td className={`${TD} font-medium`}>{r.re || DASH}</td>
-                      <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+          {hasRC && corrections.map((c, i) => (
+            <Block key={i} label={c.method ? `${c.label} · ${c.method}` : c.label}>
+              <RxTable rows={[
+                { label: "SPH",      re: c.re.sph,     le: c.le.sph },
+                { label: "CYL",      re: c.re.cyl,     le: c.le.cyl },
+                { label: "AXIS",     re: c.re.axis,    le: c.le.axis },
+                { label: "Near SPH", re: c.re.nearSph, le: c.le.nearSph },
+                { label: "Near CYL", re: c.re.nearCyl, le: c.le.nearCyl },
+              ]} />
+            </Block>
+          ))}
+
+          {(hasCV || hasCS) && (
+            <Block label="Colour &amp; Contrast Sensitivity">
+              {hasCV && (
+                <DataTable minWidth={260}>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead first="Colour Vision" />
+                  <tbody>
+                    <EyeRow label="Result" re={reCVResult} le={leCVResult} />
+                    {(reCVraw as any).notes && (
+                      <tr>
+                        <td className={TD_MUTED}>Notes</td>
+                        <td colSpan={2} className={TD}>{(reCVraw as any).notes}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </DataTable>
+              )}
+              {hasCS && (
+                <DataTable minWidth={260}>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead first="Contrast Sensitivity" />
+                  <tbody>
+                    <EyeRow label="Result" re={reCSResult} le={leCSResult} />
+                    {csNotes && (
+                      <tr>
+                        <td className={TD_MUTED}>Notes</td>
+                        <td colSpan={2} className={TD}>{csNotes}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </DataTable>
+              )}
+            </Block>
+          )}
+
+          {(hasIOP || hasGonio) && (
+            <Block label={hasIOP && hasGonio ? "IOP &amp; Gonioscopy" : hasIOP ? "Intraocular Pressure" : "Gonioscopy"}>
+              {hasIOP && (
+                <DataTable>
+                  <Cols widths={COLS_EYE} />
+                  <thead>
+                    <tr>
+                      <th className={TH}>Method</th>
+                      <th className={TH}>RE (mmHg)</th>
+                      <th className={TH}>LE (mmHg)</th>
                     </tr>
-                  ))}
+                  </thead>
+                  <tbody>
+                    {iop!.map((r: any, i: number) => (
+                      <tr key={i}>
+                        <td className={TD_MUTED}>{r.method || "—"}</td>
+                        <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                        <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              )}
+              {hasGonio && (
+                <DataTable minWidth={260}>
+                  <Cols widths={COLS_EYE} />
+                  <EyeHead first="Gonioscopy" />
+                  <tbody>
+                    {gonioRaw.method && (
+                      <tr>
+                        <td className={TD_MUTED}>Method</td>
+                        <td colSpan={2} className={TD}>{gonioRaw.method}</td>
+                      </tr>
+                    )}
+                    <EyeRow
+                      label="Findings"
+                      re={([gonioRaw.re, gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
+                      le={([gonioRaw.le, gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
+                    />
+                  </tbody>
+                </DataTable>
+              )}
+            </Block>
+          )}
+
+          {hasTear && (
+            <Block label="Tear Film">
+              <DataTable minWidth={260}>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  {(tf.tbutRe != null || tf.tbutLe != null) && (
+                    <EyeRow label="TBUT (sec)" re={tf.tbutRe != null ? String(tf.tbutRe) : null} le={tf.tbutLe != null ? String(tf.tbutLe) : null} />
+                  )}
+                  {(tf.schirmer1Re != null || tf.schirmer1Le != null) && (
+                    <EyeRow label="Schirmer&apos;s 1 (mm)" re={tf.schirmer1Re != null ? String(tf.schirmer1Re) : null} le={tf.schirmer1Le != null ? String(tf.schirmer1Le) : null} />
+                  )}
+                  {(tf.schirmer2Re != null || tf.schirmer2Le != null) && (
+                    <EyeRow label="Schirmer&apos;s 2 (mm)" re={tf.schirmer2Re != null ? String(tf.schirmer2Re) : null} le={tf.schirmer2Le != null ? String(tf.schirmer2Le) : null} />
+                  )}
                 </tbody>
               </DataTable>
             </Block>
           )}
 
-          {hasRC && (
-            <Block label="Refraction / Spectacle Rx">
-              <RxTable rows={[
-                { label: "SPH",      re: reRCp.sph,     le: leRCp.sph },
-                { label: "CYL",      re: reRCp.cyl,     le: leRCp.cyl },
-                { label: "AXIS",     re: reRCp.axis,    le: leRCp.axis },
-                { label: "Near SPH", re: reRCp.nearSph, le: leRCp.nearSph },
-                { label: "Near CYL", re: reRCp.nearCyl, le: leRCp.nearCyl },
-              ]} />
-            </Block>
-          )}
-
-          {hasCV && (
-            <Block label="Colour Vision">
+          {hasLacrimal && (
+            <Block label="Lacrimal Sac Syringing">
               <DataTable minWidth={260}>
                 <Cols widths={COLS_EYE} />
                 <EyeHead />
                 <tbody>
-                  <EyeRow label="Result" re={reCVResult} le={leCVResult} />
-                  {cv.notes && (
-                    <tr>
-                      <td className={TD_MUTED}>Notes</td>
-                      <td colSpan={2} className={TD}>{cv.notes}</td>
-                    </tr>
-                  )}
+                  <EyeRow
+                    label="Findings"
+                    re={([lsRe.chips.join(", "), lsRe.freeText].filter(Boolean).join(" · ")) || null}
+                    le={([lsLe.chips.join(", "), lsLe.freeText].filter(Boolean).join(" · ")) || null}
+                  />
                 </tbody>
               </DataTable>
             </Block>
@@ -935,7 +1051,7 @@ function LongContent({
         </LongSection>
       )}
 
-      {/* ── 3. Diagnosis ──────────────────────────────────────────────── */}
+      {/* ── 4. Diagnosis ──────────────────────────────────────────────── */}
       {hasDiag && (
         <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />}>
           <div className="flex flex-col gap-1.5">
@@ -957,39 +1073,51 @@ function LongContent({
         </LongSection>
       )}
 
-      {/* ── 4. Treatment Plan / Medications ───────────────────────────── */}
-      {hasMeds && (
-        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-teal-500" />}>
-          <div className="flex flex-col divide-y divide-[var(--color-border)]">
-            {data.medications.map((m: any, i: number) => (
-              <div key={i} className="flex items-start gap-2.5 py-2 first:pt-0 last:pb-0">
-                <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium w-4 shrink-0 mt-0.5 tabular-nums">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug">
-                    {m.laterality && (
-                      <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>
-                    )}
-                    {m.drugName}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 mt-0.5">
-                    {m.dosage && <span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.dosage}</span>}
-                    {m.route && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.route}</span></>}
-                    {m.frequency && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.frequency}</span></>}
-                    {m.duration && <><span className="text-[var(--color-ink-300)] text-caption">·</span><span className="text-caption sm:text-caption text-[var(--color-ink-500)]">{m.duration}</span></>}
-                  </div>
-                  {m.instructions && (
-                    <p className="text-caption sm:text-caption text-[var(--color-ink-500)] italic mt-0.5">{m.instructions}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* ── 5. Minor Procedure ────────────────────────────────────────── */}
+      {hasProc && (
+        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Minor Procedure" />}>
+          <div>
+            <p className="text-caption font-semibold text-[var(--color-ink-800)]">
+              {data.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.procedureLaterality}</span>}
+              {data.procedureName}
+            </p>
+            {data.procedureNotes && (
+              <p className="text-caption sm:text-caption text-[var(--color-ink-500)] italic mt-0.5 leading-relaxed">{data.procedureNotes}</p>
+            )}
           </div>
         </LongSection>
       )}
 
-      {/* ── 5. Investigations / Follow-Up ─────────────────────────────── */}
+      {/* ── 6. Treatment Plan / Medications ───────────────────────────── */}
+      {hasMeds && (
+        <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-teal-500" />}>
+          <DataTable minWidth={360}>
+            <Cols widths={["6%", "36%", "16%", "24%", "18%"]} />
+            <tbody>
+              {data.medications.map((m: any, i: number) => (
+                <tr key={i}>
+                  <td className={TD_MUTED}>{i + 1}</td>
+                  <td className={`${TD} font-semibold`}>
+                    <div>
+                      {m.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>}
+                      {m.drugName}
+                      {m.route && <span className="font-normal text-[var(--color-ink-400)] ml-1">· {m.route}</span>}
+                    </div>
+                    {m.instructions && <div className="font-normal italic text-[var(--color-ink-400)] text-micro mt-0.5">{m.instructions}</div>}
+                  </td>
+                  <td className={TD_MUTED}>{m.dosage || DASH}</td>
+                  <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </LongSection>
+      )}
+
+      {/* ── 7. Investigations ─────────────────────────────────────────── */}
       {hasInv && (
-        <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations &amp; Follow-Up" color="text-teal-500" />}>
+        <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations" color="text-teal-500" />}>
           <div className="flex flex-col divide-y divide-[var(--color-border)]">
             {data.investigationOrders.map((o: any, i: number) => (
               <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
@@ -1013,7 +1141,7 @@ function LongContent({
         </LongSection>
       )}
 
-      {/* ── 6. Follow-Up & Advice ──────────────────────────────────────── */}
+      {/* ── 8. Follow-Up, Advice &amp; Referral ───────────────────────── */}
       {hasFollowUp && (
         <LongSection head={<SumHead icon={<CalendarCheck size={11} />} label="Follow-Up &amp; Advice" color="text-emerald-600" />}>
           {data.followUpDate && (
@@ -1021,19 +1149,20 @@ function LongContent({
               <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Follow-Up Date</p>
               <p className="text-caption sm:text-caption font-medium text-[var(--color-ink-800)]">
                 {new Date(data.followUpDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+                {data.inViewOf && <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {data.inViewOf}</span>}
               </p>
             </div>
           )}
-          {data.advice && (
+          {data.adviseNotes && (
             <div>
               <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice</p>
-              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.advice}</p>
+              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.adviseNotes}</p>
             </div>
           )}
-          {data.referral && (
+          {data.referralEnabled && (
             <div>
               <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Referral</p>
-              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{data.referral}</p>
+              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{data.referralNote || "Referred"}</p>
             </div>
           )}
         </LongSection>
