@@ -158,7 +158,7 @@ export default async function PatientsPage({
   const patientInclude = {
     registeredAt: { select: { name: true } },
     visits: {
-      where: { appointment: { is: { status: "DISPENSED" } } },
+      where: { appointment: { is: { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
       orderBy: { date: "desc" as const },
       take: 1,
       select: {
@@ -213,19 +213,19 @@ export default async function PatientsPage({
     recentReg,
     noShowReg,
   ] = await Promise.all([
-    // All-time dispensed: completed at least one consultation ever AND not currently in queue today
+    // All-time dispensed: doctor-finalized consultation ever AND not currently in queue today
     prisma.patient.count({
       where: {
         AND: [
           ...scopeConds,
-          { appointments: { some:  { status: "DISPENSED" } } },
+          { appointments: { some:  { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
           { appointments: { none:  { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: today, lte: todayEnd } } } },
         ],
       },
     }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
     prisma.patient.count({
-      where: { AND: [...scopeConds, { visits: { some: { finalizedAt: { gte: today, lte: todayEnd }, appointment: { status: "DISPENSED" } } } }] },
+      where: { AND: [...scopeConds, { visits: { some: { finalizedAt: { gte: today, lte: todayEnd }, appointment: { status: "DISPENSED", consultationStatus: "FINALIZED" } } } }] },
     }),
     prisma.patient.groupBy({
       by:    ["category"],
@@ -243,18 +243,20 @@ export default async function PatientsPage({
       take:    6,
       select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
     }),
-    // No-show registry: past appointments where consultation never started
-    // (no Visit record created) and the appointment was not cancelled or rescheduled.
+    // No-show registry: past appointments where the patient came (visit created)
+    // but the doctor never finalized the consultation.
     prisma.appointment.findMany({
       where: {
         ...apptScope,
-        visit:    null,
+        visit:    { isNot: null },
         dateTime: { lt: today },
-        status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
+        status:   { notIn: ["CANCELLED", "RESCHEDULED", "PARTIAL_DISPENSE"] },
+        consultationStatus: { not: "FINALIZED" },
       },
       include: {
         patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
         hospital: { select: { name: true } },
+        visit:    { select: { id: true } },
       },
       orderBy: { dateTime: "desc" as const },
     }),
@@ -299,6 +301,7 @@ export default async function PatientsPage({
     photoUrl:      p.photoUrl ?? null,
     dispensedApptId: (
       p.visits[0]?.appointment?.status === "DISPENSED" &&
+      p.visits[0]?.appointment?.consultationStatus === "FINALIZED" &&
       p.visits[0]?.finalizedAt != null
     ) ? (p.visits[0].appointment?.id ?? null) : null,
     diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null })) ?? [],
@@ -326,6 +329,7 @@ export default async function PatientsPage({
     // visit would inherit if a visit record exists.
     visitType:     a.visitType,
     hospitalName:  a.hospital?.name ?? null,
+    visitStarted:  !!a.visit,
     chiefComplaint: null,
     diagnoses:     [],
     patient: {

@@ -55,6 +55,7 @@ export interface NoShowRegRow {
   isWalkIn: boolean;
   visitType: string;
   hospitalName: string | null;
+  visitStarted: boolean;
   chiefComplaint: string | null;
   diagnoses: { description: string; laterality?: string | null }[];
   patient: { name: string; udid: string; uhid: string; age: number; sex: string; mobile: string | null; photoUrl: string | null };
@@ -941,7 +942,12 @@ export function PatientsClient({
                         <div className="space-y-0.5">
                           {opStatusFilter === "noshowreg" ? (
                             noShowRow ? (
-                              <p className="text-sm font-bold text-amber-600 text-center">{noShowExtras}</p>
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">Incomplete visit</span>
+                                {noShowExtras > 1 && (
+                                  <span className="text-micro font-bold text-[var(--color-ink-400)]">+{noShowExtras - 1} more</span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>
                             )
