@@ -797,13 +797,8 @@ function LongContent({
     <div className="space-y-4">
 
       {/* ── 1. Visit Details ──────────────────────────────────────────── */}
-      {(data.visitType || g?.chiefComplaint || g?.hpi) && (
+      {(g?.chiefComplaint || g?.hpi) && (
         <div className="space-y-3">
-          {data.visitType && (
-            <span className="inline-block px-2 py-0.5 rounded-full text-caption sm:text-caption font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">
-              {data.visitType}
-            </span>
-          )}
           {g?.chiefComplaint && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="flex items-center gap-1.5 shrink-0">
@@ -841,13 +836,13 @@ function LongContent({
                 {pmhList.map((item, i) => {
                   const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
                   return (
-                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">
+                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-caption sm:text-caption font-medium">
                       {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
                     </span>
                   );
                 })}
                 {g.pmhOtherText && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
                 )}
               </div>
             </div>
