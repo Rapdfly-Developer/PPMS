@@ -611,18 +611,6 @@ export function VisitDownloadButton({ visitId, udid }: { visitId: string; udid: 
                 <p className="text-xs text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
               </div>
             </button>
-            <div className="border-t border-[var(--color-border)]" />
-            <button
-              type="button"
-              onClick={handleCustomPrint}
-              className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-            >
-              <FileText size={14} className="text-[var(--color-primary-600)] shrink-0" />
-              <div>
-                <p className="font-medium">Custom Print</p>
-                <p className="text-xs text-[var(--color-ink-400)]">Choose sections to include</p>
-              </div>
-            </button>
           </div>
         )}
       </div>

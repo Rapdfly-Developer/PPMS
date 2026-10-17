@@ -301,7 +301,7 @@ export function VisitsListClient({
         <div className="flex flex-col lg:flex-row">
 
           {/* ── Left grey panel ─────────────────────────────────────── */}
-          <div className="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-[var(--color-surface-sunken)] lg:max-h-[500px]">
+          <div className="lg:w-72 xl:w-80 shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
 
             {/* Visit header */}
             <div className="px-4 py-3.5 border-b border-[var(--color-border)]">
@@ -333,8 +333,8 @@ export function VisitsListClient({
               )}
             </div>
 
-            {/* Calendar + Timestamps — scrollable together */}
-            <div className="overflow-y-auto flex-1 min-h-0">
+            {/* Calendar + Timestamps */}
+            <div className="flex-1">
               <div className="p-3">
                 <MiniCalendar
                   visits={visits}

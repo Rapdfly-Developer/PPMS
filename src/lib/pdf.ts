@@ -80,7 +80,7 @@ function fmtEndDatePdf(d: Date): string {
 }
 
 /**
- * Returns {html, days}: html is "3 days<br/><small>(until 8 Oct 2026)</small>" when parseable,
+ * Returns {html, days}: html is "3 days — until 8 Oct 2026" when parseable,
  * otherwise just the escaped duration. days is the parsed integer or null.
  */
 function durCellPdf(durationStr: string | null | undefined, startDate: Date): { html: string; days: number | null } {
@@ -91,7 +91,7 @@ function durCellPdf(durationStr: string | null | undefined, startDate: Date): { 
   if (days === null) return { html: escapeHtml(durationStr), days: null };
   const end = addDaysPdf(startDate, days - 1);
   return {
-    html: `${escapeHtml(durationStr)}<br/><span style="font-size:7.5px;color:#777;">(until ${fmtEndDatePdf(end)})</span>`,
+    html: `${escapeHtml(durationStr)} - ${fmtEndDatePdf(end)}`,
     days,
   };
 }

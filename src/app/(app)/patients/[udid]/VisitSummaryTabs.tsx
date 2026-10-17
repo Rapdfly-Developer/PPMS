@@ -461,7 +461,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
                   </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                  <td className={TD_MUTED}>{formatDurWithDate(m.duration, emrData?.date)}</td>
                 </tr>
               ))}
             </tbody>
@@ -612,6 +612,20 @@ function parseJSON<T>(val: string | null | undefined, fallback: T): T {
   try { const p = val ? JSON.parse(val) : fallback; return p ?? fallback; } catch { return fallback; }
 }
 
+const _DUR_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function formatDurWithDate(duration: string | null | undefined, visitDateStr: string | null | undefined): string {
+  if (!duration || !duration.trim()) return "—";
+  const m = duration.trim().match(/^(\d+)\s*(day|days|week|weeks|month|months|year|years)$/i);
+  if (!m || !visitDateStr) return duration;
+  const n = parseInt(m[1], 10);
+  const u = m[2].toLowerCase().replace(/s$/, "");
+  const multiplier: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
+  if (!(u in multiplier)) return duration;
+  const end = new Date(visitDateStr);
+  end.setDate(end.getDate() + n * multiplier[u] - 1);
+  return `${duration} - ${end.getDate()} ${_DUR_MONTHS[end.getMonth()]} ${end.getFullYear()}`;
+}
+
 /** Returns the parsed object if it has at least one truthy value; otherwise returns null. */
 function parsedEyeSegment(raw: string | null | undefined): Record<string, unknown> | null {
   const p = parseJSON<Record<string, unknown>>(raw, {});
@@ -643,13 +657,11 @@ class LongContentBoundary extends Component<{ children: ReactNode }, { error: st
 
 
 /* ─── Section group wrapper for Long Summary ─── */
-function LongSection({ head, color, children }: { head: React.ReactNode; color?: string; children: React.ReactNode }) {
+function LongSection({ head, children }: { head: React.ReactNode; color?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
-      <div className={`px-3 py-2 border-b border-[var(--color-border)] ${color ?? "bg-[var(--color-surface-sunken)]"}`}>
-        {head}
-      </div>
-      <div className="px-3 py-3 space-y-3 bg-white">
+    <div>
+      {head}
+      <div className="space-y-3">
         {children}
       </div>
     </div>
@@ -779,60 +791,75 @@ function LongContent({
   ].filter(([, v]) => !!v) as [string, string][];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
 
       {/* ── 1. Visit Details ──────────────────────────────────────────── */}
       {(data.visitType || g?.chiefComplaint || g?.hpi) && (
-        <LongSection head={<SumHead icon={<ClipboardList size={11} />} label="Visit Details" />}>
+        <div className="space-y-3">
           {data.visitType && (
             <span className="inline-block px-2 py-0.5 rounded-full text-caption sm:text-caption font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">
               {data.visitType}
             </span>
           )}
-
           {g?.chiefComplaint && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint ·</span>
+              <span className="flex items-center gap-1.5 shrink-0">
+                <FileText size={11} className="text-[var(--color-ink-400)]" />
+                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
+                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+              </span>
               <ComplaintChips value={g.chiefComplaint} wrap />
             </div>
           )}
-
           {g?.hpi && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">History of Present Illness</p>
-              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</p>
+            <div className="flex items-start gap-2 flex-wrap">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
+                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
+                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+              </span>
+              <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</span>
             </div>
           )}
-        </LongSection>
+        </div>
       )}
 
       {/* ── 2. Past Medical History / Allergies ──────────────────────── */}
       {hasPMH && (
-        <LongSection head={<SumHead icon={<BookOpen size={11} />} label="Past Medical History" />}>
+        <div className="space-y-3">
           {pmhList.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {pmhList.map((item, i) => {
-                const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
-                return (
-                  <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">
-                    {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
-                  </span>
-                );
-              })}
-              {g.pmhOtherText && (
-                <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
-              )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <BookOpen size={11} className="text-[var(--color-ink-400)]" />
+                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Past Medical History</span>
+                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {pmhList.map((item, i) => {
+                  const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
+                  return (
+                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">
+                      {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
+                    </span>
+                  );
+                })}
+                {g.pmhOtherText && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-orange-50 border border-orange-200 text-orange-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
+                )}
+              </div>
             </div>
           )}
           {(g?.allergies || g?.nkda) && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Allergies</p>
-              <p className="text-caption sm:text-caption">
-                {g.nkda ? <span className="text-green-700 font-medium">NKDA</span> : <span className="text-red-600 font-bold">{g.allergies}</span>}
-              </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <AlertCircle size={11} className="text-red-600" />
+                <span className="text-micro font-bold uppercase tracking-[0.16em] text-red-600">Allergies</span>
+                <span className="text-micro font-bold text-red-300">·</span>
+              </span>
+              {g.nkda ? <span className="text-caption text-green-700 font-medium">NKDA</span> : <span className="text-caption text-red-600 font-bold">{g.allergies}</span>}
             </div>
           )}
-        </LongSection>
+        </div>
       )}
 
       {/* ── 3. Examination Findings ───────────────────────────────────── */}
@@ -1054,40 +1081,45 @@ function LongContent({
 
       {/* ── 4. Diagnosis ──────────────────────────────────────────────── */}
       {hasDiag && (
-        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Diagnosis" color="clinical-diagnosis-text" />}>
-          <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Stethoscope size={11} className="clinical-diagnosis-text" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Diagnosis</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
             {[...data.diagnoses]
               .sort((a: any, b: any) => {
                 const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
                 return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
               })
               .map((d: any, i: number) => (
-                <div key={i} className="py-1 border-b border-[var(--color-border)] last:border-0">
-                  <span className="clinical-diagnosis-text text-caption sm:text-caption">
-                    {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal mr-1">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
-                    {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
-                    {d.description}
-                    {d.icd10Code && <span className="font-mono text-micro text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}
-                  </span>
-                </div>
+                <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                  {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
+                  <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
+                  {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}
+                  {d.description}
+                  {d.icd10Code && <span className="font-mono text-micro text-[var(--color-ink-400)] ml-1">{d.icd10Code}</span>}
+                </span>
               ))}
           </div>
-        </LongSection>
+        </div>
       )}
 
       {/* ── 5. Minor Procedure ────────────────────────────────────────── */}
       {hasProc && (
-        <LongSection head={<SumHead icon={<Stethoscope size={11} />} label="Minor Procedure" />}>
-          <div>
-            <p className="text-caption font-semibold text-[var(--color-ink-800)]">
-              {data.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.procedureLaterality}</span>}
-              {data.procedureName}
-            </p>
-            {data.procedureNotes && (
-              <p className="text-caption sm:text-caption text-[var(--color-ink-500)] italic mt-0.5 leading-relaxed">{data.procedureNotes}</p>
-            )}
-          </div>
-        </LongSection>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Stethoscope size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Minor Procedure</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption font-semibold text-[var(--color-ink-800)]">
+            {data.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.procedureLaterality}</span>}
+            {data.procedureName}
+            {data.procedureNotes && <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {data.procedureNotes}</span>}
+          </span>
+        </div>
       )}
 
       {/* ── 6. Treatment Plan / Medications ───────────────────────────── */}
@@ -1109,7 +1141,7 @@ function LongContent({
                   </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                  <td className={TD_MUTED}>{formatDurWithDate(m.duration, data?.date)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1144,30 +1176,40 @@ function LongContent({
       )}
 
       {/* ── 8. Follow-Up, Advice &amp; Referral ───────────────────────── */}
-      {hasFollowUp && (
-        <LongSection head={<SumHead icon={<CalendarCheck size={11} />} label="Follow-Up &amp; Advice" color="text-emerald-600" />}>
-          {data.followUpDate && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Follow-Up Date</p>
-              <p className="text-caption sm:text-caption font-medium text-[var(--color-ink-800)]">
-                {new Date(data.followUpDate).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
-                {data.inViewOf && <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {data.inViewOf}</span>}
-              </p>
-            </div>
+      {data.followUpDate && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Follow-up</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption text-[var(--color-ink-700)] font-semibold">
+            {new Date(data.followUpDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+          </span>
+          {data.inViewOf && (
+            <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {data.inViewOf}</span>
           )}
-          {data.adviseNotes && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Advice</p>
-              <p className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.adviseNotes}</p>
-            </div>
-          )}
-          {data.referralEnabled && (
-            <div>
-              <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-1">Referral</p>
-              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">{data.referralNote || "Referred"}</p>
-            </div>
-          )}
-        </LongSection>
+        </div>
+      )}
+      {data.adviseNotes && (
+        <div className="flex items-start gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.adviseNotes}</span>
+        </div>
+      )}
+      {data.referralEnabled && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <BookOpen size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Referral</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption text-[var(--color-ink-700)] font-semibold">{data.referralNote || "Referred"}</span>
+        </div>
       )}
 
     </div>
