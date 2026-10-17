@@ -172,7 +172,7 @@ function DiagnosisRow({
             className="text-xs rounded-lg border border-[var(--color-border)] px-2 py-1 bg-white"
           >
             {DIAGNOSIS_STATUSES.map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>{s === "BLANK" ? "—" : s}</option>
             ))}
           </select>
           <button

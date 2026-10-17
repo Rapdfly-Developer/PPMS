@@ -201,8 +201,6 @@ const TS_STEPS: TsStep[] = [
   { key: "refractionCompletedAt",   label: "Refraction Done",   group: "clinical" },
   { key: "refractionPassedOverAt",  label: "Passed Over",       group: "clinical" },
   { key: "partialDispenseAt",       label: "Partial Dispense",  group: "dispense" },
-  { key: "dispensedAt",             label: "Consult. End",       group: "dispense" },
-  { key: "finalizedAt",             label: "Finalized",          group: "dispense" },
 ];
 
 function fmtDuration(fromIso: string | null, toIso: string | null): string | null {
