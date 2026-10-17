@@ -524,7 +524,19 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         </div>
       )}
 
-      {/* 9. Referral with in view of */}
+      {/* 9. Advice notes */}
+      {emrData?.adviseNotes && (
+        <div className="flex items-start gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{emrData.adviseNotes}</span>
+        </div>
+      )}
+
+      {/* 10. Referral with in view of */}
       {hasReferral && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
@@ -836,13 +848,13 @@ function LongContent({
                 {pmhList.map((item, i) => {
                   const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
                   return (
-                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-800 text-caption sm:text-caption font-medium">
+                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">
                       {item.name}{since ? <span className="opacity-60 ml-1 font-normal">· {since}</span> : null}
                     </span>
                   );
                 })}
                 {g.pmhOtherText && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
                 )}
               </div>
             </div>
