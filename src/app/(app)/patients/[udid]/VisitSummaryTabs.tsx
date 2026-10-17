@@ -365,7 +365,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
   const hasInv       = investigations.length > 0;
   const reRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.re, {}) : {};
   const leRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.le, {}) : {};
-  const RC_FIELDS    = ["sph", "cyl", "axis", "nearSph", "nearCyl"] as const;
+  const RC_FIELDS    = ["sph", "cyl", "axis", "nearSph", "nearCyl", "va", "nearVa"] as const;
   const hasRC        = RC_FIELDS.some((f) => (reRCp[f] && reRCp[f] !== "") || (leRCp[f] && leRCp[f] !== ""));
   const hasFollowUp  = !!emrData?.followUpDate;
   const hasReferral  = !!emrData?.referralEnabled;
@@ -474,11 +474,12 @@ function ShortContent({ complaint, diagnoses, emrData }: {
         <div>
           <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
           <RxTable rows={[
-            { label: "SPH",      re: reRCp.sph,     le: leRCp.sph },
-            { label: "CYL",      re: reRCp.cyl,     le: leRCp.cyl },
-            { label: "AXIS",     re: reRCp.axis,    le: leRCp.axis },
-            { label: "Near SPH", re: reRCp.nearSph, le: leRCp.nearSph },
-            { label: "Near CYL", re: reRCp.nearCyl, le: leRCp.nearCyl },
+            { label: "Sph",   re: reRCp.sph,     le: leRCp.sph },
+            { label: "Cyl",   re: reRCp.cyl,     le: leRCp.cyl },
+            { label: "Axis°", re: reRCp.axis,    le: leRCp.axis },
+            { label: "VA",    re: reRCp.va,      le: leRCp.va,      grey: true },
+            { label: "Add",   re: reRCp.nearSph, le: leRCp.nearSph },
+            { label: "NV",    re: reRCp.nearVa,  le: leRCp.nearVa,  grey: true },
           ]} />
         </div>
       )}
@@ -566,22 +567,24 @@ function EyeHead({ first = "" }: { first?: string }) {
   );
 }
 
-function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: string | null }[] }) {
-  const visible = rows.filter((r) => r.re || r.le);
-  if (!visible.length) return null;
-  const hasRe = visible.some((r) => r.re);
-  const hasLe = visible.some((r) => r.le);
+function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: string | null; grey?: boolean }[] }) {
+  const allCols = rows;
+  const hasRe = allCols.some((r) => r.re);
+  const hasLe = allCols.some((r) => r.le);
+  if (!hasRe && !hasLe) return null;
   const TH_CELL = "px-3 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)] last:border-r-0";
+  const TH_GREY = "px-3 py-2 text-center text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)] last:border-r-0 bg-[var(--color-surface-sunken)]";
   const TD_EYE  = "px-3 py-2 align-middle text-caption font-semibold text-[var(--color-primary-700)] border-r border-[var(--color-border)] whitespace-nowrap";
   const TD_VAL  = "px-3 py-2 align-middle text-center text-caption text-[var(--color-ink-700)] tabular-nums border-r border-[var(--color-border)] last:border-r-0";
+  const TD_GREY = "px-3 py-2 align-middle text-center text-caption text-[var(--color-ink-500)] tabular-nums border-r border-[var(--color-border)] last:border-r-0 bg-[var(--color-surface-sunken)]";
   return (
     <div className="rounded-lg border border-[var(--color-border)] overflow-hidden overflow-x-auto">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-[var(--color-surface-sunken)]">
+          <tr className="bg-[var(--color-primary-50)]">
             <th className={TH_CELL} />
-            {visible.map((col) => (
-              <th key={col.label} className={TH_CELL}>{col.label}</th>
+            {allCols.map((col) => (
+              <th key={col.label} className={col.grey ? TH_GREY : TH_CELL}>{col.label}</th>
             ))}
           </tr>
         </thead>
@@ -589,16 +592,16 @@ function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: str
           {hasRe && (
             <tr className="border-t border-[var(--color-border)]">
               <td className={TD_EYE}>Right Eye</td>
-              {visible.map((col) => (
-                <td key={col.label} className={TD_VAL}>{col.re || DASH}</td>
+              {allCols.map((col) => (
+                <td key={col.label} className={col.grey ? TD_GREY : TD_VAL}>{col.re || DASH}</td>
               ))}
             </tr>
           )}
           {hasLe && (
             <tr className="border-t border-[var(--color-border)]">
               <td className={TD_EYE}>Left Eye</td>
-              {visible.map((col) => (
-                <td key={col.label} className={TD_VAL}>{col.le || DASH}</td>
+              {allCols.map((col) => (
+                <td key={col.label} className={col.grey ? TD_GREY : TD_VAL}>{col.le || DASH}</td>
               ))}
             </tr>
           )}
@@ -899,11 +902,12 @@ function LongContent({
           {hasRC && corrections.map((c, i) => (
             <Block key={i} label={c.method ? `${c.label} · ${c.method}` : c.label}>
               <RxTable rows={[
-                { label: "SPH",      re: c.re.sph,     le: c.le.sph },
-                { label: "CYL",      re: c.re.cyl,     le: c.le.cyl },
-                { label: "AXIS",     re: c.re.axis,    le: c.le.axis },
-                { label: "Near SPH", re: c.re.nearSph, le: c.le.nearSph },
-                { label: "Near CYL", re: c.re.nearCyl, le: c.le.nearCyl },
+                { label: "Sph",   re: c.re.sph,     le: c.le.sph },
+                { label: "Cyl",   re: c.re.cyl,     le: c.le.cyl },
+                { label: "Axis°", re: c.re.axis,    le: c.le.axis },
+                { label: "VA",    re: c.re.va,      le: c.le.va,      grey: true },
+                { label: "Add",   re: c.re.nearSph, le: c.le.nearSph },
+                { label: "NV",    re: c.re.nearVa,  le: c.le.nearVa,  grey: true },
               ]} />
             </Block>
           ))}

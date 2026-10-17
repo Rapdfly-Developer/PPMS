@@ -194,13 +194,13 @@ const TS_STEPS: TsStep[] = [
   { key: "scheduledAt",             label: "Appt. Time",        group: "booking"  },
   { key: "arrivedAt",               label: "Arrival Time",      group: "clinical" },
   { key: "seenAt",                  label: "Consult. Start",    group: "clinical" },
-  { key: "consultationCompletedAt", label: "Consult. End",      group: "clinical" },
-  { key: "investigationOrderedAt",  label: "Inv. Ordered",      group: "clinical" },
-  { key: "reportUploadedAt",        label: "Report Upload",     group: "clinical" },
   { key: "refractionStartedAt",     label: "Refraction Start",  group: "clinical" },
   { key: "refractionCompletedAt",   label: "Refraction Done",   group: "clinical" },
   { key: "refractionPassedOverAt",  label: "Passed Over",       group: "clinical" },
+  { key: "investigationOrderedAt",  label: "Inv. Ordered",      group: "clinical" },
+  { key: "reportUploadedAt",        label: "Report Upload",     group: "clinical" },
   { key: "partialDispenseAt",       label: "Partial Dispense",  group: "dispense" },
+  { key: "consultationCompletedAt", label: "Consult. End",      group: "clinical" },
 ];
 
 function fmtDuration(fromIso: string | null, toIso: string | null): string | null {

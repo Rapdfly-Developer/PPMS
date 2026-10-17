@@ -1251,13 +1251,21 @@ ${hasRx
           <th style="${TH}text-align:center;">Sph</th>
           <th style="${TH}text-align:center;">Cyl</th>
           <th style="${TH}text-align:center;">Axis°</th>
-          <th style="${TH}text-align:center;">VA</th>
+          <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
           <th style="${TH}text-align:center;">Add</th>
-          <th style="${TH}text-align:center;">NV</th>
+          <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
         </tr></thead>
         <tbody>
-          ${rxRowFn("Right Eye", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.va, d.opticalRx!.re.nearSph, d.opticalRx!.re.nearVa)}
-          ${rxRowFn("Left Eye", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.va, d.opticalRx!.le.nearSph, d.opticalRx!.le.nearVa)}
+          ${(() => {
+            const rxRowGrey2 = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
+              `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
+              rxTd(sph) + rxTd(cyl) + rxTd(axis) +
+              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(va)}</td>` +
+              rxTd(near) +
+              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(nearVa)}</td></tr>`;
+            return rxRowGrey2("Right Eye", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.va, d.opticalRx!.re.nearSph, d.opticalRx!.re.nearVa) +
+                   rxRowGrey2("Left Eye", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.va, d.opticalRx!.le.nearSph, d.opticalRx!.le.nearVa);
+          })()}
         </tbody>
       </table>`)
   : ""}
@@ -1266,6 +1274,12 @@ ${hasRx
 ${d.extraCorrections && d.extraCorrections.length > 0
   ? d.extraCorrections.map((ec) => {
       const ecMethod = ec.re?.method || ec.le?.method || "";
+      const rxRowGrey = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
+        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
+        rxTd(sph) + rxTd(cyl) + rxTd(axis) +
+        `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(va)}</td>` +
+        rxTd(near) +
+        `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(nearVa)}</td></tr>`;
       return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
         `<table>
           <thead><tr>
@@ -1273,13 +1287,13 @@ ${d.extraCorrections && d.extraCorrections.length > 0
             <th style="${TH}text-align:center;">Sph</th>
             <th style="${TH}text-align:center;">Cyl</th>
             <th style="${TH}text-align:center;">Axis°</th>
-            <th style="${TH}text-align:center;">VA</th>
+            <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
             <th style="${TH}text-align:center;">Add</th>
-            <th style="${TH}text-align:center;">NV</th>
+            <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
           </tr></thead>
           <tbody>
-            ${rxRowFn("Right Eye", ec.re?.sph, ec.re?.cyl, ec.re?.axis, ec.re?.va, ec.re?.nearSph, ec.re?.nearVa)}
-            ${rxRowFn("Left Eye", ec.le?.sph, ec.le?.cyl, ec.le?.axis, ec.le?.va, ec.le?.nearSph, ec.le?.nearVa)}
+            ${rxRowGrey("Right Eye", ec.re?.sph, ec.re?.cyl, ec.re?.axis, ec.re?.va, ec.re?.nearSph, ec.re?.nearVa)}
+            ${rxRowGrey("Left Eye", ec.le?.sph, ec.le?.cyl, ec.le?.axis, ec.le?.va, ec.le?.nearSph, ec.le?.nearVa)}
           </tbody>
         </table>`);
     }).join("")
@@ -1528,8 +1542,8 @@ export type FullEmrData = {
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   opticalRx?: {
-    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string; method?: string };
-    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; nearCyl?: string; nearAxis?: string; method?: string };
+    re: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
+    le: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
   } | null;
   extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
@@ -1995,25 +2009,26 @@ ${d.opticalRx ? card(`Optical Prescription${d.opticalRx.re.method || d.opticalRx
   `<table style="width:100%;border-collapse:collapse;">
     <thead><tr>
       <th style="${TH}width:110px;">Eye</th>
-      <th style="${TH}text-align:center;">SPH</th>
-      <th style="${TH}text-align:center;">CYL</th>
-      <th style="${TH}text-align:center;">Axis</th>
-      <th style="${TH}text-align:center;">Near Add</th>
+      <th style="${TH}text-align:center;">Sph</th>
+      <th style="${TH}text-align:center;">Cyl</th>
+      <th style="${TH}text-align:center;">Axis°</th>
+      <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
+      <th style="${TH}text-align:center;">Add</th>
+      <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
     </tr></thead>
     <tbody>
-      ${["re", "le"].flatMap((eye, ei) =>
-        [["Distance", "sph", "cyl", "axis", "nearSph"], ["Near Add", "nearSph", "nearCyl", "nearAxis", ""]].map(([sub, s, c, a, n], ri) => {
-          const rx = d.opticalRx![eye as "re" | "le"] as any;
-          const hasData = rx?.[s] || rx?.[c] || rx?.[a];
-          if (sub === "Near Add" && !hasData) return "";
-          return `<tr style="background:${(ei * 2 + ri) % 2 === 0 ? "#fff" : TINT};">` +
-            `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()} <span style="font-weight:400;color:#777;font-size:8.5px;">(${sub})</span></td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.[s])}</td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.[c])}</td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.[a])}</td>` +
-            `<td style="${TD}text-align:center;">${sub === "Near Add" ? v2(rx?.[n]) : ""}</td>` +
-            `</tr>`;
-        })).join("")}
+      ${["re", "le"].map((eye, ei) => {
+        const rx = d.opticalRx![eye as "re" | "le"];
+        return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
+          `<td style="${TD}font-weight:700;color:#0B3D3A;">${eye === "re" ? "Right Eye" : "Left Eye"}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
+          `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.va)}</td>` +
+          `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
+          `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.nearVa)}</td>` +
+          `</tr>`;
+      }).join("")}
     </tbody>
   </table>`) : ""}
 
@@ -2024,21 +2039,23 @@ ${d.extraCorrections && d.extraCorrections.length > 0
       return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
         `<table style="width:100%;border-collapse:collapse;"><thead><tr>
           <th style="${TH}width:110px;">Eye</th>
-          <th style="${TH}text-align:center;">SPH</th>
-          <th style="${TH}text-align:center;">CYL</th>
-          <th style="${TH}text-align:center;">Axis</th>
-          <th style="${TH}text-align:center;">VA</th>
-          <th style="${TH}text-align:center;">Near Add</th>
+          <th style="${TH}text-align:center;">Sph</th>
+          <th style="${TH}text-align:center;">Cyl</th>
+          <th style="${TH}text-align:center;">Axis°</th>
+          <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
+          <th style="${TH}text-align:center;">Add</th>
+          <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
         </tr></thead><tbody>
           ${["re","le"].map((eye, ei) => {
             const rx = ec[eye as "re" | "le"] as any;
             return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
-              `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()}</td>` +
+              `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye === "re" ? "Right Eye" : "Left Eye"}</td>` +
               `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
               `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
               `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
-              `<td style="${TD}text-align:center;">${v2(rx?.va)}</td>` +
+              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.va)}</td>` +
               `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
+              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.nearVa)}</td>` +
               `</tr>`;
           }).join("")}
         </tbody></table>`);
@@ -2176,8 +2193,8 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
       diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
       medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
       opticalRx: {
-        re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph },
-        le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph },
+        re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, va: reRef?.va, nearSph: reRef?.nearSph, nearVa: reRef?.nearVa },
+        le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, va: leRef?.va, nearSph: leRef?.nearSph, nearVa: leRef?.nearVa },
       },
       investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
     };
@@ -2398,8 +2415,8 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
     diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
     medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
     opticalRx: {
-      re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, nearSph: reRef?.nearSph, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
-      le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, nearSph: leRef?.nearSph, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
+      re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, va: reRef?.va, nearSph: reRef?.nearSph, nearVa: reRef?.nearVa, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
+      le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, va: leRef?.va, nearSph: leRef?.nearSph, nearVa: leRef?.nearVa, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
     },
     investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
   };
