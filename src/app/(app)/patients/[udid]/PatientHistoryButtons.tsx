@@ -491,6 +491,9 @@ function SpectEyeTable({ re, le }: { re: RxFields; le: RxFields }) {
   const cell = (v: string) => (
     <td className="px-2 py-1 text-center text-caption font-semibold tabular-nums text-[var(--color-ink-800)]">{v || <span className="text-[var(--color-ink-300)]">—</span>}</td>
   );
+  const cellGrey = (v: string) => (
+    <td className="px-2 py-1 text-center text-caption font-semibold tabular-nums text-[var(--color-ink-800)] bg-[var(--color-surface-sunken)]">{v || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+  );
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-caption">
@@ -500,9 +503,9 @@ function SpectEyeTable({ re, le }: { re: RxFields; le: RxFields }) {
             <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Sph</th>
             <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Cyl</th>
             <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Axis°</th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">VA</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)]">VA</th>
             <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">Add</th>
-            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)]">NV</th>
+            <th className="px-2 py-1 text-center font-semibold text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)]">NV</th>
           </tr>
         </thead>
         <tbody>
@@ -511,18 +514,18 @@ function SpectEyeTable({ re, le }: { re: RxFields; le: RxFields }) {
             {cell(fmt(re.sph))}
             {cell(fmt(re.cyl))}
             {cell(parseSignedVal(re.axis).mag)}
-            {cell(re.va)}
+            {cellGrey(re.va)}
             {cell(fmt(re.nearSph))}
-            {cell(re.nearVa)}
+            {cellGrey(re.nearVa)}
           </tr>
           <tr className="border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40">
             <td className="px-2 py-1 font-semibold text-[var(--color-primary-700)]">Left Eye</td>
             {cell(fmt(le.sph))}
             {cell(fmt(le.cyl))}
             {cell(parseSignedVal(le.axis).mag)}
-            {cell(le.va)}
+            {cellGrey(le.va)}
             {cell(fmt(le.nearSph))}
-            {cell(le.nearVa)}
+            {cellGrey(le.nearVa)}
           </tr>
         </tbody>
       </table>
@@ -589,10 +592,15 @@ function SpectacleDrawer({
           >
             {/* Header row with checkbox */}
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0 flex-wrap">
                 <span className="text-caption font-bold text-[var(--color-ink-800)]">
-                  {format(new Date(v.date), "dd MMM yyyy")}
+                  {format(new Date(v.date), "EEE, dd MMM yyyy")}
                 </span>
+                {v.finalizedAt && (
+                  <span className="text-micro text-[var(--color-ink-400)] font-medium">
+                    {format(new Date(v.finalizedAt), "h:mm a")}
+                  </span>
+                )}
                 {v.hospitalName && (
                   <span className="text-caption text-[var(--color-ink-400)] truncate">{v.hospitalName}</span>
                 )}

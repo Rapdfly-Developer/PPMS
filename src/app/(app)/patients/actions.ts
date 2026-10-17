@@ -501,6 +501,7 @@ export async function getPatientSpectacleHistory(patientId: string) {
     select: {
       id: true,
       date: true,
+      finalizedAt: true,
       hospital: { select: { name: true } },
       refraction: {
         select: { re: true, le: true, sentToOpticals: true },
@@ -512,6 +513,7 @@ export async function getPatientSpectacleHistory(patientId: string) {
     .map((v) => ({
       visitId: v.id,
       date: v.date.toISOString(),
+      finalizedAt: v.finalizedAt?.toISOString() ?? null,
       hospitalName: v.hospital?.name ?? null,
       re: v.refraction!.re,
       le: v.refraction!.le,
