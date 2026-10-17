@@ -628,7 +628,7 @@ async function renderDispenseHtml(data: DispenseSummaryData): Promise<string> {
     ? data.diagnoses.map((d, i) => `
       <tr>
         <td class="td-num">${i + 1}</td>
-        <td class="td-head">${d.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(d.laterality)}</span>` : ""}${escapeHtml(d.description)}</td>
+        <td class="td-head">${d.status && d.status !== "BLANK" ? `<span style="color:#888;font-weight:400;margin-right:4px;">${escapeHtml(d.status.charAt(0) + d.status.slice(1).toLowerCase())} ·</span>` : ""}${d.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(d.laterality)}</span>` : ""}${escapeHtml(d.description)}</td>
         <td><span class="td-mono">${escapeHtml(d.icd10Code)}</span></td>
         <td>${badgeStatus(d.status)}</td>
       </tr>`).join("")
@@ -1186,19 +1186,13 @@ ${d.allergies
 <!-- 2 · CLINICAL IMPRESSION -->
 ${inlineCard("Clinical Impression",
   d.diagnoses.length
-    ? `<table style="width:100%;">
-        <tbody>
-          ${d.diagnoses.map((dx, i) =>
-            `<tr>` +
-            `<td style="padding:3.5px 7px;font-size:11px;text-align:center;color:${BRAND};width:16px;">·</td>` +
-            `<td style="padding:3.5px 7px;font-size:9.5px;font-weight:600;">` +
-            (dx.laterality ? `<span style="color:#4A5A57;font-weight:400;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : "") +
-            escapeHtml(dx.description) +
-            `</td>` +
-            `</tr>`
-          ).join("")}
-        </tbody>
-      </table>`
+    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
+      d.diagnoses.map((dx) =>
+        (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
+        (dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
+        escapeHtml(dx.description)
+      ).join("<br>") +
+      `</div>`
     : none("No diagnosis recorded"))}
 
 <!-- 2b · MINOR PROCEDURE (only when recorded) -->
@@ -1656,7 +1650,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     ? d.diagnoses.map((dx, i) =>
         `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
         `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}font-weight:600;">${dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td>` +
+        `<td style="${TD}font-weight:600;">${dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;margin-right:4px;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span>` : ""}${dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td>` +
         `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
         `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
         `</tr>`).join("")
@@ -1973,15 +1967,14 @@ ${card("Posterior Segment Examination",
 <!-- 9 · ASSESSMENT / DIAGNOSIS -->
 ${card("Assessment / Diagnosis",
   d.diagnoses.length
-    ? `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th style="${TH}width:28px;text-align:center;">#</th>
-          <th style="${TH}">Diagnosis</th>
-          <th style="${TH}width:75px;">ICD-10</th>
-          <th style="${TH}width:78px;">Status</th>
-        </tr></thead>
-        <tbody>${diagRows}</tbody>
-      </table>`
+    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
+      d.diagnoses.map((dx) =>
+        (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
+        (dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
+        escapeHtml(dx.description) +
+        (dx.icd10Code ? ` <span style="font-family:'Courier New',monospace;font-size:8px;color:#888;font-weight:400;">${escapeHtml(dx.icd10Code)}</span>` : "")
+      ).join("<br>") +
+      `</div>`
     : none("No diagnoses recorded"))}
 
 <!-- 10 · MEDICATIONS PRESCRIBED -->
@@ -2199,7 +2192,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
     const va = d.visualAcuity;
 
     const diagRows = d.diagnoses.length
-      ? d.diagnoses.map((dx, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${dx.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td><td><span class="td-mono">${val(dx.icd10Code)}</span></td><td>${badgeStatus(dx.status)}</td></tr>`).join("")
+      ? d.diagnoses.map((dx, i) => `<tr><td class="td-num">${i + 1}</td><td class="td-head">${dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;margin-right:4px;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span>` : ""}${dx.laterality ? `<span style="font-weight:700;color:#1a6e6a;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td><td><span class="td-mono">${val(dx.icd10Code)}</span></td><td>${badgeStatus(dx.status)}</td></tr>`).join("")
       : `<tr class="empty-row"><td colspan="4">No diagnoses recorded</td></tr>`;
 
     const pdfMedBadge4 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
