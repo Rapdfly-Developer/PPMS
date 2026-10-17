@@ -29,7 +29,7 @@ export default async function PatientVisitsPage({
           hospital:             { select: { name: true } },
           doctor:               { select: { name: true } },
           generalExam:          { select: { chiefComplaint: true } },
-          diagnoses:            { select: { description: true, laterality: true } },
+          diagnoses:            { select: { description: true, laterality: true, status: true } },
           appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, completedAt: true, isWalkIn: true } },
           investigationOrders:  { select: { createdAt: true, updatedAt: true, resultRef: true }, orderBy: { createdAt: "asc" } },
         },

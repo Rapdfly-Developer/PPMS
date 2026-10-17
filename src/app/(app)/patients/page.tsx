@@ -167,7 +167,7 @@ export default async function PatientsPage({
         finalizedAt: true,
         generalExam: { select: { chiefComplaint: true } },
         appointment: { select: { id: true, arrivedAt: true, status: true, consultationStatus: true } },
-        diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
+        diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
       },
     },
   };
@@ -304,7 +304,7 @@ export default async function PatientsPage({
       p.visits[0]?.appointment?.consultationStatus === "FINALIZED" &&
       p.visits[0]?.finalizedAt != null
     ) ? (p.visits[0].appointment?.id ?? null) : null,
-    diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null })) ?? [],
+    diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null, status: d.status ?? null })) ?? [],
   }));
 
   const recentSerialized = recentReg.map(p => ({

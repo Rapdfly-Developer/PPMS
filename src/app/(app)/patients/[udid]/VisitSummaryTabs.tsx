@@ -9,7 +9,7 @@ import { fileHref } from "@/lib/file-href";
 
 type Tab = "short" | "long" | "ai";
 
-type DiagItem = { description: string; laterality?: string | null };
+type DiagItem = { description: string; laterality?: string | null; status?: string | null };
 
 interface Props {
   visitId: string;
@@ -413,6 +413,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
           <div className="flex flex-wrap gap-1.5">
             {diagnoses.map((d, i) => (
               <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                 <span className="w-1.5 h-1.5 rounded-full bg-current shrink-0" />
                 {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}
                 {d.description}
@@ -1063,6 +1064,7 @@ function LongContent({
               .map((d: any, i: number) => (
                 <div key={i} className="py-1 border-b border-[var(--color-border)] last:border-0">
                   <span className="clinical-diagnosis-text text-caption sm:text-caption">
+                    {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal mr-1">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                     {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                     {d.description}
                     {d.icd10Code && <span className="font-mono text-micro text-[var(--color-ink-400)] ml-1.5">{d.icd10Code}</span>}

@@ -51,7 +51,7 @@ export default async function PatientProfilePage({
           doctor:   { select: { name: true } },
           appointment: { select: { status: true } },
           generalExam: { select: { chiefComplaint: true } },
-          diagnoses:   { select: { description: true } },
+          diagnoses:   { select: { description: true, laterality: true, status: true } },
         },
       },
       referralPatient: { select: { id: true, name: true, udid: true } },

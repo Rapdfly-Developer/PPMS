@@ -407,6 +407,7 @@ function TreatmentDrawer({
                   <div key={i} className="flex items-center gap-2">
                     <p className="clinical-diagnosis-text text-xs flex-1 min-w-0">
                       <span className="font-mono text-caption text-[var(--color-ink-400)] mr-1">{d.icd10Code}</span>
+                      {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal mr-1">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                       {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
                       {d.description}
                     </p>

@@ -35,7 +35,7 @@ export interface PatientRow {
   chiefComplaint: string | null;
   photoUrl: string | null;
   dispensedApptId?: string | null;
-  diagnoses: { description: string; laterality?: string | null }[];
+  diagnoses: { description: string; laterality?: string | null; status?: string | null }[];
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
 export interface CatPoint   { category: string; count: number; }
@@ -57,7 +57,7 @@ export interface NoShowRegRow {
   hospitalName: string | null;
   visitStarted: boolean;
   chiefComplaint: string | null;
-  diagnoses: { description: string; laterality?: string | null }[];
+  diagnoses: { description: string; laterality?: string | null; status?: string | null }[];
   patient: { name: string; udid: string; uhid: string; age: number; sex: string; mobile: string | null; photoUrl: string | null };
 }
 
@@ -923,6 +923,7 @@ export function PatientsClient({
                             <div className="flex max-w-full flex-wrap gap-1">
                               {displayDiagnoses.slice(0, 2).map((d, i) => (
                                 <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                                  {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                                   <span className="truncate">{d.description}</span>
                                 </span>

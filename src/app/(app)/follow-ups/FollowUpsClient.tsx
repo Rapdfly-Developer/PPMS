@@ -29,7 +29,7 @@ export interface FuVisit {
   patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; photoUrl: string | null; mobile: string };
   doctor: { id: string; name: string };
   hospital: { id: string; name: string };
-  diagnoses: { description: string; icd10Code: string; laterality: string | null }[];
+  diagnoses: { description: string; icd10Code: string; laterality: string | null; status: string | null }[];
   status: FollowUpStatus;
 }
 
@@ -301,6 +301,7 @@ function CompleteModal({ v, onDone, onClose }: { v: FuVisit; onDone: () => void;
                   <div className="flex flex-wrap gap-1">
                     {v.diagnoses.map((d, i) => (
                       <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                        {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                         {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                         {d.description}
                       </span>
@@ -490,6 +491,7 @@ function FollowUpRow({
           )}
           {v.diagnoses[0] && (
             <span className="clinical-diagnosis-chip inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+              {v.diagnoses[0].status && v.diagnoses[0].status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{v.diagnoses[0].status.charAt(0) + v.diagnoses[0].status.slice(1).toLowerCase()} ·</span>}
               {v.diagnoses[0].laterality && <span className="clinical-laterality shrink-0">{v.diagnoses[0].laterality}</span>}
               {v.diagnoses[0].description}
             </span>
@@ -618,6 +620,7 @@ function FollowUpCard({
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
             <span className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+              {v.diagnoses[0].status && v.diagnoses[0].status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{v.diagnoses[0].status.charAt(0) + v.diagnoses[0].status.slice(1).toLowerCase()} ·</span>}
               {v.diagnoses[0].laterality && <span className="clinical-laterality shrink-0">{v.diagnoses[0].laterality}</span>}
               {v.diagnoses[0].description}
             </span>
