@@ -245,6 +245,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     chiefComplaint: inclCc ? ((visit as any).generalExam?.chiefComplaint ?? null) : null,
     advice: inclAdvice ? ((visit as any).adviseNotes ?? null) : null,
     allergies: inclAllergy ? ((visit as any).generalExam?.allergies ?? null) : null,
+    nkda: inclAllergy ? ((visit as any).generalExam?.nkda ?? null) : null,
     diagnoses: inclDx ? visit.diagnoses.map((d: any) => ({
       description: d.description,
       icd10Code: d.icd10Code,
@@ -286,6 +287,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       procedureName: (visit as any).procedureName ?? null,
       procedureLaterality: (visit as any).procedureLaterality ?? null,
       anesthesiaType: (visit as any).anesthesiaType ?? null,
+      procedureNotes: (visit as any).procedureNotes ?? null,
     } : null,
   });
 

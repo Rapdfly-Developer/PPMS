@@ -888,8 +888,9 @@ export type ShortSummaryData = {
   extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
   visualAcuity?: { reDistance?: { unaided?: string; ph?: string; bcva?: string } | null; leDistance?: { unaided?: string; ph?: string; bcva?: string } | null; reNear?: string | null; leNear?: string | null } | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
-  minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null } | null;
+  minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null } | null;
   allergies?: string | null;
+  nkda?: boolean | null;
   anteriorSegment?: { re?: Record<string, string> | null; le?: Record<string, string> | null } | null;
   posteriorSegment?: { re?: Record<string, string> | null; le?: Record<string, string> | null; notes?: string | null } | null;
   colourVision?: { re?: Record<string, string> | null; le?: Record<string, string> | null } | null;
@@ -1178,9 +1179,12 @@ ${d.chiefComplaint
   : ""}
 
 <!-- 1b · DRUG ALLERGY -->
-${d.allergies
+${d.nkda
   ? inlineCard("Drug Allergy",
-      `<div style="font-size:10.5px;font-weight:600;color:#DC2626;">${escapeHtml(d.allergies)}</div>`)
+      `<div style="font-size:10.5px;font-weight:700;color:#059669;">✓ NKDA — No Known Drug Allergies</div>`)
+  : d.allergies
+  ? inlineCard("Drug Allergy",
+      `<div style="font-size:10.5px;font-weight:700;color:#DC2626;">${escapeHtml(d.allergies)}</div>`)
   : ""}
 
 <!-- 2 · CLINICAL IMPRESSION -->
@@ -1204,7 +1208,8 @@ ${procDisplay
         escapeHtml(procDisplay),
         d.minorProcedure!.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure!.anesthesiaType!)}` : "",
       ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
-      `</div>`)
+      `</div>` +
+      (d.minorProcedure!.procedureNotes ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;">${escapeHtml(d.minorProcedure!.procedureNotes)}</div>` : ""))
   : ""}
 
 <!-- 3 · MEDICATIONS -->
@@ -1446,16 +1451,22 @@ ${d.hessChart && (Object.keys(d.hessChart.grid ?? {}).length || d.hessChart.inte
     ].filter(([, value]) => !!value)))
   : ""}
 
-<!-- 6 · FOLLOW-UP (only date & day, inline) -->
+<!-- 6 · FOLLOW-UP with In View Of -->
 ${d.visit.followUpDate
   ? inlineCard("Follow-up",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>`)
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>` +
+      (d.visit.inViewOf && d.visit.inViewOf.trim()
+        ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        : ""))
   : ""}
 
-<!-- 7 · IN VIEW OF -->
-${d.visit.inViewOf && d.visit.inViewOf.trim()
-  ? inlineCard("In View Of",
-      `<div style="font-size:9.5px;color:#1a1a1a;line-height:1.5;">${escapeHtml(d.visit.inViewOf.trim())}</div>`)
+<!-- 7 · REFERRAL with In View Of -->
+${d.visit.referralEnabled && d.visit.referralNote && d.visit.referralNote.trim()
+  ? inlineCard("Referral",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(d.visit.referralNote.trim())}</div>` +
+      (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
+        ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        : ""))
   : ""}
 
 <!-- SPACER: pushes signature to the bottom of the page -->
