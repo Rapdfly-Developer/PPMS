@@ -87,7 +87,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
     Object.entries(methods).forEach(([method, entry]) => {
       if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
-        c1Corrections.push({ label: "Correction 1", re: entry.re || {}, le: entry.le || {}, method });
+        c1Corrections.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
       }
     });
   } else {
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" } as any);
     const included = (re as any).includedInPrint !== false;
     if (included && rc && (re.sph || re.cyl || re.axis || (le as any).sph || (le as any).cyl || (le as any).axis || re.nearSph || (le as any).nearSph || re.va || (le as any).va)) {
-      c1Corrections.push({ label: "Correction 1", re: re as any, le: le as any, method: (re as any).method || "" });
+      c1Corrections.push({ label: "Refraction 1", re: re as any, le: le as any, method: (re as any).method || "" });
     }
   }
 
@@ -127,12 +127,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   // Visual Acuity
   const va = visit.visualAcuity as any;
+  const vaReJson = va ? parseJSON(va.re, {} as Record<string, string>) : {};
+  const vaLeJson = va ? parseJSON(va.le, {} as Record<string, string>) : {};
   const visualAcuity = inclVa && va
     ? {
-        reDistance: parseJSON(va.reDistance, null) as { unaided?: string; ph?: string; bcva?: string } | null,
-        leDistance: parseJSON(va.leDistance, null) as { unaided?: string; ph?: string; bcva?: string } | null,
-        reNear: va.reNear ?? null,
-        leNear: va.leNear ?? null,
+        reDistance: { unaided: vaReJson.unaided ?? null, ph: vaReJson.pinhole ?? null, bcva: vaReJson.bestCorrected ?? null },
+        leDistance: { unaided: vaLeJson.unaided ?? null, ph: vaLeJson.pinhole ?? null, bcva: vaLeJson.bestCorrected ?? null },
+        reNear: vaReJson.nearUnaided ?? null,
+        leNear: vaLeJson.nearUnaided ?? null,
       }
     : null;
 

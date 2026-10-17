@@ -27,6 +27,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       iopReadings: { orderBy: { takenAt: "desc" } },
       anteriorSegment: true,
       posteriorSegment: true,
+      tearFilm: true,
+      lacrimalSac: true,
+      diplopiaChart: true,
+      hessChart: true,
       diagnoses: { orderBy: { createdAt: "asc" } },
       medications: { orderBy: { createdAt: "asc" } },
       investigationOrders: { orderBy: { createdAt: "asc" } },
@@ -43,13 +47,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const as_ = visit.anteriorSegment;
   const ps = visit.posteriorSegment;
 
+  const vaReJson = parseJSON((va as any)?.re, {} as Record<string, string>);
+  const vaLeJson = parseJSON((va as any)?.le, {} as Record<string, string>);
   const vaData = va ? {
-    reDistance: parseJSON((va as any).reDistance, null),
-    leDistance: parseJSON((va as any).leDistance, null),
-    reNear: (va as any).reNear ?? null,
-    leNear: (va as any).leNear ?? null,
-    reNearN: (va as any).reNearN ?? null,
-    leNearN: (va as any).leNearN ?? null,
+    reDistance: { unaided: vaReJson.unaided ?? null, ph: vaReJson.pinhole ?? null, bcva: vaReJson.bestCorrected ?? null },
+    leDistance: { unaided: vaLeJson.unaided ?? null, ph: vaLeJson.pinhole ?? null, bcva: vaLeJson.bestCorrected ?? null },
+    reNear: vaReJson.nearUnaided ?? null,
+    leNear: vaLeJson.nearUnaided ?? null,
+    reNearN: vaReJson.nearBestCorrected ?? null,
+    leNearN: vaLeJson.nearBestCorrected ?? null,
   } : null;
 
   let pdf: Buffer;
@@ -72,6 +78,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         hospitalContact: (visit.hospital as any).contact ?? null,
         hospitalEmail: (visit.hospital as any).email ?? null,
         doctorName: visit.doctor.name,
+        followUpDate: (visit as any).followUpDate ?? null,
+        referralEnabled: (visit as any).referralEnabled ?? false,
+        referralNote: (visit as any).referralNote ?? null,
+        inViewOf: (visit as any).inViewOf ?? null,
       },
       generalExam: ge ? {
         bp: ge.bp, pulse: ge.pulse, temperature: ge.temperature, weight: ge.weight,
@@ -129,13 +139,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
           const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
           Object.entries(methods).forEach(([method, entry]) => {
             if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
-              c1Corrs.push({ label: "Correction 1", re: entry.re || {}, le: entry.le || {}, method });
+              c1Corrs.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
             }
           });
         } else {
           const rcRe = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "", includedInPrint: true } as any);
           if (rcRe.includedInPrint !== false) {
-            c1Corrs.push({ label: "Correction 1", re: rcRe, le: parseJSON(rc?.le, {} as any), method: rcRe.method || "" });
+            c1Corrs.push({ label: "Refraction 1", re: rcRe, le: parseJSON(rc?.le, {} as any), method: rcRe.method || "" });
           }
         }
         if (inclExtras) {
@@ -169,6 +179,42 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
           le: parseJSON(reti.le, null) as { sph?: string; cyl?: string; axis?: string } | null,
         };
       })(),
+      gonioscopy: (() => {
+        const raw = parseJSON((visit as any).gonioNotes, {} as Record<string, string>);
+        return Object.values(raw).some(Boolean) ? raw : null;
+      })(),
+      tearFilm: (visit as any).tearFilm ? {
+        tbutRe: (visit as any).tearFilm.tbutRe ?? null,
+        tbutLe: (visit as any).tearFilm.tbutLe ?? null,
+        schirmer1Re: (visit as any).tearFilm.schirmer1Re ?? null,
+        schirmer1Le: (visit as any).tearFilm.schirmer1Le ?? null,
+        schirmer2Re: (visit as any).tearFilm.schirmer2Re ?? null,
+        schirmer2Le: (visit as any).tearFilm.schirmer2Le ?? null,
+      } : null,
+      lacrimalSac: (() => {
+        const ls = (visit as any).lacrimalSac;
+        if (!ls) return null;
+        const parseEye = (raw: unknown) => {
+          const parsed = parseJSON(raw as any, {} as any);
+          return Array.isArray(parsed)
+            ? { chips: parsed as string[], findings: "" }
+            : { chips: (parsed as any).chips ?? [], findings: (parsed as any).findings ?? "" };
+        };
+        return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null };
+      })(),
+      diplopiaChart: (visit as any).diplopiaChart
+        ? parseJSON((visit as any).diplopiaChart.grid, null)
+        : null,
+      hessChart: (visit as any).hessChart
+        ? { grid: parseJSON((visit as any).hessChart.grid, undefined) as Record<string, any> | undefined, interpretation: (visit as any).hessChart.interpretation ?? null }
+        : null,
+      minorProcedure: (visit as any).procedureName ? {
+        procedureName: (visit as any).procedureName ?? null,
+        procedureLaterality: (visit as any).procedureLaterality ?? null,
+        anesthesiaType: (visit as any).anesthesiaType ?? null,
+        procedureNotes: (visit as any).procedureNotes ?? null,
+      } : null,
+      adviseNotes: (visit as any).adviseNotes ?? null,
       investigations: visit.investigationOrders.map((i: any) => ({
         testName: i.testName, priority: i.priority, status: i.status,
         result: i.result ?? null, notes: i.notes ?? null,

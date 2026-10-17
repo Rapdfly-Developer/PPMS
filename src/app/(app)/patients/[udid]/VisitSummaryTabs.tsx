@@ -739,10 +739,10 @@ function LongContent({
       const methods = reRaw.methods ?? {};
       Object.entries(methods as Record<string, any>).forEach(([method, entry]) => {
         if (Object.values((entry as any).re || {}).some(Boolean))
-          res.push({ label: "Correction 1", method, re: (entry as any).re || {}, le: (entry as any).le || {} });
+          res.push({ label: "Refraction 1", method, re: (entry as any).re || {}, le: (entry as any).le || {} });
       });
     } else if (Object.values(reRaw).some((v: any) => v)) {
-      res.push({ label: "Correction 1", method: reRaw.method, re: reRaw, le: parseJSON<any>(rx.le, {}) });
+      res.push({ label: "Refraction 1", method: reRaw.method, re: reRaw, le: parseJSON<any>(rx.le, {}) });
     }
     const extras = parseJSON<any[]>(rx.extraCorrections, []);
     extras.forEach((ex: any) => {
@@ -874,10 +874,15 @@ function LongContent({
 
       {/* ── 3. Examination Findings ───────────────────────────────────── */}
       {hasExam && (
-        <LongSection head={<SumHead icon={<Microscope size={11} />} label="Examination Findings" color="text-teal-500" />}>
+        <>
 
           {hasVitals && (
-            <Block label="Vitals" icon={<Activity size={10} className="text-[var(--color-ink-400)]" />}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1.5 shrink-0">
+                <Activity size={11} className="text-[var(--color-ink-400)]" />
+                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Vitals</span>
+                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+              </span>
               <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
                 {vitals.map(([k, v], i) => (
                   <span key={k}>
@@ -887,7 +892,7 @@ function LongContent({
                   </span>
                 ))}
               </p>
-            </Block>
+            </div>
           )}
 
           {hasVA && (
@@ -1087,7 +1092,7 @@ function LongContent({
             );
           })()}
 
-        </LongSection>
+        </>
       )}
 
       {/* ── 4. Diagnosis ──────────────────────────────────────────────── */}
@@ -1163,26 +1168,25 @@ function LongContent({
       {/* ── 7. Investigations ─────────────────────────────────────────── */}
       {hasInv && (
         <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations" color="text-teal-500" />}>
-          <div className="flex flex-col divide-y divide-[var(--color-border)]">
+          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
             {data.investigationOrders.map((o: any, i: number) => (
-              <div key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug">
+              <li key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
+                  <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
+                  <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
                     {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
                     {o.testName}
+                    {o.notes && (
+                      <span className="font-normal text-[var(--color-ink-500)] italic ml-1.5">· In view of: {o.notes}</span>
+                    )}
                   </p>
-                  {o.notes && (
-                    <p className="text-caption sm:text-caption text-[var(--color-ink-500)] mt-0.5 leading-snug italic">
-                      In view of: {o.notes}
-                    </p>
-                  )}
                 </div>
                 {o.resultRef && (
                   <a href={fileHref(o.resultRef)!} target="_blank" rel="noreferrer" className="text-micro sm:text-caption text-[var(--color-primary-600)] underline shrink-0">View Result</a>
                 )}
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </LongSection>
       )}
 

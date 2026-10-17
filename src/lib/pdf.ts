@@ -1528,7 +1528,11 @@ export async function generateShortSummaryPdf(data: ShortSummaryData): Promise<B
 
 export type FullEmrData = {
   patient: { udid: string; name: string; age: number; sex: string; mobile?: string | null; address?: string | null };
-  visit: { date: Date; visitType?: string | null; hospitalName: string; hospitalLogo?: string | null; hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null; doctorName: string };
+  visit: {
+    date: Date; visitType?: string | null; hospitalName: string; hospitalLogo?: string | null;
+    hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null; doctorName: string;
+    followUpDate?: Date | null; referralEnabled?: boolean; referralNote?: string | null; inViewOf?: string | null;
+  };
   generalExam?: {
     bp?: string | null; pulse?: string | null; temperature?: string | null; weight?: string | null;
     chiefComplaint?: string | null; hpi?: string | null;
@@ -1543,15 +1547,22 @@ export type FullEmrData = {
     reNearN?: string | null; leNearN?: string | null;
   } | null;
   iopReadings: { method: string; re?: string | null; le?: string | null; takenAt: Date }[];
+  gonioscopy?: Record<string, string> | null;
   colourVision?: {
     re?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
     le?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
     notes?: string | null;
   } | null;
+  tearFilm?: { tbutRe?: number | null; tbutLe?: number | null; schirmer1Re?: number | null; schirmer1Le?: number | null; schirmer2Re?: number | null; schirmer2Le?: number | null } | null;
+  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null } | null;
+  diplopiaChart?: Record<string, { status?: string; notes?: string }> | null;
+  hessChart?: { grid?: Record<string, any>; interpretation?: string | null } | null;
   anteriorSegment?: Record<string, string[]> | null;
   posteriorSegment?: { data?: Record<string, string[]>; cdr?: string | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
+  minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null } | null;
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
+  adviseNotes?: string | null;
   opticalRx?: {
     re: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
     le: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
@@ -1569,7 +1580,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   const rawPmh = ge?.pastMedicalHistory;
   const pmhList = (Array.isArray(rawPmh) ? rawPmh
     : (typeof rawPmh === "string" ? (() => { try { return JSON.parse(rawPmh); } catch { return []; } })() : [])
-  ).filter(Boolean);
+  ).filter(Boolean).map((item: any) => typeof item === "string" ? item : (item.name ?? "")).filter(Boolean);
 
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
@@ -1840,42 +1851,58 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   </tbody>
 </table>
 
-<!-- 1 · CHIEF COMPLAINT & HPI -->
-${ge?.chiefComplaint || ge?.hpi
-  ? card("Chief Complaint & History",
-      (ge.chiefComplaint
-        ? `<div style="font-size:10.5px;font-weight:600;color:${INK};${ge.hpi ? "padding-bottom:6px;" : ""}">${complaintHtml(ge.chiefComplaint)}</div>`
-        : "") +
-      (ge.hpi
-        ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(ge.hpi)}</div>`
-        : ""))
+<!-- 1 · CHIEF COMPLAINT -->
+${ge?.chiefComplaint
+  ? card("Chief Complaint",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(ge.chiefComplaint)}</div>`)
   : ""}
 
-<!-- 2 · PAST MEDICAL HISTORY -->
-${card("Past Medical & Drug History",
-  ge
-    ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.7;white-space:pre-wrap;">` +
-      `<strong>PMH:</strong> ${pmhList.length ? pmhList.map(escapeHtml).join(", ") + (ge.pmhOtherText ? `, ${escapeHtml(ge.pmhOtherText)}` : "") : "Nil"}` +
-      (ge.medications ? `<br/><strong>Current Medications:</strong> ${escapeHtml(ge.medications)}` : "") +
-      (ge.nkda ? `<br/><strong style="color:#059669;">✓ NKDA</strong> — No Known Drug Allergies`
-        : ge.allergies ? `<br/><strong style="color:#DC2626;">Allergies:</strong> ${escapeHtml(ge.allergies)}` : "") +
-      (ge.familyHistory ? `<br/><strong>Family History:</strong> ${escapeHtml(ge.familyHistory)}` : "") +
-      (ge.socialHistory ? `<br/><strong>Social History:</strong> ${escapeHtml(ge.socialHistory)}` : "") +
-      `</div>`
-    : emptyNote)}
+<!-- 2 · ALLERGY — separate, bright red bold -->
+${ge?.nkda
+  ? card("Drug Allergy",
+      `<div style="font-size:10.5px;font-weight:700;color:#059669;">✓ NKDA — No Known Drug Allergies</div>`)
+  : ge?.allergies
+  ? card("Drug Allergy",
+      `<div style="font-size:10.5px;font-weight:700;color:#DC2626;">${escapeHtml(ge.allergies)}</div>`)
+  : ""}
 
-<!-- 3 · VITALS -->
-${card("Vitals & General Examination",
-  ge
-    ? `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-      fbox("Blood Pressure", ge.bp ? escapeHtml(ge.bp) + " mmHg" : "—") +
-      fbox("Pulse Rate", ge.pulse ? escapeHtml(ge.pulse) + " bpm" : "—") +
-      fbox("Temperature", ge.temperature ? escapeHtml(ge.temperature) : "—") +
-      fbox("Body Weight", ge.weight ? escapeHtml(ge.weight) : "—") +
-      `</tr></tbody></table>`
-    : emptyNote)}
+<!-- 3 · HPI -->
+${ge?.hpi
+  ? card("History of Present Illness",
+      `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(ge.hpi)}</div>`)
+  : ""}
 
-<!-- 4 · VISUAL ACUITY -->
+<!-- 4 · PAST HISTORY -->
+${ge && (pmhList.length || ge.pmhOtherText)
+  ? card("Past History",
+      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
+      pmhList.map(escapeHtml).join(", ") +
+      (ge.pmhOtherText ? (pmhList.length ? ", " : "") + escapeHtml(ge.pmhOtherText) : "") +
+      `</div>`)
+  : ""}
+
+<!-- 5 · SYSTEMIC HISTORY -->
+${ge && (ge.medications || ge.familyHistory || ge.socialHistory)
+  ? card("Systemic History",
+      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
+      (ge.medications ? `<div><strong style="color:${LABEL_C};">Current Medications:</strong> ${escapeHtml(ge.medications)}</div>` : "") +
+      (ge.familyHistory ? `<div><strong style="color:${LABEL_C};">Family History:</strong> ${escapeHtml(ge.familyHistory)}</div>` : "") +
+      (ge.socialHistory ? `<div><strong style="color:${LABEL_C};">Social History:</strong> ${escapeHtml(ge.socialHistory)}</div>` : "") +
+      `</div>`)
+  : ""}
+
+<!-- 6 · VITALS — single compact line -->
+${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
+  ? card("Vitals",
+      `<div style="font-size:9.5px;color:${INK};display:flex;flex-wrap:wrap;gap:0 20px;">` +
+      (ge.bp        ? `<span><strong style="color:${LABEL_C};">BP:</strong> ${escapeHtml(ge.bp)} mmHg</span>` : "") +
+      (ge.pulse     ? `<span><strong style="color:${LABEL_C};">Pulse:</strong> ${escapeHtml(ge.pulse)} bpm</span>` : "") +
+      (ge.temperature ? `<span><strong style="color:${LABEL_C};">Temp:</strong> ${escapeHtml(ge.temperature)}</span>` : "") +
+      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Wt:</strong> ${escapeHtml(ge.weight)}</span>` : "") +
+      `</div>`)
+  : ""}
+
+<!-- 7 · VISUAL ACUITY -->
 ${card("Visual Acuity",
   va
     ? `<table style="width:100%;border-collapse:collapse;">
@@ -1912,10 +1939,113 @@ ${card("Visual Acuity",
       </table>`
     : emptyNote)}
 
-<!-- 5 · IOP -->
-${card("Intraocular Pressure (IOP)",
-  d.iopReadings.length
-    ? `<table style="width:100%;border-collapse:collapse;">
+<!-- 8 · REFRACTIONS — all in spectacle format with method labels -->
+${(() => {
+  const rxTable = (label: string, re: any, le: any) =>
+    `<div style="margin-bottom:8px;">` +
+    `<div style="font-size:8px;font-weight:800;color:${LABEL_C};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">${escapeHtml(label)}</div>` +
+    `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
+    `<th style="${TH}width:110px;">Eye</th>` +
+    `<th style="${TH}text-align:center;">Sph</th><th style="${TH}text-align:center;">Cyl</th><th style="${TH}text-align:center;">Axis°</th>` +
+    `<th style="${TH}text-align:center;background:#f4f6f5;">VA</th>` +
+    `<th style="${TH}text-align:center;">Add</th>` +
+    `<th style="${TH}text-align:center;background:#f4f6f5;">NV</th>` +
+    `</tr></thead><tbody>` +
+    `<tr style="background:#fff;"><td style="${TD}font-weight:700;color:${INK};">Right Eye</td>` +
+    `<td style="${TD}text-align:center;">${v2(re?.sph)}</td><td style="${TD}text-align:center;">${v2(re?.cyl)}</td><td style="${TD}text-align:center;">${v2(re?.axis)}</td>` +
+    `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(re?.va)}</td><td style="${TD}text-align:center;">${v2(re?.nearSph)}</td><td style="${TD}text-align:center;background:#f4f6f5;">${v2(re?.nearVa)}</td></tr>` +
+    `<tr style="background:${TINT};"><td style="${TD}font-weight:700;color:${INK};">Left Eye</td>` +
+    `<td style="${TD}text-align:center;">${v2(le?.sph)}</td><td style="${TD}text-align:center;">${v2(le?.cyl)}</td><td style="${TD}text-align:center;">${v2(le?.axis)}</td>` +
+    `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.va)}</td><td style="${TD}text-align:center;">${v2(le?.nearSph)}</td><td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.nearVa)}</td></tr>` +
+    `</tbody></table></div>`;
+  const blocks: string[] = [];
+  if (d.extraCorrections && d.extraCorrections.length > 0) {
+    d.extraCorrections.forEach((ec) => {
+      const method = ec.re?.method || ec.le?.method || "";
+      blocks.push(rxTable(`${ec.label}${method ? " — " + method : ""}`, ec.re, ec.le));
+    });
+  }
+  if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) {
+    blocks.push(rxTable("Retinoscopy", d.retinoscopy.re, d.retinoscopy.le));
+  }
+  return blocks.length ? card("Refractions", blocks.join("")) : "";
+})()}
+
+<!-- 9 · EOM / DEVIATION (Diplopia & Hess Charts) -->
+${(() => {
+  const dp = d.diplopiaChart;
+  const hc = d.hessChart;
+  if (!dp && !hc) return "";
+  const POSITIONS = ["TL","T","TR","L","C","R","BL","B","BR"];
+  const POS_LABELS: Record<string,string> = { TL:"↖ Up-Left",T:"↑ Up",TR:"↗ Up-Right",L:"← Left",C:"Primary",R:"→ Right",BL:"↙ Down-Left",B:"↓ Down",BR:"↘ Down-Right" };
+  let inner = "";
+  if (dp && Object.keys(dp).length > 0) {
+    const dpRows = POSITIONS.map((pos) => {
+      const cell = dp[pos];
+      if (!cell) return "";
+      const status = cell.status ?? "";
+      const hasData = status && status !== "NOT_TESTED";
+      if (!hasData) return "";
+      const color = status === "DIPLOPIA_PRESENT" ? "#DC2626" : "#059669";
+      return `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">${POS_LABELS[pos] ?? pos}</td>` +
+        `<td style="${TD};color:${color};font-weight:600;">${escapeHtml(status.replace(/_/g," "))}</td>` +
+        `<td style="${TD}color:#555;">${cell.notes ? escapeHtml(cell.notes) : "—"}</td></tr>`;
+    }).filter(Boolean).join("");
+    if (dpRows) {
+      inner += `<div style="font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Diplopia Chart</div>` +
+        `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
+        `<th style="${TH}">Position</th><th style="${TH}">Diplopia</th><th style="${TH}">Notes</th>` +
+        `</tr></thead><tbody>${dpRows}</tbody></table>`;
+    }
+  }
+  if (hc) {
+    if (inner) inner += `<div style="height:8px;"></div>`;
+    inner += `<div style="font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Hess Chart</div>`;
+    if (hc.interpretation) inner += `<div style="font-size:9.5px;color:${INK};margin-bottom:4px;">${escapeHtml(hc.interpretation)}</div>`;
+  }
+  return inner ? card("Ocular Motility / EOM & Deviation", inner) : "";
+})()}
+
+<!-- 10 · COLOUR VISION & CONTRAST SENSITIVITY -->
+${d.colourVision
+  ? (() => {
+      const cvEye = (eye: typeof d.colourVision extends null | undefined ? never : NonNullable<typeof d.colourVision>["re"]) => {
+        if (!eye) return "";
+        const rows: string[] = [];
+        if (eye.cvMethod || eye.result) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CV Method</td><td style="${TD}">${v2(eye.cvMethod)}</td>` +
+          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">Result</td><td style="${TD}">${v2(eye.result)}</td></tr>`
+        );
+        if (eye.notes) rows.push(`<tr><td style="${TD}font-weight:600;color:${LABEL_C};">Notes</td><td style="${TD}" colspan="3">${v2(eye.notes)}</td></tr>`);
+        if (eye.csMethod || eye.csResult) rows.push(
+          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Method</td><td style="${TD}">${v2(eye.csMethod)}</td>` +
+          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Result</td><td style="${TD}">${v2(eye.csResult)}</td></tr>`
+        );
+        if (eye.csNotes) rows.push(`<tr><td style="${TD}font-weight:600;color:${LABEL_C};">CS Notes</td><td style="${TD}" colspan="3">${v2(eye.csNotes)}</td></tr>`);
+        return rows.length ? `<table style="width:100%;border-collapse:collapse;">${rows.join("")}</table>` : "";
+      };
+      const reHtml = cvEye(d.colourVision!.re);
+      const leHtml = cvEye(d.colourVision!.le);
+      const inner =
+        `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+        `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
+        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
+        (reHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
+        `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
+        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
+        (leHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
+        `</td></tr></tbody></table>` +
+        (d.colourVision!.notes ? `<div style="margin-top:6px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
+      return card("Colour Vision & Contrast Sensitivity", inner);
+    })()
+  : ""}
+
+<!-- 11 · IOP & GONIOSCOPY -->
+${card("Intraocular Pressure (IOP) & Gonioscopy",
+  (() => {
+    let inner = "";
+    if (d.iopReadings.length) {
+      inner += `<table style="width:100%;border-collapse:collapse;">
         <thead><tr>
           <th style="${TH}">Method</th>
           <th style="${TH}">Right Eye (RE)</th>
@@ -1931,51 +2061,62 @@ ${card("Intraocular Pressure (IOP)",
             `<td style="${TD}color:#555;">${format(new Date(r.takenAt), "hh:mm a")}</td>` +
             `</tr>`).join("")}
         </tbody>
-      </table>`
-    : emptyNote)}
+      </table>`;
+    } else {
+      inner += `<div style="margin-bottom:8px;">${none("No IOP readings recorded")}</div>`;
+    }
+    if (d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)) {
+      inner += `<div style="margin-top:8px;font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Gonioscopy</div>`;
+      inner += `<div style="font-size:9.5px;color:${INK};line-height:1.7;">`;
+      Object.entries(d.gonioscopy).forEach(([k, v]) => {
+        if (v) inner += `<div><strong style="color:${LABEL_C};">${escapeHtml(k)}:</strong> ${escapeHtml(v)}</div>`;
+      });
+      inner += `</div>`;
+    }
+    return inner;
+  })())}
 
-<!-- 6 · COLOUR VISION -->
-${d.colourVision
-  ? (() => {
-      const cvEye = (eye: typeof d.colourVision extends null | undefined ? never : NonNullable<typeof d.colourVision>["re"]) => {
-        if (!eye) return "";
-        const rows: string[] = [];
-        if (eye.cvMethod || eye.result) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CV Method</td><td style="${TD}">${v2(eye.cvMethod)}</td>` +
-          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">Result</td><td style="${TD}">${v2(eye.result)}</td></tr>`
-        );
-        if (eye.notes) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">Notes</td><td style="${TD}" colspan="3">${v2(eye.notes)}</td></tr>`
-        );
-        if (eye.csMethod || eye.csResult) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Method</td><td style="${TD}">${v2(eye.csMethod)}</td>` +
-          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Result</td><td style="${TD}">${v2(eye.csResult)}</td></tr>`
-        );
-        if (eye.csNotes) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">CS Notes</td><td style="${TD}" colspan="3">${v2(eye.csNotes)}</td></tr>`
-        );
-        return rows.length ? `<table style="width:100%;border-collapse:collapse;">${rows.join("")}</table>` : "";
-      };
-      const reHtml = cvEye(d.colourVision!.re);
-      const leHtml = cvEye(d.colourVision!.le);
-      const inner =
-        `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-        `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
-        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
-        (reHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
-        `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
-        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
-        (leHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
-        `</td></tr></tbody></table>` +
-        (d.colourVision!.notes ? `<div style="margin-top:6px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
-      return card("Colour Vision", inner);
-    })()
+<!-- 12 · TEAR FILM -->
+${d.tearFilm && (d.tearFilm.tbutRe != null || d.tearFilm.tbutLe != null || d.tearFilm.schirmer1Re != null || d.tearFilm.schirmer1Le != null)
+  ? card("Tear Film",
+      `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
+      `<th style="${TH}"></th><th style="${TH}text-align:center;">TBUT RE</th><th style="${TH}text-align:center;">TBUT LE</th>` +
+      `<th style="${TH}text-align:center;">Schirmer I RE</th><th style="${TH}text-align:center;">Schirmer I LE</th>` +
+      `<th style="${TH}text-align:center;">Schirmer II RE</th><th style="${TH}text-align:center;">Schirmer II LE</th>` +
+      `</tr></thead><tbody><tr style="background:#fff;">` +
+      `<td style="${TD}font-weight:600;color:${LABEL_C};">Value</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.tbutRe != null ? `${d.tearFilm.tbutRe} s` : "—"}</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.tbutLe != null ? `${d.tearFilm.tbutLe} s` : "—"}</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer1Re != null ? `${d.tearFilm.schirmer1Re} mm` : "—"}</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer1Le != null ? `${d.tearFilm.schirmer1Le} mm` : "—"}</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer2Re != null ? `${d.tearFilm.schirmer2Re} mm` : "—"}</td>` +
+      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer2Le != null ? `${d.tearFilm.schirmer2Le} mm` : "—"}</td>` +
+      `</tr></tbody></table>`)
   : ""}
 
-<!-- 7 · ANTERIOR SEGMENT -->
+<!-- 13 · LACRIMAL SAC -->
+${d.lacrimalSac && (d.lacrimalSac.re || d.lacrimalSac.le)
+  ? card("Lacrimal Sac Syringing",
+      `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
+      `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
+      `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
+      (d.lacrimalSac.re
+        ? (d.lacrimalSac.re.chips?.length ? `<div style="font-size:9.5px;">${d.lacrimalSac.re.chips.map(escapeHtml).join(" · ")}</div>` : "") +
+          (d.lacrimalSac.re.findings ? `<div style="font-size:9px;color:#555;margin-top:2px;">${escapeHtml(d.lacrimalSac.re.findings)}</div>` : "")
+        : `<span style="color:#9AA5A3;font-size:9px;font-style:italic;">—</span>`) +
+      `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
+      `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
+      (d.lacrimalSac.le
+        ? (d.lacrimalSac.le.chips?.length ? `<div style="font-size:9.5px;">${d.lacrimalSac.le.chips.map(escapeHtml).join(" · ")}</div>` : "") +
+          (d.lacrimalSac.le.findings ? `<div style="font-size:9px;color:#555;margin-top:2px;">${escapeHtml(d.lacrimalSac.le.findings)}</div>` : "")
+        : `<span style="color:#9AA5A3;font-size:9px;font-style:italic;">—</span>`) +
+      `</td></tr></tbody></table>`)
+  : ""}
+
+<!-- 14 · ANTERIOR SEGMENT -->
 ${card("Anterior Segment Examination", renderSegment(d.anteriorSegment as any))}
 
-<!-- 8 · POSTERIOR SEGMENT -->
+<!-- 15 · POSTERIOR SEGMENT -->
 ${card("Posterior Segment Examination",
   (() => {
     const ps = d.posteriorSegment as any;
@@ -1989,7 +2130,7 @@ ${card("Posterior Segment Examination",
         : "");
   })())}
 
-<!-- 9 · ASSESSMENT / DIAGNOSIS -->
+<!-- 16 · ASSESSMENT / DIAGNOSIS -->
 ${card("Assessment / Diagnosis",
   d.diagnoses.length
     ? `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
@@ -2002,7 +2143,22 @@ ${card("Assessment / Diagnosis",
       `</div>`
     : none("No diagnoses recorded"))}
 
-<!-- 10 · MEDICATIONS PRESCRIBED -->
+<!-- 17 · MINOR PROCEDURE -->
+${d.minorProcedure?.procedureName
+  ? card("Minor Procedure",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
+      [
+        d.minorProcedure.procedureLaterality ? escapeHtml(d.minorProcedure.procedureLaterality) : "",
+        escapeHtml(d.minorProcedure.procedureName),
+        d.minorProcedure.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure.anesthesiaType)}` : "",
+      ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
+      `</div>` +
+      (d.minorProcedure.procedureNotes
+        ? `<div style="margin-top:5px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(d.minorProcedure.procedureNotes)}</div>`
+        : ""))
+  : ""}
+
+<!-- 18 · MEDICATIONS PRESCRIBED -->
 ${card("Medications Prescribed",
   `<table style="width:100%;border-collapse:collapse;">
     <thead><tr>
@@ -2015,86 +2171,13 @@ ${card("Medications Prescribed",
     <tbody>${medRows}</tbody>
   </table>`)}
 
-<!-- 11 · OPTICAL PRESCRIPTION -->
-${d.opticalRx ? card(`Optical Prescription${d.opticalRx.re.method || d.opticalRx.le.method ? ` — ${escapeHtml(d.opticalRx.re.method || d.opticalRx.le.method || "")}` : ""}`,
-  `<table style="width:100%;border-collapse:collapse;">
-    <thead><tr>
-      <th style="${TH}width:110px;">Eye</th>
-      <th style="${TH}text-align:center;">Sph</th>
-      <th style="${TH}text-align:center;">Cyl</th>
-      <th style="${TH}text-align:center;">Axis°</th>
-      <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
-      <th style="${TH}text-align:center;">Add</th>
-      <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
-    </tr></thead>
-    <tbody>
-      ${["re", "le"].map((eye, ei) => {
-        const rx = d.opticalRx![eye as "re" | "le"];
-        return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
-          `<td style="${TD}font-weight:700;color:#0B3D3A;">${eye === "re" ? "Right Eye" : "Left Eye"}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
-          `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.va)}</td>` +
-          `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
-          `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.nearVa)}</td>` +
-          `</tr>`;
-      }).join("")}
-    </tbody>
-  </table>`) : ""}
-
-<!-- 11b · EXTRA CORRECTIONS -->
-${d.extraCorrections && d.extraCorrections.length > 0
-  ? d.extraCorrections.map((ec) => {
-      const ecMethod = ec.re?.method || ec.le?.method || "";
-      return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
-        `<table style="width:100%;border-collapse:collapse;"><thead><tr>
-          <th style="${TH}width:110px;">Eye</th>
-          <th style="${TH}text-align:center;">Sph</th>
-          <th style="${TH}text-align:center;">Cyl</th>
-          <th style="${TH}text-align:center;">Axis°</th>
-          <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
-          <th style="${TH}text-align:center;">Add</th>
-          <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
-        </tr></thead><tbody>
-          ${["re","le"].map((eye, ei) => {
-            const rx = ec[eye as "re" | "le"] as any;
-            return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
-              `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye === "re" ? "Right Eye" : "Left Eye"}</td>` +
-              `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
-              `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
-              `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
-              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.va)}</td>` +
-              `<td style="${TD}text-align:center;">${v2(rx?.nearSph)}</td>` +
-              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(rx?.nearVa)}</td>` +
-              `</tr>`;
-          }).join("")}
-        </tbody></table>`);
-    }).join("")
+<!-- 18b · ADVICE NOTES -->
+${d.adviseNotes
+  ? card("Advice",
+      `<div style="font-size:9.5px;color:${INK};line-height:1.6;white-space:pre-wrap;">${escapeHtml(d.adviseNotes)}</div>`)
   : ""}
 
-<!-- 11c · RETINOSCOPY -->
-${d.retinoscopy
-  ? card("Retinoscopy",
-      `<table style="width:100%;border-collapse:collapse;"><thead><tr>
-        <th style="${TH}width:110px;">Eye</th>
-        <th style="${TH}text-align:center;">SPH</th>
-        <th style="${TH}text-align:center;">CYL</th>
-        <th style="${TH}text-align:center;">Axis</th>
-      </tr></thead><tbody>
-        ${["re","le"].map((eye, ei) => {
-          const rx = d.retinoscopy![eye as "re" | "le"] as any;
-          return `<tr style="background:${ei % 2 === 0 ? "#fff" : TINT};">` +
-            `<td style="${TD}font-weight:600;color:${LABEL_C};">${eye.toUpperCase()}</td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
-            `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td>` +
-            `</tr>`;
-        }).join("")}
-      </tbody></table>`)
-  : ""}
-
-<!-- 12 · INVESTIGATIONS -->
+<!-- 19 · INVESTIGATIONS WITH IN VIEW OF -->
 ${d.investigations.length
   ? card("Investigations Ordered",
       `<table style="width:100%;border-collapse:collapse;">
@@ -2103,10 +2186,28 @@ ${d.investigations.length
           <th style="${TH}">Test / Investigation</th>
           <th style="${TH}width:72px;">Priority</th>
           <th style="${TH}width:80px;">Status</th>
-          <th style="${TH}">Result / Notes</th>
+          <th style="${TH}">In View Of / Notes</th>
         </tr></thead>
         <tbody>${invRows}</tbody>
       </table>`)
+  : ""}
+
+<!-- 20 · FOLLOW-UP WITH IN VIEW OF -->
+${d.visit.followUpDate
+  ? card("Follow-up",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>` +
+      (d.visit.inViewOf && d.visit.inViewOf.trim()
+        ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        : ""))
+  : ""}
+
+<!-- 21 · REFERRAL WITH IN VIEW OF -->
+${d.visit.referralEnabled && d.visit.referralNote && d.visit.referralNote.trim()
+  ? card("Referral",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(d.visit.referralNote.trim())}</div>` +
+      (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
+        ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        : ""))
   : ""}
 
 <!-- DOCTOR SIGNATURE (matches Short Summary sign-off block) -->
