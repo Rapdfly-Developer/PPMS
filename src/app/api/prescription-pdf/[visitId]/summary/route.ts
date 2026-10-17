@@ -129,7 +129,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const va = visit.visualAcuity as any;
   const vaReJson = va ? parseJSON(va.re, {} as Record<string, string>) : {};
   const vaLeJson = va ? parseJSON(va.le, {} as Record<string, string>) : {};
-  const visualAcuity = inclVa && va
+  const vaHasValues = [vaReJson.unaided, vaReJson.pinhole, vaReJson.bestCorrected, vaReJson.nearUnaided, vaReJson.nearBestCorrected, vaLeJson.unaided, vaLeJson.pinhole, vaLeJson.bestCorrected, vaLeJson.nearUnaided, vaLeJson.nearBestCorrected].some(Boolean);
+  const visualAcuity = inclVa && va && vaHasValues
     ? {
         reDistance: { unaided: vaReJson.unaided ?? null, ph: vaReJson.pinhole ?? null, bcva: vaReJson.bestCorrected ?? null },
         leDistance: { unaided: vaLeJson.unaided ?? null, ph: vaLeJson.pinhole ?? null, bcva: vaLeJson.bestCorrected ?? null },

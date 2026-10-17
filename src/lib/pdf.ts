@@ -1209,7 +1209,7 @@ ${procDisplay
         d.minorProcedure!.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure!.anesthesiaType!)}` : "",
       ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
       `</div>` +
-      (d.minorProcedure!.procedureNotes ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;">${escapeHtml(d.minorProcedure!.procedureNotes)}</div>` : ""))
+      (d.minorProcedure!.procedureNotes ? `<div style="margin-top:6px;padding:6px 10px;background:#F0F8F6;border:1px solid #C7DED9;border-left:3px solid #2BA89C;border-radius:0 5px 5px 0;font-size:9px;color:#2A4A46;line-height:1.55;white-space:pre-wrap;">${escapeHtml(d.minorProcedure!.procedureNotes)}</div>` : ""))
   : ""}
 
 <!-- 3 · MEDICATIONS -->
@@ -1903,9 +1903,9 @@ ${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
   : ""}
 
 <!-- 7 · VISUAL ACUITY -->
-${card("Visual Acuity",
-  va
-    ? `<table style="width:100%;border-collapse:collapse;">
+${va
+  ? card("Visual Acuity",
+      `<table style="width:100%;border-collapse:collapse;">
         <thead><tr>
           <th style="${TH}width:110px;"></th>
           <th style="${TH}">Unaided / UCVA</th>
@@ -1936,8 +1936,8 @@ ${card("Visual Acuity",
             <td style="${TD}">${v2(va.leNearN)}</td>
           </tr>
         </tbody>
-      </table>`
-    : emptyNote)}
+      </table>`)
+  : ""}
 
 <!-- 8 · REFRACTIONS — all in spectacle format with method labels -->
 ${(() => {
@@ -2154,7 +2154,7 @@ ${d.minorProcedure?.procedureName
       ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
       `</div>` +
       (d.minorProcedure.procedureNotes
-        ? `<div style="margin-top:5px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(d.minorProcedure.procedureNotes)}</div>`
+        ? `<div style="margin-top:6px;padding:7px 11px;background:#F0F8F6;border:1px solid #C7DED9;border-left:3px solid #2BA89C;border-radius:0 5px 5px 0;font-size:9px;color:#2A4A46;line-height:1.55;white-space:pre-wrap;">${escapeHtml(d.minorProcedure.procedureNotes)}</div>`
         : ""))
   : ""}
 

@@ -425,20 +425,20 @@ function ShortContent({ complaint, diagnoses, emrData }: {
 
       {/* 4. Minor procedure with notes */}
       {hasProcedure && (
-        <div>
-          <SumHead icon={<Microscope size={11} />} label="Minor Procedure" color="text-[var(--color-ink-400)]" />
-          <div className="space-y-0">
-            <div className="flex items-start gap-0">
-              <p className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-700)] font-semibold">
-                {emrData.procedureLaterality && (
-                  <span className="font-bold text-[var(--color-primary-700)] mr-2">{emrData.procedureLaterality}</span>
-                )}
-                {emrData.procedureName}
-                {emrData.procedureNotes && (
-                  <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {emrData.procedureNotes}</span>
-                )}
-              </p>
-            </div>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Microscope size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Minor Procedure</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <div className="flex-1 min-w-0">
+            <span className="text-caption font-semibold text-[var(--color-ink-800)]">
+              {emrData.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{emrData.procedureLaterality}</span>}
+              {emrData.procedureName}
+            </span>
+            {emrData.procedureNotes && (
+              <div className="mt-1.5 px-3 py-2 rounded-md border border-[var(--color-border)] border-l-2 border-l-[var(--color-primary-300)] bg-[var(--color-surface-sunken)] text-caption leading-relaxed text-[var(--color-ink-600)] whitespace-pre-wrap">{emrData.procedureNotes}</div>
+            )}
           </div>
         </div>
       )}
@@ -526,13 +526,12 @@ function ShortContent({ complaint, diagnoses, emrData }: {
 
       {/* 9. Advice notes */}
       {emrData?.adviseNotes && (
-        <div className="flex items-start gap-2 flex-wrap">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <CalendarCheck size={11} className="text-amber-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
-            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-          </span>
-          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{emrData.adviseNotes}</span>
+          </div>
+          <div className="px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{emrData.adviseNotes}</div>
         </div>
       )}
 
@@ -898,14 +897,38 @@ function LongContent({
           {hasVA && (
             <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
               <DataTable>
-                <Cols widths={COLS_EYE} />
-                <EyeHead />
+                <Cols widths={["22%", "26%", "26%", "26%"]} />
+                <thead>
+                  <tr>
+                    <th className={TH}></th>
+                    <th className={TH}>Unaided / UCVA</th>
+                    <th className={TH}>Pinhole (PH)</th>
+                    <th className={TH}>Best Corrected (BCVA)</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  <EyeRow label="Distance Unaided"    re={reVAp.unaided}           le={leVAp.unaided} />
-                  <EyeRow label="Distance Pinhole"    re={reVAp.pinhole}           le={leVAp.pinhole} />
-                  <EyeRow label="Best Corrected"      re={reVAp.bestCorrected}     le={leVAp.bestCorrected} />
-                  <EyeRow label="Near Unaided"        re={reVAp.nearUnaided}       le={leVAp.nearUnaided} />
-                  <EyeRow label="Near Best Corrected" re={reVAp.nearBestCorrected} le={leVAp.nearBestCorrected} />
+                  <tr>
+                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">RE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Distance)</span></td>
+                    <td className={TD}>{reVAp.unaided || DASH}</td>
+                    <td className={TD}>{reVAp.pinhole || DASH}</td>
+                    <td className={TD}>{reVAp.bestCorrected || DASH}</td>
+                  </tr>
+                  <tr className="bg-[var(--color-surface-sunken)]">
+                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">LE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Distance)</span></td>
+                    <td className={TD}>{leVAp.unaided || DASH}</td>
+                    <td className={TD}>{leVAp.pinhole || DASH}</td>
+                    <td className={TD}>{leVAp.bestCorrected || DASH}</td>
+                  </tr>
+                  <tr>
+                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">RE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                    <td className={TD} colSpan={2}>{reVAp.nearUnaided || DASH}</td>
+                    <td className={TD}>{reVAp.nearBestCorrected || DASH}</td>
+                  </tr>
+                  <tr className="bg-[var(--color-surface-sunken)]">
+                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">LE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                    <td className={TD} colSpan={2}>{leVAp.nearUnaided || DASH}</td>
+                    <td className={TD}>{leVAp.nearBestCorrected || DASH}</td>
+                  </tr>
                 </tbody>
               </DataTable>
             </Block>
@@ -1124,17 +1147,21 @@ function LongContent({
 
       {/* ── 5. Minor Procedure ────────────────────────────────────────── */}
       {hasProc && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-baseline gap-2 flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
             <Stethoscope size={11} className="text-[var(--color-ink-400)]" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Minor Procedure</span>
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
-          <span className="text-caption font-semibold text-[var(--color-ink-800)]">
-            {data.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.procedureLaterality}</span>}
-            {data.procedureName}
-            {data.procedureNotes && <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {data.procedureNotes}</span>}
-          </span>
+          <div className="flex-1 min-w-0">
+            <span className="text-caption font-semibold text-[var(--color-ink-800)]">
+              {data.procedureLaterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.procedureLaterality}</span>}
+              {data.procedureName}
+            </span>
+            {data.procedureNotes && (
+              <div className="mt-1.5 px-3 py-2 rounded-md border border-[var(--color-border)] border-l-2 border-l-[var(--color-primary-300)] bg-[var(--color-surface-sunken)] text-caption leading-relaxed text-[var(--color-ink-600)] whitespace-pre-wrap">{data.procedureNotes}</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1207,13 +1234,12 @@ function LongContent({
         </div>
       )}
       {data.adviseNotes && (
-        <div className="flex items-start gap-2 flex-wrap">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <CalendarCheck size={11} className="text-[var(--color-ink-400)]" />
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <CalendarCheck size={11} className="text-amber-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
-            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-          </span>
-          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{data.adviseNotes}</span>
+          </div>
+          <div className="px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{data.adviseNotes}</div>
         </div>
       )}
       {data.referralEnabled && (

@@ -49,7 +49,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
 
   const vaReJson = parseJSON((va as any)?.re, {} as Record<string, string>);
   const vaLeJson = parseJSON((va as any)?.le, {} as Record<string, string>);
-  const vaData = va ? {
+  const vaHasValues = [vaReJson.unaided, vaReJson.pinhole, vaReJson.bestCorrected, vaReJson.nearUnaided, vaReJson.nearBestCorrected, vaLeJson.unaided, vaLeJson.pinhole, vaLeJson.bestCorrected, vaLeJson.nearUnaided, vaLeJson.nearBestCorrected].some(Boolean);
+  const vaData = va && vaHasValues ? {
     reDistance: { unaided: vaReJson.unaided ?? null, ph: vaReJson.pinhole ?? null, bcva: vaReJson.bestCorrected ?? null },
     leDistance: { unaided: vaLeJson.unaided ?? null, ph: vaLeJson.pinhole ?? null, bcva: vaLeJson.bestCorrected ?? null },
     reNear: vaReJson.nearUnaided ?? null,
