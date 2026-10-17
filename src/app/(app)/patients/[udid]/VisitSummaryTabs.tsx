@@ -836,13 +836,13 @@ function LongContent({
                 {pmhList.map((item, i) => {
                   const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
                   return (
-                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-caption sm:text-caption font-medium">
-                      {item.name}{since ? <span className="opacity-70 ml-1 font-normal">· {since}</span> : null}
+                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-800 text-caption sm:text-caption font-medium">
+                      {item.name}{since ? <span className="opacity-60 ml-1 font-normal">· {since}</span> : null}
                     </span>
                   );
                 })}
                 {g.pmhOtherText && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-700 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
                 )}
               </div>
             </div>
