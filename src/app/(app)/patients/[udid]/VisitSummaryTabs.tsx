@@ -953,94 +953,57 @@ function LongContent({
             </Block>
           ))}
 
-          {hasCV && (
-            <Block label="Colour Vision">
-              {(() => {
-                type CVMethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
-                const reMethod = (reCVraw as any).cvMethod || "";
-                const leMethod = (leCVraw as any).cvMethod || "";
-                const rows: CVMethodRow[] = [];
-                if (reMethod === leMethod) {
-                  rows.push({ method: reMethod, re: reCVraw.result || null, reNotes: (reCVraw as any).notes || null, le: leCVraw.result || null, leNotes: (leCVraw as any).notes || null });
-                } else {
-                  if (reCVraw.result) rows.push({ method: reMethod, re: reCVraw.result, reNotes: (reCVraw as any).notes || null, le: null, leNotes: null });
-                  if (leCVraw.result) rows.push({ method: leMethod, re: null, reNotes: null, le: leCVraw.result, leNotes: (leCVraw as any).notes || null });
-                }
-                return (
-                  <DataTable minWidth={260}>
-                    <Cols widths={["36%", "32%", "32%"]} />
-                    <thead><tr>
-                      <th className={TH}></th>
-                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
-                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
-                    </tr></thead>
-                    <tbody>
-                      {rows.map((row, i) => (
-                        <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-sunken)]" : ""}>
-                          <td className={TD_MUTED}>
-                            <span className="text-[var(--color-ink-300)] mr-1">{i + 1})</span>
-                            {row.method || "—"}
-                          </td>
-                          <td className={TD}>
-                            {row.re || DASH}
-                            {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.reNotes}]</p>}
-                          </td>
-                          <td className={TD}>
-                            {row.le || DASH}
-                            {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.leNotes}]</p>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </DataTable>
-                );
-              })()}
-            </Block>
-          )}
-          {hasCS && (
-            <Block label="Contrast Sensitivity">
-              {(() => {
-                type CSMethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
-                const reMethod = (reCVraw as any).csMethod || "";
-                const leMethod = (leCVraw as any).csMethod || "";
-                const rows: CSMethodRow[] = [];
-                if (reMethod === leMethod) {
-                  rows.push({ method: reMethod, re: (reCVraw as any).csResult || null, reNotes: (reCVraw as any).csNotes || null, le: (leCVraw as any).csResult || null, leNotes: (leCVraw as any).csNotes || null });
-                } else {
-                  if ((reCVraw as any).csResult) rows.push({ method: reMethod, re: (reCVraw as any).csResult, reNotes: (reCVraw as any).csNotes || null, le: null, leNotes: null });
-                  if ((leCVraw as any).csResult) rows.push({ method: leMethod, re: null, reNotes: null, le: (leCVraw as any).csResult, leNotes: (leCVraw as any).csNotes || null });
-                }
-                return (
-                  <DataTable minWidth={260}>
-                    <Cols widths={["36%", "32%", "32%"]} />
-                    <thead><tr>
-                      <th className={TH}></th>
-                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
-                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
-                    </tr></thead>
-                    <tbody>
-                      {rows.map((row, i) => (
-                        <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-sunken)]" : ""}>
-                          <td className={TD_MUTED}>
-                            <span className="text-[var(--color-ink-300)] mr-1">{i + 1})</span>
-                            {row.method || "—"}
-                          </td>
-                          <td className={TD}>
-                            {row.re || DASH}
-                            {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.reNotes}]</p>}
-                          </td>
-                          <td className={TD}>
-                            {row.le || DASH}
-                            {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.leNotes}]</p>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </DataTable>
-                );
-              })()}
-            </Block>
-          )}
+          {(hasCV || hasCS) && (() => {
+            type MethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
+            const buildRows = (reM: string, leM: string, reVal: string | null, reN: string | null, leVal: string | null, leN: string | null): MethodRow[] => {
+              if (reM === leM) return [{ method: reM, re: reVal, reNotes: reN, le: leVal, leNotes: leN }];
+              const out: MethodRow[] = [];
+              if (reVal) out.push({ method: reM, re: reVal, reNotes: reN, le: null, leNotes: null });
+              if (leVal) out.push({ method: leM, re: null, reNotes: null, le: leVal, leNotes: leN });
+              return out;
+            };
+            const cvRows = buildRows(
+              (reCVraw as any).cvMethod || "", (leCVraw as any).cvMethod || "",
+              reCVraw.result || null, (reCVraw as any).notes || null,
+              leCVraw.result || null, (leCVraw as any).notes || null,
+            );
+            const csRows = buildRows(
+              (reCVraw as any).csMethod || "", (leCVraw as any).csMethod || "",
+              (reCVraw as any).csResult || null, (reCVraw as any).csNotes || null,
+              (leCVraw as any).csResult || null, (leCVraw as any).csNotes || null,
+            );
+            const MethodGrid = ({ rows }: { rows: MethodRow[] }) => (
+              <div className="space-y-0">
+                <div className="grid grid-cols-[2fr_1fr_1fr] gap-x-4 pb-1 mb-0.5 border-b border-[var(--color-border)]">
+                  <div />
+                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)]">RE</div>
+                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)]">LE</div>
+                </div>
+                {rows.map((row, i) => (
+                  <div key={i} className={`grid grid-cols-[2fr_1fr_1fr] gap-x-4 py-1.5${i < rows.length - 1 ? " border-b border-[var(--color-border)]" : ""}`}>
+                    <div className="flex items-start gap-1.5">
+                      <span className="mt-px inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-[9px] font-bold shrink-0 border border-[var(--color-primary-100)]">{i + 1}</span>
+                      <span className="text-caption font-medium text-[var(--color-ink-700)] leading-snug">{row.method || "—"}</span>
+                    </div>
+                    <div>
+                      <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.re ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.reNotes}]</p>}
+                    </div>
+                    <div>
+                      <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.le ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
+                      {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.leNotes}]</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+            return (
+              <>
+                {hasCV && <Block label="Colour Vision"><MethodGrid rows={cvRows} /></Block>}
+                {hasCS && <Block label="Contrast Sensitivity"><MethodGrid rows={csRows} /></Block>}
+              </>
+            );
+          })()}
 
           {(hasIOP || hasGonio) && (
             <Block label={hasIOP && hasGonio ? "IOP &amp; Gonioscopy" : hasIOP ? "Intraocular Pressure" : "Gonioscopy"}>
