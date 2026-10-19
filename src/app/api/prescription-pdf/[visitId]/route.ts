@@ -156,12 +156,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
               const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
               Object.entries(methods).forEach(([method, entry]) => {
                 if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
-                  extraCorrs.push({ label: ex.label, re: entry.re || {}, le: entry.le || {}, method });
+                  extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method });
                 }
               });
             } else {
               if (ex.includedInPrint !== false) {
-                extraCorrs.push({ label: ex.label, re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
+                extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
               }
             }
           });

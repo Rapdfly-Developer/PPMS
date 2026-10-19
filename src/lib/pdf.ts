@@ -1907,34 +1907,28 @@ ${va
   ? card("Visual Acuity",
       `<table style="width:100%;border-collapse:collapse;">
         <thead><tr>
-          <th style="${TH}width:110px;"></th>
-          <th style="${TH}">Unaided / UCVA</th>
-          <th style="${TH}">Pinhole (PH)</th>
-          <th style="${TH}">Best Corrected (BCVA)</th>
+          <th style="${TH}width:150px;"></th>
+          <th style="${TH}font-weight:700;color:${LABEL_C};">RE</th>
+          <th style="${TH}font-weight:700;color:${LABEL_C};">LE</th>
         </tr></thead>
         <tbody>
           <tr style="background:#fff;">
-            <td style="${TD}font-weight:600;color:${LABEL_C};">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
+            <td style="${TD}color:#555;">Unaided / UCVA <span style="font-size:8px;">(Dist)</span></td>
             <td style="${TD}">${v2(va.reDistance?.unaided)}</td>
-            <td style="${TD}">${v2(va.reDistance?.ph)}</td>
-            <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
+            <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
           </tr>
           <tr style="background:${TINT};">
-            <td style="${TD}font-weight:600;color:${LABEL_C};">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Distance)</span></td>
-            <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
+            <td style="${TD}color:#555;">Pinhole (PH)</td>
+            <td style="${TD}">${v2(va.reDistance?.ph)}</td>
             <td style="${TD}">${v2(va.leDistance?.ph)}</td>
-            <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
           </tr>
           <tr style="background:#fff;">
-            <td style="${TD}font-weight:600;color:${LABEL_C};">RE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
-            <td style="${TD}" colspan="2">${v2(va.reNear)}</td>
-            <td style="${TD}">${v2(va.reNearN)}</td>
+            <td style="${TD}color:#555;">Best Corrected (BCVA)</td>
+            <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
+            <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
           </tr>
-          <tr style="background:${TINT};">
-            <td style="${TD}font-weight:600;color:${LABEL_C};">LE <span style="font-weight:400;color:#777;font-size:8.5px;">(Near)</span></td>
-            <td style="${TD}" colspan="2">${v2(va.leNear)}</td>
-            <td style="${TD}">${v2(va.leNearN)}</td>
-          </tr>
+          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
+          ${va.reNearN || va.leNearN ? `<tr style="background:#fff;"><td style="${TD}color:#555;">BCVA <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNearN)}</td><td style="${TD}">${v2(va.leNearN)}</td></tr>` : ""}
         </tbody>
       </table>`)
   : ""}
@@ -2388,12 +2382,13 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
 
       ${va ? `${secHdr("Visual Acuity")}
       <table>
-        <thead><tr><th style="width:110px"></th><th>Unaided</th><th>PH</th><th>BCVA</th></tr></thead>
+        <thead><tr><th style="width:150px"></th><th class="td-head" style="font-weight:700;">RE</th><th class="td-head" style="font-weight:700;">LE</th></tr></thead>
         <tbody>
-          <tr><td class="td-head">RE Distance</td><td>${val(va.reDistance?.unaided)}</td><td>${val(va.reDistance?.ph)}</td><td>${val(va.reDistance?.bcva)}</td></tr>
-          <tr><td class="td-head">LE Distance</td><td>${val(va.leDistance?.unaided)}</td><td>${val(va.leDistance?.ph)}</td><td>${val(va.leDistance?.bcva)}</td></tr>
-          <tr><td class="td-head">RE Near</td><td colspan="3">${val(va.reNear)}</td></tr>
-          <tr><td class="td-head">LE Near</td><td colspan="3">${val(va.leNear)}</td></tr>
+          <tr><td class="td-head">Unaided / UCVA (Dist)</td><td>${val(va.reDistance?.unaided)}</td><td>${val(va.leDistance?.unaided)}</td></tr>
+          <tr><td class="td-head">Pinhole (PH)</td><td>${val(va.reDistance?.ph)}</td><td>${val(va.leDistance?.ph)}</td></tr>
+          <tr><td class="td-head">Best Corrected (BCVA)</td><td>${val(va.reDistance?.bcva)}</td><td>${val(va.leDistance?.bcva)}</td></tr>
+          ${va.reNear || va.leNear ? `<tr><td class="td-head">Unaided (Near)</td><td>${val(va.reNear)}</td><td>${val(va.leNear)}</td></tr>` : ""}
+          ${va.reNearN || va.leNearN ? `<tr><td class="td-head">BCVA (Near)</td><td>${val(va.reNearN ?? null)}</td><td>${val(va.leNearN ?? null)}</td></tr>` : ""}
         </tbody>
       </table>` : ""}
 

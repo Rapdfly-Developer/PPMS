@@ -749,11 +749,11 @@ function LongContent({
         const methods = ex.methods ?? {};
         Object.entries(methods as Record<string, any>).forEach(([method, entry]) => {
           if (Object.values((entry as any).re || {}).some(Boolean))
-            res.push({ label: ex.label || "Extra Correction", method, re: (entry as any).re || {}, le: (entry as any).le || {} });
+            res.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), method, re: (entry as any).re || {}, le: (entry as any).le || {} });
         });
       } else {
         if (Object.values(ex.re || {}).some(Boolean))
-          res.push({ label: ex.label || "Extra Correction", method: ex.re?.method, re: ex.re || {}, le: ex.le || {} });
+          res.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), method: ex.re?.method, re: ex.re || {}, le: ex.le || {} });
       }
     });
     return res;
@@ -897,38 +897,44 @@ function LongContent({
           {hasVA && (
             <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
               <DataTable>
-                <Cols widths={["22%", "26%", "26%", "26%"]} />
+                <Cols widths={["40%", "30%", "30%"]} />
                 <thead>
                   <tr>
                     <th className={TH}></th>
-                    <th className={TH}>Unaided / UCVA</th>
-                    <th className={TH}>Pinhole (PH)</th>
-                    <th className={TH}>Best Corrected (BCVA)</th>
+                    <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                    <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">RE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Distance)</span></td>
+                    <td className={TD_MUTED}>Unaided / UCVA <span className="text-[var(--color-ink-400)] text-micro">(Dist)</span></td>
                     <td className={TD}>{reVAp.unaided || DASH}</td>
-                    <td className={TD}>{reVAp.pinhole || DASH}</td>
-                    <td className={TD}>{reVAp.bestCorrected || DASH}</td>
+                    <td className={TD}>{leVAp.unaided || DASH}</td>
                   </tr>
                   <tr className="bg-[var(--color-surface-sunken)]">
-                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">LE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Distance)</span></td>
-                    <td className={TD}>{leVAp.unaided || DASH}</td>
+                    <td className={TD_MUTED}>Pinhole (PH)</td>
+                    <td className={TD}>{reVAp.pinhole || DASH}</td>
                     <td className={TD}>{leVAp.pinhole || DASH}</td>
-                    <td className={TD}>{leVAp.bestCorrected || DASH}</td>
                   </tr>
                   <tr>
-                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">RE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
-                    <td className={TD} colSpan={2}>{reVAp.nearUnaided || DASH}</td>
-                    <td className={TD}>{reVAp.nearBestCorrected || DASH}</td>
+                    <td className={TD_MUTED}>Best Corrected (BCVA)</td>
+                    <td className={TD}>{reVAp.bestCorrected || DASH}</td>
+                    <td className={TD}>{leVAp.bestCorrected || DASH}</td>
                   </tr>
-                  <tr className="bg-[var(--color-surface-sunken)]">
-                    <td className={TD_MUTED}><strong className="text-[var(--color-primary-700)]">LE</strong> <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
-                    <td className={TD} colSpan={2}>{leVAp.nearUnaided || DASH}</td>
-                    <td className={TD}>{leVAp.nearBestCorrected || DASH}</td>
-                  </tr>
+                  {(reVAp.nearUnaided || leVAp.nearUnaided) && (
+                    <tr className="bg-[var(--color-surface-sunken)]">
+                      <td className={TD_MUTED}>Unaided <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                      <td className={TD}>{reVAp.nearUnaided || DASH}</td>
+                      <td className={TD}>{leVAp.nearUnaided || DASH}</td>
+                    </tr>
+                  )}
+                  {(reVAp.nearBestCorrected || leVAp.nearBestCorrected) && (
+                    <tr>
+                      <td className={TD_MUTED}>BCVA <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                      <td className={TD}>{reVAp.nearBestCorrected || DASH}</td>
+                      <td className={TD}>{leVAp.nearBestCorrected || DASH}</td>
+                    </tr>
+                  )}
                 </tbody>
               </DataTable>
             </Block>
@@ -947,38 +953,38 @@ function LongContent({
             </Block>
           ))}
 
-          {(hasCV || hasCS) && (
-            <Block label="Colour &amp; Contrast Sensitivity">
-              {hasCV && (
-                <DataTable minWidth={260}>
-                  <Cols widths={COLS_EYE} />
-                  <EyeHead first="Colour Vision" />
-                  <tbody>
-                    <EyeRow label="Result" re={reCVResult} le={leCVResult} />
-                    {(reCVraw as any).notes && (
-                      <tr>
-                        <td className={TD_MUTED}>Notes</td>
-                        <td colSpan={2} className={TD}>{(reCVraw as any).notes}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </DataTable>
-              )}
-              {hasCS && (
-                <DataTable minWidth={260}>
-                  <Cols widths={COLS_EYE} />
-                  <EyeHead first="Contrast Sensitivity" />
-                  <tbody>
-                    <EyeRow label="Result" re={reCSResult} le={leCSResult} />
-                    {csNotes && (
-                      <tr>
-                        <td className={TD_MUTED}>Notes</td>
-                        <td colSpan={2} className={TD}>{csNotes}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </DataTable>
-              )}
+          {hasCV && (
+            <Block label="Colour Vision">
+              <DataTable minWidth={260}>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  <EyeRow label="Result" re={reCVResult} le={leCVResult} />
+                  {(reCVraw as any).notes && (
+                    <tr>
+                      <td className={TD_MUTED}>Notes</td>
+                      <td colSpan={2} className={TD}>{(reCVraw as any).notes}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </DataTable>
+            </Block>
+          )}
+          {hasCS && (
+            <Block label="Contrast Sensitivity">
+              <DataTable minWidth={260}>
+                <Cols widths={COLS_EYE} />
+                <EyeHead />
+                <tbody>
+                  <EyeRow label="Result" re={reCSResult} le={leCSResult} />
+                  {csNotes && (
+                    <tr>
+                      <td className={TD_MUTED}>Notes</td>
+                      <td colSpan={2} className={TD}>{csNotes}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </DataTable>
             </Block>
           )}
 
@@ -1091,13 +1097,14 @@ function LongContent({
           {hasPost && (() => {
             const re = posReParsed ?? {};
             const le = posLeParsed ?? {};
-            const fields = ["media","discSize","discShape","discColour","discVessels","cdr","nrr","macula","retinalVessels","periphery"] as const;
             const labels: Record<string, string> = {
               media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
-              discColour: "Disc Colour", discVessels: "Disc Vessels", cdr: "CDR",
-              nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels", periphery: "Periphery",
+              discColour: "Disc Colour", discVessels: "Disc Vessels", discMargin: "Disc Margin",
+              cdr: "CDR", nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels",
+              background: "Background", periphery: "Periphery",
             };
-            const rows = fields.filter((f) => re[f] || le[f]);
+            const allKeys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)]));
+            const rows = allKeys.filter((f) => re[f] || le[f]);
             if (!rows.length && !pos.notes) return null;
             return (
               <Block label="Posterior Segment">
@@ -1105,7 +1112,7 @@ function LongContent({
                   <Cols widths={COLS_EYE} />
                   <EyeHead />
                   <tbody>
-                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f] as string} le={le[f] as string} />)}
+                    {rows.map((f) => <EyeRow key={f} label={labels[f] ?? f} re={re[f] as string} le={le[f] as string} />)}
                   </tbody>
                 </DataTable>
                 {pos.notes && (
