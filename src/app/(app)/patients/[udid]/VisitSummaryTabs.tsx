@@ -459,8 +459,8 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasMeds && (
         <div>
           <SumHead icon={<Pill size={11} />} label="Medications" color="text-teal-500" />
-          <DataTable minWidth={360}>
-            <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
+          <DataTable>
+            <Cols widths={["5%", "32%", "14%", "22%", "27%"]} />
             <tbody>
               {emrData.medications.map((m: any, i: number) => (
                 <tr key={i}>
@@ -1315,8 +1315,8 @@ function LongContent({
       {/* ── 6. Treatment Plan / Medications ───────────────────────────── */}
       {hasMeds && (
         <LongSection head={<SumHead icon={<Pill size={11} />} label="Treatment Plan: Medications" color="text-teal-500" />}>
-          <DataTable minWidth={360}>
-            <Cols widths={["6%", "36%", "16%", "24%", "18%"]} />
+          <DataTable>
+            <Cols widths={["5%", "32%", "14%", "22%", "27%"]} />
             <tbody>
               {data.medications.map((m: any, i: number) => (
                 <tr key={i}>

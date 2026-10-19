@@ -227,7 +227,8 @@ function TimestampSection({ ts, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boo
     .map((s) => ({
       ...s,
       label: isWalkIn && s.key === "arrivedAt" ? "Walk-in Time" : s.label,
-    }));
+    }))
+    .sort((a, b) => new Date(ts[a.key]!).getTime() - new Date(ts[b.key]!).getTime());
   if (active.length === 0) return null;
 
   const durations = DURATION_METRICS
