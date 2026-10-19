@@ -7,7 +7,7 @@ import { startOfDay } from "date-fns";
 import { notifyAppointmentRequested, notifyAppointmentStatus } from "@/lib/mailer";
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
-import { istDateTime } from "@/lib/ist";
+import { istDateTime, istTodayStr, istDayRange } from "@/lib/ist";
 import { getStaffHospitalId, staffAppointmentPerms } from "@/lib/booking-scope";
 
 /** Hospital staff acting on their own hospital's appointments, gated by permission. */
@@ -58,6 +58,7 @@ export async function hospitalUpdateAppointmentStatus(
           doctorId: appt.doctorId,
           hospitalId: appt.hospitalId,
           appointmentId: appt.id,
+          date: istDayRange(istTodayStr(new Date(appt.dateTime))).dayStart,
         },
       });
       // Seed chief complaint from the booking form (appointment notes),
@@ -178,6 +179,7 @@ export async function doctorConfirmAppointment(appointmentId: string): Promise<v
         doctorId: appt.doctorId!,
         hospitalId: appt.hospitalId,
         appointmentId: appt.id,
+        date: istDayRange(istTodayStr(new Date(appt.dateTime))).dayStart,
       },
     });
     // Seed chief complaint from the booking form (appointment notes),
@@ -388,6 +390,7 @@ export async function scheduleNextSlot(
       hospitalId: source.hospitalId,
       appointmentId: appt.id,
       visitType: "Follow-up",
+      date: istDayRange(date).dayStart,
     },
   });
 
@@ -529,6 +532,7 @@ export async function addToQueue(appointmentId: string): Promise<void> {
         doctorId: appt.doctorId,
         hospitalId: appt.hospitalId,
         appointmentId: appt.id,
+        date: istDayRange(istTodayStr(new Date(appt.dateTime))).dayStart,
       },
     });
     const seedComplaint = (appt as any).notes || appt.patient.complaint;

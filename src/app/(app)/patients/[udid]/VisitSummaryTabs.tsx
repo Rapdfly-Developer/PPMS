@@ -656,6 +656,11 @@ function parsedEyeSegment(raw: string | null | undefined): Record<string, unknow
   return Object.values(p).some(Boolean) ? p : null;
 }
 
+/** Remove leading bullet characters that chip-based selections prepend to stored values. */
+function stripBullet(v: string | null | undefined): string | undefined {
+  return v ? v.replace(/^[•·]\s*/, "") : undefined;
+}
+
 class LongContentBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
     super(props);
@@ -784,15 +789,6 @@ function LongContent({
 
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
   const hasPMH      = pmhList.length > 0 || g?.allergies || g?.nkda;
-  const currentMeds: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
-    if (!g?.medications) return [];
-    try {
-      const parsed = typeof g.medications === "string" ? JSON.parse(g.medications) : g.medications;
-      if (Array.isArray(parsed)) return parsed.filter((m: any) => m.drugName?.trim());
-    } catch { /* plain text fallback */ }
-    return [];
-  })();
-  const hasCurrentMeds = currentMeds.length > 0 || (typeof g?.medications === "string" && g.medications.trim());
   const hasSystemicHistory = !!g?.pmhOtherText;
   const hasDiag     = data.diagnoses?.length > 0;
   const hasMeds     = data.medications?.length > 0;
@@ -811,7 +807,19 @@ function LongContent({
   const posReParsed = pos ? parsedEyeSegment(pos.re) : null;
   const posLeParsed = pos ? parsedEyeSegment(pos.le) : null;
   const hasPost     = !!(pos && (posReParsed || posLeParsed || pos.notes));
-  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost;
+  const dpGrid = data.diplopiaChart?.grid ? parseJSON<Record<string,any>>(data.diplopiaChart.grid, {}) : null;
+  const DP_POSITIONS = ["TL","T","TR","L","C","R","BL","B","BR"];
+  const DP_LABELS: Record<string,string> = { TL:"↖ Up-Left",T:"↑ Up",TR:"↗ Up-Right",L:"← Left",C:"Primary",R:"→ Right",BL:"↙ Down-Left",B:"↓ Down",BR:"↘ Down-Right" };
+  const dpRows = dpGrid ? DP_POSITIONS.map((pos) => {
+    const cell = dpGrid[pos];
+    if (!cell) return null;
+    const status = cell.status ?? "";
+    if (!status || status === "NOT_TESTED") return null;
+    return { pos, label: DP_LABELS[pos] ?? pos, status, notes: cell.notes ?? null };
+  }).filter(Boolean) as { pos: string; label: string; status: string; notes: string | null }[] : [];
+  const hessInterp = data.hessChart?.interpretation ?? null;
+  const hasEOM = dpRows.length > 0 || !!hessInterp;
+  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost || hasEOM;
   const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
@@ -827,91 +835,64 @@ function LongContent({
   return (
     <div className="space-y-4">
 
-      {/* ── 1. Visit Details ──────────────────────────────────────────── */}
-      {(g?.chiefComplaint || g?.hpi) && (
-        <div className="space-y-3">
-          {g?.chiefComplaint && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <FileText size={11} className="text-[var(--color-ink-400)]" />
-                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
-                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-              </span>
-              <ComplaintChips value={g.chiefComplaint} wrap />
-            </div>
-          )}
-          {g?.hpi && (
-            <div className="flex items-start gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
-                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
-                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-              </span>
-              <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</span>
-            </div>
-          )}
+      {/* ── 1. Chief Complaint ──────────────────────────────────────── */}
+      {g?.chiefComplaint && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <FileText size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <ComplaintChips value={g.chiefComplaint} wrap />
         </div>
       )}
 
-      {/* ── 2. Past Medical History / Allergies ──────────────────────── */}
-      {hasPMH && (
-        <div className="space-y-3">
-          {pmhList.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <BookOpen size={11} className="text-[var(--color-ink-400)]" />
-                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Past Medical History</span>
-                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {pmhList.map((item, i) => {
-                  const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
-                  return (
-                    <span key={i} className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">
-                      {item.name}{since ? <span className="opacity-60 ml-1 font-normal">· {since}</span> : null}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {(g?.allergies || g?.nkda) && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <AlertCircle size={11} className="text-red-600" />
-                <span className="text-micro font-bold uppercase tracking-[0.16em] text-red-600">Allergies</span>
-                <span className="text-micro font-bold text-red-300">·</span>
-              </span>
-              {g.nkda ? <span className="text-caption text-green-700 font-medium">NKDA</span> : <span className="text-caption text-red-600 font-bold">{g.allergies}</span>}
-            </div>
-          )}
+      {/* ── 2. Drug Allergy (bright bold red) ───────────────────────── */}
+      {(g?.allergies || g?.nkda) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <AlertCircle size={11} className="text-red-600" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-red-600">Drug Allergy</span>
+            <span className="text-micro font-bold text-red-300">·</span>
+          </span>
+          {g.nkda ? <span className="text-caption text-green-700 font-semibold">NKDA — No Known Drug Allergies</span> : <span className="text-caption text-red-600 font-bold">{g.allergies}</span>}
         </div>
       )}
 
-      {/* ── 2b. Current Medications ──────────────────────────────────── */}
-      {hasCurrentMeds && (
-        <div>
-          <SumHead icon={<Pill size={11} />} label="Current Medications" color="text-[var(--color-ink-400)]" />
-          {currentMeds.length > 0 ? (
-            <div className="space-y-0.5">
-              {currentMeds.map((m, i) => (
-                <p key={i} className="text-caption text-[var(--color-ink-700)] leading-snug">
-                  <span className="font-semibold">{m.drugName}</span>
-                  {[m.dosage, m.frequency, m.duration].filter(Boolean).map((v, j) => (
-                    <span key={j} className="text-[var(--color-ink-500)] font-normal">
-                      <span className="mx-1.5 text-[var(--color-ink-300)]">·</span>{v}
-                    </span>
-                  ))}
-                </p>
-              ))}
-            </div>
-          ) : (
-            <p className="text-caption text-[var(--color-ink-700)]">{g!.medications as string}</p>
-          )}
+      {/* ── 3. History of Present Illness ───────────────────────────── */}
+      {g?.hpi && (
+        <div className="flex items-start gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</span>
         </div>
       )}
 
-      {/* ── 2c. Systemic History ─────────────────────────────────────── */}
+      {/* ── 4. Past Medical History ─────────────────────────────────── */}
+      {pmhList.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <BookOpen size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Past Medical History</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {pmhList.map((item, i) => {
+              const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : null;
+              return (
+                <span key={i} className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">
+                  {item.name}{since ? <span className="opacity-60 ml-1 font-normal">· {since}</span> : null}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. Systemic History ─────────────────────────────────────── */}
       {hasSystemicHistory && (
         <div>
           <SumHead icon={<BookOpen size={11} />} label="Systemic History" color="text-[var(--color-ink-400)]" />
@@ -919,7 +900,7 @@ function LongContent({
         </div>
       )}
 
-      {/* ── 3. Examination Findings ───────────────────────────────────── */}
+      {/* ── 6–15. Examination Findings ──────────────────────────────── */}
       {hasExam && (
         <>
 
@@ -1001,6 +982,38 @@ function LongContent({
             </Block>
           ))}
 
+          {/* ── 9. EOM / Deviation ─── */}
+          {hasEOM && (
+            <Block label="Ocular Motility / EOM & Deviation">
+              {dpRows.length > 0 && (
+                <DataTable>
+                  <Cols widths={["30%","35%","35%"]} />
+                  <thead>
+                    <tr>
+                      <th className={TH}>Position</th>
+                      <th className={TH}>Diplopia</th>
+                      <th className={TH}>Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dpRows.map((r, i) => (
+                      <tr key={i} className={i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}>
+                        <td className={TD_MUTED}>{r.label}</td>
+                        <td className={`${TD} font-medium ${r.status === "DIPLOPIA_PRESENT" ? "text-red-600" : "text-green-700"}`}>
+                          {r.status.replace(/_/g, " ")}
+                        </td>
+                        <td className={TD_MUTED}>{r.notes ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </DataTable>
+              )}
+              {hessInterp && (
+                <p className="mt-1.5 text-caption text-[var(--color-ink-600)] italic leading-relaxed">{hessInterp}</p>
+              )}
+            </Block>
+          )}
+
           {(hasCV || hasCS) && (() => {
             type MethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
             const buildRows = (reM: string, leM: string, reVal: string | null, reN: string | null, leVal: string | null, leN: string | null): MethodRow[] => {
@@ -1053,57 +1066,80 @@ function LongContent({
             );
           })()}
 
-          {(hasIOP || hasGonio) && (
-            <Block label={hasIOP && hasGonio ? "IOP &amp; Gonioscopy" : hasIOP ? "Intraocular Pressure" : "Gonioscopy"}>
-              {hasIOP && (
-                <DataTable>
-                  <Cols widths={COLS_EYE} />
-                  <thead>
-                    <tr>
-                      <th className={TH}>Method</th>
-                      <th className={TH}>RE (mmHg)</th>
-                      <th className={TH}>LE (mmHg)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {iop!.map((r: any, i: number) => (
-                      <tr key={i}>
-                        <td className={TD_MUTED}>{r.method || "—"}</td>
-                        <td className={`${TD} font-medium`}>{r.re || DASH}</td>
-                        <td className={`${TD} font-medium`}>{r.le || DASH}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </DataTable>
-              )}
-              {hasGonio && (
-                <DataTable minWidth={260}>
-                  <Cols widths={COLS_EYE} />
-                  <EyeHead first="Gonioscopy" />
-                  <tbody>
-                    {gonioRaw.method && (
+          {(hasIOP || hasGonio) && (() => {
+            const iopUniqMethods = hasIOP ? Array.from(new Set(iop!.map((r: any) => r.method || ""))) : [];
+            const singleIopMethod = iopUniqMethods.length === 1 ? iopUniqMethods[0] : "";
+            const gonioLabel = `Gonioscopy${gonioRaw?.method ? ` · ${gonioRaw.method}` : ""}`;
+            const baseLabel = hasIOP && hasGonio ? "IOP & Gonioscopy" : hasIOP ? "Intraocular Pressure" : "Gonioscopy";
+            const sectionHeader = singleIopMethod ? `${baseLabel} · ${singleIopMethod}` : baseLabel;
+            return (
+              <section>
+                {hasIOP && (
+                  <DataTable>
+                    <Cols widths={COLS_EYE} />
+                    <thead>
                       <tr>
-                        <td className={TD_MUTED}>Method</td>
-                        <td colSpan={2} className={TD}>{gonioRaw.method}</td>
+                        <th className={TH}>{sectionHeader}</th>
+                        <th className={TH}>RE (mmHg)</th>
+                        <th className={TH}>LE (mmHg)</th>
                       </tr>
-                    )}
-                    <EyeRow
-                      label="Findings"
-                      re={([gonioRaw.re, gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
-                      le={([gonioRaw.le, gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
-                    />
-                  </tbody>
-                </DataTable>
-              )}
-            </Block>
-          )}
+                    </thead>
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      {singleIopMethod
+                        ? iop!.map((r: any, i: number) => (
+                            <tr key={i}>
+                              <td className={TD_MUTED}>{iop!.length > 1 ? `Reading ${i + 1}` : "Pressure"}</td>
+                              <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                              <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+                            </tr>
+                          ))
+                        : iop!.map((r: any, i: number) => (
+                            <tr key={i}>
+                              <td className={TD_MUTED}>{r.method || "—"}</td>
+                              <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                              <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+                            </tr>
+                          ))
+                      }
+                    </tbody>
+                  </DataTable>
+                )}
+                {!hasIOP && hasGonio && (
+                  <DataTable minWidth={260}>
+                    <Cols widths={COLS_EYE} />
+                    <EyeHead first={sectionHeader} />
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      <EyeRow
+                        label="Findings"
+                        re={([stripBullet(gonioRaw.re), gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
+                        le={([stripBullet(gonioRaw.le), gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
+                      />
+                    </tbody>
+                  </DataTable>
+                )}
+                {hasIOP && hasGonio && (
+                  <DataTable minWidth={260}>
+                    <Cols widths={COLS_EYE} />
+                    <EyeHead first={gonioLabel} />
+                    <tbody className="divide-y divide-[var(--color-border)]">
+                      <EyeRow
+                        label="Findings"
+                        re={([stripBullet(gonioRaw.re), gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
+                        le={([stripBullet(gonioRaw.le), gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
+                      />
+                    </tbody>
+                  </DataTable>
+                )}
+              </section>
+            );
+          })()}
 
           {hasTear && (
-            <Block label="Tear Film">
+            <section>
               <DataTable minWidth={260}>
                 <Cols widths={COLS_EYE} />
-                <EyeHead />
-                <tbody>
+                <EyeHead first="Tear Film" />
+                <tbody className="divide-y divide-[var(--color-border)]">
                   {(tf.tbutRe != null || tf.tbutLe != null) && (
                     <EyeRow label="TBUT (sec)" re={tf.tbutRe != null ? String(tf.tbutRe) : null} le={tf.tbutLe != null ? String(tf.tbutLe) : null} />
                   )}
@@ -1115,15 +1151,15 @@ function LongContent({
                   )}
                 </tbody>
               </DataTable>
-            </Block>
+            </section>
           )}
 
           {hasLacrimal && (
-            <Block label="Lacrimal Sac Syringing">
+            <section>
               <DataTable minWidth={260}>
                 <Cols widths={COLS_EYE} />
-                <EyeHead />
-                <tbody>
+                <EyeHead first="Lacrimal Sac Syringing" />
+                <tbody className="divide-y divide-[var(--color-border)]">
                   <EyeRow
                     label="Findings"
                     re={([lsRe.chips.join(", "), lsRe.freeText].filter(Boolean).join(" · ")) || null}
@@ -1131,59 +1167,98 @@ function LongContent({
                   />
                 </tbody>
               </DataTable>
-            </Block>
+            </section>
           )}
 
           {hasAnt && (() => {
             const re = antReParsed ?? {};
             const le = antLeParsed ?? {};
+            const antMethod = (re._method as string | undefined) || (le._method as string | undefined) || null;
             const fields = ["upperLid","lowerLid","conjunctiva","sclera","cornea","anteriorChamber","iris","pupil","lens"] as const;
             const labels: Record<string, string> = {
               upperLid: "Upper Lid", lowerLid: "Lower Lid", conjunctiva: "Conjunctiva",
               sclera: "Sclera", cornea: "Cornea", anteriorChamber: "Ant. Chamber",
               iris: "Iris", pupil: "Pupil", lens: "Lens",
             };
-            const rows = fields.filter((f) => re[f] || le[f]);
-            if (!rows.length && !re.freeText && !le.freeText) return null;
+            const antRows = [
+              ...fields.filter((f) => re[f] || le[f]).map((f) => ({ key: f, label: labels[f], re: stripBullet(re[f] as string | undefined), le: stripBullet(le[f] as string | undefined) })),
+              ...(re.freeText || le.freeText ? [{ key: "notes", label: "Notes", re: re.freeText as string | undefined, le: le.freeText as string | undefined }] : []),
+            ];
+            if (!antRows.length) return null;
             return (
-              <Block label="Anterior Segment">
+              <section>
                 <DataTable>
                   <Cols widths={COLS_EYE} />
-                  <EyeHead />
-                  <tbody>
-                    {rows.map((f) => <EyeRow key={f} label={labels[f]} re={re[f] as string} le={le[f] as string} />)}
-                    {!!(re.freeText || le.freeText) && <EyeRow label="Notes" re={re.freeText as string} le={le.freeText as string} />}
+                  <thead>
+                    <tr>
+                      <th className={TH}>{antMethod ? `Anterior Segment · ${antMethod}` : "Anterior Segment"}</th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border)]">
+                    {antRows.map((r) => (
+                      <tr key={r.key}>
+                        <td className={TD_MUTED}>{r.label}</td>
+                        <td className={TD}>{r.re || DASH}</td>
+                        <td className={TD}>{r.le || DASH}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </DataTable>
-              </Block>
+              </section>
             );
           })()}
 
           {hasPost && (() => {
             const re = posReParsed ?? {};
             const le = posLeParsed ?? {};
-            const labels: Record<string, string> = {
+            const posMethod = (re._method as string | undefined) || (le._method as string | undefined) || null;
+            const posReNotes = re._notes as string | undefined;
+            const posLeNotes = le._notes as string | undefined;
+            const posLabels: Record<string, string> = {
               media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
               discColour: "Disc Colour", discVessels: "Disc Vessels", discMargin: "Disc Margin",
               cdr: "CDR", nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels",
               background: "Background", periphery: "Periphery",
             };
             const allKeys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)]));
-            const rows = allKeys.filter((f) => re[f] || le[f]);
-            if (!rows.length && !pos.notes) return null;
+            const posRows = allKeys.filter((f) => !f.startsWith("_") && (re[f] || le[f]));
+            const notesRe = posReNotes || null;
+            const notesLe = posLeNotes || null;
+            if (!posRows.length && !notesRe && !notesLe && !pos.notes) return null;
             return (
-              <Block label="Posterior Segment">
+              <section>
                 <DataTable>
                   <Cols widths={COLS_EYE} />
-                  <EyeHead />
-                  <tbody>
-                    {rows.map((f) => <EyeRow key={f} label={labels[f] ?? f} re={re[f] as string} le={le[f] as string} />)}
+                  <thead>
+                    <tr>
+                      <th className={TH}>{posMethod ? `Posterior Segment · ${posMethod}` : "Posterior Segment"}</th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--color-border)]">
+                    {posRows.map((f) => (
+                      <tr key={f}>
+                        <td className={TD_MUTED}>{posLabels[f] ?? f}</td>
+                        <td className={TD}>{stripBullet(re[f] as string | undefined) || DASH}</td>
+                        <td className={TD}>{stripBullet(le[f] as string | undefined) || DASH}</td>
+                      </tr>
+                    ))}
+                    {(notesRe || notesLe) && (
+                      <tr>
+                        <td className={TD_MUTED}>Notes</td>
+                        <td className={TD}>{notesRe || DASH}</td>
+                        <td className={TD}>{notesLe || DASH}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </DataTable>
                 {pos.notes && (
                   <p className="mt-1.5 text-caption sm:text-caption italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
                 )}
-              </Block>
+              </section>
             );
           })()}
 

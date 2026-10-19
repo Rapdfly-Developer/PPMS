@@ -22,6 +22,8 @@ export async function getVisitEmrData(visitId: string) {
       investigationOrders: { orderBy: { createdAt: "asc" } },
       tearFilm:            true,
       lacrimalSac:         true,
+      diplopiaChart:       true,
+      hessChart:           true,
     },
   });
   if (!visit) return null;

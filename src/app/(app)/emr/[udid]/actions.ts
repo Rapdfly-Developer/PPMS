@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createNotification } from "@/lib/notify";
 import { writeAudit } from "@/lib/audit";
+import { istTodayStr, istDayRange } from "@/lib/ist";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay } from "date-fns";
 import { convertNotesToCC } from "@/lib/appointment-cc";
@@ -157,7 +158,7 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
 
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    select: { id: true, doctorId: true, hospitalId: true, visitType: true, patientId: true, notes: true },
+    select: { id: true, doctorId: true, hospitalId: true, visitType: true, patientId: true, notes: true, dateTime: true },
   });
   if (!appointment) throw new Error("Appointment not found");
   if (appointment.doctorId !== user.profileId) throw new Error("Forbidden");
@@ -178,6 +179,7 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
       hospitalId: appointment.hospitalId,
       appointmentId,
       visitType: appointment.visitType ?? "General OPD",
+      date: istDayRange(istTodayStr(appointment.dateTime)).dayStart,
     },
   });
 

@@ -178,6 +178,7 @@ export async function createWalkInEncounter(formData: FormData) {
         hospitalId,
         appointmentId: appointment.id,
         visitType,
+        date: dayStart,
       },
     });
 

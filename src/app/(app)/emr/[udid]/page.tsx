@@ -2,7 +2,7 @@ import { requirePermission, userCan } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { prisma } from "@/lib/prisma";
-import { istTodayRange } from "@/lib/ist";
+import { istTodayRange, istTodayStr, istDayRange } from "@/lib/ist";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { format } from "date-fns";
@@ -186,6 +186,7 @@ export default async function PatientDetailedEMR({
             hospitalId: pendingAppointment.hospitalId,
             appointmentId: pendingAppointment.id,
             visitType: pendingAppointment.visitType ?? "General OPD",
+            date: istDayRange(istTodayStr(pendingAppointment.dateTime)).dayStart,
           },
         });
         {

@@ -224,6 +224,7 @@ export default async function PatientProfilePage({
       inViewOf:            (todayVisitRecord as any).inViewOf ?? null,
       referralEnabled:     (todayVisitRecord as any).referralEnabled ?? false,
       referralNote:        (todayVisitRecord as any).referralNote ?? null,
+      adviseNotes:         (todayVisitRecord as any).adviseNotes ?? null,
     };
   }
 
@@ -260,6 +261,7 @@ export default async function PatientProfilePage({
       inViewOf:            (lastPastVisit as any).inViewOf ?? null,
       referralEnabled:     (lastPastVisit as any).referralEnabled ?? false,
       referralNote:        (lastPastVisit as any).referralNote ?? null,
+      adviseNotes:         (lastPastVisit as any).adviseNotes ?? null,
     };
   }
 

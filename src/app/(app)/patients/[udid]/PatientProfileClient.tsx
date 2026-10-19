@@ -13,9 +13,7 @@ import {
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
-  VisitSummaryTabs, useVisitSummaryState, VisitSummaryTabBar, VisitSummaryTabBody,
-  Block, DataTable, Cols, DASH,
-  TH, TD, TD_MUTED, COLS_INVESTIGATION,
+  useVisitSummaryState, VisitSummaryTabBar, VisitSummaryTabBody,
   AIContent,
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
@@ -217,6 +215,7 @@ export type LastVisitSummary = {
   inViewOf: string | null;
   referralEnabled: boolean;
   referralNote: string | null;
+  adviseNotes: string | null;
 };
 
 export type LongitudinalVisit = {
@@ -501,135 +500,6 @@ function LastVisitSummarySection({
             aiError={tabState.aiError}
             complaint={summary.chiefComplaint}
             diagnoses={summary.diagnoses}
-            shortContent={
-              <div className="space-y-4">
-                {/* Same table grammar as the Long tab — shared column templates
-                    and cell classes, so switching tabs does not shift the
-                    columns around under the reader. */}
-                {summary.visitType && (
-                  <span className="inline-block px-2 py-0.5 rounded-full text-caption sm:text-caption font-medium bg-[var(--color-primary-50)] text-[var(--color-primary-600)]">{summary.visitType}</span>
-                )}
-
-                {summary.chiefComplaint && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Chief Complaint</span>
-                    <ComplaintChips value={summary.chiefComplaint} wrap />
-                  </div>
-                )}
-
-                {summary.allergies && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-red-600 shrink-0">Drug Allergy</span>
-                    <span className="text-caption font-bold text-red-600">{summary.allergies}</span>
-                  </div>
-                )}
-
-                {summary.diagnoses.length > 0 && (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] shrink-0">Diagnoses</span>
-                    {[...summary.diagnoses]
-                      .sort((a, b) => {
-                        const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
-                        return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
-                      })
-                      .map((d) => (
-                        <span key={d.id} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-caption sm:text-caption border">
-                          {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
-                          {d.description}
-                        </span>
-                      ))}
-                  </div>
-                )}
-
-                {summary.procedureName && (
-                  <Block label="Minor Procedure">
-                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
-                      {summary.procedureLaterality && (
-                        <span className="font-bold text-[var(--color-primary-700)] mr-2">{summary.procedureLaterality}</span>
-                      )}
-                      {summary.procedureName}
-                      {summary.procedureNotes && (
-                        <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· {summary.procedureNotes}</span>
-                      )}
-                    </p>
-                  </Block>
-                )}
-
-                {summary.medications.length > 0 && (
-                  <Block label="Medications">
-                    <DataTable minWidth={360}>
-                      <Cols widths={["6%", "38%", "18%", "20%", "18%"]} />
-                      <tbody>
-                        {summary.medications.map((m, idx) => (
-                          <tr key={m.id}>
-                            <td className={TD_MUTED}>{idx + 1}</td>
-                            <td className={`${TD} font-semibold`}>
-                              {m.laterality && (
-                                <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
-                              )}
-                              {m.drugName}
-                            </td>
-                            <td className={TD_MUTED}>{m.dosage || DASH}</td>
-                            <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                            <td className={TD_MUTED}>{m.duration || DASH}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </DataTable>
-                  </Block>
-                )}
-
-                {summary.investigations.length > 0 && (
-                  <Block label="Investigations">
-                    <DataTable minWidth={420}>
-                      <Cols widths={COLS_INVESTIGATION} />
-                      <thead>
-                        <tr>
-                          <th className={TH}>Eye</th>
-                          <th className={TH}>Test</th>
-                          <th className={TH}>In View Of</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summary.investigations.map((inv) => (
-                          <tr key={inv.id}>
-                            <td className={TD_MUTED}>{inv.laterality || DASH}</td>
-                            <td className={`${TD} font-semibold`}>{inv.testName}</td>
-                            <td className={`${TD_MUTED} italic`}>{inv.notes || DASH}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </DataTable>
-                  </Block>
-                )}
-
-                {summary.followUpDate && (
-                  <Block label="Follow-up">
-                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
-                      {format(new Date(summary.followUpDate), "EEEE, dd MMM yyyy")}
-                      {summary.inViewOf && (
-                        <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {summary.inViewOf}</span>
-                      )}
-                    </p>
-                  </Block>
-                )}
-
-                {summary.referralEnabled && (
-                  <Block label="Referral">
-                    <p className="text-caption sm:text-caption font-semibold text-[var(--color-ink-800)]">
-                      {summary.referralNote || "Referred"}
-                    </p>
-                  </Block>
-                )}
-
-                {!summary.chiefComplaint && summary.diagnoses.length === 0 && summary.medications.length === 0
-                  && summary.investigations.length === 0 && !summary.followUpDate && !summary.referralEnabled && (
-                  <p className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">
-                    No clinical data recorded for this visit.
-                  </p>
-                )}
-              </div>
-            }
             aiContent={customAiContent}
           />
         </div>

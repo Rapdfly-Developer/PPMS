@@ -1258,7 +1258,7 @@ ${d.extraCorrections && d.extraCorrections.length > 0
         `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(va)}</td>` +
         rxTd(near) +
         `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(nearVa)}</td></tr>`;
-      return card(`${escapeHtml(ec.label)}${ecMethod ? ` — ${escapeHtml(ecMethod)}` : ""}`,
+      return card(`${escapeHtml(ec.label)}${ecMethod ? ` · ${escapeHtml(ecMethod)}` : ""}`,
         `<table>
           <thead><tr>
             <th style="${TH}width:90px;">Eye</th>
@@ -1296,11 +1296,6 @@ ${d.investigations.length
       </table>`)
   : ""}
 
-<!-- 5b · ADVICE NOTES -->
-${d.advice && d.advice.trim()
-  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
-  : ""}
-
 <!-- 6 · FOLLOW-UP with In View Of -->
 ${d.visit.followUpDate
   ? inlineCard("Follow-up",
@@ -1310,7 +1305,12 @@ ${d.visit.followUpDate
         : ""))
   : ""}
 
-<!-- 7 · REFERRAL with In View Of -->
+<!-- 7 · ADVICE NOTES -->
+${d.advice && d.advice.trim()
+  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;padding:8px 12px;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:4px;background:#FFFBEB;">${escapeHtml(d.advice.trim())}</div>`
+  : ""}
+
+<!-- 8 · REFERRAL with In View Of -->
 ${d.visit.referralEnabled && d.visit.referralNote && d.visit.referralNote.trim()
   ? inlineCard("Referral",
       `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(d.visit.referralNote.trim())}</div>` +
@@ -1723,18 +1723,16 @@ ${ge?.hpi
   : ""}
 
 <!-- 4 · PAST HISTORY -->
-${ge && (pmhList.length || ge.pmhOtherText)
+${ge && pmhList.length
   ? card("Past History",
-      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
-      pmhList.map(escapeHtml).join(", ") +
-      (ge.pmhOtherText ? (pmhList.length ? ", " : "") + escapeHtml(ge.pmhOtherText) : "") +
-      `</div>`)
+      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">${pmhList.map(escapeHtml).join(", ")}</div>`)
   : ""}
 
 <!-- 5 · SYSTEMIC HISTORY -->
-${ge && (ge.medications || ge.familyHistory || ge.socialHistory)
+${ge && (ge.pmhOtherText || ge.medications || ge.familyHistory || ge.socialHistory)
   ? card("Systemic History",
       `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
+      (ge.pmhOtherText ? `<div style="margin-bottom:4px;white-space:pre-wrap;">${escapeHtml(ge.pmhOtherText)}</div>` : "") +
       (ge.medications ? `<div><strong style="color:${LABEL_C};">Current Medications:</strong> ${(() => {
         try {
           const meds = typeof ge.medications === "string" ? JSON.parse(ge.medications!) : ge.medications;
@@ -1814,7 +1812,7 @@ ${(() => {
   if (d.extraCorrections && d.extraCorrections.length > 0) {
     d.extraCorrections.forEach((ec) => {
       const method = ec.re?.method || ec.le?.method || "";
-      blocks.push(rxTable(`${ec.label}${method ? " — " + method : ""}`, ec.re, ec.le));
+      blocks.push(rxTable(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le));
     });
   }
   if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) {
