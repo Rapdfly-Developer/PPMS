@@ -1213,36 +1213,14 @@ ${procDisplay
   : ""}
 
 <!-- 3 · MEDICATIONS -->
-${card("Medications",
-  `<table>
+${d.medications.length
+  ? card("Medications",
+      `<table>
     <tbody>${medRows}</tbody>
-  </table>`)}
-
-<!-- 4 · ADVICE NOTES (below medications) -->
-${d.advice && d.advice.trim()
-  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
+  </table>`)
   : ""}
 
-<!-- 5 · INVESTIGATIONS -->
-${d.investigations.length
-  ? card("Investigations",
-      `<table style="width:100%;">
-        <tbody>
-          ${d.investigations.map((inv, i) =>
-            `<tr>` +
-            `<td style="${TD}text-align:center;color:#8A9793;font-size:9px;">${i + 1}</td>` +
-            `<td style="${TD}font-size:9.5px;font-weight:600;">` +
-            (inv.laterality ? `<span style="font-size:8px;font-weight:700;color:${BRAND};margin-right:4px;">${escapeHtml(inv.laterality)}</span>` : "") +
-            escapeHtml(inv.testName) +
-            `</td>` +
-            `<td style="${TD}font-size:9px;color:#555;">${inv.notes ? escapeHtml(inv.notes) : "<span style='color:#aaa;font-style:italic;'>—</span>"}</td>` +
-            `</tr>`
-          ).join("")}
-        </tbody>
-      </table>`)
-  : ""}
-
-<!-- 5 · SPECTACLES / REFRACTION (only if an Rx exists) -->
+<!-- 4 · SPECTACLES / REFRACTION (only if an Rx exists) -->
 ${hasRx
   ? card(`Spectacles / Refraction${d.opticalRx?.re.method || d.opticalRx?.le.method ? ` — ${escapeHtml(d.opticalRx!.re.method || d.opticalRx!.le.method || "")}` : ""}`,
       `<table>
@@ -1270,7 +1248,7 @@ ${hasRx
       </table>`)
   : ""}
 
-<!-- 5b · EXTRA CORRECTIONS -->
+<!-- 4b · EXTRA CORRECTIONS -->
 ${d.extraCorrections && d.extraCorrections.length > 0
   ? d.extraCorrections.map((ec) => {
       const ecMethod = ec.re?.method || ec.le?.method || "";
@@ -1299,165 +1277,28 @@ ${d.extraCorrections && d.extraCorrections.length > 0
     }).join("")
   : ""}
 
-<!-- 5c · VISUAL ACUITY -->
-${d.visualAcuity
-  ? (() => {
-      const va = d.visualAcuity!;
-      return card("Visual Acuity",
-        `<table style="width:100%;border-collapse:collapse;"><thead><tr>
-          <th style="${TH}width:150px;"></th>
-          <th style="${TH}font-weight:700;color:${LABEL_C};">RE</th>
-          <th style="${TH}font-weight:700;color:${LABEL_C};">LE</th>
-        </tr></thead><tbody>
-          <tr><td style="${TD}color:#555;">Unaided / UCVA <span style="font-size:8px;">(Dist)</span></td><td style="${TD}">${v2(va.reDistance?.unaided)}</td><td style="${TD}">${v2(va.leDistance?.unaided)}</td></tr>
-          <tr style="background:${TINT};"><td style="${TD}color:#555;">Pinhole (PH)</td><td style="${TD}">${v2(va.reDistance?.ph)}</td><td style="${TD}">${v2(va.leDistance?.ph)}</td></tr>
-          <tr><td style="${TD}color:#555;">Best Corrected (BCVA)</td><td style="${TD}">${v2(va.reDistance?.bcva)}</td><td style="${TD}">${v2(va.leDistance?.bcva)}</td></tr>
-          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
-        </tbody></table>`);
-    })()
+<!-- 5 · INVESTIGATIONS -->
+${d.investigations.length
+  ? card("Investigations",
+      `<table style="width:100%;">
+        <tbody>
+          ${d.investigations.map((inv, i) =>
+            `<tr>` +
+            `<td style="${TD}text-align:center;color:#8A9793;font-size:9px;width:24px;">${i + 1}</td>` +
+            `<td style="${TD}font-size:9.5px;font-weight:600;">` +
+            (inv.laterality ? `<span style="font-size:8px;font-weight:700;color:${BRAND};margin-right:4px;">${escapeHtml(inv.laterality)}</span>` : "") +
+            escapeHtml(inv.testName) +
+            (inv.notes ? `<span style="font-weight:400;font-style:italic;color:#555;margin-left:5px;">· In view of: ${escapeHtml(inv.notes)}</span>` : "") +
+            `</td>` +
+            `</tr>`
+          ).join("")}
+        </tbody>
+      </table>`)
   : ""}
 
-<!-- 5d · RETINOSCOPY -->
-${d.retinoscopy
-  ? (() => {
-      const r = d.retinoscopy!;
-      const rRow = (eye: string, rx?: { sph?: string; cyl?: string; axis?: string } | null) =>
-        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
-        `<td style="${TD}text-align:center;">${v2(rx?.sph)}</td>` +
-        `<td style="${TD}text-align:center;">${v2(rx?.cyl)}</td>` +
-        `<td style="${TD}text-align:center;">${v2(rx?.axis)}</td></tr>`;
-      return card("Retinoscopy",
-        `<table><thead><tr>
-          <th style="${TH}width:90px;">Eye</th>
-          <th style="${TH}text-align:center;">Sph</th>
-          <th style="${TH}text-align:center;">Cyl</th>
-          <th style="${TH}text-align:center;">Axis°</th>
-        </tr></thead><tbody>
-          ${rRow("Right Eye", r.re)}
-          ${rRow("Left Eye", r.le)}
-        </tbody></table>`);
-    })()
-  : ""}
-
-<!-- 5e · ANTERIOR SEGMENT -->
-${d.anteriorSegment && (d.anteriorSegment.re || d.anteriorSegment.le)
-  ? (() => {
-      const hasVal = (side?: Record<string, string> | null) =>
-        side ? Object.values(side).some((v) => v && v.trim()) : false;
-      const hasRE = hasVal(d.anteriorSegment!.re), hasLE = hasVal(d.anteriorSegment!.le);
-      if (!hasRE && !hasLE) return "";
-      const allKeys = [...new Set([
-        ...Object.keys(d.anteriorSegment!.re ?? {}),
-        ...Object.keys(d.anteriorSegment!.le ?? {}),
-      ])].filter((k) => (d.anteriorSegment!.re?.[k] ?? "") || (d.anteriorSegment!.le?.[k] ?? ""));
-      if (!allKeys.length) return "";
-      return card("Anterior Segment",
-        `<table style="width:100%;"><thead><tr>
-          <th style="${TH}width:100px;"></th>
-          ${hasRE ? `<th style="${TH}">Right Eye</th>` : ""}
-          ${hasLE ? `<th style="${TH}">Left Eye</th>` : ""}
-        </tr></thead><tbody>
-          ${allKeys.map((k) => {
-            const rv = escapeHtml(d.anteriorSegment!.re?.[k] ?? "");
-            const lv = escapeHtml(d.anteriorSegment!.le?.[k] ?? "");
-            return `<tr><td style="${TD}font-size:9px;color:#6B8A85;">${escapeHtml(k)}</td>${hasRE ? `<td style="${TD}font-size:9.5px;">${rv || "—"}</td>` : ""}${hasLE ? `<td style="${TD}font-size:9.5px;">${lv || "—"}</td>` : ""}</tr>`;
-          }).join("")}
-        </tbody></table>`);
-    })()
-  : ""}
-
-<!-- 5f · POSTERIOR SEGMENT -->
-${d.posteriorSegment && (d.posteriorSegment.re || d.posteriorSegment.le || d.posteriorSegment.notes)
-  ? (() => {
-      const hasVal = (side?: Record<string, string> | null) =>
-        side ? Object.values(side).some((v) => v && v.trim()) : false;
-      const hasRE = hasVal(d.posteriorSegment!.re), hasLE = hasVal(d.posteriorSegment!.le);
-      const allKeys = [...new Set([
-        ...Object.keys(d.posteriorSegment!.re ?? {}),
-        ...Object.keys(d.posteriorSegment!.le ?? {}),
-      ])].filter((k) => (d.posteriorSegment!.re?.[k] ?? "") || (d.posteriorSegment!.le?.[k] ?? ""));
-      const notesHtml = d.posteriorSegment!.notes
-        ? `<div style="font-size:9.5px;color:#4A5A57;margin-top:${allKeys.length ? "6" : "0"}px;">${escapeHtml(d.posteriorSegment!.notes)}</div>`
-        : "";
-      if (!allKeys.length && !notesHtml) return "";
-      return card("Posterior Segment",
-        `${allKeys.length ? `<table style="width:100%;"><thead><tr>
-          <th style="${TH}width:100px;"></th>
-          ${hasRE ? `<th style="${TH}">Right Eye</th>` : ""}
-          ${hasLE ? `<th style="${TH}">Left Eye</th>` : ""}
-        </tr></thead><tbody>
-          ${allKeys.map((k) => {
-            const rv = escapeHtml(d.posteriorSegment!.re?.[k] ?? "");
-            const lv = escapeHtml(d.posteriorSegment!.le?.[k] ?? "");
-            return `<tr><td style="${TD}font-size:9px;color:#6B8A85;">${escapeHtml(k)}</td>${hasRE ? `<td style="${TD}font-size:9.5px;">${rv || "—"}</td>` : ""}${hasLE ? `<td style="${TD}font-size:9.5px;">${lv || "—"}</td>` : ""}</tr>`;
-          }).join("")}
-        </tbody></table>` : ""}${notesHtml}`);
-    })()
-  : ""}
-
-<!-- OPHTHALMIC SUBTAB CARDS SELECTED FOR CUSTOM PRINT -->
-${(() => {
-  if (!d.colourVision && !d.contrastSensitivity) return "";
-  type MRow = { method: string; re: string; reNotes: string; le: string; leNotes: string };
-  const buildRows = (reM: string, leM: string, reVal: string, reN: string, leVal: string, leN: string): MRow[] => {
-    if (!reM && !leM && !reVal && !leVal) return [];
-    if (reM === leM) return [{ method: reM, re: reVal, reNotes: reN, le: leVal, leNotes: leN }];
-    const out: MRow[] = [];
-    if (reVal) out.push({ method: reM, re: reVal, reNotes: reN, le: "", leNotes: "" });
-    if (leVal) out.push({ method: leM, re: "", reNotes: "", le: leVal, leNotes: leN });
-    return out;
-  };
-  const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 6px;border-bottom:1px solid ${LINE};`;
-  const methodGrid = (rows: MRow[], label: string) => {
-    if (!rows.length) return "";
-    const bodyRows = rows.map((row, i) =>
-      `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
-      `<td style="${TD}vertical-align:top;"><span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#EBF5F3;color:${LABEL_C};font-size:7.5px;font-weight:700;border:1px solid #C8E0DC;margin-right:5px;vertical-align:middle;">${i + 1}</span><span style="font-weight:600;color:${INK};">${escapeHtml(row.method || "—")}</span></td>` +
-      `<td style="${TD}vertical-align:top;"><div>${v2(row.re)}</div>${row.reNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.reNotes)}]</div>` : ""}</td>` +
-      `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
-      `</tr>`
-    ).join("");
-    return `<div style="font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${label}</div>` +
-      `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><thead><tr><th style="width:45%;${hdrTh}"></th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
-  };
-  const cvRe = d.colourVision?.re ?? {} as any, cvLe = d.colourVision?.le ?? {} as any;
-  const csRe = d.contrastSensitivity?.re ?? {} as any, csLe = d.contrastSensitivity?.le ?? {} as any;
-  const cvRows = buildRows(cvRe.method ?? "", cvLe.method ?? cvRe.method ?? "", cvRe.result ?? "", cvRe.notes ?? "", cvLe.result ?? "", cvLe.notes ?? "");
-  const csRows = buildRows(csRe.method ?? "", csLe.method ?? csRe.method ?? "", csRe.result ?? "", csRe.notes ?? "", csLe.result ?? "", csLe.notes ?? "");
-  const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity");
-  if (!inner.trim()) return "";
-  return card("Colour Vision & Contrast Sensitivity", inner);
-})()}
-${d.iopReadings?.length
-  ? card("Intra-Ocular Pressure", `<table style="width:100%;"><thead><tr><th style="${TH}">Method</th><th style="${TH}">Date &amp; time</th><th style="${TH}">RE (mmHg)</th><th style="${TH}">LE (mmHg)</th></tr></thead><tbody>${d.iopReadings.map((r) => `<tr><td style="${TD}">${v2(r.method)}</td><td style="${TD}">${r.takenAt ? format(new Date(r.takenAt), "dd MMM yyyy, h:mm a") : ""}</td><td style="${TD}">${v2(r.re == null ? "" : String(r.re))}</td><td style="${TD}">${v2(r.le == null ? "" : String(r.le))}</td></tr>`).join("")}</tbody></table>`)
-  : ""}
-${d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)
-  ? card("Gonioscopy", simpleRows([
-      ["Method", d.gonioscopy.method ?? ""], ["Right eye angle", d.gonioscopy.reDeg ?? ""], ["Right eye findings", d.gonioscopy.re ?? ""],
-      ["Left eye angle", d.gonioscopy.leDeg ?? ""], ["Left eye findings", d.gonioscopy.le ?? ""],
-    ].filter(([, value]) => !!value)))
-  : ""}
-${d.tearFilm && Object.values(d.tearFilm).some((value) => value != null)
-  ? card("Tear Film, TBUT &amp; Schirmer's", simpleRows([
-      ["TBUT · RE (seconds)", d.tearFilm.tbutRe == null ? "" : String(d.tearFilm.tbutRe)], ["TBUT · LE (seconds)", d.tearFilm.tbutLe == null ? "" : String(d.tearFilm.tbutLe)],
-      ["Schirmer's 1 · RE (mm)", d.tearFilm.schirmer1Re == null ? "" : String(d.tearFilm.schirmer1Re)], ["Schirmer's 1 · LE (mm)", d.tearFilm.schirmer1Le == null ? "" : String(d.tearFilm.schirmer1Le)],
-      ["Schirmer's 2 · RE (mm)", d.tearFilm.schirmer2Re == null ? "" : String(d.tearFilm.schirmer2Re)], ["Schirmer's 2 · LE (mm)", d.tearFilm.schirmer2Le == null ? "" : String(d.tearFilm.schirmer2Le)],
-    ].filter(([, value]) => !!value)))
-  : ""}
-${d.lacrimalSac && [d.lacrimalSac.re, d.lacrimalSac.le].some((eye) => eye && ((eye.chips?.length ?? 0) > 0 || !!eye.findings))
-  ? card("Lacrimal Sac Syringing", simpleRows([
-      ["Right eye", [...(d.lacrimalSac.re?.chips ?? []), d.lacrimalSac.re?.findings ?? ""].filter(Boolean).join(" · ")],
-      ["Left eye", [...(d.lacrimalSac.le?.chips ?? []), d.lacrimalSac.le?.findings ?? ""].filter(Boolean).join(" · ")],
-    ].filter(([, value]) => !!value)))
-  : ""}
-${d.diplopiaChart && Object.keys(d.diplopiaChart).length
-  ? card("Diplopia Charting", simpleRows(Object.entries(d.diplopiaChart).map(([position, result]) => [position, [result.status, result.notes].filter(Boolean).join(" · ")]).filter(([, value]) => !!value)))
-  : ""}
-${d.hessChart && (Object.keys(d.hessChart.grid ?? {}).length || d.hessChart.interpretation)
-  ? card("Hess Charting", simpleRows([
-      ...Object.entries(d.hessChart.grid ?? {}).map(([position, result]) => [position, [result.reH && `RE H ${result.reH}`, result.reV && `RE V ${result.reV}`, result.leH && `LE H ${result.leH}`, result.leV && `LE V ${result.leV}`].filter(Boolean).join(" · ")] as [string, string]),
-      ["Interpretation", d.hessChart.interpretation ?? ""],
-    ].filter(([, value]) => !!value)))
+<!-- 5b · ADVICE NOTES -->
+${d.advice && d.advice.trim()
+  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;">${escapeHtml(d.advice.trim())}</div>`
   : ""}
 
 <!-- 6 · FOLLOW-UP with In View Of -->
@@ -2057,8 +1898,9 @@ ${d.colourVision
   : ""}
 
 <!-- 11 · IOP & GONIOSCOPY -->
-${card("Intraocular Pressure (IOP) & Gonioscopy",
-  (() => {
+${(d.iopReadings.length || (d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)))
+  ? card("Intraocular Pressure (IOP) & Gonioscopy",
+    (() => {
     let inner = "";
     if (d.iopReadings.length) {
       inner += `<table style="width:100%;border-collapse:collapse;">
@@ -2090,7 +1932,8 @@ ${card("Intraocular Pressure (IOP) & Gonioscopy",
       inner += `</div>`;
     }
     return inner;
-  })())}
+  })())
+  : ""}
 
 <!-- 12 · TEAR FILM -->
 ${d.tearFilm && (d.tearFilm.tbutRe != null || d.tearFilm.tbutLe != null || d.tearFilm.schirmer1Re != null || d.tearFilm.schirmer1Le != null)
@@ -2130,34 +1973,38 @@ ${d.lacrimalSac && (d.lacrimalSac.re || d.lacrimalSac.le)
   : ""}
 
 <!-- 14 · ANTERIOR SEGMENT -->
-${card("Anterior Segment Examination", renderSegment(d.anteriorSegment as any))}
+${d.anteriorSegment && Object.keys(d.anteriorSegment).length
+  ? card("Anterior Segment Examination", renderSegment(d.anteriorSegment as any))
+  : ""}
 
 <!-- 15 · POSTERIOR SEGMENT -->
-${card("Posterior Segment Examination",
-  (() => {
-    const ps = d.posteriorSegment as any;
-    if (!ps) return emptyNote;
-    return renderSegment(ps.data) +
+${(() => {
+  const ps = d.posteriorSegment as any;
+  if (!ps) return "";
+  const hasData = (ps.data && Object.keys(ps.data).length > 0) || ps.cdr || ps.notes;
+  if (!hasData) return "";
+  return card("Posterior Segment Examination",
+    renderSegment(ps.data) +
       (ps.cdr
         ? `<div style="margin-top:5px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">CDR:</span> ${escapeHtml(ps.cdr)}</div>`
         : "") +
       (ps.notes
         ? `<div style="margin-top:4px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;white-space:pre-wrap;">${escapeHtml(ps.notes)}</div>`
-        : "");
-  })())}
+        : ""));
+})()}
 
 <!-- 16 · ASSESSMENT / DIAGNOSIS -->
-${card("Assessment / Diagnosis",
-  d.diagnoses.length
-    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
+${d.diagnoses.length
+  ? card("Assessment / Diagnosis",
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
       d.diagnoses.map((dx) =>
         (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
         (dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
         escapeHtml(dx.description) +
         (dx.icd10Code ? ` <span style="font-family:'Courier New',monospace;font-size:8px;color:#888;font-weight:400;">${escapeHtml(dx.icd10Code)}</span>` : "")
       ).join("<br>") +
-      `</div>`
-    : none("No diagnoses recorded"))}
+      `</div>`)
+  : ""}
 
 <!-- 17 · MINOR PROCEDURE -->
 ${d.minorProcedure?.procedureName
@@ -2175,8 +2022,9 @@ ${d.minorProcedure?.procedureName
   : ""}
 
 <!-- 18 · MEDICATIONS PRESCRIBED -->
-${card("Medications Prescribed",
-  `<table style="width:100%;border-collapse:collapse;">
+${d.medications.length
+  ? card("Medications Prescribed",
+    `<table style="width:100%;border-collapse:collapse;">
     <thead><tr>
       <th style="${TH}width:28px;text-align:center;">#</th>
       <th style="${TH}">Medicine</th>
@@ -2185,7 +2033,8 @@ ${card("Medications Prescribed",
       <th style="${TH}width:65px;">Duration</th>
     </tr></thead>
     <tbody>${medRows}</tbody>
-  </table>`)}
+  </table>`)
+  : ""}
 
 <!-- 18b · ADVICE NOTES -->
 ${d.adviseNotes

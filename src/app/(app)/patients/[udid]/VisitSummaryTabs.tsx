@@ -363,9 +363,21 @@ function ShortContent({ complaint, diagnoses, emrData }: {
   const hasProcedure = !!emrData?.procedureName;
   const investigations = emrData?.investigationOrders?.filter((o: any) => o.status !== "COMPLETED") ?? [];
   const hasInv       = investigations.length > 0;
-  const reRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.re, {}) : {};
-  const leRCp        = emrData?.refraction ? parseJSON<Record<string, string>>(emrData.refraction.le, {}) : {};
   const RC_FIELDS    = ["sph", "cyl", "axis", "nearSph", "nearCyl", "va", "nearVa"] as const;
+  const { reRCp, leRCp } = (() => {
+    if (!emrData?.refraction) return { reRCp: {} as Record<string, string>, leRCp: {} as Record<string, string> };
+    const raw = parseJSON<any>(emrData.refraction.re, {});
+    if (raw._v === 2) {
+      const methods = raw.methods ?? {} as Record<string, any>;
+      const entry = Object.entries(methods).find(([k]) => /subjective/i.test(k));
+      if (entry) {
+        const [, e] = entry as [string, any];
+        return { reRCp: (e.re || {}) as Record<string, string>, leRCp: (e.le || {}) as Record<string, string> };
+      }
+      return { reRCp: {} as Record<string, string>, leRCp: {} as Record<string, string> };
+    }
+    return { reRCp: raw as Record<string, string>, leRCp: parseJSON<Record<string, string>>(emrData.refraction.le, {}) };
+  })();
   const hasRC        = RC_FIELDS.some((f) => (reRCp[f] && reRCp[f] !== "") || (leRCp[f] && leRCp[f] !== ""));
   const hasFollowUp  = !!emrData?.followUpDate;
   const hasReferral  = !!emrData?.referralEnabled;
@@ -488,22 +500,20 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasInv && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
-          <div className="space-y-0">
+          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
             {investigations.map((o: any, i: number) => (
-              <div key={i} className="flex items-start gap-0">
-                <span className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-500)] tabular-nums shrink-0">{i + 1}</span>
-                <p className="py-1.5 pr-4 text-caption sm:text-caption leading-snug text-[var(--color-ink-700)] font-semibold">
-                  {o.laterality && (
-                    <span className="font-bold text-[var(--color-primary-700)] mr-2">{o.laterality}</span>
-                  )}
+              <li key={i} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
+                <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
+                <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
+                  {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
                   {o.testName}
                   {o.notes && (
-                    <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {o.notes}</span>
+                    <span className="font-normal text-[var(--color-ink-500)] italic ml-1.5">· In view of: {o.notes}</span>
                   )}
                 </p>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       )}
 
@@ -773,7 +783,17 @@ function LongContent({
   const lsLe = parseLacrimal(ls?.le);
 
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
-  const hasPMH      = pmhList.length > 0 || g?.pmhOtherText || g?.allergies || g?.nkda;
+  const hasPMH      = pmhList.length > 0 || g?.allergies || g?.nkda;
+  const currentMeds: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
+    if (!g?.medications) return [];
+    try {
+      const parsed = typeof g.medications === "string" ? JSON.parse(g.medications) : g.medications;
+      if (Array.isArray(parsed)) return parsed.filter((m: any) => m.drugName?.trim());
+    } catch { /* plain text fallback */ }
+    return [];
+  })();
+  const hasCurrentMeds = currentMeds.length > 0 || (typeof g?.medications === "string" && g.medications.trim());
+  const hasSystemicHistory = !!g?.pmhOtherText;
   const hasDiag     = data.diagnoses?.length > 0;
   const hasMeds     = data.medications?.length > 0;
   const hasInv      = data.investigationOrders?.length > 0;
@@ -852,9 +872,6 @@ function LongContent({
                     </span>
                   );
                 })}
-                {g.pmhOtherText && (
-                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-caption sm:text-caption font-medium">{g.pmhOtherText}</span>
-                )}
               </div>
             </div>
           )}
@@ -868,6 +885,37 @@ function LongContent({
               {g.nkda ? <span className="text-caption text-green-700 font-medium">NKDA</span> : <span className="text-caption text-red-600 font-bold">{g.allergies}</span>}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── 2b. Current Medications ──────────────────────────────────── */}
+      {hasCurrentMeds && (
+        <div>
+          <SumHead icon={<Pill size={11} />} label="Current Medications" color="text-[var(--color-ink-400)]" />
+          {currentMeds.length > 0 ? (
+            <div className="space-y-0.5">
+              {currentMeds.map((m, i) => (
+                <p key={i} className="text-caption text-[var(--color-ink-700)] leading-snug">
+                  <span className="font-semibold">{m.drugName}</span>
+                  {[m.dosage, m.frequency, m.duration].filter(Boolean).map((v, j) => (
+                    <span key={j} className="text-[var(--color-ink-500)] font-normal">
+                      <span className="mx-1.5 text-[var(--color-ink-300)]">·</span>{v}
+                    </span>
+                  ))}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-caption text-[var(--color-ink-700)]">{g!.medications as string}</p>
+          )}
+        </div>
+      )}
+
+      {/* ── 2c. Systemic History ─────────────────────────────────────── */}
+      {hasSystemicHistory && (
+        <div>
+          <SumHead icon={<BookOpen size={11} />} label="Systemic History" color="text-[var(--color-ink-400)]" />
+          <p className="text-caption text-[var(--color-ink-700)] leading-relaxed whitespace-pre-wrap">{g!.pmhOtherText}</p>
         </div>
       )}
 
@@ -976,8 +1024,8 @@ function LongContent({
               <div className="space-y-0">
                 <div className="grid grid-cols-[2fr_1fr_1fr] gap-x-4 pb-1 mb-0.5 border-b border-[var(--color-border)]">
                   <div />
-                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)]">RE</div>
-                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)]">LE</div>
+                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] text-center">RE</div>
+                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] text-center">LE</div>
                 </div>
                 {rows.map((row, i) => (
                   <div key={i} className={`grid grid-cols-[2fr_1fr_1fr] gap-x-4 py-1.5${i < rows.length - 1 ? " border-b border-[var(--color-border)]" : ""}`}>
@@ -985,11 +1033,11 @@ function LongContent({
                       <span className="mt-px inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-[9px] font-bold shrink-0 border border-[var(--color-primary-100)]">{i + 1}</span>
                       <span className="text-caption font-medium text-[var(--color-ink-700)] leading-snug">{row.method || "—"}</span>
                     </div>
-                    <div>
+                    <div className="text-center">
                       <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.re ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.reNotes}]</p>}
                     </div>
-                    <div>
+                    <div className="text-center">
                       <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.le ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
                       {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.leNotes}]</p>}
                     </div>
