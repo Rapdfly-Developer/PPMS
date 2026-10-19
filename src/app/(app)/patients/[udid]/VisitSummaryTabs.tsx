@@ -473,7 +473,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
                   </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{formatDurWithDate(m.duration, emrData?.date)}</td>
+                  <td className={`${TD_MUTED} whitespace-nowrap`}>{formatDurWithDate(m.duration, emrData?.date)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1331,7 +1331,7 @@ function LongContent({
                   </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{formatDurWithDate(m.duration, data?.date)}</td>
+                  <td className={`${TD_MUTED} whitespace-nowrap`}>{formatDurWithDate(m.duration, data?.date)}</td>
                 </tr>
               ))}
             </tbody>
