@@ -1463,7 +1463,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   /* ── Table header / cell style (matches Short Summary) ── */
   const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
   const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
-  const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
+  const MED_TD = `padding:6px 5px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
 
   /* ── Diagnosis badge ── */
   const diagBadge = (s: string) => {
@@ -2065,11 +2065,11 @@ ${d.medications.length
   ? card("Medications Prescribed",
     `<table style="width:100%;border-collapse:collapse;">
     <thead><tr>
-      <th style="${TH}width:28px;text-align:center;">#</th>
+      <th style="${TH}width:24px;text-align:center;">#</th>
       <th style="${TH}">Medicine</th>
-      <th style="${TH}width:65px;">Dosage</th>
-      <th style="${TH}width:95px;">Frequency</th>
-      <th style="${TH}width:65px;">Duration</th>
+      <th style="${TH}width:55px;">Dosage</th>
+      <th style="${TH}width:85px;">Frequency</th>
+      <th style="${TH}width:115px;">Duration</th>
     </tr></thead>
     <tbody>${medRows}</tbody>
   </table>`)
