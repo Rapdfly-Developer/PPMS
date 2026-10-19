@@ -1198,7 +1198,7 @@ function LongContent({
                   </thead>
                   <tbody>
                     {antRows.map((r, i) => (
-                      <tr key={r.key} className={i % 2 !== 0 ? "bg-[var(--color-surface-subtle)]" : ""}>
+                      <tr key={r.key} className={i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}>
                         <td className={TD_MUTED}>{r.label}</td>
                         <td className={TD}>{r.re || DASH}</td>
                         <td className={TD}>{r.le || DASH}</td>
@@ -1240,14 +1240,14 @@ function LongContent({
                   </thead>
                   <tbody>
                     {posRows.map((f, i) => (
-                      <tr key={f} className={i % 2 !== 0 ? "bg-[var(--color-surface-subtle)]" : ""}>
+                      <tr key={f} className={i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}>
                         <td className={TD_MUTED}>{posLabels[f] ?? f}</td>
                         <td className={TD}>{stripBullet(re[f] as string | undefined) || DASH}</td>
                         <td className={TD}>{stripBullet(le[f] as string | undefined) || DASH}</td>
                       </tr>
                     ))}
                     {(notesRe || notesLe) && (
-                      <tr className={posRows.length % 2 !== 0 ? "bg-[var(--color-surface-subtle)]" : ""}>
+                      <tr className={posRows.length % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}>
                         <td className={TD_MUTED}>Notes</td>
                         <td className={TD}>{notesRe || DASH}</td>
                         <td className={TD}>{notesLe || DASH}</td>
