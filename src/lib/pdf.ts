@@ -1419,7 +1419,7 @@ export type FullEmrData = {
   } | null;
   extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
-  investigations: { testName: string; priority: string; status: string; result?: string | null; notes?: string | null }[];
+  investigations: { testName: string; priority: string; status: string; laterality?: string | null; result?: string | null; notes?: string | null }[];
 };
 
 async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
@@ -2089,6 +2089,7 @@ ${d.investigations.length
         `<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;${i > 0 ? "border-top:1px solid #ECF3F1;" : ""}">` +
         `<span style="font-size:9px;color:#8A9793;width:20px;text-align:right;flex-shrink:0;font-weight:600;">${i + 1}.</span>` +
         `<div style="font-size:9.5px;font-weight:600;color:#1a1a1a;flex:1;">` +
+        (inv.laterality ? `<span style="font-weight:700;color:${BRAND};margin-right:5px;">${escapeHtml(inv.laterality)}</span>` : "") +
         escapeHtml(inv.testName) +
         (inv.notes ? `<span style="font-weight:400;font-style:italic;color:#555;margin-left:5px;">· In view of: ${escapeHtml(inv.notes)}</span>` : "") +
         `</div></div>`
@@ -2435,7 +2436,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, va: reRef?.va, nearSph: reRef?.nearSph, nearVa: reRef?.nearVa, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
       le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, va: leRef?.va, nearSph: leRef?.nearSph, nearVa: leRef?.nearVa, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
     },
-    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
+    investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, laterality: o.laterality ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
   };
 
   return htmlToPdf(await renderFullEmrHtml(data));
