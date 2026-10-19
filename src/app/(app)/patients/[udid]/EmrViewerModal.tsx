@@ -538,7 +538,6 @@ export function VisitDownloadButton({ visitId, udid }: { visitId: string; udid: 
   const customSections: CustomSection[] = customData ? [
     { id: "cc",      label: "Chief Complaint",        param: "cc",      hasData: !!customData.generalExam?.chiefComplaint },
     { id: "allergy", label: "Drug Allergy",            param: "allergy", hasData: !!customData.generalExam?.allergies },
-    { id: "va",      label: "Visual Acuity",           param: "va",      hasData: !!customData.visualAcuity },
     { id: "rx",      label: "Refraction",              param: "rx",      hasData: !!customData.refraction },
     { id: "iop",     label: "Intra-Ocular Pressure",   param: "iop",     hasData: (customData.iopReadings?.length ?? 0) > 0 },
     { id: "ant",     label: "Anterior Segment",        param: "ant",     hasData: !!customData.anteriorSegment },

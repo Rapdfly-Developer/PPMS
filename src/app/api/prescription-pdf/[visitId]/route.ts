@@ -115,12 +115,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         };
         return { re: parseCvEye((cv as any).re), le: parseCvEye((cv as any).le), notes: (cv as any).notes ?? null };
       })() : null,
-      anteriorSegment: as_ ? parseJSON((as_ as any).data, undefined) : null,
-      posteriorSegment: ps ? {
-        data: parseJSON((ps as any).data, undefined),
-        cdr: (ps as any).cdr ?? null,
-        notes: (ps as any).notes ?? null,
-      } : null,
+      anteriorSegment: as_ ? (() => {
+        const re = parseJSON((as_ as any).re, {} as Record<string, string>);
+        const le = parseJSON((as_ as any).le, {} as Record<string, string>);
+        const allKeys = [...new Set([...Object.keys(re), ...Object.keys(le)])];
+        const out: Record<string, { re: string; le: string }> = {};
+        allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
+        return Object.keys(out).length ? out : null;
+      })() : null,
+      posteriorSegment: ps ? (() => {
+        const re = parseJSON((ps as any).re, {} as Record<string, string>);
+        const le = parseJSON((ps as any).le, {} as Record<string, string>);
+        const allKeys = [...new Set([...Object.keys(re), ...Object.keys(le)])];
+        const out: Record<string, { re: string; le: string }> = {};
+        allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
+        return {
+          data: Object.keys(out).length ? out : null,
+          cdr: (ps as any).cdr ?? null,
+          notes: (ps as any).notes ?? null,
+        };
+      })() : null,
       diagnoses: visit.diagnoses.map((d: any) => ({
         description: d.description, icd10Code: d.icd10Code,
         status: d.status, laterality: d.laterality ?? null,

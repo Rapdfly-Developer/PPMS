@@ -41,7 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const sp = req.nextUrl.searchParams;
   const inclRx     = sp.get("rx")     !== "0";
   const inclExtras = sp.get("extras") !== "0";
-  const inclVa     = sp.get("va")     !== "0";
+  const inclVa     = sp.get("va")     === "1";
   const inclRetino = sp.get("retino") !== "0";
   const inclCc     = sp.get("cc")     !== "0";
   const inclDx     = sp.get("dx")     !== "0";

@@ -451,7 +451,6 @@ export function EmrActionBar({
         const customSections: CustomSection[] = [
           { id: "cc", label: "Chief Complaint", param: "cc", hasData: !!visit.generalExam?.chiefComplaint },
           { id: "allergy", label: "Drug Allergy", param: "allergy", hasData: !!visit.generalExam?.allergies },
-          { id: "va", label: "Visual Acuity", param: "va", hasData: !!visit.visualAcuity },
           { id: "rx", label: "Refraction", param: "rx", hasData: !!(visit.refraction) },
           { id: "cv", label: "Colour Vision", param: "cv", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.result || re.notes || le.result || le.notes); } catch { return false; } })() },
           { id: "cs", label: "Contrast Sensitivity", param: "cs", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.csResult || re.csNotes || le.csResult || le.csNotes); } catch { return false; } })() },

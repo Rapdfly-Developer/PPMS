@@ -1885,7 +1885,15 @@ ${ge && (pmhList.length || ge.pmhOtherText)
 ${ge && (ge.medications || ge.familyHistory || ge.socialHistory)
   ? card("Systemic History",
       `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
-      (ge.medications ? `<div><strong style="color:${LABEL_C};">Current Medications:</strong> ${escapeHtml(ge.medications)}</div>` : "") +
+      (ge.medications ? `<div><strong style="color:${LABEL_C};">Current Medications:</strong> ${(() => {
+        try {
+          const meds = typeof ge.medications === "string" ? JSON.parse(ge.medications!) : ge.medications;
+          if (Array.isArray(meds) && meds.length) {
+            return meds.map((m: any) => escapeHtml([m.drugName, m.dosage, m.frequency, m.duration].filter(Boolean).join(" · "))).join(", ");
+          }
+        } catch { /* plain text */ }
+        return escapeHtml(ge.medications!);
+      })()}</div>` : "") +
       (ge.familyHistory ? `<div><strong style="color:${LABEL_C};">Family History:</strong> ${escapeHtml(ge.familyHistory)}</div>` : "") +
       (ge.socialHistory ? `<div><strong style="color:${LABEL_C};">Social History:</strong> ${escapeHtml(ge.socialHistory)}</div>` : "") +
       `</div>`)
@@ -2003,33 +2011,38 @@ ${(() => {
 <!-- 10 · COLOUR VISION & CONTRAST SENSITIVITY -->
 ${d.colourVision
   ? (() => {
-      const cvEye = (eye: typeof d.colourVision extends null | undefined ? never : NonNullable<typeof d.colourVision>["re"]) => {
-        if (!eye) return "";
-        const rows: string[] = [];
-        if (eye.cvMethod || eye.result) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CV Method</td><td style="${TD}">${v2(eye.cvMethod)}</td>` +
-          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">Result</td><td style="${TD}">${v2(eye.result)}</td></tr>`
-        );
-        if (eye.notes) rows.push(`<tr><td style="${TD}font-weight:600;color:${LABEL_C};">Notes</td><td style="${TD}" colspan="3">${v2(eye.notes)}</td></tr>`);
-        if (eye.csMethod || eye.csResult) rows.push(
-          `<tr><td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Method</td><td style="${TD}">${v2(eye.csMethod)}</td>` +
-          `<td style="${TD}font-weight:600;color:${LABEL_C};white-space:nowrap;">CS Result</td><td style="${TD}">${v2(eye.csResult)}</td></tr>`
-        );
-        if (eye.csNotes) rows.push(`<tr><td style="${TD}font-weight:600;color:${LABEL_C};">CS Notes</td><td style="${TD}" colspan="3">${v2(eye.csNotes)}</td></tr>`);
-        return rows.length ? `<table style="width:100%;border-collapse:collapse;">${rows.join("")}</table>` : "";
+      const re = d.colourVision!.re;
+      const le = d.colourVision!.le;
+      type MRow = { method: string; re: string; reNotes: string; le: string; leNotes: string };
+      const buildRows = (reM: string, leM: string, reVal: string, reN: string, leVal: string, leN: string): MRow[] => {
+        if (reM === leM) return [{ method: reM, re: reVal, reNotes: reN, le: leVal, leNotes: leN }];
+        const out: MRow[] = [];
+        if (reVal) out.push({ method: reM, re: reVal, reNotes: reN, le: "", leNotes: "" });
+        if (leVal) out.push({ method: leM, re: "", reNotes: "", le: leVal, leNotes: leN });
+        return out;
       };
-      const reHtml = cvEye(d.colourVision!.re);
-      const leHtml = cvEye(d.colourVision!.le);
-      const inner =
-        `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-        `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
-        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
-        (reHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
-        `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
-        `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
-        (leHtml || `<span style="color:#9AA5A3;font-style:italic;font-size:9px;">—</span>`) +
-        `</td></tr></tbody></table>` +
-        (d.colourVision!.notes ? `<div style="margin-top:6px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
+      const cvRows = buildRows(re?.cvMethod || "", le?.cvMethod || "", re?.result || "", re?.notes || "", le?.result || "", le?.notes || "");
+      const csRows = buildRows(re?.csMethod || "", le?.csMethod || "", re?.csResult || "", re?.csNotes || "", le?.csResult || "", le?.csNotes || "");
+      const methodGrid = (rows: MRow[], label: string) => {
+        if (!rows.some(r => r.method || r.re || r.le)) return "";
+        const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 6px;border-bottom:1px solid ${LINE};`;
+        const bodyRows = rows.map((row, i) =>
+          `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
+          `<td style="${TD}vertical-align:top;">` +
+          `<span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#EBF5F3;color:${LABEL_C};font-size:7.5px;font-weight:700;border:1px solid #C8E0DC;margin-right:5px;vertical-align:middle;">${i + 1}</span>` +
+          `<span style="font-weight:600;color:${INK};">${escapeHtml(row.method || "—")}</span></td>` +
+          `<td style="${TD}vertical-align:top;"><div>${v2(row.re)}</div>${row.reNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.reNotes)}]</div>` : ""}</td>` +
+          `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
+          `</tr>`
+        ).join("");
+        return `<div style="font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${label}</div>` +
+          `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">` +
+          `<thead><tr><th style="width:45%;${hdrTh}"></th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead>` +
+          `<tbody>${bodyRows}</tbody></table>`;
+      };
+      const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity") +
+        (d.colourVision!.notes ? `<div style="margin-top:4px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
+      if (!inner.trim()) return "";
       return card("Colour Vision & Contrast Sensitivity", inner);
     })()
   : ""}
