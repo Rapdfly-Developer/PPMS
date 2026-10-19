@@ -955,36 +955,90 @@ function LongContent({
 
           {hasCV && (
             <Block label="Colour Vision">
-              <DataTable minWidth={260}>
-                <Cols widths={COLS_EYE} />
-                <EyeHead />
-                <tbody>
-                  <EyeRow label="Result" re={reCVResult} le={leCVResult} />
-                  {(reCVraw as any).notes && (
-                    <tr>
-                      <td className={TD_MUTED}>Notes</td>
-                      <td colSpan={2} className={TD}>{(reCVraw as any).notes}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </DataTable>
+              {(() => {
+                type CVMethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
+                const reMethod = (reCVraw as any).cvMethod || "";
+                const leMethod = (leCVraw as any).cvMethod || "";
+                const rows: CVMethodRow[] = [];
+                if (reMethod === leMethod) {
+                  rows.push({ method: reMethod, re: reCVraw.result || null, reNotes: (reCVraw as any).notes || null, le: leCVraw.result || null, leNotes: (leCVraw as any).notes || null });
+                } else {
+                  if (reCVraw.result) rows.push({ method: reMethod, re: reCVraw.result, reNotes: (reCVraw as any).notes || null, le: null, leNotes: null });
+                  if (leCVraw.result) rows.push({ method: leMethod, re: null, reNotes: null, le: leCVraw.result, leNotes: (leCVraw as any).notes || null });
+                }
+                return (
+                  <DataTable minWidth={260}>
+                    <Cols widths={["36%", "32%", "32%"]} />
+                    <thead><tr>
+                      <th className={TH}></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-sunken)]" : ""}>
+                          <td className={TD_MUTED}>
+                            <span className="text-[var(--color-ink-300)] mr-1">{i + 1})</span>
+                            {row.method || "—"}
+                          </td>
+                          <td className={TD}>
+                            {row.re || DASH}
+                            {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.reNotes}]</p>}
+                          </td>
+                          <td className={TD}>
+                            {row.le || DASH}
+                            {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.leNotes}]</p>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                );
+              })()}
             </Block>
           )}
           {hasCS && (
             <Block label="Contrast Sensitivity">
-              <DataTable minWidth={260}>
-                <Cols widths={COLS_EYE} />
-                <EyeHead />
-                <tbody>
-                  <EyeRow label="Result" re={reCSResult} le={leCSResult} />
-                  {csNotes && (
-                    <tr>
-                      <td className={TD_MUTED}>Notes</td>
-                      <td colSpan={2} className={TD}>{csNotes}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </DataTable>
+              {(() => {
+                type CSMethodRow = { method: string; re: string | null; reNotes: string | null; le: string | null; leNotes: string | null };
+                const reMethod = (reCVraw as any).csMethod || "";
+                const leMethod = (leCVraw as any).csMethod || "";
+                const rows: CSMethodRow[] = [];
+                if (reMethod === leMethod) {
+                  rows.push({ method: reMethod, re: (reCVraw as any).csResult || null, reNotes: (reCVraw as any).csNotes || null, le: (leCVraw as any).csResult || null, leNotes: (leCVraw as any).csNotes || null });
+                } else {
+                  if ((reCVraw as any).csResult) rows.push({ method: reMethod, re: (reCVraw as any).csResult, reNotes: (reCVraw as any).csNotes || null, le: null, leNotes: null });
+                  if ((leCVraw as any).csResult) rows.push({ method: leMethod, re: null, reNotes: null, le: (leCVraw as any).csResult, leNotes: (leCVraw as any).csNotes || null });
+                }
+                return (
+                  <DataTable minWidth={260}>
+                    <Cols widths={["36%", "32%", "32%"]} />
+                    <thead><tr>
+                      <th className={TH}></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                      <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
+                    </tr></thead>
+                    <tbody>
+                      {rows.map((row, i) => (
+                        <tr key={i} className={i % 2 === 1 ? "bg-[var(--color-surface-sunken)]" : ""}>
+                          <td className={TD_MUTED}>
+                            <span className="text-[var(--color-ink-300)] mr-1">{i + 1})</span>
+                            {row.method || "—"}
+                          </td>
+                          <td className={TD}>
+                            {row.re || DASH}
+                            {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.reNotes}]</p>}
+                          </td>
+                          <td className={TD}>
+                            {row.le || DASH}
+                            {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.leNotes}]</p>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </DataTable>
+                );
+              })()}
             </Block>
           )}
 
