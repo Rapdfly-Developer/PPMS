@@ -51,7 +51,7 @@ export async function storeUpload(file: File, kind: UploadKind, uploaderId: stri
 
   if (kind === "clinical" && privateToken()) {
     const { put } = await import("@vercel/blob");
-    const blob = await put(key, buffer, { access: "private", contentType: file.type, token: privateToken() });
+    const blob = await put(key, buffer, { access: "private" as any, contentType: file.type, token: privateToken() });
     return blob.url;
   }
   if (publicToken()) {
@@ -89,8 +89,8 @@ export async function readStoredFile(ref: string): Promise<{ body: ReadableStrea
     if (!host.endsWith(".blob.vercel-storage.com")) return null; // never fetch arbitrary hosts (SSRF)
 
     if (isPrivateRef(ref)) {
-      const { get } = await import("@vercel/blob");
-      const res = await get(ref, { access: "private", token: privateToken() });
+      const blobMod = await import("@vercel/blob") as any;
+      const res = await blobMod.get(ref, { access: "private", token: privateToken() });
       if (!res || res.statusCode !== 200) return null;
       return { body: res.stream, contentType: res.blob.contentType };
     }

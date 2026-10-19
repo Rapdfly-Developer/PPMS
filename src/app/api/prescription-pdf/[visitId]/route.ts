@@ -121,7 +121,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         const allKeys = [...new Set([...Object.keys(re), ...Object.keys(le)])];
         const out: Record<string, { re: string; le: string }> = {};
         allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
-        return Object.keys(out).length ? out : null;
+        return Object.keys(out).length ? (out as any) : null;
       })() : null,
       posteriorSegment: ps ? (() => {
         const re = parseJSON((ps as any).re, {} as Record<string, string>);
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         const out: Record<string, { re: string; le: string }> = {};
         allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
         return {
-          data: Object.keys(out).length ? out : null,
+          data: Object.keys(out).length ? (out as any) : null,
           cdr: (ps as any).cdr ?? null,
           notes: (ps as any).notes ?? null,
         };
