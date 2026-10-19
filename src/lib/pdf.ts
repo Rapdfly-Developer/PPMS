@@ -1397,7 +1397,7 @@ export type FullEmrData = {
     reNearN?: string | null; leNearN?: string | null;
   } | null;
   iopReadings: { method: string; re?: string | null; le?: string | null; takenAt: Date }[];
-  gonioscopy?: Record<string, string> | null;
+  gonioscopy?: { re?: string | null; le?: string | null; reDeg?: string | null; leDeg?: string | null; method?: string | null } | null;
   colourVision?: {
     re?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
     le?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
@@ -1407,8 +1407,8 @@ export type FullEmrData = {
   lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null } | null;
   diplopiaChart?: Record<string, { status?: string; notes?: string }> | null;
   hessChart?: { grid?: Record<string, any>; interpretation?: string | null } | null;
-  anteriorSegment?: Record<string, string[]> | null;
-  posteriorSegment?: { data?: Record<string, string[]>; cdr?: string | null; notes?: string | null } | null;
+  anteriorSegment?: { re?: Record<string, any> | null; le?: Record<string, any> | null } | null;
+  posteriorSegment?: { re?: Record<string, any> | null; le?: Record<string, any> | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null } | null;
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
@@ -1529,6 +1529,31 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
       `<th style="${TH}">Right Eye (RE)</th>` +
       `<th style="${TH}">Left Eye (LE)</th>` +
       `</tr></thead><tbody>${rows}</tbody></table>`;
+  };
+
+  /* ── Strip leading bullet char (matches screen's stripBullet) ── */
+  const stripB = (v: string | null | undefined): string =>
+    v ? v.replace(/^[•·]\s*/, "") : "";
+
+  /* ── Eye-section table builder (section label | RE | LE, with row dividers) ── */
+  const eyeTbl = (sectionLabel: string, rows: Array<[string, string | null | undefined, string | null | undefined]>): string => {
+    const bodyRows = rows.filter(([, re, le]) => re || le)
+      .map(([label, re, le]) =>
+        `<tr style="border-bottom:1px solid #ECF3F1;">` +
+        `<td style="${TD}color:#555;">${escapeHtml(label)}</td>` +
+        `<td style="${TD}">${re ? escapeHtml(re) : `<span style="color:#ccc;">—</span>`}</td>` +
+        `<td style="${TD}">${le ? escapeHtml(le) : `<span style="color:#ccc;">—</span>`}</td>` +
+        `</tr>`
+      ).join("");
+    if (!bodyRows) return "";
+    return `<table style="width:100%;border-collapse:collapse;">` +
+      `<thead><tr>` +
+      `<th style="${TH}">${sectionLabel}</th>` +
+      `<th style="${TH}color:${LABEL_C};">RE</th>` +
+      `<th style="${TH}color:${LABEL_C};">LE</th>` +
+      `</tr></thead>` +
+      `<tbody>${bodyRows}</tbody>` +
+      `</table>`;
   };
 
   /* ── Data rows ── */
@@ -1896,99 +1921,115 @@ ${d.colourVision
   : ""}
 
 <!-- 11 · IOP & GONIOSCOPY -->
-${(d.iopReadings.length || (d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)))
-  ? card("Intraocular Pressure (IOP) & Gonioscopy",
-    (() => {
-    let inner = "";
-    if (d.iopReadings.length) {
-      inner += `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th style="${TH}">Method</th>
-          <th style="${TH}">Right Eye (RE)</th>
-          <th style="${TH}">Left Eye (LE)</th>
-          <th style="${TH}width:70px;">Time</th>
-        </tr></thead>
-        <tbody>
-          ${d.iopReadings.map((r, i) =>
-            `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
-            `<td style="${TD}font-weight:600;color:${LABEL_C};">${v2(r.method)}</td>` +
-            `<td style="${TD}">${v2(r.re)}</td>` +
-            `<td style="${TD}">${v2(r.le)}</td>` +
-            `<td style="${TD}color:#555;">${format(new Date(r.takenAt), "hh:mm a")}</td>` +
-            `</tr>`).join("")}
-        </tbody>
-      </table>`;
-    } else {
-      inner += `<div style="margin-bottom:8px;">${none("No IOP readings recorded")}</div>`;
-    }
-    if (d.gonioscopy && Object.values(d.gonioscopy).some(Boolean)) {
-      inner += `<div style="margin-top:8px;font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Gonioscopy</div>`;
-      inner += `<div style="font-size:9.5px;color:${INK};line-height:1.7;">`;
-      Object.entries(d.gonioscopy).forEach(([k, v]) => {
-        if (v) inner += `<div><strong style="color:${LABEL_C};">${escapeHtml(k)}:</strong> ${escapeHtml(v)}</div>`;
-      });
-      inner += `</div>`;
-    }
-    return inner;
-  })())
-  : ""}
+${(() => {
+  const gonio = d.gonioscopy;
+  const hasI = d.iopReadings.length > 0;
+  const hasG = !!(gonio?.re || gonio?.le);
+  if (!hasI && !hasG) return "";
+  const iopUniq = hasI ? Array.from(new Set(d.iopReadings.map((r) => r.method || ""))) : [];
+  const singleMethod = iopUniq.length === 1 ? iopUniq[0] : "";
+  const baseLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "Intraocular Pressure" : "Gonioscopy";
+  const iopSectionHdr = singleMethod ? `${baseLabel} · ${escapeHtml(singleMethod)}` : baseLabel;
+  const gonioHdr = `Gonioscopy${gonio?.method ? ` · ${escapeHtml(gonio.method)}` : ""}`;
+  let inner = "";
+  if (hasI) {
+    inner += `<table style="width:100%;border-collapse:collapse;${hasG ? "margin-bottom:8px;" : ""}">` +
+      `<thead><tr>` +
+      `<th style="${TH}">${iopSectionHdr}</th>` +
+      `<th style="${TH}color:${LABEL_C};">RE (mmHg)</th>` +
+      `<th style="${TH}color:${LABEL_C};">LE (mmHg)</th>` +
+      `</tr></thead><tbody>` +
+      d.iopReadings.map((r, i) =>
+        `<tr style="border-bottom:1px solid #ECF3F1;">` +
+        `<td style="${TD}color:#555;">${escapeHtml(singleMethod ? (d.iopReadings.length > 1 ? `Reading ${i + 1}` : "Pressure") : (r.method || "—"))}</td>` +
+        `<td style="${TD}font-weight:600;">${v2(r.re)}</td>` +
+        `<td style="${TD}font-weight:600;">${v2(r.le)}</td>` +
+        `</tr>`
+      ).join("") +
+      `</tbody></table>`;
+  }
+  if (hasG) {
+    const gonioRe = [stripB(gonio!.re), gonio!.reDeg].filter(Boolean).join(" ") || null;
+    const gonioLe = [stripB(gonio!.le), gonio!.leDeg].filter(Boolean).join(" ") || null;
+    inner += eyeTbl(hasI ? gonioHdr : iopSectionHdr, [["Findings", gonioRe, gonioLe]]);
+  }
+  const cardLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "Intraocular Pressure" : "Gonioscopy";
+  return inner ? card(cardLabel, inner) : "";
+})()}
 
 <!-- 12 · TEAR FILM -->
-${d.tearFilm && (d.tearFilm.tbutRe != null || d.tearFilm.tbutLe != null || d.tearFilm.schirmer1Re != null || d.tearFilm.schirmer1Le != null)
-  ? card("Tear Film",
-      `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
-      `<th style="${TH}"></th><th style="${TH}text-align:center;">TBUT RE</th><th style="${TH}text-align:center;">TBUT LE</th>` +
-      `<th style="${TH}text-align:center;">Schirmer I RE</th><th style="${TH}text-align:center;">Schirmer I LE</th>` +
-      `<th style="${TH}text-align:center;">Schirmer II RE</th><th style="${TH}text-align:center;">Schirmer II LE</th>` +
-      `</tr></thead><tbody><tr style="background:#fff;">` +
-      `<td style="${TD}font-weight:600;color:${LABEL_C};">Value</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.tbutRe != null ? `${d.tearFilm.tbutRe} s` : "—"}</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.tbutLe != null ? `${d.tearFilm.tbutLe} s` : "—"}</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer1Re != null ? `${d.tearFilm.schirmer1Re} mm` : "—"}</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer1Le != null ? `${d.tearFilm.schirmer1Le} mm` : "—"}</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer2Re != null ? `${d.tearFilm.schirmer2Re} mm` : "—"}</td>` +
-      `<td style="${TD}text-align:center;">${d.tearFilm.schirmer2Le != null ? `${d.tearFilm.schirmer2Le} mm` : "—"}</td>` +
-      `</tr></tbody></table>`)
+${d.tearFilm && (d.tearFilm.tbutRe != null || d.tearFilm.tbutLe != null || d.tearFilm.schirmer1Re != null || d.tearFilm.schirmer1Le != null || d.tearFilm.schirmer2Re != null || d.tearFilm.schirmer2Le != null)
+  ? card("Tear Film", eyeTbl("Tear Film", [
+      ["TBUT (sec)", d.tearFilm.tbutRe != null ? String(d.tearFilm.tbutRe) : null, d.tearFilm.tbutLe != null ? String(d.tearFilm.tbutLe) : null],
+      ["Schirmer’s 1 (mm)", d.tearFilm.schirmer1Re != null ? String(d.tearFilm.schirmer1Re) : null, d.tearFilm.schirmer1Le != null ? String(d.tearFilm.schirmer1Le) : null],
+      ["Schirmer’s 2 (mm)", d.tearFilm.schirmer2Re != null ? String(d.tearFilm.schirmer2Re) : null, d.tearFilm.schirmer2Le != null ? String(d.tearFilm.schirmer2Le) : null],
+    ]))
   : ""}
 
 <!-- 13 · LACRIMAL SAC -->
 ${d.lacrimalSac && (d.lacrimalSac.re || d.lacrimalSac.le)
-  ? card("Lacrimal Sac Syringing",
-      `<table style="width:100%;border-collapse:collapse;"><tbody><tr>` +
-      `<td style="width:50%;padding-right:8px;vertical-align:top;">` +
-      `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Right Eye (RE)</div>` +
-      (d.lacrimalSac.re
-        ? (d.lacrimalSac.re.chips?.length ? `<div style="font-size:9.5px;">${d.lacrimalSac.re.chips.map(escapeHtml).join(" · ")}</div>` : "") +
-          (d.lacrimalSac.re.findings ? `<div style="font-size:9px;color:#555;margin-top:2px;">${escapeHtml(d.lacrimalSac.re.findings)}</div>` : "")
-        : `<span style="color:#9AA5A3;font-size:9px;font-style:italic;">—</span>`) +
-      `</td><td style="width:50%;padding-left:8px;vertical-align:top;border-left:1px solid ${LINE};">` +
-      `<div style="font-size:8px;font-weight:700;color:${LABEL_C};margin-bottom:4px;text-transform:uppercase;">Left Eye (LE)</div>` +
-      (d.lacrimalSac.le
-        ? (d.lacrimalSac.le.chips?.length ? `<div style="font-size:9.5px;">${d.lacrimalSac.le.chips.map(escapeHtml).join(" · ")}</div>` : "") +
-          (d.lacrimalSac.le.findings ? `<div style="font-size:9px;color:#555;margin-top:2px;">${escapeHtml(d.lacrimalSac.le.findings)}</div>` : "")
-        : `<span style="color:#9AA5A3;font-size:9px;font-style:italic;">—</span>`) +
-      `</td></tr></tbody></table>`)
+  ? card("Lacrimal Sac Syringing", eyeTbl("Lacrimal Sac Syringing", [
+      ["Findings",
+        d.lacrimalSac.re ? ([...(d.lacrimalSac.re.chips ?? []), d.lacrimalSac.re.findings].filter(Boolean).join(" · ")) || null : null,
+        d.lacrimalSac.le ? ([...(d.lacrimalSac.le.chips ?? []), d.lacrimalSac.le.findings].filter(Boolean).join(" · ")) || null : null,
+      ],
+    ]))
   : ""}
 
 <!-- 14 · ANTERIOR SEGMENT -->
-${d.anteriorSegment && Object.keys(d.anteriorSegment).length
-  ? card("Anterior Segment Examination", renderSegment(d.anteriorSegment as any))
+${d.anteriorSegment
+  ? (() => {
+      const re: Record<string, any> = (d.anteriorSegment.re as any) ?? {};
+      const le: Record<string, any> = (d.anteriorSegment.le as any) ?? {};
+      const antMethod: string = (re._method ?? le._method ?? "") as string;
+      const sLabel = antMethod ? `Anterior Segment · ${escapeHtml(antMethod)}` : "Anterior Segment";
+      const ANT_FIELDS: [string, string][] = [
+        ["upperLid", "Upper Lid"], ["lowerLid", "Lower Lid"], ["conjunctiva", "Conjunctiva"],
+        ["sclera", "Sclera"], ["cornea", "Cornea"], ["anteriorChamber", "Ant. Chamber"],
+        ["iris", "Iris"], ["pupil", "Pupil"], ["lens", "Lens"],
+      ];
+      const rows: Array<[string, string | null, string | null]> = [
+        ...ANT_FIELDS
+          .filter(([k]) => re[k] || le[k])
+          .map(([k, label]): [string, string | null, string | null] => [label, stripB(re[k] as string | undefined) || null, stripB(le[k] as string | undefined) || null]),
+        ...(re.freeText || le.freeText ? [["Notes", (re.freeText as string | null) || null, (le.freeText as string | null) || null] as [string, string | null, string | null]] : []),
+      ];
+      const tbl = eyeTbl(sLabel, rows);
+      return tbl ? card("Anterior Segment Examination", tbl) : "";
+    })()
   : ""}
 
 <!-- 15 · POSTERIOR SEGMENT -->
 ${(() => {
   const ps = d.posteriorSegment as any;
   if (!ps) return "";
-  const hasData = (ps.data && Object.keys(ps.data).length > 0) || ps.cdr || ps.notes;
-  if (!hasData) return "";
-  return card("Posterior Segment Examination",
-    renderSegment(ps.data) +
-      (ps.cdr
-        ? `<div style="margin-top:5px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">CDR:</span> ${escapeHtml(ps.cdr)}</div>`
-        : "") +
-      (ps.notes
-        ? `<div style="margin-top:4px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;white-space:pre-wrap;">${escapeHtml(ps.notes)}</div>`
-        : ""));
+  const re: Record<string, any> = ps.re ?? {};
+  const le: Record<string, any> = ps.le ?? {};
+  const posMethod: string = (re._method ?? le._method ?? "") as string;
+  const posReNotes: string = (re._notes ?? "") as string;
+  const posLeNotes: string = (le._notes ?? "") as string;
+  const POS_LABELS: [string, string][] = [
+    ["media", "Media"], ["discSize", "Disc Size"], ["discShape", "Disc Shape"],
+    ["discColour", "Disc Colour"], ["discVessels", "Disc Vessels"], ["discMargin", "Disc Margin"],
+    ["cdr", "CDR"], ["nrr", "NRR"], ["macula", "Macula"],
+    ["retinalVessels", "Retinal Vessels"], ["background", "Background"], ["periphery", "Periphery"],
+  ];
+  const sLabel = posMethod ? `Posterior Segment · ${escapeHtml(posMethod)}` : "Posterior Segment";
+  const allKeys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)]));
+  const posRows: Array<[string, string | null, string | null]> = [
+    ...allKeys
+      .filter((k) => !k.startsWith("_") && (re[k] || le[k]))
+      .map((k): [string, string | null, string | null] => {
+        const found = POS_LABELS.find(([fk]) => fk === k);
+        const label = found ? found[1] : k.replace(/([A-Z])/g, " $1").trim();
+        return [label, stripB(re[k] as string | undefined) || null, stripB(le[k] as string | undefined) || null];
+      }),
+    ...(posReNotes || posLeNotes ? [["Notes", posReNotes || null, posLeNotes || null] as [string, string | null, string | null]] : []),
+  ];
+  if (!posRows.length && !ps.notes) return "";
+  let inner = eyeTbl(sLabel, posRows);
+  if (ps.notes) inner += `<div style="margin-top:6px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;white-space:pre-wrap;">${escapeHtml(ps.notes)}</div>`;
+  return inner ? card("Posterior Segment Examination", inner) : "";
 })()}
 
 <!-- 16 · ASSESSMENT / DIAGNOSIS -->
@@ -2043,9 +2084,16 @@ ${d.adviseNotes
 <!-- 19 · INVESTIGATIONS WITH IN VIEW OF -->
 ${d.investigations.length
   ? card("Investigations Ordered",
-      `<table style="width:100%;border-collapse:collapse;">
-        <tbody>${invRows}</tbody>
-      </table>`)
+      `<div>` +
+      d.investigations.map((inv, i) =>
+        `<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;${i > 0 ? "border-top:1px solid #ECF3F1;" : ""}">` +
+        `<span style="font-size:9px;color:#8A9793;width:20px;text-align:right;flex-shrink:0;font-weight:600;">${i + 1}.</span>` +
+        `<div style="font-size:9.5px;font-weight:600;color:#1a1a1a;flex:1;">` +
+        escapeHtml(inv.testName) +
+        (inv.notes ? `<span style="font-weight:400;font-style:italic;color:#555;margin-left:5px;">· In view of: ${escapeHtml(inv.notes)}</span>` : "") +
+        `</div></div>`
+      ).join("") +
+      `</div>`)
   : ""}
 
 <!-- 20 · FOLLOW-UP WITH IN VIEW OF -->
@@ -2378,8 +2426,9 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       };
       return { re: fmtEye(reJ), le: fmtEye(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
     })() : null,
-    anteriorSegment: ant ? (parseJ2(ant.re) || parseJ2(ant.le) ? { re: parseJ2(ant.re), le: parseJ2(ant.le) } : null) : null,
-    posteriorSegment: pos ? { data: { re: parseJ2(pos.re), le: parseJ2(pos.le) }, cdr: pos.cdr ?? null, notes: pos.notes ?? null } : null,
+    gonioscopy: (visit as any).gonioNotes ? (() => { try { const g = parseJ2((visit as any).gonioNotes) as any; return g ? { re: g.re ?? null, le: g.le ?? null, reDeg: g.reDeg ?? null, leDeg: g.leDeg ?? null, method: g.method ?? null } : null; } catch { return null; } })() : null,
+    anteriorSegment: ant ? { re: parseJ2(ant.re) ?? null, le: parseJ2(ant.le) ?? null } : null,
+    posteriorSegment: pos ? { re: parseJ2(pos.re) ?? null, le: parseJ2(pos.le) ?? null, notes: pos.notes ?? null } : null,
     diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
     medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
     opticalRx: {
