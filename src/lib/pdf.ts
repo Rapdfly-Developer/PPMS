@@ -2395,6 +2395,10 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       hospitalContact: (visit.hospital as any).contact ?? null,
       hospitalEmail: (visit.hospital as any).email ?? null,
       doctorName: visit.doctor.name,
+      followUpDate: (visit as any).followUpDate ?? null,
+      referralEnabled: (visit as any).referralEnabled ?? false,
+      referralNote: (visit as any).referralNote ?? null,
+      inViewOf: (visit as any).inViewOf ?? null,
     },
     generalExam: ge ? {
       bp: ge.bp, pulse: ge.pulse, temperature: ge.temperature, weight: ge.weight,
@@ -2407,6 +2411,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       reDistance: reVA ? { unaided: reVA.unaided, ph: reVA.pinhole, bcva: reVA.bestCorrected } : null,
       leDistance: leVA ? { unaided: leVA.unaided, ph: leVA.pinhole, bcva: leVA.bestCorrected } : null,
       reNear: reVA?.nearUnaided ?? null, leNear: leVA?.nearUnaided ?? null,
+      reNearN: reVA?.nearBestCorrected ?? null, leNearN: leVA?.nearBestCorrected ?? null,
     } : null,
     iopReadings: (visit.iopReadings ?? []).map((r: any) => ({
       method: r.method ?? "—",
@@ -2428,14 +2433,56 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       return { re: fmtEye(reJ), le: fmtEye(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
     })() : null,
     gonioscopy: (visit as any).gonioNotes ? (() => { try { const g = parseJ2((visit as any).gonioNotes) as any; return g ? { re: g.re ?? null, le: g.le ?? null, reDeg: g.reDeg ?? null, leDeg: g.leDeg ?? null, method: g.method ?? null } : null; } catch { return null; } })() : null,
+    tearFilm: visit.tearFilm ? {
+      tbutRe: visit.tearFilm.tbutRe ?? null, tbutLe: visit.tearFilm.tbutLe ?? null,
+      schirmer1Re: visit.tearFilm.schirmer1Re ?? null, schirmer1Le: visit.tearFilm.schirmer1Le ?? null,
+      schirmer2Re: visit.tearFilm.schirmer2Re ?? null, schirmer2Le: visit.tearFilm.schirmer2Le ?? null,
+    } : null,
+    lacrimalSac: (() => {
+      const ls = visit.lacrimalSac;
+      if (!ls) return null;
+      const parseEye = (raw: unknown) => {
+        const parsed = parseJ2(raw as any);
+        if (!parsed) return null;
+        return Array.isArray(parsed)
+          ? { chips: parsed as string[], findings: "" }
+          : { chips: (parsed as any).chips ?? [], findings: (parsed as any).findings ?? "" };
+      };
+      return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null };
+    })(),
     anteriorSegment: ant ? { re: parseJ2(ant.re) ?? null, le: parseJ2(ant.le) ?? null } : null,
     posteriorSegment: pos ? { re: parseJ2(pos.re) ?? null, le: parseJ2(pos.le) ?? null, notes: pos.notes ?? null } : null,
+    diplopiaChart: visit.diplopiaChart ? parseJ2(visit.diplopiaChart.grid) : null,
     diagnoses: (visit.diagnoses ?? []).map((d: any) => ({ description: d.description, icd10Code: d.icd10Code ?? "", status: d.status ?? null, laterality: d.laterality ?? null })),
+    minorProcedure: (visit as any).procedureName ? {
+      procedureName: (visit as any).procedureName ?? null,
+      procedureLaterality: (visit as any).procedureLaterality ?? null,
+      anesthesiaType: (visit as any).anesthesiaType ?? null,
+      procedureNotes: (visit as any).procedureNotes ?? null,
+    } : null,
     medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),
+    adviseNotes: (visit as any).adviseNotes ?? null,
     opticalRx: {
       re: { sph: reRef?.sph, cyl: reRef?.cyl, axis: reRef?.axis, va: reRef?.va, nearSph: reRef?.nearSph, nearVa: reRef?.nearVa, nearCyl: reRef?.nearCyl, nearAxis: reRef?.nearAxis },
       le: { sph: leRef?.sph, cyl: leRef?.cyl, axis: leRef?.axis, va: leRef?.va, nearSph: leRef?.nearSph, nearVa: leRef?.nearVa, nearCyl: leRef?.nearCyl, nearAxis: leRef?.nearAxis },
     },
+    extraCorrections: (() => {
+      const rawExtras: any[] = parseJ2((ref as any)?.extraCorrections) ?? [];
+      if (!Array.isArray(rawExtras) || rawExtras.length === 0) return null;
+      const out: any[] = [];
+      rawExtras.forEach((ex: any) => {
+        if (ex._v === 2) {
+          const methods = (ex.methods || {}) as Record<string, { re: any; le: any }>;
+          Object.entries(methods).forEach(([method, entry]) => {
+            if (Object.values(entry.re || {}).some(Boolean))
+              out.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: { ...entry.re, method }, le: { ...entry.le, method } });
+          });
+        } else {
+          out.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: { ...ex.re, method: ex.re?.method || "" }, le: { ...ex.le, method: ex.le?.method || "" } });
+        }
+      });
+      return out.length ? out : null;
+    })(),
     investigations: (visit.investigationOrders ?? []).map((o: any) => ({ testName: o.testName, priority: o.priority ?? null, status: o.status ?? null, laterality: o.laterality ?? null, result: printableResult(o.resultRef), notes: o.notes ?? null })),
   };
 
