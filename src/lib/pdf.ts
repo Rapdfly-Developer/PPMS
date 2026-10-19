@@ -1227,11 +1227,6 @@ ${d.advice && d.advice.trim()
 ${d.investigations.length
   ? card("Investigations",
       `<table style="width:100%;">
-        <thead><tr>
-          <th style="${TH}width:36px;text-align:center;">#</th>
-          <th style="${TH}">Investigation</th>
-          <th style="${TH}">In View Of</th>
-        </tr></thead>
         <tbody>
           ${d.investigations.map((inv, i) =>
             `<tr>` +
@@ -1308,22 +1303,16 @@ ${d.extraCorrections && d.extraCorrections.length > 0
 ${d.visualAcuity
   ? (() => {
       const va = d.visualAcuity!;
-      const vaRow = (eye: string, dist?: { unaided?: string; ph?: string; bcva?: string } | null, near?: string | null) =>
-        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
-        `<td style="${TD}text-align:center;">${v2(dist?.unaided)}</td>` +
-        `<td style="${TD}text-align:center;">${v2(dist?.ph)}</td>` +
-        `<td style="${TD}text-align:center;">${v2(dist?.bcva)}</td>` +
-        `<td style="${TD}text-align:center;">${v2(near)}</td></tr>`;
       return card("Visual Acuity",
-        `<table><thead><tr>
-          <th style="${TH}width:90px;">Eye</th>
-          <th style="${TH}text-align:center;">Dist Unaided</th>
-          <th style="${TH}text-align:center;">Dist PH</th>
-          <th style="${TH}text-align:center;">Dist BCVA</th>
-          <th style="${TH}text-align:center;">Near</th>
+        `<table style="width:100%;border-collapse:collapse;"><thead><tr>
+          <th style="${TH}width:150px;"></th>
+          <th style="${TH}font-weight:700;color:${LABEL_C};">RE</th>
+          <th style="${TH}font-weight:700;color:${LABEL_C};">LE</th>
         </tr></thead><tbody>
-          ${vaRow("Right Eye", va.reDistance, va.reNear)}
-          ${vaRow("Left Eye", va.leDistance, va.leNear)}
+          <tr><td style="${TD}color:#555;">Unaided / UCVA <span style="font-size:8px;">(Dist)</span></td><td style="${TD}">${v2(va.reDistance?.unaided)}</td><td style="${TD}">${v2(va.leDistance?.unaided)}</td></tr>
+          <tr style="background:${TINT};"><td style="${TD}color:#555;">Pinhole (PH)</td><td style="${TD}">${v2(va.reDistance?.ph)}</td><td style="${TD}">${v2(va.leDistance?.ph)}</td></tr>
+          <tr><td style="${TD}color:#555;">Best Corrected (BCVA)</td><td style="${TD}">${v2(va.reDistance?.bcva)}</td><td style="${TD}">${v2(va.leDistance?.bcva)}</td></tr>
+          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
         </tbody></table>`);
     })()
   : ""}
@@ -1407,18 +1396,38 @@ ${d.posteriorSegment && (d.posteriorSegment.re || d.posteriorSegment.le || d.pos
   : ""}
 
 <!-- OPHTHALMIC SUBTAB CARDS SELECTED FOR CUSTOM PRINT -->
-${d.colourVision && [d.colourVision.re, d.colourVision.le].some((eye) => eye && Object.values(eye).some(Boolean))
-  ? card("Colour Vision", simpleRows([
-      ["Right eye method", d.colourVision.re?.method ?? ""], ["Right eye result", d.colourVision.re?.result ?? ""], ["Right eye notes", d.colourVision.re?.notes ?? ""],
-      ["Left eye method", d.colourVision.le?.method ?? ""], ["Left eye result", d.colourVision.le?.result ?? ""], ["Left eye notes", d.colourVision.le?.notes ?? ""],
-    ].filter(([, value]) => !!value)))
-  : ""}
-${d.contrastSensitivity && [d.contrastSensitivity.re, d.contrastSensitivity.le].some((eye) => eye && Object.values(eye).some(Boolean))
-  ? card("Contrast Sensitivity", simpleRows([
-      ["Right eye method", d.contrastSensitivity.re?.method ?? ""], ["Right eye result", d.contrastSensitivity.re?.result ?? ""], ["Right eye notes", d.contrastSensitivity.re?.notes ?? ""],
-      ["Left eye method", d.contrastSensitivity.le?.method ?? ""], ["Left eye result", d.contrastSensitivity.le?.result ?? ""], ["Left eye notes", d.contrastSensitivity.le?.notes ?? ""],
-    ].filter(([, value]) => !!value)))
-  : ""}
+${(() => {
+  if (!d.colourVision && !d.contrastSensitivity) return "";
+  type MRow = { method: string; re: string; reNotes: string; le: string; leNotes: string };
+  const buildRows = (reM: string, leM: string, reVal: string, reN: string, leVal: string, leN: string): MRow[] => {
+    if (!reM && !leM && !reVal && !leVal) return [];
+    if (reM === leM) return [{ method: reM, re: reVal, reNotes: reN, le: leVal, leNotes: leN }];
+    const out: MRow[] = [];
+    if (reVal) out.push({ method: reM, re: reVal, reNotes: reN, le: "", leNotes: "" });
+    if (leVal) out.push({ method: leM, re: "", reNotes: "", le: leVal, leNotes: leN });
+    return out;
+  };
+  const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 6px;border-bottom:1px solid ${LINE};`;
+  const methodGrid = (rows: MRow[], label: string) => {
+    if (!rows.length) return "";
+    const bodyRows = rows.map((row, i) =>
+      `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
+      `<td style="${TD}vertical-align:top;"><span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#EBF5F3;color:${LABEL_C};font-size:7.5px;font-weight:700;border:1px solid #C8E0DC;margin-right:5px;vertical-align:middle;">${i + 1}</span><span style="font-weight:600;color:${INK};">${escapeHtml(row.method || "—")}</span></td>` +
+      `<td style="${TD}vertical-align:top;"><div>${v2(row.re)}</div>${row.reNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.reNotes)}]</div>` : ""}</td>` +
+      `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
+      `</tr>`
+    ).join("");
+    return `<div style="font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${label}</div>` +
+      `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><thead><tr><th style="width:45%;${hdrTh}"></th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
+  };
+  const cvRe = d.colourVision?.re ?? {} as any, cvLe = d.colourVision?.le ?? {} as any;
+  const csRe = d.contrastSensitivity?.re ?? {} as any, csLe = d.contrastSensitivity?.le ?? {} as any;
+  const cvRows = buildRows(cvRe.method ?? "", cvLe.method ?? cvRe.method ?? "", cvRe.result ?? "", cvRe.notes ?? "", cvLe.result ?? "", cvLe.notes ?? "");
+  const csRows = buildRows(csRe.method ?? "", csLe.method ?? csRe.method ?? "", csRe.result ?? "", csRe.notes ?? "", csLe.result ?? "", csLe.notes ?? "");
+  const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity");
+  if (!inner.trim()) return "";
+  return card("Colour Vision & Contrast Sensitivity", inner);
+})()}
 ${d.iopReadings?.length
   ? card("Intra-Ocular Pressure", `<table style="width:100%;"><thead><tr><th style="${TH}">Method</th><th style="${TH}">Date &amp; time</th><th style="${TH}">RE (mmHg)</th><th style="${TH}">LE (mmHg)</th></tr></thead><tbody>${d.iopReadings.map((r) => `<tr><td style="${TD}">${v2(r.method)}</td><td style="${TD}">${r.takenAt ? format(new Date(r.takenAt), "dd MMM yyyy, h:mm a") : ""}</td><td style="${TD}">${v2(r.re == null ? "" : String(r.re))}</td><td style="${TD}">${v2(r.le == null ? "" : String(r.le))}</td></tr>`).join("")}</tbody></table>`)
   : ""}
@@ -2188,13 +2197,6 @@ ${d.adviseNotes
 ${d.investigations.length
   ? card("Investigations Ordered",
       `<table style="width:100%;border-collapse:collapse;">
-        <thead><tr>
-          <th style="${TH}width:28px;text-align:center;">#</th>
-          <th style="${TH}">Test / Investigation</th>
-          <th style="${TH}width:72px;">Priority</th>
-          <th style="${TH}width:80px;">Status</th>
-          <th style="${TH}">In View Of / Notes</th>
-        </tr></thead>
         <tbody>${invRows}</tbody>
       </table>`)
   : ""}
@@ -2419,7 +2421,6 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
 
       ${secHdr("Investigations")}
       <table>
-        <thead><tr><th style="width:24px">#</th><th>Test</th><th>In View Of</th></tr></thead>
         <tbody>${invRows}</tbody>
       </table>
     </div>`;
