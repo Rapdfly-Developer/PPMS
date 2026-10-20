@@ -500,9 +500,9 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasInv && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
-          <ol className="list-none w-full">
+          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
             {investigations.map((o: any, i: number) => (
-              <li key={i} className={`flex items-start gap-2 px-3 py-2 ${i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}`}>
+              <li key={i} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
                 <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
                 <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
                   {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
@@ -839,7 +839,7 @@ function LongContent({
   ].filter(([, v]) => !!v) as [string, string][];
 
   return (
-    <div className="divide-y divide-[var(--color-border)] [&>*]:py-3 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
+    <div className="space-y-4">
 
       {/* ── 1. Chief Complaint ──────────────────────────────────────── */}
       {g?.chiefComplaint && (
@@ -910,33 +910,22 @@ function LongContent({
 
       {/* ── 5b. Current Medications ─────────────────────────────────── */}
       {currentMedList.length > 0 && (
-        <div>
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <Pill size={11} className="text-[var(--color-ink-400)]" />
-            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Current Medications</span>
-          </div>
+        <LongSection head={<SumHead icon={<Pill size={11} />} label="Current Medications" color="text-teal-500" />}>
           <DataTable>
-            <Cols widths={["38%", "14%", "24%", "24%"]} />
-            <thead>
-              <tr>
-                <th className={TH}>Medicine</th>
-                <th className={TH}>Dosage</th>
-                <th className={TH}>Frequency</th>
-                <th className={TH}>Duration</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--color-border)]">
+            <Cols widths={["5%", "32%", "14%", "22%", "27%"]} />
+            <tbody>
               {currentMedList.map((m, i) => (
                 <tr key={i}>
-                  <td className={TD}>{m.drugName}</td>
+                  <td className={TD_MUTED}>{i + 1}</td>
+                  <td className={`${TD} font-semibold`}>{m.drugName}</td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
-                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                  <td className={`${TD_MUTED} whitespace-nowrap`}>{m.duration || DASH}</td>
                 </tr>
               ))}
             </tbody>
           </DataTable>
-        </div>
+        </LongSection>
       )}
 
       {/* ── 6–15. Examination Findings ──────────────────────────────── */}
@@ -1391,9 +1380,9 @@ function LongContent({
       {/* ── 7. Investigations ─────────────────────────────────────────── */}
       {hasInv && (
         <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations" color="text-teal-500" />}>
-          <ol className="list-none w-full">
+          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
             {data.investigationOrders.map((o: any, i: number) => (
-              <li key={i} className={`flex items-start justify-between gap-3 px-3 py-2 ${i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}`}>
+              <li key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
                   <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
