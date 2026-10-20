@@ -861,13 +861,12 @@ function LongContent({
 
       {/* ── 3. History of Present Illness ───────────────────────────── */}
       {g?.hpi && (
-        <div className="flex items-start gap-2 flex-wrap">
-          <span className="flex items-center gap-1.5 shrink-0">
-            <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <ClipboardList size={11} className="text-sky-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
-            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-          </span>
-          <span className="text-caption sm:text-caption leading-relaxed text-[var(--color-ink-700)]">{g.hpi}</span>
+          </div>
+          <div className="px-3 py-2.5 rounded-md border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g.hpi}</div>
         </div>
       )}
 
@@ -895,8 +894,11 @@ function LongContent({
       {/* ── 5. Systemic History ─────────────────────────────────────── */}
       {hasSystemicHistory && (
         <div>
-          <SumHead icon={<BookOpen size={11} />} label="Systemic History" color="text-[var(--color-ink-400)]" />
-          <p className="text-caption text-[var(--color-ink-700)] leading-relaxed whitespace-pre-wrap">{g!.pmhOtherText}</p>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <BookOpen size={11} className="text-slate-500" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Systemic History</span>
+          </div>
+          <div className="px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.pmhOtherText}</div>
         </div>
       )}
 
@@ -904,24 +906,31 @@ function LongContent({
       {hasExam && (
         <>
 
-          {hasVitals && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1.5 shrink-0">
-                <Activity size={11} className="text-[var(--color-ink-400)]" />
-                <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Vitals</span>
-                <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-              </span>
-              <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
-                {vitals.map(([k, v], i) => (
-                  <span key={k}>
-                    {i > 0 && <span className="mx-1.5 text-[var(--color-ink-300)]">·</span>}
-                    <span className="text-[var(--color-ink-400)]">{k}:</span>{" "}
-                    <span className="font-medium">{v}</span>
-                  </span>
-                ))}
-              </p>
-            </div>
-          )}
+          {hasVitals && (() => {
+            const VITAL_UNITS: Record<string, string> = { BP: "mmHg", Pulse: "bpm", Weight: "kg", Temp: "°C" };
+            return (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <Activity size={11} className="text-[var(--color-ink-400)]" />
+                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Vitals</span>
+                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+                </span>
+                <p className="text-caption sm:text-caption text-[var(--color-ink-700)]">
+                  {vitals.map(([k, v], i) => {
+                    const unit = VITAL_UNITS[k] ?? "";
+                    const suffix = unit && !String(v).includes(unit) ? ` ${unit}` : "";
+                    return (
+                      <span key={k}>
+                        {i > 0 && <span className="mx-1.5 text-[var(--color-ink-300)]">·</span>}
+                        <span className="text-[var(--color-ink-400)]">{k}:</span>{" "}
+                        <span className="font-medium">{v}{suffix}</span>
+                      </span>
+                    );
+                  })}
+                </p>
+              </div>
+            );
+          })()}
 
           {hasVA && (
             <Block label={`Visual Acuity${va.testMethod ? ` · ${va.testMethod}` : ""}`}>
@@ -1034,29 +1043,34 @@ function LongContent({
               (leCVraw as any).csResult || null, (leCVraw as any).csNotes || null,
             );
             const MethodGrid = ({ rows }: { rows: MethodRow[] }) => (
-              <div className="space-y-0">
-                <div className="grid grid-cols-[2fr_1fr_1fr] gap-x-4 pb-1 mb-0.5 border-b border-[var(--color-border)]">
-                  <div />
-                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] text-center">RE</div>
-                  <div className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] text-center">LE</div>
-                </div>
-                {rows.map((row, i) => (
-                  <div key={i} className={`grid grid-cols-[2fr_1fr_1fr] gap-x-4 py-1.5${i < rows.length - 1 ? " border-b border-[var(--color-border)]" : ""}`}>
-                    <div className="flex items-start gap-1.5">
-                      <span className="mt-px inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-[9px] font-bold shrink-0 border border-[var(--color-primary-100)]">{i + 1}</span>
-                      <span className="text-caption font-medium text-[var(--color-ink-700)] leading-snug">{row.method || "—"}</span>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.re ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
-                      {row.reNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.reNotes}]</p>}
-                    </div>
-                    <div className="text-center">
-                      <p className="text-caption text-[var(--color-ink-700)] leading-snug">{row.le ?? <span className="text-[var(--color-ink-300)]">—</span>}</p>
-                      {row.leNotes && <p className="text-micro text-[var(--color-ink-400)] italic leading-snug mt-0.5">[{row.leNotes}]</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <DataTable>
+                <Cols widths={COLS_EYE} />
+                <thead>
+                  <tr>
+                    <th className={TH}></th>
+                    <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+                    <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-border)]">
+                  {rows.map((row, i) => (
+                    <tr key={i}>
+                      <td className={TD_MUTED}>
+                        <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-[9px] font-bold mr-1.5 border border-[var(--color-primary-100)]">{i + 1}</span>
+                        {row.method || "—"}
+                      </td>
+                      <td className={TD}>
+                        <div>{row.re ?? <span className="text-[var(--color-ink-300)]">—</span>}</div>
+                        {row.reNotes && <div className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.reNotes}]</div>}
+                      </td>
+                      <td className={TD}>
+                        <div>{row.le ?? <span className="text-[var(--color-ink-300)]">—</span>}</div>
+                        {row.leNotes && <div className="text-micro text-[var(--color-ink-400)] italic mt-0.5">[{row.leNotes}]</div>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </DataTable>
             );
             return (
               <>
@@ -1067,52 +1081,50 @@ function LongContent({
           })()}
 
           {(hasIOP || hasGonio) && (() => {
-            const iopUniqMethods = hasIOP ? Array.from(new Set(iop!.map((r: any) => r.method || ""))) : [];
-            const singleIopMethod = iopUniqMethods.length === 1 ? iopUniqMethods[0] : "";
             const gonioLabel = `Gonioscopy${gonioRaw?.method ? ` · ${gonioRaw.method}` : ""}`;
-            const baseLabel = hasIOP && hasGonio ? "IOP & Gonioscopy" : hasIOP ? "Intraocular Pressure" : "Gonioscopy";
-            const sectionHeader = singleIopMethod ? `${baseLabel} · ${singleIopMethod}` : baseLabel;
+            const fmtTime = (d: any) => d ? new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : null;
+            const fmtGonio = (finding: string | null | undefined, deg: string | null | undefined): string | null => {
+              const f = stripBullet(finding);
+              if (!f && !deg) return null;
+              if (!deg) return f || null;
+              if (!f) return deg;
+              if (/^grade\s+/i.test(f)) return f.replace(/^(grade\s+)/i, `$1${deg} `);
+              return `${deg} ${f}`;
+            };
             return (
               <section>
                 {hasIOP && (
                   <DataTable>
-                    <Cols widths={COLS_EYE} />
+                    <Cols widths={["28%", "24%", "24%", "24%"]} />
                     <thead>
                       <tr>
-                        <th className={TH}>{sectionHeader}</th>
+                        <th className={TH}>IOP</th>
                         <th className={TH}>RE (mmHg)</th>
                         <th className={TH}>LE (mmHg)</th>
+                        <th className={TH}>Time</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-border)]">
-                      {singleIopMethod
-                        ? iop!.map((r: any, i: number) => (
-                            <tr key={i}>
-                              <td className={TD_MUTED}>{iop!.length > 1 ? `Reading ${i + 1}` : "Pressure"}</td>
-                              <td className={`${TD} font-medium`}>{r.re || DASH}</td>
-                              <td className={`${TD} font-medium`}>{r.le || DASH}</td>
-                            </tr>
-                          ))
-                        : iop!.map((r: any, i: number) => (
-                            <tr key={i}>
-                              <td className={TD_MUTED}>{r.method || "—"}</td>
-                              <td className={`${TD} font-medium`}>{r.re || DASH}</td>
-                              <td className={`${TD} font-medium`}>{r.le || DASH}</td>
-                            </tr>
-                          ))
-                      }
+                      {iop!.map((r: any, i: number) => (
+                        <tr key={i}>
+                          <td className={TD_MUTED}>{r.method || "—"}</td>
+                          <td className={`${TD} font-medium`}>{r.re || DASH}</td>
+                          <td className={`${TD} font-medium`}>{r.le || DASH}</td>
+                          <td className={TD_MUTED}>{fmtTime(r.takenAt) ?? DASH}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </DataTable>
                 )}
                 {!hasIOP && hasGonio && (
                   <DataTable minWidth={260}>
                     <Cols widths={COLS_EYE} />
-                    <EyeHead first={sectionHeader} />
+                    <EyeHead first={gonioLabel} />
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
                         label="Findings"
-                        re={([stripBullet(gonioRaw.re), gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
-                        le={([stripBullet(gonioRaw.le), gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
+                        re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
+                        le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
                       />
                     </tbody>
                   </DataTable>
@@ -1124,8 +1136,8 @@ function LongContent({
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
                         label="Findings"
-                        re={([stripBullet(gonioRaw.re), gonioRaw.reDeg].filter(Boolean).join(" ")) || null}
-                        le={([stripBullet(gonioRaw.le), gonioRaw.leDeg].filter(Boolean).join(" ")) || null}
+                        re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
+                        le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
                       />
                     </tbody>
                   </DataTable>
