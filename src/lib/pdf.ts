@@ -1431,7 +1431,24 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   const rawPmh = ge?.pastMedicalHistory;
   const pmhList = (Array.isArray(rawPmh) ? rawPmh
     : (typeof rawPmh === "string" ? (() => { try { return JSON.parse(rawPmh); } catch { return []; } })() : [])
-  ).filter(Boolean).map((item: any) => typeof item === "string" ? item : (item.name ?? "")).filter(Boolean);
+  ).filter(Boolean).map((item: any) => {
+    if (typeof item === "string") return item;
+    const since = item.sinceNum ? `${item.sinceNum} ${item.sinceUnit ?? ""}`.trim() : "";
+    return item.name ? (since ? `${item.name} · ${since}` : item.name) : "";
+  }).filter(Boolean);
+
+  /* Current medications (General Exam) — structured list, same as screen */
+  const currentMeds: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
+    if (!ge?.medications) return [];
+    try { const a = JSON.parse(ge.medications); if (Array.isArray(a)) return a.filter((m: any) => m?.drugName?.trim()); } catch { /* not JSON */ }
+    return [];
+  })();
+  /* Older records store current medications as plain text — still print it */
+  const currentMedsText: string = (() => {
+    if (!ge?.medications || currentMeds.length) return "";
+    try { if (Array.isArray(JSON.parse(ge.medications))) return ""; } catch { /* plain text */ }
+    return ge.medications;
+  })();
 
   const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
 
@@ -1547,7 +1564,8 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
         `</tr>`
       ).join("");
     if (!bodyRows) return "";
-    return `<table style="width:100%;border-collapse:collapse;">` +
+    return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">` +
+      `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
       `<thead><tr>` +
       `<th style="${TH}">${sectionLabel}</th>` +
       `<th style="${TH}color:${LABEL_C};">RE</th>` +
@@ -1755,22 +1773,32 @@ ${ge && pmhList.length
   : ""}
 
 <!-- 5 · SYSTEMIC HISTORY -->
-${ge && (ge.pmhOtherText || ge.medications || ge.familyHistory || ge.socialHistory)
+${ge && (ge.pmhOtherText || ge.familyHistory || ge.socialHistory)
   ? card("Systemic History",
       `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
-      (ge.pmhOtherText ? `<div style="margin-bottom:4px;white-space:pre-wrap;">${escapeHtml(ge.pmhOtherText)}</div>` : "") +
-      (ge.medications ? `<div><strong style="color:${LABEL_C};">Current Medications:</strong> ${(() => {
-        try {
-          const meds = typeof ge.medications === "string" ? JSON.parse(ge.medications!) : ge.medications;
-          if (Array.isArray(meds) && meds.length) {
-            return meds.map((m: any) => escapeHtml([m.drugName, m.dosage, m.frequency, m.duration].filter(Boolean).join(" · "))).join(", ");
-          }
-        } catch { /* plain text */ }
-        return escapeHtml(ge.medications!);
-      })()}</div>` : "") +
+      (ge.pmhOtherText ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;line-height:1.65;white-space:pre-wrap;${ge.familyHistory || ge.socialHistory ? "margin-bottom:4px;" : ""}">${escapeHtml(ge.pmhOtherText)}</div>` : "") +
       (ge.familyHistory ? `<div><strong style="color:${LABEL_C};">Family History:</strong> ${escapeHtml(ge.familyHistory)}</div>` : "") +
       (ge.socialHistory ? `<div><strong style="color:${LABEL_C};">Social History:</strong> ${escapeHtml(ge.socialHistory)}</div>` : "") +
       `</div>`)
+  : ""}
+
+<!-- 5b · CURRENT MEDICATIONS -->
+${currentMedsText
+  ? card("Current Medications", `<div style="font-size:9.5px;color:${INK};white-space:pre-wrap;">${escapeHtml(currentMedsText)}</div>`)
+  : currentMeds.length
+  ? card("Current Medications",
+      `<table style="width:100%;border-collapse:collapse;">` +
+      `<colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>` +
+      `<tbody>` +
+      currentMeds.map((m, i) =>
+        `<tr>` +
+        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
+        `<td style="${MED_TD}font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</td>` +
+        `<td style="${MED_TD}">${m.dosage ? escapeHtml(m.dosage) : "—"}</td>` +
+        `<td style="${MED_TD}">${m.frequency ? escapeHtml(m.frequency) : "—"}</td>` +
+        `<td style="${MED_TD}">${m.duration ? escapeHtml(m.duration) : "—"}</td>` +
+        `</tr>`).join("") +
+      `</tbody></table>`)
   : ""}
 
 <!-- 6 · VITALS — single compact line -->
@@ -1779,17 +1807,18 @@ ${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
       `<div style="font-size:9.5px;color:${INK};display:flex;flex-wrap:wrap;gap:0 20px;">` +
       (ge.bp        ? `<span><strong style="color:${LABEL_C};">BP:</strong> ${escapeHtml(ge.bp)} mmHg</span>` : "") +
       (ge.pulse     ? `<span><strong style="color:${LABEL_C};">Pulse:</strong> ${escapeHtml(ge.pulse)} bpm</span>` : "") +
+      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Weight:</strong> ${escapeHtml(ge.weight)}${String(ge.weight).includes("kg") ? "" : " kg"}</span>` : "") +
       (ge.temperature ? `<span><strong style="color:${LABEL_C};">Temp:</strong> ${escapeHtml(ge.temperature)}${String(ge.temperature).includes("°C") ? "" : " °C"}</span>` : "") +
-      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Wt:</strong> ${escapeHtml(ge.weight)}${String(ge.weight).includes("kg") ? "" : " kg"}</span>` : "") +
       `</div>`)
   : ""}
 
 <!-- 7 · VISUAL ACUITY -->
 ${va
   ? card("Visual Acuity",
-      `<table style="width:100%;border-collapse:collapse;">
+      `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>
         <thead><tr>
-          <th style="${TH}width:150px;"></th>
+          <th style="${TH}"></th>
           <th style="${TH}font-weight:700;color:${LABEL_C};">RE</th>
           <th style="${TH}font-weight:700;color:${LABEL_C};">LE</th>
         </tr></thead>
@@ -1904,7 +1933,7 @@ ${d.colourVision
       const csRows = buildRows(re?.csMethod || "", le?.csMethod || "", re?.csResult || "", re?.csNotes || "", le?.csResult || "", le?.csNotes || "");
       const methodGrid = (rows: MRow[], label: string) => {
         if (!rows.some(r => r.method || r.re || r.le)) return "";
-        const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 6px;border-bottom:1px solid ${LINE};`;
+        const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 7px;border-bottom:1px solid ${LINE};`;
         const bodyRows = rows.map((row, i) =>
           `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
           `<td style="${TD}vertical-align:top;">` +
@@ -1914,8 +1943,9 @@ ${d.colourVision
           `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
           `</tr>`
         ).join("");
-        return `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">` +
-          `<thead><tr><th style="width:45%;${hdrTh}text-align:left;">${label}</th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead>` +
+        return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:8px;">` +
+          `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
+          `<thead><tr><th style="${hdrTh}text-align:left;">${label}</th><th style="${hdrTh}text-align:left;">RE</th><th style="${hdrTh}text-align:left;">LE</th></tr></thead>` +
           `<tbody>${bodyRows}</tbody></table>`;
       };
       const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity") +
@@ -1943,7 +1973,7 @@ ${(() => {
   const gonioHdr = "Gonioscopy";
   let inner = "";
   if (hasI) {
-    inner += `<table style="width:100%;border-collapse:collapse;${hasG ? "margin-bottom:8px;" : ""}">` +
+    inner += `<table style="width:100%;border-collapse:collapse;table-layout:fixed;${hasG ? "margin-bottom:8px;" : ""}">` +
       `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
       `<thead><tr>` +
       `<th style="${TH}color:${LABEL_C};">IOP</th>` +
@@ -2045,7 +2075,7 @@ ${(() => {
 
 <!-- 16 · ASSESSMENT / DIAGNOSIS -->
 ${d.diagnoses.length
-  ? card("Assessment / Diagnosis",
+  ? card("Diagnosis",
       `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
       d.diagnoses.map((dx) =>
         (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
@@ -2073,29 +2103,16 @@ ${d.minorProcedure?.procedureName
 
 <!-- 18 · MEDICATIONS PRESCRIBED -->
 ${d.medications.length
-  ? card("Medications Prescribed",
+  ? card("Treatment Plan: Medications",
     `<table style="width:100%;border-collapse:collapse;">
     <colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>
-    <thead><tr>
-      <th style="${TH}text-align:center;">#</th>
-      <th style="${TH}">Medicine</th>
-      <th style="${TH}">Dosage</th>
-      <th style="${TH}">Frequency</th>
-      <th style="${TH}">Duration</th>
-    </tr></thead>
     <tbody>${medRows}</tbody>
   </table>`)
   : ""}
 
-<!-- 18b · ADVICE NOTES -->
-${d.adviseNotes
-  ? card("Advice",
-      `<div style="font-size:9.5px;color:${INK};line-height:1.6;white-space:pre-wrap;">${escapeHtml(d.adviseNotes)}</div>`)
-  : ""}
-
 <!-- 19 · INVESTIGATIONS WITH IN VIEW OF -->
 ${d.investigations.length
-  ? card("Investigations Ordered",
+  ? card("Investigations",
       `<div>` +
       d.investigations.map((inv, i) =>
         `<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;${i > 0 ? "border-top:1px solid #ECF3F1;" : ""}">` +
@@ -2116,6 +2133,12 @@ ${d.visit.followUpDate
       (d.visit.inViewOf && d.visit.inViewOf.trim()
         ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
         : ""))
+  : ""}
+
+<!-- 18b · ADVICE NOTES -->
+${d.adviseNotes
+  ? card("Advice",
+      `<div style="font-size:9.5px;color:${INK};line-height:1.6;white-space:pre-wrap;">${escapeHtml(d.adviseNotes)}</div>`)
   : ""}
 
 <!-- 21 · REFERRAL WITH IN VIEW OF -->
