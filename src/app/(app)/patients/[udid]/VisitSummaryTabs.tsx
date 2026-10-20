@@ -1046,7 +1046,7 @@ function LongContent({
               <DataTable>
                 <Cols widths={COLS_EYE} />
                 <thead>
-                  <tr>
+                  <tr className="border-b border-[var(--color-border)]">
                     <th className={TH}></th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
