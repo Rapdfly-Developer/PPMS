@@ -728,7 +728,7 @@ export function AssessmentTab({
                     title="Double-click to add these diagnoses"
                     className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "EEEE, d MMM yyyy")}</p>
                     <div className="flex flex-col gap-1.5">
                       {g.diagnoses.map((d: any, di: number) => {
                         const sm = ({
@@ -907,7 +907,7 @@ export function AssessmentTab({
                     title="Double-click to add these diagnoses"
                     className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
                   >
-                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "d MMM yyyy")}</p>
+                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "EEEE, d MMM yyyy")}</p>
                     <div className="flex flex-col gap-1.5">
                       {g.diagnoses.map((d: any, di: number) => {
                         const sm = ({

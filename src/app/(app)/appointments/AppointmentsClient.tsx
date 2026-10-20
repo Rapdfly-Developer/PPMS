@@ -243,8 +243,8 @@ export function AppointmentsClient({
   const hasFilters = search || statusParam !== "ALL" || doctorIdParam || visitTypeParam || deptParam || hospitalParam || dateParam;
 
   const displayDate = dateParam
-    ? format(new Date(dateParam + "T00:00:00"), "d MMM yyyy")
-    : format(new Date(), "d MMM yyyy");
+    ? format(new Date(dateParam + "T00:00:00"), "EEEE, d MMM yyyy")
+    : format(new Date(), "EEEE, d MMM yyyy");
 
   // unique departments from doctors
   const departments = [...new Set(doctors.map((d) => d.specialty).filter(Boolean))].sort() as string[];

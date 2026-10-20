@@ -11,7 +11,7 @@ function toInputDate(d: any) {
 
 function formatDisplay(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function FollowUpSidebar({ visit, udid }: { visit: any; udid: string }) {

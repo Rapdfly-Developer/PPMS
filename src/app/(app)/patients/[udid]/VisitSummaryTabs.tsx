@@ -526,7 +526,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <span className="text-caption text-[var(--color-ink-700)] font-semibold">
-            {new Date(emrData.followUpDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            {new Date(emrData.followUpDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
           </span>
           {emrData.inViewOf && (
             <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {emrData.inViewOf}</span>
@@ -1203,7 +1203,7 @@ function LongContent({
                   <Cols widths={COLS_EYE} />
                   <thead>
                     <tr>
-                      <th className={TH}>{antMethod ? `Anterior Segment · ${antMethod}` : "Anterior Segment"}</th>
+                      <th className={TH}>{`Anterior Segment · ${antMethod || "Slit Lamp"}`}</th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                     </tr>
@@ -1245,7 +1245,7 @@ function LongContent({
                   <Cols widths={COLS_EYE} />
                   <thead>
                     <tr>
-                      <th className={TH}>{posMethod ? `Posterior Segment · ${posMethod}` : "Posterior Segment"}</th>
+                      <th className={TH}>{`Posterior Segment · ${posMethod || "Indirect Ophthalmoscope"}`}</th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                     </tr>
@@ -1385,7 +1385,7 @@ function LongContent({
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <span className="text-caption text-[var(--color-ink-700)] font-semibold">
-            {new Date(data.followUpDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+            {new Date(data.followUpDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
           </span>
           {data.inViewOf && (
             <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {data.inViewOf}</span>

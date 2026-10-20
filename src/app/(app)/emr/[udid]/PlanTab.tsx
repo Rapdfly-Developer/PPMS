@@ -1742,7 +1742,7 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
                     <div key={v.id} className="px-3 py-2.5 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
-                          {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                          {new Date(v.date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
                           {v.procedureLaterality && <span className="ml-1.5 font-bold text-[var(--color-primary-600)]">{v.procedureLaterality}</span>}
                         </p>
                         {(priorProcs.length > 0 || v.procedureName) && (
@@ -2711,7 +2711,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                   .map((v) => (
                     <div key={v.id} className="px-3 py-2.5">
                       <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
-                        {new Date(v.date).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        {new Date(v.date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
                       </p>
                       <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
                       <button
