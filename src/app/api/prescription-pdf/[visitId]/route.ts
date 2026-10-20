@@ -51,6 +51,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const vaLeJson = parseJSON((va as any)?.le, {} as Record<string, string>);
   const vaHasValues = [vaReJson.unaided, vaReJson.pinhole, vaReJson.bestCorrected, vaReJson.nearUnaided, vaReJson.nearBestCorrected, vaLeJson.unaided, vaLeJson.pinhole, vaLeJson.bestCorrected, vaLeJson.nearUnaided, vaLeJson.nearBestCorrected].some(Boolean);
   const vaData = va && vaHasValues ? {
+    testMethod: (va as any).testMethod ?? null,
     reDistance: { unaided: vaReJson.unaided ?? null, ph: vaReJson.pinhole ?? null, bcva: vaReJson.bestCorrected ?? null },
     leDistance: { unaided: vaLeJson.unaided ?? null, ph: vaLeJson.pinhole ?? null, bcva: vaLeJson.bestCorrected ?? null },
     reNear: vaReJson.nearUnaided ?? null,
@@ -115,26 +116,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         };
         return { re: parseCvEye((cv as any).re), le: parseCvEye((cv as any).le), notes: (cv as any).notes ?? null };
       })() : null,
-      anteriorSegment: as_ ? (() => {
-        const re = parseJSON((as_ as any).re, {} as Record<string, string>);
-        const le = parseJSON((as_ as any).le, {} as Record<string, string>);
-        const allKeys = [...new Set([...Object.keys(re), ...Object.keys(le)])];
-        const out: Record<string, { re: string; le: string }> = {};
-        allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
-        return Object.keys(out).length ? (out as any) : null;
-      })() : null,
-      posteriorSegment: ps ? (() => {
-        const re = parseJSON((ps as any).re, {} as Record<string, string>);
-        const le = parseJSON((ps as any).le, {} as Record<string, string>);
-        const allKeys = [...new Set([...Object.keys(re), ...Object.keys(le)])];
-        const out: Record<string, { re: string; le: string }> = {};
-        allKeys.forEach((k) => { if (re[k] || le[k]) out[k] = { re: re[k] ?? "", le: le[k] ?? "" }; });
-        return {
-          data: Object.keys(out).length ? (out as any) : null,
-          cdr: (ps as any).cdr ?? null,
-          notes: (ps as any).notes ?? null,
-        };
-      })() : null,
+      // Raw per-eye records (incl. _method / _notes / freeText), the shape renderFullEmrHtml reads.
+      anteriorSegment: as_ ? {
+        re: parseJSON((as_ as any).re, {} as Record<string, any>),
+        le: parseJSON((as_ as any).le, {} as Record<string, any>),
+      } : null,
+      posteriorSegment: ps ? {
+        re: parseJSON((ps as any).re, {} as Record<string, any>),
+        le: parseJSON((ps as any).le, {} as Record<string, any>),
+        notes: (ps as any).notes ?? null,
+      } : null,
       diagnoses: visit.diagnoses.map((d: any) => ({
         description: d.description, icd10Code: d.icd10Code,
         status: d.status, laterality: d.laterality ?? null,
@@ -232,6 +223,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       adviseNotes: (visit as any).adviseNotes ?? null,
       investigations: visit.investigationOrders.map((i: any) => ({
         testName: i.testName, priority: i.priority, status: i.status,
+        laterality: i.laterality ?? null,
         result: i.result ?? null, notes: i.notes ?? null,
       })),
     });

@@ -1392,6 +1392,7 @@ export type FullEmrData = {
     familyHistory?: string | null; socialHistory?: string | null;
   } | null;
   visualAcuity?: {
+    testMethod?: string | null;
     reDistance?: { unaided?: string; ph?: string; bcva?: string } | null;
     leDistance?: { unaided?: string; ph?: string; bcva?: string } | null;
     reNear?: string | null; leNear?: string | null;
@@ -1814,7 +1815,7 @@ ${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
 
 <!-- 7 · VISUAL ACUITY -->
 ${va
-  ? card("Visual Acuity",
+  ? card(`Visual Acuity${va.testMethod ? ` · ${escapeHtml(va.testMethod)}` : ""}`,
       `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">
         <colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>
         <thead><tr>
@@ -2443,6 +2444,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       familyHistory: ge.familyHistory, socialHistory: ge.socialHistory,
     } : null,
     visualAcuity: va ? {
+      testMethod: va.testMethod ?? null,
       reDistance: reVA ? { unaided: reVA.unaided, ph: reVA.pinhole, bcva: reVA.bestCorrected } : null,
       leDistance: leVA ? { unaided: leVA.unaided, ph: leVA.pinhole, bcva: leVA.bestCorrected } : null,
       reNear: reVA?.nearUnaided ?? null, leNear: leVA?.nearUnaided ?? null,
