@@ -500,9 +500,9 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasInv && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
-          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
+          <ol className="list-none w-full">
             {investigations.map((o: any, i: number) => (
-              <li key={i} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
+              <li key={i} className={`flex items-start gap-2 px-3 py-2 ${i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}`}>
                 <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
                 <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
                   {o.laterality && <span className="text-[var(--color-primary-700)] mr-1">{o.laterality}</span>}
