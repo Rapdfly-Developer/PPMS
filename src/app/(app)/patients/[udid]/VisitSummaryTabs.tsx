@@ -38,17 +38,25 @@ export const TD_MUTED = "py-1.5 pr-4 align-top text-caption sm:text-caption lead
 export function DataTable({
   children,
   minWidth = 340,
+  indent = false,
 }: {
   children: React.ReactNode;
   minWidth?: number;
+  /** Indent rows/lines like a Block body; pair with <InlineHead> so the label stays flush left. */
+  indent?: boolean;
 }) {
   return (
-    <div className="overflow-x-auto">
+    <div className={indent ? "overflow-x-auto pl-5" : "overflow-x-auto"}>
       <table className="w-full table-fixed border-collapse" style={{ minWidth }}>
         {children}
       </table>
     </div>
   );
+}
+
+/** Section label sitting in an indented table's header cell, pulled back flush left. */
+function InlineHead({ children }: { children: React.ReactNode }) {
+  return <span className="block -ml-5">{children}</span>;
 }
 
 function SectionLabel({ icon, label }: { icon?: React.ReactNode; label: string }) {
@@ -75,7 +83,7 @@ export function Block({
   return (
     <section>
       <SectionLabel icon={icon} label={label} />
-      {children}
+      <div className="pl-5">{children}</div>
     </section>
   );
 }
@@ -459,7 +467,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasMeds && (
         <div>
           <SumHead icon={<Pill size={11} />} label="Medications" color="text-teal-500" />
-          <DataTable>
+          <div className="pl-5"><DataTable>
             <Cols widths={["5%", "32%", "14%", "22%", "27%"]} />
             <tbody>
               {emrData.medications.map((m: any, i: number) => (
@@ -477,7 +485,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
                 </tr>
               ))}
             </tbody>
-          </DataTable>
+          </DataTable></div>
         </div>
       )}
 
@@ -485,14 +493,14 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasRC && (
         <div>
           <SumHead icon={<FlaskConical size={11} />} label="Spectacle Rx" color="text-[var(--color-ink-400)]" />
-          <RxTable rows={[
+          <div className="pl-5"><RxTable rows={[
             { label: "Sph",   re: reRCp.sph,     le: leRCp.sph },
             { label: "Cyl",   re: reRCp.cyl,     le: leRCp.cyl },
             { label: "Axis°", re: reRCp.axis,    le: leRCp.axis },
             { label: "VA",    re: reRCp.va,      le: leRCp.va,      grey: true },
             { label: "Add",   re: reRCp.nearSph, le: leRCp.nearSph },
             { label: "NV",    re: reRCp.nearVa,  le: leRCp.nearVa,  grey: true },
-          ]} />
+          ]} /></div>
         </div>
       )}
 
@@ -500,7 +508,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
       {hasInv && (
         <div>
           <SumHead icon={<CalendarClock size={11} />} label="Investigations" color="text-teal-500" />
-          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
+          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none pl-5">
             {investigations.map((o: any, i: number) => (
               <li key={i} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
                 <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
@@ -541,7 +549,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
             <CalendarCheck size={11} className="text-amber-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
           </div>
-          <div className="px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{emrData.adviseNotes}</div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{emrData.adviseNotes}</div>
         </div>
       )}
 
@@ -580,7 +588,7 @@ function EyeHead({ first = "" }: { first?: string }) {
   return (
     <thead>
       <tr>
-        <th className={TH}>{first}</th>
+        <th className={TH}>{first && <InlineHead>{first}</InlineHead>}</th>
         <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
         <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
       </tr>
@@ -690,7 +698,7 @@ function LongSection({ head, children }: { head: React.ReactNode; color?: string
   return (
     <div>
       {head}
-      <div className="space-y-3">
+      <div className="space-y-3 pl-5">
         {children}
       </div>
     </div>
@@ -872,7 +880,7 @@ function LongContent({
             <ClipboardList size={11} className="text-sky-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
           </div>
-          <div className="px-3 py-2.5 rounded-md border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g.hpi}</div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g.hpi}</div>
         </div>
       )}
 
@@ -904,7 +912,7 @@ function LongContent({
             <BookOpen size={11} className="text-slate-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Systemic History</span>
           </div>
-          <div className="px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.pmhOtherText}</div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.pmhOtherText}</div>
         </div>
       )}
 
@@ -1069,11 +1077,11 @@ function LongContent({
               (leCVraw as any).csResult || null, (leCVraw as any).csNotes || null,
             );
             const MethodGrid = ({ rows, label }: { rows: MethodRow[]; label: string }) => (
-              <DataTable>
+              <DataTable indent>
                 <Cols widths={COLS_EYE} />
                 <thead>
                   <tr className="border-b border-[var(--color-border)]">
-                    <th className={TH}>{label}</th>
+                    <th className={TH}><InlineHead>{label}</InlineHead></th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                   </tr>
@@ -1120,11 +1128,11 @@ function LongContent({
             return (
               <section>
                 {hasIOP && (
-                  <DataTable>
+                  <DataTable indent>
                     <Cols widths={COLS_EYE} />
                     <thead>
                       <tr>
-                        <th className={TH}>IOP</th>
+                        <th className={TH}><InlineHead>IOP</InlineHead></th>
                         <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong> (mmHg)</th>
                         <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong> (mmHg)</th>
                       </tr>
@@ -1143,7 +1151,7 @@ function LongContent({
                   </DataTable>
                 )}
                 {!hasIOP && hasGonio && (
-                  <DataTable minWidth={260}>
+                  <DataTable minWidth={260} indent>
                     <Cols widths={COLS_EYE} />
                     <EyeHead first={gonioLabel} />
                     <tbody className="divide-y divide-[var(--color-border)]">
@@ -1156,7 +1164,7 @@ function LongContent({
                   </DataTable>
                 )}
                 {hasIOP && hasGonio && (
-                  <DataTable minWidth={260}>
+                  <DataTable minWidth={260} indent>
                     <Cols widths={COLS_EYE} />
                     <EyeHead first={gonioLabel} />
                     <tbody className="divide-y divide-[var(--color-border)]">
@@ -1174,7 +1182,7 @@ function LongContent({
 
           {hasTear && (
             <section>
-              <DataTable minWidth={260}>
+              <DataTable minWidth={260} indent>
                 <Cols widths={COLS_EYE} />
                 <EyeHead first="Tear Film" />
                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -1194,7 +1202,7 @@ function LongContent({
 
           {hasLacrimal && (
             <section>
-              <DataTable minWidth={260}>
+              <DataTable minWidth={260} indent>
                 <Cols widths={COLS_EYE} />
                 <EyeHead first="Lacrimal Sac Syringing" />
                 <tbody className="divide-y divide-[var(--color-border)]">
@@ -1225,11 +1233,11 @@ function LongContent({
             if (!antRows.length) return null;
             return (
               <section>
-                <DataTable>
+                <DataTable indent>
                   <Cols widths={COLS_EYE} />
                   <thead>
                     <tr>
-                      <th className={TH}>{`Anterior Segment · ${antMethod || "Slit Lamp"}`}</th>
+                      <th className={TH}><InlineHead>{`Anterior Segment · ${antMethod || "Slit Lamp"}`}</InlineHead></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                     </tr>
@@ -1267,11 +1275,11 @@ function LongContent({
             if (!posRows.length && !notesRe && !notesLe && !pos.notes) return null;
             return (
               <section>
-                <DataTable>
+                <DataTable indent>
                   <Cols widths={COLS_EYE} />
                   <thead>
                     <tr>
-                      <th className={TH}>{`Posterior Segment · ${posMethod || "Indirect Ophthalmoscope"}`}</th>
+                      <th className={TH}><InlineHead>{`Posterior Segment · ${posMethod || "Indirect Ophthalmoscope"}`}</InlineHead></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                       <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                     </tr>
@@ -1294,7 +1302,7 @@ function LongContent({
                   </tbody>
                 </DataTable>
                 {pos.notes && (
-                  <p className="mt-1.5 text-caption sm:text-caption italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
+                  <p className="mt-1.5 pl-5 text-caption sm:text-caption italic leading-snug text-[var(--color-ink-500)]">{pos.notes}</p>
                 )}
               </section>
             );
@@ -1424,7 +1432,7 @@ function LongContent({
             <CalendarCheck size={11} className="text-amber-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Advice</span>
           </div>
-          <div className="px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{data.adviseNotes}</div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-amber-200 border-l-4 border-l-amber-400 bg-amber-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{data.adviseNotes}</div>
         </div>
       )}
       {data.referralEnabled && (
