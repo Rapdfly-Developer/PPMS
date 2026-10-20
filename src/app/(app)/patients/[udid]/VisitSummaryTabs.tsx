@@ -787,6 +787,12 @@ function LongContent({
   const lsRe = parseLacrimal(ls?.re);
   const lsLe = parseLacrimal(ls?.le);
 
+  const currentMedList: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
+    if (!g?.medications) return [];
+    try { const a = JSON.parse(g.medications); if (Array.isArray(a)) return a.filter((m: any) => m.drugName?.trim()); } catch {}
+    return [];
+  })();
+
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
   const hasPMH      = pmhList.length > 0 || g?.allergies || g?.nkda;
   const hasSystemicHistory = !!g?.pmhOtherText;
@@ -833,7 +839,7 @@ function LongContent({
   ].filter(([, v]) => !!v) as [string, string][];
 
   return (
-    <div className="space-y-4">
+    <div className="divide-y divide-[var(--color-border)] [&>*]:py-3 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
 
       {/* ── 1. Chief Complaint ──────────────────────────────────────── */}
       {g?.chiefComplaint && (
@@ -875,7 +881,7 @@ function LongContent({
         <div className="flex items-center gap-2 flex-wrap">
           <span className="flex items-center gap-1.5 shrink-0">
             <BookOpen size={11} className="text-[var(--color-ink-400)]" />
-            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Past Medical History</span>
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Past History</span>
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -899,6 +905,37 @@ function LongContent({
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Systemic History</span>
           </div>
           <div className="px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.pmhOtherText}</div>
+        </div>
+      )}
+
+      {/* ── 5b. Current Medications ─────────────────────────────────── */}
+      {currentMedList.length > 0 && (
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Pill size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Current Medications</span>
+          </div>
+          <DataTable>
+            <Cols widths={["38%", "14%", "24%", "24%"]} />
+            <thead>
+              <tr>
+                <th className={TH}>Medicine</th>
+                <th className={TH}>Dosage</th>
+                <th className={TH}>Frequency</th>
+                <th className={TH}>Duration</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--color-border)]">
+              {currentMedList.map((m, i) => (
+                <tr key={i}>
+                  <td className={TD}>{m.drugName}</td>
+                  <td className={TD_MUTED}>{m.dosage || DASH}</td>
+                  <td className={TD_MUTED}>{m.frequency || DASH}</td>
+                  <td className={TD_MUTED}>{m.duration || DASH}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
         </div>
       )}
 
@@ -1088,29 +1125,29 @@ function LongContent({
               if (!f && !deg) return null;
               if (!deg) return f || null;
               if (!f) return deg;
-              if (/^grade\s+/i.test(f)) return f.replace(/^(grade\s+)/i, `$1${deg} `);
               return `${deg} ${f}`;
             };
             return (
               <section>
                 {hasIOP && (
                   <DataTable>
-                    <Cols widths={["28%", "24%", "24%", "24%"]} />
+                    <Cols widths={COLS_EYE} />
                     <thead>
                       <tr>
                         <th className={TH}>IOP</th>
                         <th className={TH}>RE (mmHg)</th>
                         <th className={TH}>LE (mmHg)</th>
-                        <th className={TH}>Time</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-border)]">
                       {iop!.map((r: any, i: number) => (
                         <tr key={i}>
-                          <td className={TD_MUTED}>{r.method || "—"}</td>
+                          <td className={TD_MUTED}>
+                            <div>{r.method || "—"}</div>
+                            {fmtTime(r.takenAt) && <div className="text-[var(--color-ink-400)] text-[0.7rem]">{fmtTime(r.takenAt)}</div>}
+                          </td>
                           <td className={`${TD} font-medium`}>{r.re || DASH}</td>
                           <td className={`${TD} font-medium`}>{r.le || DASH}</td>
-                          <td className={TD_MUTED}>{fmtTime(r.takenAt) ?? DASH}</td>
                         </tr>
                       ))}
                     </tbody>

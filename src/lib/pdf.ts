@@ -1938,26 +1938,23 @@ ${(() => {
     if (!f && !deg) return null;
     if (!deg) return f || null;
     if (!f) return deg;
-    if (/^grade\s+/i.test(f)) return f.replace(/^(grade\s+)/i, `$1${deg} `);
     return `${deg} ${f}`;
   };
   const gonioHdr = `Gonioscopy${gonio?.method ? ` · ${escapeHtml(gonio.method)}` : ""}`;
   let inner = "";
   if (hasI) {
     inner += `<table style="width:100%;border-collapse:collapse;${hasG ? "margin-bottom:8px;" : ""}">` +
-      `<colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col style="width:24%"></colgroup>` +
+      `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
       `<thead><tr>` +
       `<th style="${TH}color:${LABEL_C};">IOP</th>` +
       `<th style="${TH}color:${LABEL_C};">RE (mmHg)</th>` +
       `<th style="${TH}color:${LABEL_C};">LE (mmHg)</th>` +
-      `<th style="${TH}color:${LABEL_C};">Time</th>` +
       `</tr></thead><tbody>` +
       d.iopReadings.map((r) =>
         `<tr style="border-bottom:1px solid #ECF3F1;">` +
-        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}</td>` +
+        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}${fmtTime((r as any).takenAt) ? `<br><span style="font-size:0.75em;color:#999;">${escapeHtml(fmtTime((r as any).takenAt))}</span>` : ""}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.re)}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.le)}</td>` +
-        `<td style="${TD}color:#555;">${escapeHtml(fmtTime((r as any).takenAt))}</td>` +
         `</tr>`
       ).join("") +
       `</tbody></table>`;
