@@ -581,8 +581,8 @@ function EyeHead({ first = "" }: { first?: string }) {
     <thead>
       <tr>
         <th className={TH}>{first}</th>
-        <th className={TH}>RE</th>
-        <th className={TH}>LE</th>
+        <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
+        <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
       </tr>
     </thead>
   );
@@ -987,14 +987,14 @@ function LongContent({
                   </tr>
                   {(reVAp.nearUnaided || leVAp.nearUnaided) && (
                     <tr className="bg-[var(--color-surface-sunken)]">
-                      <td className={TD_MUTED}>Unaided <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                      <td className={TD_MUTED}>Unaided / UCNV <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
                       <td className={TD}>{reVAp.nearUnaided || DASH}</td>
                       <td className={TD}>{leVAp.nearUnaided || DASH}</td>
                     </tr>
                   )}
                   {(reVAp.nearBestCorrected || leVAp.nearBestCorrected) && (
                     <tr>
-                      <td className={TD_MUTED}>BCVA <span className="text-[var(--color-ink-400)] text-micro">(Near)</span></td>
+                      <td className={TD_MUTED}>Best Corrected (BCNV)</td>
                       <td className={TD}>{reVAp.nearBestCorrected || DASH}</td>
                       <td className={TD}>{leVAp.nearBestCorrected || DASH}</td>
                     </tr>
@@ -1068,12 +1068,12 @@ function LongContent({
               (reCVraw as any).csResult || null, (reCVraw as any).csNotes || null,
               (leCVraw as any).csResult || null, (leCVraw as any).csNotes || null,
             );
-            const MethodGrid = ({ rows }: { rows: MethodRow[] }) => (
+            const MethodGrid = ({ rows, label }: { rows: MethodRow[]; label: string }) => (
               <DataTable>
                 <Cols widths={COLS_EYE} />
                 <thead>
                   <tr className="border-b border-[var(--color-border)]">
-                    <th className={TH}></th>
+                    <th className={TH}>{label}</th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
                     <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
                   </tr>
@@ -1082,7 +1082,7 @@ function LongContent({
                   {rows.map((row, i) => (
                     <tr key={i}>
                       <td className={TD_MUTED}>
-                        <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] text-[9px] font-bold mr-1.5 border border-[var(--color-primary-100)]">{i + 1}</span>
+                        <span className="text-[var(--color-primary-600)] mr-1.5">•</span>
                         {row.method || "—"}
                       </td>
                       <td className={TD}>
@@ -1100,17 +1100,18 @@ function LongContent({
             );
             return (
               <>
-                {hasCV && <Block label="Colour Vision"><MethodGrid rows={cvRows} /></Block>}
-                {hasCS && <Block label="Contrast Sensitivity"><MethodGrid rows={csRows} /></Block>}
+                {hasCV && <section><MethodGrid rows={cvRows} label="Colour Vision" /></section>}
+                {hasCS && <section><MethodGrid rows={csRows} label="Contrast Sensitivity" /></section>}
               </>
             );
           })()}
 
           {(hasIOP || hasGonio) && (() => {
-            const gonioLabel = `Gonioscopy${gonioRaw?.method ? ` · ${gonioRaw.method}` : ""}`;
+            const gonioLabel = "Gonioscopy";
             const fmtTime = (d: any) => d ? new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : null;
             const fmtGonio = (finding: string | null | undefined, deg: string | null | undefined): string | null => {
               const f = stripBullet(finding);
+              if (deg && /^\d+(\.\d+)?$/.test(deg.trim())) deg = `${deg.trim()}°`;
               if (!f && !deg) return null;
               if (!deg) return f || null;
               if (!f) return deg;
@@ -1124,16 +1125,15 @@ function LongContent({
                     <thead>
                       <tr>
                         <th className={TH}>IOP</th>
-                        <th className={TH}>RE (mmHg)</th>
-                        <th className={TH}>LE (mmHg)</th>
+                        <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong> (mmHg)</th>
+                        <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong> (mmHg)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--color-border)]">
                       {iop!.map((r: any, i: number) => (
                         <tr key={i}>
                           <td className={TD_MUTED}>
-                            <div>{r.method || "—"}</div>
-                            {fmtTime(r.takenAt) && <div className="text-[var(--color-ink-400)] text-[0.7rem]">{fmtTime(r.takenAt)}</div>}
+                            {r.method || "—"}{fmtTime(r.takenAt) && ` · ${fmtTime(r.takenAt)}`}
                           </td>
                           <td className={`${TD} font-medium`}>{r.re || DASH}</td>
                           <td className={`${TD} font-medium`}>{r.le || DASH}</td>
@@ -1148,7 +1148,7 @@ function LongContent({
                     <EyeHead first={gonioLabel} />
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
-                        label="Findings"
+                        label={gonioRaw?.method || "—"}
                         re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
                         le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
                       />
@@ -1161,7 +1161,7 @@ function LongContent({
                     <EyeHead first={gonioLabel} />
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
-                        label="Findings"
+                        label={gonioRaw?.method || "—"}
                         re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
                         le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
                       />

@@ -1809,8 +1809,8 @@ ${va
             <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
             <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
           </tr>
-          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
-          ${va.reNearN || va.leNearN ? `<tr style="background:#fff;"><td style="${TD}color:#555;">BCVA <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNearN)}</td><td style="${TD}">${v2(va.leNearN)}</td></tr>` : ""}
+          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided / UCNV <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
+          ${va.reNearN || va.leNearN ? `<tr style="background:#fff;"><td style="${TD}color:#555;">Best Corrected (BCNV)</td><td style="${TD}">${v2(va.reNearN)}</td><td style="${TD}">${v2(va.leNearN)}</td></tr>` : ""}
         </tbody>
       </table>`)
   : ""}
@@ -1908,15 +1908,14 @@ ${d.colourVision
         const bodyRows = rows.map((row, i) =>
           `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
           `<td style="${TD}vertical-align:top;">` +
-          `<span style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#EBF5F3;color:${LABEL_C};font-size:7.5px;font-weight:700;border:1px solid #C8E0DC;margin-right:5px;vertical-align:middle;">${i + 1}</span>` +
+          `<span style="color:${LABEL_C};margin-right:5px;">•</span>` +
           `<span style="font-weight:600;color:${INK};">${escapeHtml(row.method || "—")}</span></td>` +
           `<td style="${TD}vertical-align:top;"><div>${v2(row.re)}</div>${row.reNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.reNotes)}]</div>` : ""}</td>` +
           `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
           `</tr>`
         ).join("");
-        return `<div style="font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">${label}</div>` +
-          `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">` +
-          `<thead><tr><th style="width:45%;${hdrTh}"></th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead>` +
+        return `<table style="width:100%;border-collapse:collapse;margin-bottom:8px;">` +
+          `<thead><tr><th style="width:45%;${hdrTh}text-align:left;">${label}</th><th style="${hdrTh}">RE</th><th style="${hdrTh}">LE</th></tr></thead>` +
           `<tbody>${bodyRows}</tbody></table>`;
       };
       const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity") +
@@ -1935,12 +1934,13 @@ ${(() => {
   const fmtTime = (dt: any) => dt ? new Date(dt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "";
   const fmtGonio = (finding: string | null | undefined, deg: string | null | undefined): string | null => {
     const f = stripB(finding);
+    if (deg && /^\d+(\.\d+)?$/.test(deg.trim())) deg = `${deg.trim()}°`;
     if (!f && !deg) return null;
     if (!deg) return f || null;
     if (!f) return deg;
     return `${deg} ${f}`;
   };
-  const gonioHdr = `Gonioscopy${gonio?.method ? ` · ${escapeHtml(gonio.method)}` : ""}`;
+  const gonioHdr = "Gonioscopy";
   let inner = "";
   if (hasI) {
     inner += `<table style="width:100%;border-collapse:collapse;${hasG ? "margin-bottom:8px;" : ""}">` +
@@ -1952,7 +1952,7 @@ ${(() => {
       `</tr></thead><tbody>` +
       d.iopReadings.map((r) =>
         `<tr style="border-bottom:1px solid #ECF3F1;">` +
-        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}${fmtTime((r as any).takenAt) ? `<br><span style="font-size:0.75em;color:#999;">${escapeHtml(fmtTime((r as any).takenAt))}</span>` : ""}</td>` +
+        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}${fmtTime((r as any).takenAt) ? ` · ${escapeHtml(fmtTime((r as any).takenAt))}` : ""}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.re)}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.le)}</td>` +
         `</tr>`
@@ -1962,7 +1962,7 @@ ${(() => {
   if (hasG) {
     const gonioRe = fmtGonio(gonio!.re, gonio!.reDeg);
     const gonioLe = fmtGonio(gonio!.le, gonio!.leDeg);
-    inner += eyeTbl(gonioHdr, [["Findings", gonioRe, gonioLe]]);
+    inner += eyeTbl(gonioHdr, [[gonio?.method || "—", gonioRe, gonioLe]]);
   }
   const cardLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "IOP" : "Gonioscopy";
   return inner ? card(cardLabel, inner) : "";
@@ -2310,8 +2310,8 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
           <tr><td class="td-head">Unaided / UCVA (Dist)</td><td>${val(va.reDistance?.unaided)}</td><td>${val(va.leDistance?.unaided)}</td></tr>
           <tr><td class="td-head">Pinhole (PH)</td><td>${val(va.reDistance?.ph)}</td><td>${val(va.leDistance?.ph)}</td></tr>
           <tr><td class="td-head">Best Corrected (BCVA)</td><td>${val(va.reDistance?.bcva)}</td><td>${val(va.leDistance?.bcva)}</td></tr>
-          ${va.reNear || va.leNear ? `<tr><td class="td-head">Unaided (Near)</td><td>${val(va.reNear)}</td><td>${val(va.leNear)}</td></tr>` : ""}
-          ${va.reNearN || va.leNearN ? `<tr><td class="td-head">BCVA (Near)</td><td>${val(va.reNearN ?? null)}</td><td>${val(va.leNearN ?? null)}</td></tr>` : ""}
+          ${va.reNear || va.leNear ? `<tr><td class="td-head">Unaided / UCNV (Near)</td><td>${val(va.reNear)}</td><td>${val(va.leNear)}</td></tr>` : ""}
+          ${va.reNearN || va.leNearN ? `<tr><td class="td-head">Best Corrected (BCNV)</td><td>${val(va.reNearN ?? null)}</td><td>${val(va.leNearN ?? null)}</td></tr>` : ""}
         </tbody>
       </table>` : ""}
 
