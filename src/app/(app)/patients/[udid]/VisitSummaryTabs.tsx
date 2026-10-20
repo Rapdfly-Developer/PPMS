@@ -1206,7 +1206,7 @@ function LongContent({
             <section>
               <DataTable minWidth={260} indent>
                 <Cols widths={COLS_EYE} />
-                <EyeHead first="Lacrimal Sac Syringing" />
+                <EyeHead first="Lacrimal Sac Syringing" line />
                 <tbody className="divide-y divide-[var(--color-border)]">
                   <EyeRow
                     label="Findings"
