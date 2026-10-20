@@ -1391,9 +1391,9 @@ function LongContent({
       {/* ── 7. Investigations ─────────────────────────────────────────── */}
       {hasInv && (
         <LongSection head={<SumHead icon={<FlaskConical size={11} />} label="Investigations" color="text-teal-500" />}>
-          <ol className="flex flex-col divide-y divide-[var(--color-border)] list-none">
+          <ol className="list-none w-full">
             {data.investigationOrders.map((o: any, i: number) => (
-              <li key={i} className="flex items-start justify-between gap-3 py-2 first:pt-0 last:pb-0">
+              <li key={i} className={`flex items-start justify-between gap-3 px-3 py-2 ${i % 2 !== 0 ? "bg-[var(--color-surface-sunken)]" : ""}`}>
                 <div className="flex items-start gap-2 flex-1 min-w-0">
                   <span className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0 w-5 text-right">{i + 1}.</span>
                   <p className="text-caption font-semibold text-[var(--color-ink-800)] leading-snug flex-1 min-w-0">
