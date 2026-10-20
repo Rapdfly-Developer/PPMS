@@ -572,11 +572,11 @@ function ShortContent({ complaint, diagnoses, emrData }: {
 }
 
 /* ─── Long ─── */
-function EyeRow({ label, re, le }: { label: string; re?: string | null; le?: string | null }) {
+function EyeRow({ label, re, le, bullet = false }: { label: string; re?: string | null; le?: string | null; bullet?: boolean }) {
   if (!re && !le) return null;
   return (
     <tr>
-      <td className={TD_MUTED}>{label}</td>
+      <td className={TD_MUTED}>{bullet && <span className="text-[var(--color-primary-600)] mr-1.5">•</span>}{label}</td>
       <td className={TD}>{re || DASH}</td>
       <td className={TD}>{le || DASH}</td>
     </tr>
@@ -584,10 +584,10 @@ function EyeRow({ label, re, le }: { label: string; re?: string | null; le?: str
 }
 
 /** Header row shared by every RE/LE table, so all four align exactly. */
-function EyeHead({ first = "" }: { first?: string }) {
+function EyeHead({ first = "", line = false }: { first?: string; line?: boolean }) {
   return (
     <thead>
-      <tr>
+      <tr className={line ? "border-b border-[var(--color-border)]" : undefined}>
         <th className={TH}>{first && <InlineHead>{first}</InlineHead>}</th>
         <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong></th>
         <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong></th>
@@ -1126,12 +1126,12 @@ function LongContent({
               return `${deg} ${f}`;
             };
             return (
-              <section>
+              <section className="space-y-4">
                 {hasIOP && (
                   <DataTable indent>
                     <Cols widths={COLS_EYE} />
                     <thead>
-                      <tr>
+                      <tr className="border-b border-[var(--color-border)]">
                         <th className={TH}><InlineHead>IOP</InlineHead></th>
                         <th className={TH}><strong className="text-[var(--color-primary-700)]">RE</strong> (mmHg)</th>
                         <th className={TH}><strong className="text-[var(--color-primary-700)]">LE</strong> (mmHg)</th>
@@ -1141,7 +1141,7 @@ function LongContent({
                       {iop!.map((r: any, i: number) => (
                         <tr key={i}>
                           <td className={TD_MUTED}>
-                            {r.method || "—"}{fmtTime(r.takenAt) && ` · ${fmtTime(r.takenAt)}`}
+                            <span className="text-[var(--color-primary-600)] mr-1.5">•</span>{r.method || "—"}{fmtTime(r.takenAt) && ` · ${fmtTime(r.takenAt)}`}
                           </td>
                           <td className={`${TD} font-medium`}>{r.re || DASH}</td>
                           <td className={`${TD} font-medium`}>{r.le || DASH}</td>
@@ -1153,9 +1153,10 @@ function LongContent({
                 {!hasIOP && hasGonio && (
                   <DataTable minWidth={260} indent>
                     <Cols widths={COLS_EYE} />
-                    <EyeHead first={gonioLabel} />
+                    <EyeHead first={gonioLabel} line />
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
+                        bullet
                         label={gonioRaw?.method || "—"}
                         re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
                         le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
@@ -1166,9 +1167,10 @@ function LongContent({
                 {hasIOP && hasGonio && (
                   <DataTable minWidth={260} indent>
                     <Cols widths={COLS_EYE} />
-                    <EyeHead first={gonioLabel} />
+                    <EyeHead first={gonioLabel} line />
                     <tbody className="divide-y divide-[var(--color-border)]">
                       <EyeRow
+                        bullet
                         label={gonioRaw?.method || "—"}
                         re={fmtGonio(gonioRaw.re, gonioRaw.reDeg)}
                         le={fmtGonio(gonioRaw.le, gonioRaw.leDeg)}
