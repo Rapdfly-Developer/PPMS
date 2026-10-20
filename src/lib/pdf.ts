@@ -1215,7 +1215,8 @@ ${procDisplay
 <!-- 3 · MEDICATIONS -->
 ${d.medications.length
   ? card("Medications",
-      `<table>
+      `<table style="width:100%;border-collapse:collapse;">
+    <colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>
     <tbody>${medRows}</tbody>
   </table>`)
   : ""}
@@ -1311,9 +1312,9 @@ ${d.advice && d.advice.trim()
   : ""}
 
 <!-- 8 · REFERRAL with In View Of -->
-${d.visit.referralEnabled && d.visit.referralNote && d.visit.referralNote.trim()
+${d.visit.referralEnabled
   ? inlineCard("Referral",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(d.visit.referralNote.trim())}</div>` +
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred"}</div>` +
       (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
         ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
         : ""))
@@ -1778,8 +1779,8 @@ ${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
       `<div style="font-size:9.5px;color:${INK};display:flex;flex-wrap:wrap;gap:0 20px;">` +
       (ge.bp        ? `<span><strong style="color:${LABEL_C};">BP:</strong> ${escapeHtml(ge.bp)} mmHg</span>` : "") +
       (ge.pulse     ? `<span><strong style="color:${LABEL_C};">Pulse:</strong> ${escapeHtml(ge.pulse)} bpm</span>` : "") +
-      (ge.temperature ? `<span><strong style="color:${LABEL_C};">Temp:</strong> ${escapeHtml(ge.temperature)}</span>` : "") +
-      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Wt:</strong> ${escapeHtml(ge.weight)}</span>` : "") +
+      (ge.temperature ? `<span><strong style="color:${LABEL_C};">Temp:</strong> ${escapeHtml(ge.temperature)}${String(ge.temperature).includes("°C") ? "" : " °C"}</span>` : "") +
+      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Wt:</strong> ${escapeHtml(ge.weight)}${String(ge.weight).includes("kg") ? "" : " kg"}</span>` : "") +
       `</div>`)
   : ""}
 
@@ -1834,6 +1835,11 @@ ${(() => {
     `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.va)}</td><td style="${TD}text-align:center;">${v2(le?.nearSph)}</td><td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.nearVa)}</td></tr>` +
     `</tbody></table></div>`;
   const blocks: string[] = [];
+  if (d.opticalRx) {
+    const rxMethod = (d.opticalRx as any).re?.method || (d.opticalRx as any).le?.method || "";
+    const hasRxData = (d.opticalRx as any).re?.sph || (d.opticalRx as any).re?.cyl || (d.opticalRx as any).le?.sph || (d.opticalRx as any).le?.cyl || (d.opticalRx as any).re?.nearSph || (d.opticalRx as any).le?.nearSph;
+    if (hasRxData) blocks.push(rxTable(`Spectacles / Refraction${rxMethod ? " · " + rxMethod : ""}`, (d.opticalRx as any).re, (d.opticalRx as any).le));
+  }
   if (d.extraCorrections && d.extraCorrections.length > 0) {
     d.extraCorrections.forEach((ec) => {
       const method = ec.re?.method || ec.le?.method || "";
@@ -1926,34 +1932,42 @@ ${(() => {
   const hasI = d.iopReadings.length > 0;
   const hasG = !!(gonio?.re || gonio?.le);
   if (!hasI && !hasG) return "";
-  const iopUniq = hasI ? Array.from(new Set(d.iopReadings.map((r) => r.method || ""))) : [];
-  const singleMethod = iopUniq.length === 1 ? iopUniq[0] : "";
-  const baseLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "Intraocular Pressure" : "Gonioscopy";
-  const iopSectionHdr = singleMethod ? `${baseLabel} · ${escapeHtml(singleMethod)}` : baseLabel;
+  const fmtTime = (dt: any) => dt ? new Date(dt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }) : "";
+  const fmtGonio = (finding: string | null | undefined, deg: string | null | undefined): string | null => {
+    const f = stripB(finding);
+    if (!f && !deg) return null;
+    if (!deg) return f || null;
+    if (!f) return deg;
+    if (/^grade\s+/i.test(f)) return f.replace(/^(grade\s+)/i, `$1${deg} `);
+    return `${deg} ${f}`;
+  };
   const gonioHdr = `Gonioscopy${gonio?.method ? ` · ${escapeHtml(gonio.method)}` : ""}`;
   let inner = "";
   if (hasI) {
     inner += `<table style="width:100%;border-collapse:collapse;${hasG ? "margin-bottom:8px;" : ""}">` +
+      `<colgroup><col style="width:28%"><col style="width:24%"><col style="width:24%"><col style="width:24%"></colgroup>` +
       `<thead><tr>` +
-      `<th style="${TH}">${iopSectionHdr}</th>` +
+      `<th style="${TH}color:${LABEL_C};">IOP</th>` +
       `<th style="${TH}color:${LABEL_C};">RE (mmHg)</th>` +
       `<th style="${TH}color:${LABEL_C};">LE (mmHg)</th>` +
+      `<th style="${TH}color:${LABEL_C};">Time</th>` +
       `</tr></thead><tbody>` +
-      d.iopReadings.map((r, i) =>
+      d.iopReadings.map((r) =>
         `<tr style="border-bottom:1px solid #ECF3F1;">` +
-        `<td style="${TD}color:#555;">${escapeHtml(singleMethod ? (d.iopReadings.length > 1 ? `Reading ${i + 1}` : "Pressure") : (r.method || "—"))}</td>` +
+        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.re)}</td>` +
         `<td style="${TD}font-weight:600;">${v2(r.le)}</td>` +
+        `<td style="${TD}color:#555;">${escapeHtml(fmtTime((r as any).takenAt))}</td>` +
         `</tr>`
       ).join("") +
       `</tbody></table>`;
   }
   if (hasG) {
-    const gonioRe = [stripB(gonio!.re), gonio!.reDeg].filter(Boolean).join(" ") || null;
-    const gonioLe = [stripB(gonio!.le), gonio!.leDeg].filter(Boolean).join(" ") || null;
-    inner += eyeTbl(hasI ? gonioHdr : iopSectionHdr, [["Findings", gonioRe, gonioLe]]);
+    const gonioRe = fmtGonio(gonio!.re, gonio!.reDeg);
+    const gonioLe = fmtGonio(gonio!.le, gonio!.leDeg);
+    inner += eyeTbl(gonioHdr, [["Findings", gonioRe, gonioLe]]);
   }
-  const cardLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "Intraocular Pressure" : "Gonioscopy";
+  const cardLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "IOP" : "Gonioscopy";
   return inner ? card(cardLabel, inner) : "";
 })()}
 
@@ -1982,7 +1996,7 @@ ${d.anteriorSegment
       const re: Record<string, any> = (d.anteriorSegment.re as any) ?? {};
       const le: Record<string, any> = (d.anteriorSegment.le as any) ?? {};
       const antMethod: string = (re._method ?? le._method ?? "") as string;
-      const sLabel = antMethod ? `Anterior Segment · ${escapeHtml(antMethod)}` : "Anterior Segment";
+      const sLabel = `Anterior Segment · ${escapeHtml(antMethod || "Slit Lamp")}`;
       const ANT_FIELDS: [string, string][] = [
         ["upperLid", "Upper Lid"], ["lowerLid", "Lower Lid"], ["conjunctiva", "Conjunctiva"],
         ["sclera", "Sclera"], ["cornea", "Cornea"], ["anteriorChamber", "Ant. Chamber"],
@@ -2014,7 +2028,7 @@ ${(() => {
     ["cdr", "CDR"], ["nrr", "NRR"], ["macula", "Macula"],
     ["retinalVessels", "Retinal Vessels"], ["background", "Background"], ["periphery", "Periphery"],
   ];
-  const sLabel = posMethod ? `Posterior Segment · ${escapeHtml(posMethod)}` : "Posterior Segment";
+  const sLabel = `Posterior Segment · ${escapeHtml(posMethod || "Indirect Ophthalmoscope")}`;
   const allKeys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)]));
   const posRows: Array<[string, string | null, string | null]> = [
     ...allKeys
@@ -2064,12 +2078,13 @@ ${d.minorProcedure?.procedureName
 ${d.medications.length
   ? card("Medications Prescribed",
     `<table style="width:100%;border-collapse:collapse;">
+    <colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>
     <thead><tr>
-      <th style="${TH}width:24px;text-align:center;">#</th>
+      <th style="${TH}text-align:center;">#</th>
       <th style="${TH}">Medicine</th>
-      <th style="${TH}width:55px;">Dosage</th>
-      <th style="${TH}width:85px;">Frequency</th>
-      <th style="${TH}width:115px;">Duration</th>
+      <th style="${TH}">Dosage</th>
+      <th style="${TH}">Frequency</th>
+      <th style="${TH}">Duration</th>
     </tr></thead>
     <tbody>${medRows}</tbody>
   </table>`)
@@ -2107,9 +2122,9 @@ ${d.visit.followUpDate
   : ""}
 
 <!-- 21 · REFERRAL WITH IN VIEW OF -->
-${d.visit.referralEnabled && d.visit.referralNote && d.visit.referralNote.trim()
+${d.visit.referralEnabled
   ? card("Referral",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${escapeHtml(d.visit.referralNote.trim())}</div>` +
+      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred"}</div>` +
       (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
         ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
         : ""))
