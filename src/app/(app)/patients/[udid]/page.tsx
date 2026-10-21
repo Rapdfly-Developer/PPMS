@@ -1,9 +1,10 @@
 import { closeEndedSessions } from "@/lib/sessionClose";
+import { istTodayRange } from "@/lib/ist";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format } from "date-fns";
 import { Phone, MapPin, Calendar, Hash, IdCard, Briefcase, FileText, Link2, Users } from "lucide-react";
 import { decryptAadhaar, maskAadhaar } from "@/lib/crypto";
 import { PatientProfileClient, type SerialVisit, type TodayVisit, type LastVisitSummary, type LongitudinalVisit } from "./PatientProfileClient";
@@ -93,9 +94,9 @@ export default async function PatientProfilePage({
   // Prefer the patient's CURRENT registered hospital: after a transfer, a
   // leftover visit at the previous hospital must not hide a fresh appointment
   // at the new hospital.
-  const now   = new Date();
-  const todayStart = startOfDay(now);
-  const todayEnd   = endOfDay(now);
+  // "Today" is the India (IST) calendar day, not the server's — production runs on UTC,
+  // and walk-in visits are dated at IST midnight.
+  const { dayStart: todayStart, dayEnd: todayEnd } = istTodayRange();
 
   const todayVisits = patient.visits.filter((v) => {
     const d = new Date(v.date);
