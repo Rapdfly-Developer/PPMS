@@ -4,6 +4,17 @@ import { notFound } from "next/navigation";
 import { startOfDay } from "date-fns";
 import { VisitsListClient } from "./VisitsListClient";
 import { DownloadAllButton } from "./DownloadAllButton";
+import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
+
+// Fields each visit row needs (completed and incomplete visits alike)
+const VISIT_INCLUDE = {
+  hospital:             { select: { name: true } },
+  doctor:               { select: { name: true } },
+  generalExam:          { select: { chiefComplaint: true } },
+  diagnoses:            { select: { description: true, laterality: true, status: true } },
+  appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, completedAt: true, isWalkIn: true } },
+  investigationOrders:  { select: { createdAt: true, updatedAt: true, resultRef: true }, orderBy: { createdAt: "asc" as const } },
+} as const;
 
 export default async function PatientVisitsPage({
   params,
@@ -14,7 +25,7 @@ export default async function PatientVisitsPage({
 }) {
   const { udid } = await params;
   const { visitId } = await searchParams;
-  await requirePermission("patients.view");
+  const user = await requirePermission("patients.view");
 
   const patient = await prisma.patient.findUnique({
     where: { udid },
@@ -23,16 +34,10 @@ export default async function PatientVisitsPage({
       name: true,
       udid: true,
       visits: {
-        where: { appointment: { is: { status: "DISPENSED" } } },
+        // Completed visits only — the doctor clicked Finalize & Sign
+        where: { appointment: { is: { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
         orderBy: { date: "desc" },
-        include: {
-          hospital:             { select: { name: true } },
-          doctor:               { select: { name: true } },
-          generalExam:          { select: { chiefComplaint: true } },
-          diagnoses:            { select: { description: true, laterality: true, status: true } },
-          appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, completedAt: true, isWalkIn: true } },
-          investigationOrders:  { select: { createdAt: true, updatedAt: true, resultRef: true }, orderBy: { createdAt: "asc" } },
-        },
+        include: VISIT_INCLUDE,
       },
     },
   });
@@ -41,16 +46,9 @@ export default async function PatientVisitsPage({
 
   const todayStart = startOfDay(new Date());
 
-  const [noShowAppointments, futureAppointments] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        patientId: patient.id,
-        visit:     null,
-        dateTime:  { lt: todayStart },
-        status:    { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
-      },
-      select: { dateTime: true },
-    }),
+  const [noShowRecords, futureAppointments] = await Promise.all([
+    // Same records (and scope) as the profile No Shows counter and the Patient Library
+    noShowScopeFor(user).then((scope) => getNoShowRegistry(scope, patient.id)),
     prisma.appointment.findMany({
       where: {
         patientId: patient.id,
@@ -61,14 +59,22 @@ export default async function PatientVisitsPage({
     }),
   ]);
 
-  const noShowDates    = noShowAppointments.map((a) => a.dateTime.toISOString());
+  // Numbered oldest first — the same numbering as the profile No Show drawer
+  const noShows = [...noShowRecords]
+    .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())
+    .map((r, i) => ({ number: i + 1, date: r.dateTime.toISOString(), kind: r.kind, visitId: r.visitId }));
   const futureApptDates = futureAppointments.map((a) => a.dateTime.toISOString());
 
-  const allCount = patient.visits.length;
+  // Incomplete visits (saved EMR data, never finalized) — selectable from the calendar
+  const incompleteIds = noShows.map((n) => n.visitId).filter((id): id is string => !!id);
+  const incompleteRaw = incompleteIds.length
+    ? await prisma.visit.findMany({ where: { id: { in: incompleteIds } }, include: VISIT_INCLUDE })
+    : [];
 
-  const pastVisits = patient.visits.map((v, i) => ({
+  type RawVisit = (typeof patient.visits)[number];
+  const toRow = (v: RawVisit, visitNumber: number) => ({
     id:          v.id,
-    visitNumber: allCount - i,
+    visitNumber,
     date:        v.date.toISOString(),
     status:      v.status,
     visitType:   v.visitType ?? null,
@@ -95,6 +101,13 @@ export default async function PatientVisitsPage({
       dispensedAt:             v.appointment?.completedAt?.toISOString()                   ?? null,
       finalizedAt:             (v as any).finalizedAt?.toISOString()                        ?? null,
     },
+  });
+
+  const allCount = patient.visits.length;
+  const pastVisits = patient.visits.map((v, i) => toRow(v, allCount - i));
+  const incompleteVisits = incompleteRaw.map((v) => ({
+    ...toRow(v, 0),
+    noShowNumber: noShows.find((n) => n.visitId === v.id)!.number,
   }));
 
   const totalVisits = pastVisits.length;
@@ -118,7 +131,8 @@ export default async function PatientVisitsPage({
         visits={pastVisits}
         udid={udid}
         initialVisitId={visitId}
-        noShowDates={noShowDates}
+        incompleteVisits={incompleteVisits}
+        noShows={noShows}
         futureApptDates={futureApptDates}
       />
     </div>

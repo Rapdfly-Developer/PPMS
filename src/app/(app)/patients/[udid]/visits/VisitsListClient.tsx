@@ -8,6 +8,7 @@ import {
 import { ChevronLeft, ChevronRight, Building2, Clock } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
 import { VisitSummaryTabs } from "../VisitSummaryTabs";
+import { NO_SHOW_KIND_LABEL, type NoShowKind } from "@/lib/noShowKinds";
 
 /* ── types ──────────────────────────────────────────────────────────────────── */
 export interface VisitTimestamps {
@@ -40,6 +41,18 @@ export interface VisitRow {
   timestamps:  VisitTimestamps;
 }
 
+/** One No Show Registry record, numbered oldest first (same as the profile drawer). */
+export interface NoShowDay {
+  number:  number;
+  date:    string;
+  kind:    NoShowKind;
+  /** Saved but unfinalized visit — selectable like a completed visit. */
+  visitId: string | null;
+}
+
+/** An incomplete visit row, labelled by its No Show number. */
+export type IncompleteVisitRow = VisitRow & { noShowNumber: number };
+
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-IN", {
     hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata",
@@ -50,21 +63,21 @@ function fmtTime(iso: string) {
 const DOW = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
 function MiniCalendar({
-  visits, noShowDates, futureApptDates, selectedIdx, onSelect,
+  visits, noShows, futureApptDates, selectedId, selectedDate, onSelect,
 }: {
   visits: VisitRow[];
-  noShowDates: string[];
+  noShows: NoShowDay[];
   futureApptDates: string[];
-  selectedIdx: number;
-  onSelect: (idx: number) => void;
+  selectedId: string | null;
+  selectedDate: string | null;
+  onSelect: (visitId: string) => void;
 }) {
-  const [calMonth, setCalMonth] = useState(() =>
-    startOfMonth(new Date(visits[selectedIdx].date))
-  );
+  const anchorDate = selectedDate ?? noShows[noShows.length - 1]?.date ?? new Date().toISOString();
+  const [calMonth, setCalMonth] = useState(() => startOfMonth(new Date(anchorDate)));
 
   useEffect(() => {
-    setCalMonth(startOfMonth(new Date(visits[selectedIdx].date)));
-  }, [visits, selectedIdx]);
+    setCalMonth(startOfMonth(new Date(anchorDate)));
+  }, [anchorDate]);
 
   const visitDateMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -72,11 +85,15 @@ function MiniCalendar({
     return m;
   }, [visits]);
 
-  const noShowSet = useMemo(() => {
-    const s = new Set<string>();
-    noShowDates.forEach((d) => s.add(format(new Date(d), "yyyy-MM-dd")));
-    return s;
-  }, [noShowDates]);
+  // date → no-show records that day (oldest first)
+  const noShowMap = useMemo(() => {
+    const m = new Map<string, NoShowDay[]>();
+    noShows.forEach((n) => {
+      const key = format(new Date(n.date), "yyyy-MM-dd");
+      m.set(key, [...(m.get(key) ?? []), n]);
+    });
+    return m;
+  }, [noShows]);
 
   const futureSet = useMemo(() => {
     const s = new Set<string>();
@@ -125,33 +142,42 @@ function MiniCalendar({
           const key      = format(day, "yyyy-MM-dd");
           const visitIdx = visitDateMap.get(key);
           const hasVisit = visitIdx !== undefined;
-          const isNoShow = noShowSet.has(key);
+          const dayNoShows = noShowMap.get(key) ?? [];
+          const isNoShow = dayNoShows.length > 0;
+          const latestNoShow = dayNoShows[dayNoShows.length - 1];
+          // An incomplete visit has saved EMR data — selectable to view its summary
+          const openVisitId = dayNoShows.find((n) => n.visitId)?.visitId ?? null;
           const isFuture = futureSet.has(key);
-          const isSel    = hasVisit && visitIdx === selectedIdx;
+          const isSel    = hasVisit && visits[visitIdx!].id === selectedId;
+          const isNoShowSel = !hasVisit && !!openVisitId && openVisitId === selectedId;
           const isToday  = isSameDay(day, today);
 
           let cls = "mx-auto flex flex-col items-center justify-center rounded-full transition-all duration-150 ";
-          if (hasVisit) {
+          if (hasVisit || isNoShow) {
             cls += "w-7 h-8 ";
           } else {
             cls += "size-7 ";
           }
           if (isSel)         cls += "bg-[var(--color-primary-700)] text-white shadow-sm";
+          else if (isNoShowSel) cls += "bg-red-500 text-white shadow-sm";
           else if (hasVisit) cls += "bg-[var(--color-primary-100)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-200)] cursor-pointer";
           else if (isFuture) cls += "bg-indigo-100 text-indigo-600 cursor-default";
-          else if (isNoShow) cls += "bg-red-100 text-red-500 cursor-default";
+          else if (isNoShow) cls += `bg-red-100 text-red-500 ${openVisitId ? "hover:bg-red-200 cursor-pointer" : "cursor-default"}`;
           else               cls += "text-[var(--color-ink-300)] cursor-default";
-          if (isToday && !isSel) cls += " ring-2 ring-[var(--color-primary-400)] ring-offset-1";
+          if (isToday && !isSel && !isNoShowSel) cls += " ring-2 ring-[var(--color-primary-400)] ring-offset-1";
 
           return (
             <button
               key={key}
-              disabled={!hasVisit}
-              onClick={() => hasVisit && onSelect(visitIdx!)}
+              disabled={!hasVisit && !openVisitId}
+              onClick={() => {
+                if (hasVisit) onSelect(visits[visitIdx!].id);
+                else if (openVisitId) onSelect(openVisitId);
+              }}
               className={cls}
               title={
                 hasVisit ? `Visit #${visits[visitIdx!].visitNumber} · ${format(day, "dd MMM yyyy")}` :
-                isNoShow ? "No Show" :
+                isNoShow ? dayNoShows.map((n) => `No Show #${n.number} · ${NO_SHOW_KIND_LABEL[n.kind]}`).join("\n") + (openVisitId ? "\nClick to view the summary" : "") :
                 isFuture ? "Upcoming Appointment" : undefined
               }
             >
@@ -159,6 +185,11 @@ function MiniCalendar({
               {hasVisit && (
                 <span className={`text-[8px] font-bold leading-none mt-0.5 ${isSel ? "text-white/80" : "text-[var(--color-primary-500)]"}`}>
                   #{visits[visitIdx!].visitNumber}
+                </span>
+              )}
+              {!hasVisit && isNoShow && (
+                <span className={`text-[8px] font-bold leading-none mt-0.5 ${isNoShowSel ? "text-white/80" : "text-red-400"}`}>
+                  #{latestNoShow.number}
                 </span>
               )}
             </button>
@@ -272,28 +303,45 @@ function TimestampSection({ ts, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boo
 
 /* ── Main component ─────────────────────────────────────────────────────────── */
 export function VisitsListClient({
-  visits, udid, initialVisitId, noShowDates = [], futureApptDates = [],
+  visits, udid, initialVisitId, incompleteVisits = [], noShows = [], futureApptDates = [],
 }: {
   visits: VisitRow[];
   udid: string;
   initialVisitId?: string;
-  noShowDates?: string[];
+  incompleteVisits?: IncompleteVisitRow[];
+  noShows?: NoShowDay[];
   futureApptDates?: string[];
 }) {
-  const initialIdx = initialVisitId
-    ? Math.max(0, visits.findIndex((v) => v.id === initialVisitId))
-    : 0;
-  const [selectedIdx, setSelectedIdx] = useState(initialIdx);
+  const findRow = (id: string | null | undefined) =>
+    (id && (visits.find((r) => r.id === id) ?? incompleteVisits.find((r) => r.id === id))) || null;
+  // Default: the requested visit, else the latest completed visit, else the latest incomplete one
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => findRow(initialVisitId)?.id ?? visits[0]?.id ?? incompleteVisits[incompleteVisits.length - 1]?.id ?? null
+  );
+  const v = findRow(selectedId);
 
-  if (visits.length === 0) {
+  if (!v) {
     return (
-      <div className="text-center py-16 text-[var(--color-ink-400)]">
-        <p className="text-sm sm:text-base">No visits recorded yet.</p>
+      <div className="flex flex-col items-center gap-4">
+        <p className="text-center pt-10 text-sm sm:text-base text-[var(--color-ink-400)]">No visits recorded yet.</p>
+        {noShows.length > 0 && (
+          <div className="w-full max-w-xs">
+            <MiniCalendar
+              visits={visits}
+              noShows={noShows}
+              futureApptDates={futureApptDates}
+              selectedId={null}
+              selectedDate={null}
+              onSelect={setSelectedId}
+            />
+          </div>
+        )}
       </div>
     );
   }
 
-  const v = visits[selectedIdx];
+  const incomplete = incompleteVisits.find((r) => r.id === v.id) ?? null;
+  const completedIdx = visits.findIndex((r) => r.id === v.id);
   const isClosed = v.status === "CLOSED";
 
   return (
@@ -307,10 +355,21 @@ export function VisitsListClient({
             {/* Visit header */}
             <div className="px-4 py-3.5 border-b border-[var(--color-border)]">
               <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                {incomplete ? (
+                  <>
+                    <span className="text-xs font-bold text-red-700 bg-red-50 px-2.5 py-0.5 rounded-full">
+                      No Show #{incomplete.noShowNumber}
+                    </span>
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                      Incomplete
+                    </span>
+                  </>
+                ) : (
                 <span className="text-xs font-bold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] px-2.5 py-0.5 rounded-full">
                   Visit #{v.visitNumber}
                 </span>
-                {isClosed ? (
+                )}
+                {incomplete ? null : isClosed ? (
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     Completed
                   </span>
@@ -339,10 +398,11 @@ export function VisitsListClient({
               <div className="p-3">
                 <MiniCalendar
                   visits={visits}
-                  noShowDates={noShowDates}
+                  noShows={noShows}
                   futureApptDates={futureApptDates}
-                  selectedIdx={selectedIdx}
-                  onSelect={setSelectedIdx}
+                  selectedId={v.id}
+                  selectedDate={v.date}
+                  onSelect={setSelectedId}
                 />
               </div>
               <div className="px-3 pb-3">
@@ -380,7 +440,9 @@ export function VisitsListClient({
       </div>
 
       <p className="text-center text-xs text-[var(--color-ink-400)]">
-        Showing visit {visits.length - selectedIdx} of {visits.length}
+        {incomplete
+          ? `Showing incomplete visit · No Show #${incomplete.noShowNumber}`
+          : `Showing visit ${visits.length - completedIdx} of ${visits.length}`}
       </p>
     </div>
   );

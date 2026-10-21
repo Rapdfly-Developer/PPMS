@@ -105,13 +105,13 @@ export default async function PatientsPage({
   const listToday    = startOfDay(new Date());
   const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
   if (opStatusFilter === "dispensed") {
-    listConds.push({ visits: { some: { finalizedAt: { gte: listToday, lte: listTodayEnd }, appointment: { status: "DISPENSED" } } } });
+    listConds.push({ visits: { some: { finalizedAt: { gte: listToday, lte: listTodayEnd }, appointment: { status: "DISPENSED", consultationStatus: "FINALIZED" } } } });
   }
   if (opStatusFilter === "totaldispensed") {
     // Patients with at least one completed consultation who are NOT currently in queue today
     listConds.push({
       AND: [
-        { appointments: { some: { status: "DISPENSED" } } },
+        { appointments: { some: { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
         { appointments: { none: { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: listToday, lte: listTodayEnd } } } },
       ],
     });

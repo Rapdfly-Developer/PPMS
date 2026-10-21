@@ -18,6 +18,8 @@ export type NoShowRecord = {
   id: string;
   kind: NoShowKind;
   patientId: string;
+  /** The saved (unfinalized) visit, for incomplete visits only. */
+  visitId: string | null;
   arrivedAt: Date | null;
   dateTime: Date;
   status: string;
@@ -84,7 +86,7 @@ export async function getNoShowRegistry(
         // `not: "FINALIZED"` alone would skip NULL, which is the unfinalized case.
         OR: [{ consultationStatus: null }, { consultationStatus: { not: "FINALIZED" } }],
       },
-      include: { patient: { select: PATIENT_SELECT }, hospital: { select: { name: true } }, doctor: { select: { name: true } } },
+      include: { patient: { select: PATIENT_SELECT }, hospital: { select: { name: true } }, doctor: { select: { name: true } }, visit: { select: { id: true } } },
     }),
     // 2. Appointment no-show
     prisma.appointment.findMany({
@@ -95,7 +97,7 @@ export async function getNoShowRegistry(
         dateTime: { lt: todayIST },
         status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED", "PARTIAL_DISPENSE"] },
       },
-      include: { patient: { select: PATIENT_SELECT }, hospital: { select: { name: true } }, doctor: { select: { name: true } } },
+      include: { patient: { select: PATIENT_SELECT }, hospital: { select: { name: true } }, doctor: { select: { name: true } }, visit: { select: { id: true } } },
     }),
     // 3. Follow-up no-show candidates (pending, date well past) — exact rule applied below
     prisma.visit.findMany({
@@ -149,6 +151,7 @@ export async function getNoShowRegistry(
   const fromAppt = (a: (typeof incomplete)[number], kind: NoShowKind): NoShowRecord => ({
     id:           a.id,
     kind,
+    visitId:      a.visit?.id ?? null,
     patientId:    a.patientId,
     arrivedAt:    a.arrivedAt,
     dateTime:     a.dateTime,
@@ -167,6 +170,7 @@ export async function getNoShowRegistry(
     ...fuNoShows.map((v): NoShowRecord => ({
       id:           `fu_${v.id}`,
       kind:         "FOLLOW_UP_NO_SHOW",
+      visitId:      null,
       patientId:    v.patientId,
       arrivedAt:    null,
       dateTime:     v.followUpDate!,
