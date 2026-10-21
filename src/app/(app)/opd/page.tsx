@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
 import { requireUser, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { autoCloseStaleVisits } from "@/lib/autoClose";
+import { closeEndedSessions } from "@/lib/sessionClose";
 import { DoctorDashboard } from "@/app/(app)/dashboard/DoctorDashboard";
 import { HospitalDashboard } from "@/app/(app)/dashboard/HospitalDashboard";
 
@@ -22,7 +22,7 @@ export default async function OpdPage({
     if (hospCount === 0) redirect("/settings?section=add-hospital");
   }
 
-  await autoCloseStaleVisits();
+  await closeEndedSessions();
 
   if (user.role !== "DOCTOR") {
     if (!user.hospitalId) return <NoHospitalAssigned />;

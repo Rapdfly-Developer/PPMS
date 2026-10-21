@@ -1,3 +1,4 @@
+import { closeEndedSessions } from "@/lib/sessionClose";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { prisma } from "@/lib/prisma";
@@ -39,6 +40,8 @@ export default async function PatientProfilePage({
   if (source)   profileQs.set("source",   source);
   const profileReturnPath = `/patients/${udid}${profileQs.toString() ? `?${profileQs.toString()}` : ""}`;
   const user = await requirePermission("patients.view");
+  // Close any doctor session that has ended, so incomplete visits are up to date
+  await closeEndedSessions();
 
   const patient = await prisma.patient.findUnique({
     where: { udid },

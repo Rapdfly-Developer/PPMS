@@ -1,7 +1,7 @@
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { istDayRange, istTodayStr } from "@/lib/ist";
-import { autoCloseStaleVisits } from "@/lib/autoClose";
+import { closeEndedSessions } from "@/lib/sessionClose";
 import { AppointmentsClient } from "./AppointmentsClient";
 import { canBookAppointments, staffAppointmentPerms } from "@/lib/booking-scope";
 
@@ -26,7 +26,7 @@ export default async function AppointmentsPage({
   // Silently expire any REQUESTED appointments from previous days
   await expireStaleRequested();
   // EOD sweep: close IN_PROGRESS visits left over from previous days
-  await autoCloseStaleVisits();
+  await closeEndedSessions();
 
   const dateParam     = sp.date ?? "";
   const statusParam   = sp.status ?? "ALL";
@@ -77,7 +77,7 @@ export default async function AppointmentsPage({
     where.hospitalId = user.hospitalId ?? "__no_scope__";
     where.dateTime = dateFilter;
     if (!isDefaultView && statusParam === "ALL" && !isPastDate) {
-      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW"] };
+      where.status = { notIn: ["DISPENSED", "CANCELLED", "NO_SHOW", "INCOMPLETE"] };
     }
   }
 

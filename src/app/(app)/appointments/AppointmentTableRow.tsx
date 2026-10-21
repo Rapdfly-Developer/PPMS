@@ -15,6 +15,7 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   CANCELLED:   { label: "CANCELLED",   cls: "bg-red-500 text-white"    },
   NO_SHOW:     { label: "NO SHOW",     cls: "bg-red-400 text-white"    },
   RESCHEDULED: { label: "RESCHEDULED", cls: "bg-slate-400 text-white"  },
+  INCOMPLETE:  { label: "INCOMPLETE",  cls: "bg-red-500 text-white"    },
 };
 
 export function AppointmentTableRow({

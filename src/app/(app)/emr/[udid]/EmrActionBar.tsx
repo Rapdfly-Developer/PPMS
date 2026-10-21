@@ -417,6 +417,7 @@ export function EmrActionBar({
     ? isSameDay(new Date(visit.finalizedAt), new Date())
     : false;
   const autoClosed = closed && !!visit.finalizedBy?.startsWith("SYSTEM");
+  const sessionIncomplete = autoClosed && !!visit.finalizedBy?.includes("end of session");
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -630,7 +631,7 @@ export function EmrActionBar({
         ) : closed ? (
           autoClosed ? (
             <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
-              <Lock size={13} /> <span className="hidden sm:inline">Auto-closed at </span>EOD
+              <Lock size={13} /> {sessionIncomplete ? "Incomplete" : <><span className="hidden sm:inline">Auto-closed at </span>EOD</>}
             </span>
           ) : finalizedToday ? (
             <>

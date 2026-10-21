@@ -308,6 +308,8 @@ export default async function PatientDetailedEMR({
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
     activeVisit?.status === "CLOSED" && !!activeVisit.finalizedBy?.startsWith("SYSTEM");
+  // Closed at the end of the doctor's session (new) vs. the old midnight auto-close
+  const sessionIncomplete = autoClosed && !!activeVisit?.finalizedBy?.includes("end of session");
 
   const hospital = activeVisit?.hospital;
   const doctorName = patient.doctor?.name;
@@ -348,7 +350,7 @@ export default async function PatientDetailedEMR({
           >
             <Lock size={11} />
             {autoClosed
-              ? "Auto-closed at EOD, Read-only"
+              ? (sessionIncomplete ? "Incomplete, closed at end of session, Read-only" : "Auto-closed at EOD, Read-only")
               : finalizedToday
               ? "Finalized & Signed, Click to Edit"
               : "Finalized & Signed, Read-only"}
@@ -370,7 +372,9 @@ export default async function PatientDetailedEMR({
           <Lock size={14} className="shrink-0 mt-0.5" />
           <span>
             {autoClosed
-              ? "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only."
+              ? (sessionIncomplete
+                  ? "This consultation was not finalized before the end of the doctor's session and was marked incomplete. The EMR is permanently read-only."
+                  : "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only.")
               : finalizedToday
               ? "This consultation has been finalized and signed. Click 'Click to Edit' in the action bar below to make amendments. The record locks permanently at midnight."
               : "This consultation has been finalized and signed. The EMR is permanently read-only."}

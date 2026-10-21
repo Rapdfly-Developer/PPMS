@@ -34,7 +34,7 @@ export async function HospitalDashboard({
       // Only fetch appointments that are shown on the dashboard queue.
       // REQUESTED/CANCELLED/NO_SHOW/RESCHEDULED are never rendered here.
       // CONFIRMED without arrivedAt (pre-confirmed, not yet in queue) is also excluded.
-      status: { notIn: ["REQUESTED", "CANCELLED", "NO_SHOW", "RESCHEDULED"] },
+      status: { notIn: ["REQUESTED", "CANCELLED", "NO_SHOW", "RESCHEDULED", "INCOMPLETE"] },
       OR: [
         { isWalkIn: true },
         { arrivedAt: { not: null } },

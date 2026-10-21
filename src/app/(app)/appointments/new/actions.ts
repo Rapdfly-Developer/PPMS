@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
+import { checkWithinSession } from "@/lib/doctorSessions";
 import { generateUDID } from "@/lib/udid";
 import { encryptAadhaar } from "@/lib/crypto";
 import { redirect } from "next/navigation";
@@ -138,6 +139,10 @@ export async function createWalkInEncounter(formData: FormData) {
   const appointmentAt = submittedDate || submittedTime
     ? istDateTime(dateStr, timeStr)
     : receivedAt;
+
+  // Walk-ins may only be created inside the doctor's schedule at this hospital
+  const outsideSession = await checkWithinSession(doctorId, hospitalId, appointmentAt);
+  if (outsideSession) return { error: outsideSession };
 
   // Prevent duplicate same-day appointments for the same patient
   const { dayStart, dayEnd } = istDayRange(dateStr);

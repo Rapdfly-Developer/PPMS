@@ -118,6 +118,8 @@ export type TimelineEvent = {
   detail: {
     // CONSULTATION
     visitStatus?: string;
+    /** Completed consultation — the doctor clicked Finalize & Sign (same rule as Total Visits). */
+    completed?: boolean;
     visitType?: string;
     complaint?: string | null;
     bp?: string | null;
@@ -173,7 +175,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
         dispense:           { select: { shortSummary: true } },
-        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true } },
+        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true, status: true, consultationStatus: true } },
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -206,6 +208,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
       searchText:  [complaint, diagText, medText, hospital, doctor, v.visitType].filter(Boolean).join(" ").toLowerCase(),
       detail: {
         visitStatus: v.status,
+        completed:   v.appointment?.status === "DISPENSED" && v.appointment?.consultationStatus === "FINALIZED",
         visitType:   v.visitType ?? undefined,
         complaint,
         bp:          v.generalExam?.bp    ?? null,

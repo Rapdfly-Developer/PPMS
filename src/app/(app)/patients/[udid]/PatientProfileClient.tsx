@@ -888,7 +888,8 @@ export function PatientProfileClient({
         {showTodayVisit && canOpenTodayVisit ? (
           hasToday ? (
             todayIsFinalized ? (
-              allowEmrEdit ? (
+              // Incomplete visits (closed at end of session, never finalized) are view-only
+              allowEmrEdit && todayVisit!.finalizedAt ? (
               <button
                 onClick={() => setShowFinalizedModal(true)}
                 className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"

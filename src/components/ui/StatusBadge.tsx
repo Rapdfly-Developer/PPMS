@@ -5,6 +5,7 @@ const STATUS_STYLES: Record<string, string> = {
   DISPENSED: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
   CANCELLED: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
   NO_SHOW: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
+  INCOMPLETE: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
 };
 
 export function StatusBadge({ status }: { status: string }) {

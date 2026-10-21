@@ -1,17 +1,20 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { format, startOfDay, subDays } from "date-fns";
-import { istTodayRange } from "@/lib/ist";
+import { istTodayRange, istDateTime } from "@/lib/ist";
+import { sessionForAppointment, type SessionCache } from "@/lib/sessionClose";
 import { computeFollowUpStatus } from "@/lib/followUpStatus";
 import { scopeDoctorId, type SessionUser } from "@/lib/rbac";
 import type { NoShowKind } from "@/lib/noShowKinds";
 
 /**
  * Patient Library "No Show Registry". One record per missed encounter, of three kinds:
- *  1. Incomplete visit   — patient reached the queue on a previous day but the doctor
- *                          never finalized the consultation (incl. EOD auto-closed visits).
- *  2. Appointment no-show — booked for a previous day, never reached the queue (no visit).
+ *  1. Incomplete visit   — patient reached the queue but the doctor never finalized the
+ *                          consultation before the end of the doctor's session (incl. older
+ *                          EOD auto-closed visits).
+ *  2. Appointment no-show — booked, never reached the queue (no visit), session has ended.
  *  3. Follow-up no-show  — follow-up the Follow-ups page shows as "No Show".
+ * "Ended" is the end of the doctor's session at that hospital, not midnight.
  * The card count and the list are both derived from these records, so they always agree.
  */
 export type NoShowRecord = {
@@ -73,16 +76,18 @@ export async function getNoShowRegistry(
     ? { AND: [baseScope, { id: onlyPatientId }] }
     : baseScope;
   const { dayStart: todayIST } = istTodayRange();
+  const now = new Date();
 
-  const [incomplete, apptNoShows, fuCandidates] = await Promise.all([
-    // 1. Incomplete visit
+  const [incompleteRaw, apptNoShowsRaw, fuCandidates] = await Promise.all([
+    // 1. Incomplete visit — open patients (queue / partial dispense) are still being seen;
+    //    the end-of-session close turns them INCOMPLETE.
     prisma.appointment.findMany({
       where: {
         ...scope,
         patient:  patientScope,
         visit:    { isNot: null },
-        dateTime: { lt: todayIST },
-        status:   { notIn: ["CANCELLED", "RESCHEDULED", "PARTIAL_DISPENSE"] },
+        dateTime: { lt: now },
+        status:   { notIn: ["CANCELLED", "RESCHEDULED", "PARTIAL_DISPENSE", "CONFIRMED", "REQUESTED", "SCHEDULED"] },
         // `not: "FINALIZED"` alone would skip NULL, which is the unfinalized case.
         OR: [{ consultationStatus: null }, { consultationStatus: { not: "FINALIZED" } }],
       },
@@ -94,7 +99,7 @@ export async function getNoShowRegistry(
         ...scope,
         patient:  patientScope,
         visit:    null,
-        dateTime: { lt: todayIST },
+        dateTime: { lt: now },
         status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED", "PARTIAL_DISPENSE"] },
       },
       include: { patient: { select: PATIENT_SELECT }, hospital: { select: { name: true } }, doctor: { select: { name: true } }, visit: { select: { id: true } } },
@@ -147,6 +152,18 @@ export async function getNoShowRegistry(
       if (status === "NO_SHOW") fuNoShows.push(v);
     }
   }
+
+  // Today's appointments count only once their session has ended (INCOMPLETE ones already have).
+  const cache: SessionCache = new Map();
+  const sessionEnded = async (a: { status: string; doctorId: string | null; hospitalId: string; dateTime: Date; id: string }) => {
+    if (a.status === "INCOMPLETE" || a.dateTime < todayIST) return true;
+    const r = await sessionForAppointment(a, cache);
+    return !!r && istDateTime(r.dateStr, r.session.endTime).getTime() <= now.getTime();
+  };
+  const incomplete:  typeof incompleteRaw  = [];
+  const apptNoShows: typeof apptNoShowsRaw = [];
+  for (const a of incompleteRaw)  if (await sessionEnded(a)) incomplete.push(a);
+  for (const a of apptNoShowsRaw) if (await sessionEnded(a)) apptNoShows.push(a);
 
   const fromAppt = (a: (typeof incomplete)[number], kind: NoShowKind): NoShowRecord => ({
     id:           a.id,

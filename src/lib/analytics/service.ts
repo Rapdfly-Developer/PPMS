@@ -210,6 +210,7 @@ const APPT_STATUS: Record<string, { label: string; color: string }> = {
   RESCHEDULED:      { label: "Rescheduled",          color: "#A78BFA" },
   CANCELLED:        { label: "Cancelled",            color: COLORS.cancelled },
   NO_SHOW:          { label: "No-show",              color: COLORS.neutral },
+  INCOMPLETE:       { label: "Incomplete",           color: COLORS.cancelled },
 };
 
 export const APPOINTMENT_STATUSES = Object.entries(APPT_STATUS).map(([value, m]) => ({ value, label: m.label }));

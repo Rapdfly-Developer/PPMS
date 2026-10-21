@@ -2,9 +2,10 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay, subDays } from "date-fns";
+import { closeEndedSessions } from "@/lib/sessionClose";
 
 // Vercel Cron: runs daily at midnight (00:00 UTC).
-// 1. Closes any IN_PROGRESS visits from previous days.
+// 1. Closes every ended doctor session: unfinalized patients become incomplete visits.
 // 2. Cancels CONFIRMED/REQUESTED appointments from yesterday that never became a visit (no-shows).
 export async function GET(req: Request) {
   if (!isCronAuthorized(req)) {
@@ -17,27 +18,8 @@ export async function GET(req: Request) {
   const yesterdayStart = startOfDay(yesterday);
   const yesterdayEnd   = endOfDay(yesterday);
 
-  /* ── 1. Auto-close unfinished visits ───────────────────────────────── */
-  const staleVisits = await prisma.visit.findMany({
-    where: { status: "IN_PROGRESS", date: { lt: todayStart } },
-    select: { id: true },
-    take: 500,
-  });
-
-  let closedVisits = 0;
-  if (staleVisits.length > 0) {
-    const ids = staleVisits.map((v) => v.id);
-    await prisma.visit.updateMany({
-      where: { id: { in: ids } },
-      data: { status: "CLOSED" },
-    });
-    const autoNote = "[Auto-closed at end of day, consultation was not finalized]";
-    await prisma.generalExamination.createMany({
-      data: ids.map((visitId) => ({ visitId, chiefComplaint: autoNote })),
-      skipDuplicates: true,
-    });
-    closedVisits = ids.length;
-  }
+  /* ── 1. Close ended sessions (end of each doctor's schedule, not midnight) ── */
+  await closeEndedSessions(true);
 
   /* ── 2. Auto-cancel no-show appointments ───────────────────────────── */
   // Find CONFIRMED or REQUESTED appointments from yesterday that have no linked visit
@@ -78,5 +60,5 @@ export async function GET(req: Request) {
     cancelledNoShows = ids.length;
   }
 
-  return NextResponse.json({ ok: true, closedVisits, cancelledNoShows });
+  return NextResponse.json({ ok: true, cancelledNoShows });
 }

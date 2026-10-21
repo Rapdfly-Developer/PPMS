@@ -1,3 +1,5 @@
+import { closeEndedSessions, sessionForAppointment, type SessionCache } from "@/lib/sessionClose";
+import { istTodayRange, istDateTime } from "@/lib/ist";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
@@ -12,6 +14,8 @@ export default async function PatientsPage({
 }) {
   const sp   = await searchParams;
   const user = await requirePermission("patients.view");
+  // Close any doctor session that has ended, so incomplete visits are up to date
+  await closeEndedSessions();
   const isHospital = user.role === "HOSPITAL";
 
   const q              = (sp.q        ?? "").trim();
@@ -64,6 +68,26 @@ export default async function PatientsPage({
   const noShowRecords = await getNoShowRegistry(await noShowScopeFor(user));
   const noShowPatientIds = [...new Set(noShowRecords.map(r => r.patientId))];
 
+  // Dispensed Today = consultations finalized today whose doctor's session has not ended yet.
+  // When the session ends they move to Total Dispensed.
+  const { dayStart: istToday, dayEnd: istTodayEnd } = istTodayRange();
+  const finalizedToday = await prisma.appointment.findMany({
+    where: {
+      patient: scopeWhere,
+      status: "DISPENSED",
+      consultationStatus: "FINALIZED",
+      visit: { is: { finalizedAt: { gte: istToday, lte: istTodayEnd } } },
+    },
+    select: { id: true, patientId: true, doctorId: true, hospitalId: true, dateTime: true },
+  });
+  const sessionCache: SessionCache = new Map();
+  const todayDispensedSet = new Set<string>();
+  for (const a of finalizedToday) {
+    const r = await sessionForAppointment(a, sessionCache);
+    if (r && istDateTime(r.dateStr, r.session.endTime).getTime() > new Date().getTime()) todayDispensedSet.add(a.patientId);
+  }
+  const todayDispensedIds = [...todayDispensedSet];
+
   // ── List conditions ─────────────────────────────────────────────────────────
   const listConds = [...scopeConds];
   if (q) {
@@ -105,14 +129,16 @@ export default async function PatientsPage({
   const listToday    = startOfDay(new Date());
   const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
   if (opStatusFilter === "dispensed") {
-    listConds.push({ visits: { some: { finalizedAt: { gte: listToday, lte: listTodayEnd }, appointment: { status: "DISPENSED", consultationStatus: "FINALIZED" } } } });
+    listConds.push({ id: { in: todayDispensedIds } });
   }
   if (opStatusFilter === "totaldispensed") {
     // Patients with at least one completed consultation who are NOT currently in queue today
+    // and not still in Dispensed Today (they move here when their session ends)
     listConds.push({
       AND: [
         { appointments: { some: { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
         { appointments: { none: { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: listToday, lte: listTodayEnd } } } },
+        { id: { notIn: todayDispensedIds } },
       ],
     });
   }
@@ -213,13 +239,12 @@ export default async function PatientsPage({
           ...scopeConds,
           { appointments: { some:  { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
           { appointments: { none:  { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: today, lte: todayEnd } } } },
+          { id: { notIn: todayDispensedIds } },
         ],
       },
     }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
-    prisma.patient.count({
-      where: { AND: [...scopeConds, { visits: { some: { finalizedAt: { gte: today, lte: todayEnd }, appointment: { status: "DISPENSED", consultationStatus: "FINALIZED" } } } }] },
-    }),
+    Promise.resolve(todayDispensedIds.length),
     prisma.patient.groupBy({
       by:    ["category"],
       where: scopeWhere,

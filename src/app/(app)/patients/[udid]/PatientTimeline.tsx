@@ -499,7 +499,8 @@ export function PatientTimelineModal({
           </div>
           {events && (
             <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-full font-semibold">
-              {events.length} visits
+              {/* Completed consultations only — matches the profile's Total Visits */}
+              {(() => { const n = events.filter((ev) => ev.type === "CONSULTATION" && ev.detail.completed).length; return `${n} visit${n === 1 ? "" : "s"}`; })()}
             </span>
           )}
           <button

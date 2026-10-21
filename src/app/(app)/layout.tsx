@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/ui/Sidebar";
 import { TopBar } from "@/components/ui/TopBar";
 import { SidebarProvider } from "@/components/ui/SidebarContext";
 import { IdleTimeout } from "@/components/ui/IdleTimeout";
+import { SessionEndPrompt } from "@/components/ui/SessionEndPrompt";
 import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { LicenseGate } from "@/components/ui/LicenseGate";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
@@ -31,6 +32,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Outer shell — sidebar + content side by side on desktop only */}
       <div className="min-h-screen flex bg-[var(--color-bg)]">
         <IdleTimeout />
+        {/* End-of-session pop-ups — doctors only */}
+        {user.role === "DOCTOR" && <SessionEndPrompt />}
         {/* Cadence is chosen per route — see AutoRefresh. /queue keeps its 5s pulse. */}
         <AutoRefresh />
 

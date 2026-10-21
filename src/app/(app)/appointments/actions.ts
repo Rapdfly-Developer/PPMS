@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { checkWithinSession } from "@/lib/doctorSessions";
 import { requireRole, requireUser, requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { startOfDay } from "date-fns";
@@ -360,6 +361,10 @@ export async function scheduleNextSlot(
   const dateTime = istDateTime(date, time);
   if (isNaN(dateTime.getTime())) return { error: "Invalid date or time." };
 
+  // Only inside the doctor's schedule at this hospital
+  const outsideSession = await checkWithinSession(source.doctorId, source.hospitalId, dateTime);
+  if (outsideSession) return { error: outsideSession };
+
   const clash = await prisma.appointment.findFirst({
     where: {
       doctorId: source.doctorId,
@@ -603,6 +608,12 @@ export async function requestAppointment(formData: FormData): Promise<{ error?: 
     user.role === "HOSPITAL" ? user.hospitalId! : (formData.get("hospitalId") as string);
 
   const hospital = await prisma.hospital.findUnique({ where: { id: hospitalId } });
+
+  // Only inside the doctor's schedule at this hospital
+  if (patient.doctorId) {
+    const outsideSession = await checkWithinSession(patient.doctorId, hospitalId, new Date(dateTime));
+    if (outsideSession) return { error: outsideSession };
+  }
 
   const existingAppt = await prisma.appointment.findFirst({
     where: {

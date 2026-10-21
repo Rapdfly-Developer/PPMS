@@ -63,6 +63,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
   NO_SHOW:          { label: "No Show",         color: "bg-gray-100 text-gray-500",    dot: "bg-gray-400"   },
   RESCHEDULED:      { label: "Rescheduled",     color: "bg-teal-50 text-teal-700",dot: "bg-teal-500" },
   PARTIAL_DISPENSE: { label: "Partial Dispense",color: "bg-orange-100 text-orange-700",dot: "bg-orange-500" },
+  INCOMPLETE:       { label: "Incomplete",      color: "bg-red-100 text-red-700",      dot: "bg-red-500"    },
 };
 
 /* Visit-type filters. "All" is not one of them — the "N total" count beside the

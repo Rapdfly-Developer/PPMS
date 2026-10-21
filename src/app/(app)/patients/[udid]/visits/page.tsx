@@ -1,3 +1,4 @@
+import { closeEndedSessions } from "@/lib/sessionClose";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
@@ -26,6 +27,8 @@ export default async function PatientVisitsPage({
   const { udid } = await params;
   const { visitId } = await searchParams;
   const user = await requirePermission("patients.view");
+  // Close any doctor session that has ended, so incomplete visits are up to date
+  await closeEndedSessions();
 
   const patient = await prisma.patient.findUnique({
     where: { udid },

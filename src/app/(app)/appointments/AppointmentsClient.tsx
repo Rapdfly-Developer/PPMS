@@ -24,6 +24,7 @@ const STATUSES = [
   { value: "CANCELLED",   label: "Cancelled"    },
   { value: "NO_SHOW",     label: "No Show"      },
   { value: "RESCHEDULED", label: "Rescheduled"  },
+  { value: "INCOMPLETE",  label: "Incomplete"   },
 ];
 
 const VISIT_TYPES = ["General OPD", "Emergency", "Follow-up", "Post-op Review"];

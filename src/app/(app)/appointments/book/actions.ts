@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { checkWithinSession } from "@/lib/doctorSessions";
 import { requireUser, userCan } from "@/lib/rbac";
 import { getBookingScope } from "@/lib/booking-scope";
 import { generateUDID } from "@/lib/udid";
@@ -199,11 +200,10 @@ export async function bookAppointment(formData: FormData) {
   // Find the slot that covers this appointment time
   const avail = availSlots.find((s) => apptMins >= toMins(s.startTime) && apptMins < toMins(s.endTime)) ?? null;
 
-  // Validate time falls within one of the availability windows (non-walk-ins only)
-  if (!isWalkIn && availSlots.length > 0 && !avail) {
-    const windows = availSlots.map((s) => `${s.startTime}–${s.endTime}`).join(" or ");
-    return { error: `Selected time is outside the doctor's scheduled hours (${windows}).` };
-  }
+  // Appointments and walk-ins may only be created inside the doctor's schedule at this
+  // hospital (Hospital Manager: calendar, overrides, monthly plan, weekly template).
+  const outsideSession = await checkWithinSession(doctorId, hospitalId, dateTime);
+  if (outsideSession) return { error: outsideSession };
 
   const slotMins = avail?.slotMins ?? 15;
   const capacity = avail?.maxPatients ?? (slotMins === 30 ? 2 : 1);

@@ -25,6 +25,7 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED:        "bg-red-100 text-red-700",
   NO_SHOW:          "bg-red-100 text-red-700",
   PARTIAL_DISPENSE: "bg-orange-100 text-orange-700",
+  INCOMPLETE:       "bg-red-100 text-red-700",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -36,6 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED:        "Cancelled",
   NO_SHOW:          "No Show",
   PARTIAL_DISPENSE: "Partial Dispense",
+  INCOMPLETE:       "Incomplete",
 };
 
 type ProvisionalDx = {
