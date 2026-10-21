@@ -50,7 +50,7 @@ export default async function PatientProfilePage({
         include: {
           hospital: { select: { name: true } },
           doctor:   { select: { name: true } },
-          appointment: { select: { status: true } },
+          appointment: { select: { status: true, consultationStatus: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses:   { select: { description: true, laterality: true, status: true } },
         },
@@ -80,8 +80,11 @@ export default async function PatientProfilePage({
   // Visit record, but neither action represents a completed visit.
   const dispensedVisits = patient.visits.filter((v) => v.appointment?.status === "DISPENSED");
   const totalVisits = dispensedVisits.length;
-  const firstVisit  = dispensedVisits[dispensedVisits.length - 1];
-  const lastVisit   = dispensedVisits[0];
+  // Total Visits and First / Last visit: completed visits only — the doctor clicked Finalize & Sign
+  const completedVisits     = dispensedVisits.filter((v) => v.appointment?.consultationStatus === "FINALIZED");
+  const completedVisitCount = completedVisits.length;
+  const firstVisit  = completedVisits[completedVisits.length - 1];
+  const lastVisit   = completedVisits[0];
 
   /* ── Today's visit / appointment ─────────────────────────────────────── */
   // Prefer the patient's CURRENT registered hospital: after a transfer, a
@@ -515,9 +518,9 @@ export default async function PatientProfilePage({
             patientId={patient.id}
             patientName={patient.name}
             udid={udid}
-            totalVisits={totalVisits}
+            totalVisits={completedVisitCount}
             firstVisitDate={firstVisit?.date.toISOString() ?? null}
-            lastVisitDate={lastVisit && totalVisits > 1 ? lastVisit.date.toISOString() : null}
+            lastVisitDate={lastVisit && completedVisitCount > 1 ? lastVisit.date.toISOString() : null}
             noShowCount={noShowCount}
             layout="column"
           />
