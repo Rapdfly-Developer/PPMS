@@ -529,6 +529,7 @@ export async function getPatientNoShows(patientId: string) {
   records.sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
   return records.map((a) => ({
     id:           a.id,
+    kind:         a.kind,
     dateTime:     a.dateTime.toISOString(),
     visitType:    a.visitType ?? null,
     isWalkIn:     a.isWalkIn,

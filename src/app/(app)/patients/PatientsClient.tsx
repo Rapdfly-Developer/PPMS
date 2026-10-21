@@ -9,6 +9,7 @@ import {
   ShieldCheck, PackageCheck, ChevronLeft, ChevronRight, ChevronDown, Eye,
   Building2, Undo2, AlertCircle,
 } from "lucide-react";
+import { NO_SHOW_KIND_LABEL, type NoShowKind } from "@/lib/noShowKinds";
 import { undoDispense, type UndoDispenseResult } from "./actions";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
@@ -50,6 +51,7 @@ export interface Kpis {
 }
 export interface NoShowRegRow {
   id: string;
+  kind: NoShowKind;
   patientId: string;
   arrivedAt: string | null;
   dateTime: string;
@@ -944,6 +946,10 @@ export function PatientsClient({
                             noShowRow ? (
                               <div className="flex flex-col items-center gap-1">
                                 <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">{noShowExtras} {noShowExtras === 1 ? "record" : "records"}</span>
+                                {/* Type of the latest no-show — the one whose details this row shows */}
+                                <span className="text-micro font-semibold text-[var(--color-ink-500)] whitespace-nowrap">
+                                  {NO_SHOW_KIND_LABEL[noShowRow.kind]}
+                                </span>
                               </div>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>

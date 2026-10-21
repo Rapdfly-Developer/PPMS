@@ -1,5 +1,6 @@
 "use client";
 
+import { NO_SHOW_KIND_LABEL } from "@/lib/noShowKinds";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format } from "date-fns";
 import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2, UserX, Calendar, Building2 } from "lucide-react";
@@ -703,6 +704,9 @@ function NoShowRegistryDrawer({
                     <span className="text-caption text-[var(--color-ink-500)]">{entry.visitType}</span>
                   </>
                 )}
+                <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                  {NO_SHOW_KIND_LABEL[entry.kind]}
+                </span>
                 {idx === 0 && (
                   <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-red-500 text-white shrink-0">
                     Latest

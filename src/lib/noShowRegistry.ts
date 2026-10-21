@@ -4,6 +4,7 @@ import { format, startOfDay, subDays } from "date-fns";
 import { istTodayRange } from "@/lib/ist";
 import { computeFollowUpStatus } from "@/lib/followUpStatus";
 import { scopeDoctorId, type SessionUser } from "@/lib/rbac";
+import type { NoShowKind } from "@/lib/noShowKinds";
 
 /**
  * Patient Library "No Show Registry". One record per missed encounter, of three kinds:
@@ -15,6 +16,7 @@ import { scopeDoctorId, type SessionUser } from "@/lib/rbac";
  */
 export type NoShowRecord = {
   id: string;
+  kind: NoShowKind;
   patientId: string;
   arrivedAt: Date | null;
   dateTime: Date;
@@ -144,8 +146,9 @@ export async function getNoShowRegistry(
     }
   }
 
-  const fromAppt = (a: (typeof incomplete)[number]): NoShowRecord => ({
+  const fromAppt = (a: (typeof incomplete)[number], kind: NoShowKind): NoShowRecord => ({
     id:           a.id,
+    kind,
     patientId:    a.patientId,
     arrivedAt:    a.arrivedAt,
     dateTime:     a.dateTime,
@@ -159,10 +162,11 @@ export async function getNoShowRegistry(
   });
 
   return [
-    ...incomplete.map(a => ({ ...fromAppt(a), visitStarted: true })),
-    ...apptNoShows.map(fromAppt),
+    ...incomplete.map(a => ({ ...fromAppt(a, "INCOMPLETE_VISIT"), visitStarted: true })),
+    ...apptNoShows.map(a => fromAppt(a, "APPOINTMENT_NO_SHOW")),
     ...fuNoShows.map((v): NoShowRecord => ({
       id:           `fu_${v.id}`,
+      kind:         "FOLLOW_UP_NO_SHOW",
       patientId:    v.patientId,
       arrivedAt:    null,
       dateTime:     v.followUpDate!,

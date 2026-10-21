@@ -296,6 +296,7 @@ export default async function PatientsPage({
 
   const noShowRegSerialized = noShowRecords.map((a) => ({
     id:            a.id,
+    kind:          a.kind,
     patientId:     a.patientId,
     arrivedAt:     a.arrivedAt?.toISOString() ?? null,
     // Scheduled appointment date, or the missed follow-up date
