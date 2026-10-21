@@ -9,6 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { istTodayRange } from "@/lib/ist";
 import { patientRecordScope } from "@/lib/patient-access";
+import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -522,34 +523,18 @@ export async function getPatientSpectacleHistory(patientId: string) {
 }
 
 export async function getPatientNoShows(patientId: string) {
-  await requirePermission("patients.view");
-  const { dayStart } = istTodayRange();
-  const appts = await prisma.appointment.findMany({
-    where: {
-      patientId,
-      visit:    null,
-      dateTime: { lt: dayStart },
-      status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
-    },
-    orderBy: { dateTime: "desc" },
-    select: {
-      id:         true,
-      dateTime:   true,
-      visitType:  true,
-      isWalkIn:   true,
-      arrivedAt:  true,
-      hospital:   { select: { name: true } },
-      doctor:     { select: { name: true } },
-    },
-  });
-  return appts.map((a) => ({
+  const user = await requirePermission("patients.view");
+  // Same records (and scope) as the Patient Library No Show Registry.
+  const records = await getNoShowRegistry(await noShowScopeFor(user), patientId);
+  records.sort((a, b) => b.dateTime.getTime() - a.dateTime.getTime());
+  return records.map((a) => ({
     id:           a.id,
     dateTime:     a.dateTime.toISOString(),
     visitType:    a.visitType ?? null,
     isWalkIn:     a.isWalkIn,
     arrivedAt:    a.arrivedAt ? a.arrivedAt.toISOString() : null,
-    hospitalName: a.hospital?.name ?? null,
-    doctorName:   a.doctor?.name ?? null,
+    hospitalName: a.hospitalName,
+    doctorName:   a.doctorName,
   }));
 }
 

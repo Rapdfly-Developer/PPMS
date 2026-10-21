@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
 import { complaintText } from "@/lib/appointment-cc";
 import { PatientsClient } from "./PatientsClient";
+import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 
 export default async function PatientsPage({
   searchParams,
@@ -59,6 +60,10 @@ export default async function PatientsPage({
 
   const scopeWhere: any = scopeConds.length > 0 ? { AND: scopeConds } : {};
 
+  // No Show Registry — card count and list both come from these records.
+  const noShowRecords = await getNoShowRegistry(await noShowScopeFor(user));
+  const noShowPatientIds = [...new Set(noShowRecords.map(r => r.patientId))];
+
   // ── List conditions ─────────────────────────────────────────────────────────
   const listConds = [...scopeConds];
   if (q) {
@@ -112,11 +117,7 @@ export default async function PatientsPage({
     });
   }
   if (opStatusFilter === "noshowreg") {
-    listConds.push({ appointments: { some: {
-      visit:    null,
-      dateTime: { lt: listToday },
-      status:   { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
-    }}});
+    listConds.push({ id: { in: noShowPatientIds } });
   }
 
   const listWhere: any = listConds.length > 0 ? { AND: listConds } : {};
@@ -195,13 +196,6 @@ export default async function PatientsPage({
 
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
-  const doctorId  = user.role === "DOCTOR" ? scopeDoctorId(user) : null;
-  const apptScope = doctorId
-    ? { doctorId }
-    : user.hospitalId
-    ? { hospitalId: user.hospitalId }
-    : { id: "__no_match__" };
-
   const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999);
 
   const [
@@ -211,7 +205,6 @@ export default async function PatientsPage({
     catGroups,
     trendRaw,
     recentReg,
-    noShowReg,
   ] = await Promise.all([
     // All-time dispensed: doctor-finalized consultation ever AND not currently in queue today
     prisma.patient.count({
@@ -242,23 +235,6 @@ export default async function PatientsPage({
       orderBy: { createdAt: "desc" },
       take:    6,
       select:  { name: true, udid: true, uhid: true, sex: true, age: true, category: true, createdAt: true, mobile: true, photoUrl: true },
-    }),
-    // No-show registry: past appointments where the patient came (visit created)
-    // but the doctor never finalized the consultation.
-    prisma.appointment.findMany({
-      where: {
-        ...apptScope,
-        visit:    { isNot: null },
-        dateTime: { lt: today },
-        status:   { notIn: ["CANCELLED", "RESCHEDULED", "PARTIAL_DISPENSE"] },
-        consultationStatus: { not: "FINALIZED" },
-      },
-      include: {
-        patient:  { select: { name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
-        hospital: { select: { name: true } },
-        visit:    { select: { id: true } },
-      },
-      orderBy: { dateTime: "desc" as const },
     }),
   ]);
 
@@ -318,18 +294,17 @@ export default async function PatientsPage({
     photoUrl:  p.photoUrl ?? null,
   }));
 
-  const noShowRegSerialized = noShowReg.map((a) => ({
+  const noShowRegSerialized = noShowRecords.map((a) => ({
     id:            a.id,
+    patientId:     a.patientId,
     arrivedAt:     a.arrivedAt?.toISOString() ?? null,
-    // Appointment's scheduled/registered date — used as the card date in noshowreg
+    // Scheduled appointment date, or the missed follow-up date
     dateTime:      a.dateTime.toISOString(),
     status:        a.status,
     isWalkIn:      a.isWalkIn,
-    // Visit type comes from the appointment (set at booking), matching what the
-    // visit would inherit if a visit record exists.
     visitType:     a.visitType,
-    hospitalName:  a.hospital?.name ?? null,
-    visitStarted:  !!a.visit,
+    hospitalName:  a.hospitalName,
+    visitStarted:  a.visitStarted,
     chiefComplaint: null,
     diagnoses:     [],
     patient: {
@@ -371,7 +346,7 @@ export default async function PatientsPage({
         sortBy={sortBy}
         isHospital={isHospital}
         activeCard={activeCard}
-        kpis={{ totalDispensed, insurancePatients, todayDispensed }}
+        kpis={{ totalDispensed, insurancePatients, todayDispensed, noShowPatients: noShowPatientIds.length }}
         trendData={trendData}
         catDist={catGroups.map(g => ({ category: g.category, count: g._count.id }))}
         recentReg={recentSerialized}

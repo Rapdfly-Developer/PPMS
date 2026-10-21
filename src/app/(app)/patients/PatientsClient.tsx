@@ -46,9 +46,11 @@ export interface RecentPat  {
 export interface Kpis {
   totalDispensed: number;
   insurancePatients: number; todayDispensed: number;
+  noShowPatients: number;
 }
 export interface NoShowRegRow {
   id: string;
+  patientId: string;
   arrivedAt: string | null;
   dateTime: string;
   status: string;
@@ -407,16 +409,16 @@ export function PatientsClient({
   // When a patient has several unfinished registrations we show the most recent one
   // and surface the extra count as a badge. "Most recent" = highest arrivedAt, falling
   // back to highest dateTime for walk-ins without an arrivedAt.
-  const noShowByUdid = useMemo(() => {
+  const noShowByPatient = useMemo(() => {
     const m = new Map<string, { row: NoShowRegRow; count: number }>();
     noShowReg.forEach(r => {
-      const existing = m.get(r.patient.udid);
+      const existing = m.get(r.patientId);
       if (!existing) {
-        m.set(r.patient.udid, { row: r, count: 1 });
+        m.set(r.patientId, { row: r, count: 1 });
       } else {
         const tExisting = new Date(existing.row.arrivedAt ?? existing.row.dateTime).getTime();
         const tNew      = new Date(r.arrivedAt      ?? r.dateTime).getTime();
-        m.set(r.patient.udid, {
+        m.set(r.patientId, {
           row:   tNew > tExisting ? r : existing.row,
           count: existing.count + 1,
         });
@@ -425,10 +427,7 @@ export function PatientsClient({
     return m;
   }, [noShowReg]);
 
-  const noShowPatientCount = useMemo(
-    () => new Set(noShowReg.map(r => r.patient.udid)).size,
-    [noShowReg],
-  );
+
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -540,7 +539,7 @@ export function PatientsClient({
       <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
         <KpiCard icon={<PackageCheck size={17} />}  label="Dispensed Today"  value={kpis.todayDispensed} color="green" isActive={activeCard === "dispensed" || activeCard === ""} onSelect={() => navigate({ opStatus: "dispensed", card: "dispensed", page: "1" })} />
         <KpiCard icon={<Users size={17} />}         label="Total Dispensed"  value={kpis.totalDispensed} color="teal"  isActive={activeCard === "total"}    onSelect={() => navigate({ opStatus: activeCard === "total" ? "dispensed" : "totaldispensed", card: activeCard === "total" ? "dispensed" : "total", page: "1" })} />
-        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={noShowPatientCount}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
+        <KpiCard icon={<AlertCircle size={17} />}   label="No Show Registry" value={kpis.noShowPatients}    color="amber" isActive={activeCard === "noshowreg"} onSelect={() => navigate({ opStatus: activeCard === "noshowreg" ? "dispensed" : "noshowreg", card: activeCard === "noshowreg" ? "dispensed" : "noshowreg", page: "1" })} />
       </div>
 
       {/* ── Table + Analytics ──────────────────────────────────────────── */}
@@ -826,7 +825,7 @@ export function PatientsClient({
 
                   // In No Show Registry mode, pull data from the specific unfinished
                   // appointment — never from the patient's latest completed visit.
-                  const noShowMeta    = opStatusFilter === "noshowreg" ? (noShowByUdid.get(p.udid) ?? null) : null;
+                  const noShowMeta    = opStatusFilter === "noshowreg" ? (noShowByPatient.get(p.id) ?? null) : null;
                   const noShowRow     = noShowMeta?.row   ?? null;
                   const noShowExtras  = noShowMeta?.count ?? 0;
 
@@ -944,10 +943,7 @@ export function PatientsClient({
                           {opStatusFilter === "noshowreg" ? (
                             noShowRow ? (
                               <div className="flex flex-col items-center gap-1">
-                                <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">Incomplete visit</span>
-                                {noShowExtras > 1 && (
-                                  <span className="text-micro font-bold text-[var(--color-ink-400)]">+{noShowExtras - 1} more</span>
-                                )}
+                                <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 whitespace-nowrap">{noShowExtras} {noShowExtras === 1 ? "record" : "records"}</span>
                               </div>
                             ) : (
                               <span className="text-caption text-[var(--color-ink-300)]">—</span>

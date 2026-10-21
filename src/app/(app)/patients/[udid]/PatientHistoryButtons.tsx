@@ -672,11 +672,11 @@ function NoShowRegistryDrawer({
           <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
         </div>
       )}
-      {!isPending && data?.length === 0 && <Empty label="no-show appointments" />}
+      {!isPending && data?.length === 0 && <Empty label="no-show records" />}
       {!isPending && data && data.length > 0 && (
         <div className="space-y-3">
           <p className="text-caption text-[var(--color-ink-400)]">
-            {data.length} no-show appointment{data.length !== 1 ? "s" : ""} on record · newest first
+            {data.length} no-show record{data.length !== 1 ? "s" : ""} · newest first
           </p>
           {data.map((entry, idx) => (
             <div

@@ -10,6 +10,7 @@ import { PatientActionsPanel } from "./PatientHistoryButtons";
 import { DeletePatientButton } from "../DeletePatientButton";
 import { EditPatientButton } from "../EditPatientButton";
 import { fileHref } from "@/lib/file-href";
+import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -137,15 +138,8 @@ export default async function PatientProfilePage({
       }
     : null;
 
-  /* ── No Show count ───────────────────────────────────────────────────── */
-  const noShowCount = await prisma.appointment.count({
-    where: {
-      patientId: patient.id,
-      visit:     null,
-      dateTime:  { lt: startOfDay(new Date()) },
-      status:    { notIn: ["CANCELLED", "RESCHEDULED", "DISPENSED"] },
-    },
-  });
+  /* ── No Show count — same records as the Patient Library No Show Registry ── */
+  const noShowCount = (await getNoShowRegistry(await noShowScopeFor(user), patient.id)).length;
 
   /* ── Patient timeline — finalization audit entries ───────────────────── */
   const appointmentIds = await prisma.appointment.findMany({
