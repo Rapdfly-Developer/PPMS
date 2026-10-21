@@ -96,8 +96,9 @@ export function ConsultationExitGuard({
   useEffect(() => {
     if (!active) return;
 
-    // Sentinel entry: the first Back press pops this instead of leaving.
-    window.history.pushState({ emrGuard: true }, "");
+    // Sentinel entry: the first Back press pops this instead of leaving. Exactly one —
+    // an effect that runs twice (React dev / remount) must not stack a second one.
+    if (!window.history.state?.emrGuard) window.history.pushState({ emrGuard: true }, "");
 
     const onPop = () => {
       if (allowNav.current || !activeRef.current) return;
@@ -135,15 +136,20 @@ export function ConsultationExitGuard({
    * and stayed exactly where they were. Pushing/replacing a real href is the
    * only way to leave deterministically, whatever the history stack looks like.
    *
-   * replace, not push, for that case: it overwrites the sentinel rather than
-   * stacking another entry on top of it, so the destination's own Back button
-   * does not lead straight back into the EMR.
+   * For that case, when there is a page before the EMR we step back over both the
+   * sentinel and the EMR entry (history.go(-2)), so the destination's own Back
+   * button does not lead straight back into the EMR. Only when the EMR was opened
+   * directly (nothing before it) do we replace the sentinel with exitHref.
    */
   const proceed = useCallback(() => {
     allowNav.current = true;
     const href = pendingHref.current;
     setOpen(false);
     if (href) router.push(href);
+    // Back with a page before the EMR: step over the sentinel AND the EMR entry, so
+    // the page we return to is not followed by the EMR in history (its own Back would
+    // otherwise land in the EMR again). Opened directly (no earlier entry): go to exitHref.
+    else if (window.history.length > 2) window.history.go(-2);
     else router.replace(exitHref);
   }, [router, exitHref]);
 
