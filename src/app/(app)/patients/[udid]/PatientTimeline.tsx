@@ -221,9 +221,16 @@ function EventCard({ ev, isLast }: { ev: TimelineEvent; isLast: boolean }) {
                   <cfg.Icon size={9} />{cfg.label}
                 </span>
                 {ev.detail.visitStatus === "CLOSED" && (
-                  <span className="text-caption font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
-                    Finalized
-                  </span>
+                  ev.detail.completed ? (
+                    <span className="text-caption font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">
+                      Finalized
+                    </span>
+                  ) : (
+                    // Closed without Finalize & Sign (end of session / old auto-close)
+                    <span className="text-caption font-semibold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+                      Incomplete
+                    </span>
+                  )
                 )}
               </div>
               <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{ev.title}</p>
