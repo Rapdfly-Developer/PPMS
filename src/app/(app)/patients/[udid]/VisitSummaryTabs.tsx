@@ -787,13 +787,20 @@ function LongContent({
   const gonioRaw = parseJSON<{ re?: string; le?: string; reDeg?: string; leDeg?: string; method?: string }>(data.gonioNotes, {});
   const hasGonio = !!(gonioRaw.re || gonioRaw.le);
 
-  // Lacrimal sac syringing
+  // Lacrimal sac syringing. The EMR saves the typed note as `findings`; `freeText` is an
+  // older key, still read as a fallback.
   const parseLacrimal = (raw: string | null | undefined) => {
     const p = parseJSON<any>(raw, {});
-    return Array.isArray(p) ? { chips: p as string[], freeText: "" } : { chips: (p.chips ?? []) as string[], freeText: (p.freeText ?? "") as string };
+    return Array.isArray(p) ? { chips: p as string[], freeText: "" } : { chips: (p.chips ?? []) as string[], freeText: (p.findings || p.freeText || "") as string };
   };
   const lsRe = parseLacrimal(ls?.re);
   const lsLe = parseLacrimal(ls?.le);
+  // Chips, then the typed note, skipping a note that only repeats a chip (same as the print).
+  const lacrimalText = (eye: { chips: string[]; freeText: string }) => {
+    const note = eye.freeText.trim();
+    const repeats = eye.chips.some((c) => c.trim().toLowerCase() === note.toLowerCase());
+    return [eye.chips.join(", "), repeats ? "" : note].filter(Boolean).join(" · ") || null;
+  };
 
   const currentMedList: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
     if (!g?.medications) return [];
@@ -1210,8 +1217,8 @@ function LongContent({
                 <tbody className="divide-y divide-[var(--color-border)]">
                   <EyeRow
                     label="Findings"
-                    re={([lsRe.chips.join(", "), lsRe.freeText].filter(Boolean).join(" · ")) || null}
-                    le={([lsLe.chips.join(", "), lsLe.freeText].filter(Boolean).join(" · ")) || null}
+                    re={lacrimalText(lsRe)}
+                    le={lacrimalText(lsLe)}
                   />
                 </tbody>
               </DataTable>

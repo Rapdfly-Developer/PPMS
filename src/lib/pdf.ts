@@ -1804,8 +1804,16 @@ ${(() => {
 ${(() => {
   const ls = d.lacrimalSac;
   if (!ls) return "";
-  const re = ls.re ? [(ls.re.chips ?? []).join(", "), ls.re.findings].filter(Boolean).join(" · ") : "";
-  const le = ls.le ? [(ls.le.chips ?? []).join(", "), ls.le.findings].filter(Boolean).join(" · ") : "";
+  // Chips, then the typed note, skipping a note that only repeats a chip (same as the screen).
+  const eyeText = (eye?: { chips?: string[]; findings?: string } | null) => {
+    if (!eye) return "";
+    const chips = eye.chips ?? [];
+    const note = (eye.findings ?? "").trim();
+    const repeats = chips.some((c) => c.trim().toLowerCase() === note.toLowerCase());
+    return [chips.join(", "), repeats ? "" : note].filter(Boolean).join(" · ");
+  };
+  const re = eyeText(ls.re);
+  const le = eyeText(ls.le);
   if (!re && !le) return "";
   return `<div class="no-break" style="margin-bottom:12px;">` +
     suiTable(COLS_EYE_PDF, suiEyeHead("Lacrimal Sac Syringing", true), suiEyeRow("Findings", suiVal(re), suiVal(le)), { indent: true, divided: true }) +
