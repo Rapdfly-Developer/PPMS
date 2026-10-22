@@ -903,9 +903,232 @@ export type ShortSummaryData = {
   hessChart?: { grid?: Record<string, { reH?: string; reV?: string; leH?: string; leV?: string }>; interpretation?: string | null } | null;
 };
 
-async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
-  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  SUMMARY FIELD LAYOUT (shared by the Short and Long summary prints)          */
+/* ─────────────────────────────────────────────────────────────────────────── */
 
+/*
+  Lays fields out the way the Previous Visits page does (VisitSummaryTabs.tsx):
+  "LABEL · value" lines, labelled blocks with indented tables, RE/LE tables with the
+  section label in the header row, chips and numbered lists. Colours are the app's
+  tokens from globals.css; sizes are scaled to A4.
+*/
+const SUI = {
+  INK_800: "#1E293B", INK_700: "#334155", INK_600: "#475569", INK_500: "#64748B",
+  INK_400: "#94A3B8", INK_300: "#CBD5E1", BORDER: "#E2E8F0", SUNKEN: "#F1F5F9",
+  P700: "#0F766E", P600: "#0D9488", P50: "#F0FDFA",
+  INDENT: 14,
+};
+
+/** CSS the summary helpers rely on (row dividers between table rows). */
+const SUMMARY_UI_CSS = `
+  .sui-div > tr + tr > td { border-top: 1px solid ${SUI.BORDER}; }
+  .sui-list > li + li { border-top: 1px solid ${SUI.BORDER}; }
+`;
+
+const SUI_LABEL = `font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:${SUI.INK_400};`;
+const SUI_TH = `padding:0 12px 5px 0;text-align:left;vertical-align:bottom;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${SUI.INK_400};`;
+const SUI_TD = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_700};`;
+const SUI_TD_MUTED = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_500};`;
+const SUI_DASH = `<span style="color:${SUI.INK_300};">—</span>`;
+
+const suiVal = (v: unknown) => (v === null || v === undefined || v === "") ? SUI_DASH : escapeHtml(String(v));
+
+/** One line: "LABEL · value". */
+function suiLine(label: string, valueHtml: string, danger = false): string {
+  const lc = danger ? "#DC2626" : SUI.INK_400;
+  const dc = danger ? "#FCA5A5" : SUI.INK_300;
+  return `<div class="no-break" style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:12px;">` +
+    `<span style="${SUI_LABEL}color:${lc};white-space:nowrap;">${label}</span>` +
+    `<span style="font-size:8px;font-weight:700;color:${dc};">·</span>` +
+    `<div style="flex:1;min-width:0;">${valueHtml}</div>` +
+    `</div>`;
+}
+
+/** A label above an indented body (Block / SumHead + pl-5). */
+function suiBlock(label: string, bodyHtml: string, indent = true): string {
+  return `<div class="no-break" style="margin-bottom:12px;">` +
+    `<div style="${SUI_LABEL}margin-bottom:5px;">${label}</div>` +
+    `<div style="${indent ? `padding-left:${SUI.INDENT}px;` : ""}">${bodyHtml}</div>` +
+    `</div>`;
+}
+
+/** Fixed-layout table; `indent` shifts rows like a Block body (label then sits in the header via suiInlineHead). */
+function suiTable(widths: string[], head: string, body: string, opts: { indent?: boolean; divided?: boolean } = {}): string {
+  return `<div style="${opts.indent ? `padding-left:${SUI.INDENT}px;` : ""}">` +
+    `<table style="width:100%;table-layout:fixed;border-collapse:collapse;">` +
+    `<colgroup>${widths.map((w) => `<col style="width:${w}">`).join("")}</colgroup>` +
+    head +
+    `<tbody${opts.divided ? ` class="sui-div"` : ""}>${body}</tbody>` +
+    `</table></div>`;
+}
+
+/** Section label sitting in an indented table's header cell, pulled back flush left. */
+const suiInlineHead = (label: string) => `<span style="display:block;margin-left:-${SUI.INDENT}px;">${label}</span>`;
+
+/** RE / LE header row; `first` is the section label shown in the first header cell. */
+function suiEyeHead(first = "", line = false, reSuffix = "", leSuffix = ""): string {
+  const bb = line ? `border-bottom:1px solid ${SUI.BORDER};` : "";
+  return `<thead><tr>` +
+    `<th style="${SUI_TH}${bb}">${first ? suiInlineHead(first) : ""}</th>` +
+    `<th style="${SUI_TH}${bb}"><strong style="color:${SUI.P700};">RE</strong>${reSuffix}</th>` +
+    `<th style="${SUI_TH}${bb}"><strong style="color:${SUI.P700};">LE</strong>${leSuffix}</th>` +
+    `</tr></thead>`;
+}
+
+const suiBullet = `<span style="color:${SUI.P600};margin-right:5px;">•</span>`;
+
+/** A label / RE / LE row; `stripe` shades it like the screen's alternate rows. */
+function suiEyeRow(labelHtml: string, re: string, le: string, opts: { stripe?: boolean; strong?: boolean } = {}): string {
+  const bg = opts.stripe ? `background:${SUI.SUNKEN};` : "";
+  const w = opts.strong ? "font-weight:500;" : "";
+  return `<tr style="${bg}">` +
+    `<td style="${SUI_TD_MUTED}">${labelHtml}</td>` +
+    `<td style="${SUI_TD}${w}">${re}</td>` +
+    `<td style="${SUI_TD}${w}">${le}</td>` +
+    `</tr>`;
+}
+
+/** Spectacle grid: Right Eye / Left Eye rows under Sph · Cyl · Axis° · VA · Add · NV. */
+function suiRxTable(re: Record<string, string | undefined> | null | undefined, le: Record<string, string | undefined> | null | undefined): string {
+  const cols: { key: string; label: string; grey?: boolean }[] = [
+    { key: "sph", label: "Sph" }, { key: "cyl", label: "Cyl" }, { key: "axis", label: "Axis°" },
+    { key: "va", label: "VA", grey: true }, { key: "nearSph", label: "Add" }, { key: "nearVa", label: "NV", grey: true },
+  ];
+  const r = re ?? {}, l = le ?? {};
+  const hasRe = cols.some((c) => r[c.key]);
+  const hasLe = cols.some((c) => l[c.key]);
+  if (!hasRe && !hasLe) return "";
+  const cell = `padding:5px 8px;border-right:1px solid ${SUI.BORDER};`;
+  const th = (c?: { label: string; grey?: boolean }) =>
+    `<th style="${cell}text-align:center;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${SUI.INK_400};${c?.grey ? `background:${SUI.SUNKEN};` : ""}">${c ? c.label : ""}</th>`;
+  const row = (eye: string, v: Record<string, string | undefined>) =>
+    `<tr style="border-top:1px solid ${SUI.BORDER};">` +
+    `<td style="${cell}font-size:9.5px;font-weight:600;color:${SUI.P700};white-space:nowrap;">${eye}</td>` +
+    cols.map((c) => `<td style="${cell}text-align:center;font-size:9.5px;color:${c.grey ? SUI.INK_500 : SUI.INK_700};${c.grey ? `background:${SUI.SUNKEN};` : ""}">${suiVal(v[c.key])}</td>`).join("") +
+    `</tr>`;
+  return `<div style="border:1px solid ${SUI.BORDER};border-radius:6px;overflow:hidden;">` +
+    `<table style="width:100%;border-collapse:collapse;">` +
+    `<thead><tr style="background:${SUI.P50};">${th()}${cols.map((c) => th(c)).join("")}</tr></thead>` +
+    `<tbody>${hasRe ? row("Right Eye", r) : ""}${hasLe ? row("Left Eye", l) : ""}</tbody>` +
+    `</table></div>`;
+}
+
+/** Tinted note box with a coloured left rule (HPI, systemic history, advice, procedure notes). */
+function suiNote(text: string, tone: "sky" | "slate" | "amber" | "plain", indent = true): string {
+  const [border, left, bg, w] =
+    tone === "sky"   ? ["#BAE6FD", "#38BDF8", "#F0F9FF", 3] :
+    tone === "slate" ? ["#E2E8F0", "#94A3B8", "#F8FAFC", 3] :
+    tone === "amber" ? ["#FDE68A", "#FBBF24", "#FFFBEB", 3] :
+                       [SUI.BORDER, "#5EEAD4", SUI.SUNKEN, 2];
+  return `<div style="${indent ? `margin-left:${SUI.INDENT}px;` : ""}padding:6px 10px;border:1px solid ${border};border-left:${w}px solid ${left};border-radius:5px;background:${bg};font-size:9.5px;line-height:1.55;color:${tone === "plain" ? SUI.INK_600 : SUI.INK_700};white-space:pre-wrap;">${escapeHtml(text)}</div>`;
+}
+
+/** Chief-complaint chips ("RE • Blurred Vision • 8 days"). */
+function suiComplaintChips(raw: string): string {
+  const items = parseComplaintItems(raw);
+  const labels = items.length ? items.map((c) => complaintLabel(c)) : [raw];
+  return `<span style="display:inline-flex;flex-wrap:wrap;gap:4px;">` +
+    labels.map((l) => `<span style="display:inline-block;padding:1px 8px;border:1px solid #F1D7B4;border-radius:999px;background:#FFF8ED;color:#8A501A;font-size:9.5px;font-weight:500;line-height:15px;">${escapeHtml(l)}</span>`).join("") +
+    `</span>`;
+}
+
+/** Diagnosis chips: "Active · • RE Description ICD". */
+function suiDiagnosisChips(dx: { description: string; icd10Code?: string | null; status?: string | null; laterality?: string | null }[], withIcd = false): string {
+  return `<span style="display:inline-flex;flex-wrap:wrap;gap:5px;">` +
+    dx.map((d) =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border:1px solid #F0C6CE;border-radius:999px;background:#FFF1F3;color:#96384B;font-size:9.5px;font-weight:500;line-height:15px;">` +
+      (d.status && d.status !== "BLANK" ? `<span style="color:${SUI.INK_400};font-weight:400;">${escapeHtml(d.status.charAt(0) + d.status.slice(1).toLowerCase())} ·</span>` : "") +
+      `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;"></span>` +
+      (d.laterality ? `<span style="font-weight:700;">${escapeHtml(d.laterality)}</span>` : "") +
+      `<span>${escapeHtml(d.description)}</span>` +
+      (withIcd && d.icd10Code ? `<span style="font-family:'Courier New',monospace;font-size:8px;color:${SUI.INK_400};margin-left:2px;">${escapeHtml(d.icd10Code)}</span>` : "") +
+      `</span>`
+    ).join("") +
+    `</span>`;
+}
+
+/** Minor procedure value: laterality + name (+ anaesthesia), notes box below. */
+function suiProcedure(p: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null }, name: string): string {
+  return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_800};">` +
+    (p.procedureLaterality ? `<span style="font-weight:700;color:${SUI.P700};margin-right:5px;">${escapeHtml(p.procedureLaterality)}</span>` : "") +
+    escapeHtml(name) +
+    (p.anesthesiaType ? `<span style="font-weight:400;color:${SUI.INK_500};"> · Under ${escapeHtml(p.anesthesiaType)}</span>` : "") +
+    `</span>` +
+    (p.procedureNotes ? `<div style="margin-top:5px;">${suiNote(p.procedureNotes, "plain", false)}</div>` : "");
+}
+
+/** Numbered investigation list: "1. RE Test · In view of: …". */
+function suiInvestigationList(inv: { testName: string; laterality?: string | null; notes?: string | null }[]): string {
+  return `<ol class="sui-list" style="list-style:none;margin:0;padding:0;">` +
+    inv.map((o, i) =>
+      `<li style="display:flex;align-items:flex-start;gap:7px;padding:5px 0;${i === 0 ? "padding-top:0;" : ""}">` +
+      `<span style="width:16px;flex-shrink:0;text-align:right;font-size:9.5px;font-weight:600;color:${SUI.INK_400};">${i + 1}.</span>` +
+      `<span style="flex:1;min-width:0;font-size:9.5px;font-weight:600;color:${SUI.INK_800};line-height:1.35;">` +
+      (o.laterality ? `<span style="color:${SUI.P700};margin-right:4px;">${escapeHtml(o.laterality)}</span>` : "") +
+      escapeHtml(o.testName) +
+      (o.notes ? `<span style="font-weight:400;font-style:italic;color:${SUI.INK_500};margin-left:5px;">· In view of: ${escapeHtml(o.notes)}</span>` : "") +
+      `</span></li>`
+    ).join("") +
+    `</ol>`;
+}
+
+/** Medication rows: # · drug (laterality, route, instructions) · dose · frequency · duration, taper steps under it. */
+function suiMedicationRows(
+  meds: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[],
+  visitDate: Date,
+  long: boolean,
+): string {
+  return meds.map((m, i) => {
+    const split = splitTaperPdf(m.instructions, m.duration);
+    const baseDur = durCellPdf(split.baseDuration, visitDate);
+    let offsetDays = baseDur.days ?? null;
+    const durHtml = (h: { html: string; days: number | null }) => h.days === null && !split.baseDuration ? SUI_DASH : h.html;
+    const main =
+      `<tr>` +
+      `<td style="${SUI_TD_MUTED}">${i + 1}</td>` +
+      `<td style="${SUI_TD}font-weight:600;">` +
+      `<div>` +
+      (m.laterality ? `<span style="font-weight:700;color:${SUI.P700};margin-right:6px;">${escapeHtml(m.laterality)}</span>` : "") +
+      escapeHtml(m.drugName) +
+      (long && m.route ? `<span style="font-weight:400;color:${SUI.INK_400};margin-left:3px;">· ${escapeHtml(m.route)}</span>` : "") +
+      `</div>` +
+      (split.note ? `<div style="font-weight:400;font-style:italic;color:${SUI.INK_400};font-size:8px;margin-top:1px;">${escapeHtml(split.note)}</div>` : "") +
+      `</td>` +
+      `<td style="${SUI_TD_MUTED}">${suiVal(m.dosage)}</td>` +
+      `<td style="${SUI_TD_MUTED}">${suiVal(m.frequency)}</td>` +
+      `<td style="${SUI_TD_MUTED}white-space:nowrap;">${durHtml(baseDur)}</td>` +
+      `</tr>`;
+    const taper = split.taper.map((t) => {
+      const start = offsetDays !== null ? addDaysPdf(visitDate, offsetDays) : visitDate;
+      const dur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, start);
+      if (dur.days !== null && offsetDays !== null) offsetDays += dur.days;
+      else offsetDays = null;
+      return `<tr>` +
+        `<td style="${SUI_TD_MUTED}"></td>` +
+        `<td style="${SUI_TD_MUTED}padding-left:10px;">↓ Taper</td>` +
+        `<td style="${SUI_TD_MUTED}">${suiVal(t.dose)}</td>` +
+        `<td style="${SUI_TD_MUTED}">${suiVal(t.frequency)}</td>` +
+        `<td style="${SUI_TD_MUTED}white-space:nowrap;">${dur.html}</td>` +
+        `</tr>`;
+    }).join("");
+    return main + taper;
+  }).join("");
+}
+
+const SUI_MED_COLS = ["5%", "32%", "14%", "22%", "27%"];
+const COLS_EYE_PDF = ["38%", "31%", "31%"];
+
+/** Follow-up line value: date, then "· In view of: …". */
+function suiFollowUp(date: Date, inViewOf?: string | null): string {
+  return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_700};">${format(date, "EEEE, d MMM yyyy")}</span>` +
+    (inViewOf && inViewOf.trim() ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(inViewOf.trim())}</span>` : "");
+}
+
+const suiText = (html: string, color: string = SUI.INK_700, weight = 600) =>
+  `<span style="font-size:9.5px;font-weight:${weight};color:${color};">${html}</span>`;
+
+async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 
   /*
     Palette — the app's own brand tokens from globals.css, so a printed summary
@@ -915,28 +1138,8 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       #F0F8F6 primary-50
   */
   const INK = "#0B3D3A", LABEL_C = "#115E59", BRAND = "#157A73", MINT = "#2BA89C";
-  const TINT = "#F0F8F6", LINE = "#D3E6E2";
-
-  /* ── Rounded section card: green title strip over bordered body ── */
-  const card = (label: string, inner: string) =>
-    `<div class="no-break" style="border:1px solid ${LINE};border-radius:6px;overflow:hidden;margin-bottom:12px;">` +
-    `<div style="background:${TINT};border-bottom:1px solid ${LINE};padding:4.5px 10px;">` +
-    `<span style="font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};">${label}</span>` +
-    `</div>` +
-    `<div style="padding:7px 10px;">${inner}</div>` +
-    `</div>`;
-
+  const LINE = "#D3E6E2";
   /* ── Inline section: label tag on the left, content on the same row ── */
-  /* Label is fixed 148px wide so all three rows snap to the same vertical grid. */
-  const inlineCard = (label: string, inner: string) =>
-    `<div class="no-break" style="display:flex;align-items:flex-start;gap:6px;margin-bottom:11px;">` +
-    `<div style="width:148px;min-width:148px;background:${TINT};border:1px solid ${LINE};border-radius:4px;padding:5px 8px;font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};white-space:nowrap;text-align:center;flex-shrink:0;">${label}</div>` +
-    `<div style="flex:1;border:1px solid ${LINE};border-radius:4px;padding:5px 9px;min-height:28px;display:flex;align-items:center;">${inner}</div>` +
-    `</div>`;
-
-  /* ── Muted empty state — states absence, never invents content ── */
-  const none = (t: string) => `<span style="color:#9AA5A3;font-style:italic;font-size:9.5px;">${t}</span>`;
-
   /* ── Patient info field box: label + value inside a single teal-bordered box ── */
   const fbox = (label: string, value: string) =>
     `<td style="padding-right:10px;padding-bottom:6px;vertical-align:top;">` +
@@ -946,102 +1149,12 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     `</div>` +
     `</td>`;
 
-  /* ── Key-value row (follow-up): borderless, report style ── */
-  const kvRow = (label: string, value: string) =>
-    `<tr>` +
-    `<td style="padding:2.5px 12px 2.5px 0;font-size:9.5px;font-weight:700;color:#4A5A57;width:34%;">${label}</td>` +
-    `<td style="padding:2.5px 0;font-size:9.5px;color:#1a1a1a;">${value}</td>` +
-    `</tr>`;
-
-  const simpleRows = (rows: Array<readonly string[]>) =>
-    `<table style="width:100%;"><tbody>${rows.map(([label, value]) =>
-      `<tr><td style="${TD}width:34%;font-weight:700;color:#4A5A57;">${escapeHtml(label ?? "")}</td><td style="${TD}">${v2(value ?? "")}</td></tr>`
-    ).join("")}</tbody></table>`;
-
-  /* ── Table header style ── */
-  const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
-
-  /* ── Data cell — bottom border only, clean open rows ── */
-  const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
-
-  /* ── Diagnosis status badge ── */
-  const diagBadge = (s: string) => {
-    const u = s.toUpperCase();
-    const [fg, bg] = u === "RESOLVED" || u === "INACTIVE"
-      ? ["#15803D", "#F0FDF4"]
-      : u === "CHRONIC"
-      ? ["#B45309", "#FFFBEB"]
-      : ["#DC2626", "#FEF2F2"];
-    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};` +
-      `padding:1px 6px;border-radius:3px;">${escapeHtml(s)}</span>`;
-  };
-
-  /* ── Medication rows ── */
-  const pdfMedBadge2 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
-    const r = route ?? "";
-    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
-      const lbl = lat || "OU";
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
-    }
-    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
-    }
-    if (r === "IM" || r === "IV" || r === "Intravitreal" || r === "Subconjunctival" || r === "Subtenon" || /inject/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FFE4E6;color:#9F1239;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">INJ</span>`;
-    }
-    if (r === "Oral" || /tablet|capsule/i.test(name)) {
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">TAB</span>`;
-    }
-    return "";
-  };
-
-  const MED_TD = `padding:6px 7px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
-
-  const medRows = d.medications.length
-    ? d.medications.map((m, i) => {
-        const split = splitTaperPdf(m.instructions, m.duration);
-        const baseDur = durCellPdf(split.baseDuration, d.visit.date);
-        let offsetDays = baseDur.days ?? null;
-        const mainRow =
-          `<tr style="background:#fff;">` +
-          `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
-          `<td style="${MED_TD}">` +
-          pdfMedBadge2(m.route, m.laterality, m.drugName) +
-          `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
-          (split.note ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(split.note)}</span>` : "") +
-          `</td>` +
-          `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
-          `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
-          `<td style="${MED_TD}">${baseDur.html}</td>` +
-          `</tr>`;
-        const taperRows = split.taper.map((t) => {
-          const taperStart = offsetDays !== null ? addDaysPdf(d.visit.date, offsetDays!) : d.visit.date;
-          const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
-          if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
-          else offsetDays = null;
-          return `<tr style="background:#f8fafa;">` +
-            `<td style="${MED_TD}text-align:center;color:#bbb;">↓</td>` +
-            `<td style="${MED_TD}padding-left:16px;font-size:8.5px;color:#888;">↓ Taper</td>` +
-            `<td style="${MED_TD}">${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td>` +
-            `<td style="${MED_TD}">${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td>` +
-            `<td style="${MED_TD}">${taperDur.html}</td>` +
-            `</tr>`;
-        }).join("");
-        return mainRow + taperRows;
-      }).join("")
-    : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
-
   /* ── Optical Rx ── */
   const hasRx = d.opticalRx && (
     d.opticalRx.re.sph || d.opticalRx.re.cyl || d.opticalRx.re.axis ||
     d.opticalRx.le.sph || d.opticalRx.le.cyl || d.opticalRx.le.axis ||
     d.opticalRx.re.nearSph || d.opticalRx.le.nearSph
   );
-  const rxTd = (val?: string) => `<td style="${TD}text-align:center;">${v2(val)}</td>`;
-  const rxRowFn = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
-    `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
-    rxTd(sph) + rxTd(cyl) + rxTd(axis) + rxTd(va) + rxTd(near) + rxTd(nearVa) + `</tr>`;
-
   /* ── Minor Procedure: procedureName stored as JSON array, join for display ── */
   const rawProc = d.minorProcedure?.procedureName ?? "";
   let procDisplay = rawProc;
@@ -1051,12 +1164,6 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
       if (Array.isArray(parsed)) procDisplay = parsed.filter((s: unknown) => typeof s === "string").join(", ");
     } catch {}
   }
-
-  /* ── Investigations ── */
-  const hasInv = d.investigations && d.investigations.length > 0;
-
-  /* ── Follow-up ── */
-  const hasFollowUp = !!(d.visit.followUpDate || (d.visit.referralEnabled && d.visit.referralNote));
 
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1077,6 +1184,7 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     .page-num::after { content: counter(page); }
     .page-total::after { content: counter(pages); }
     @media print { .no-break { page-break-inside: avoid; break-inside: avoid; } }
+    ${SUMMARY_UI_CSS}
   `;
 
   return `<!DOCTYPE html>
@@ -1173,150 +1281,44 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
 </table>
 
 <!-- 1 · CHIEF COMPLAINT -->
-${d.chiefComplaint
-  ? inlineCard("Chief Complaint",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(d.chiefComplaint)}</div>`)
-  : ""}
+${d.chiefComplaint ? suiLine("Chief Complaint", suiComplaintChips(d.chiefComplaint)) : ""}
 
-<!-- 1b · DRUG ALLERGY -->
+<!-- 2 · DRUG ALLERGY -->
 ${d.nkda
-  ? inlineCard("Drug Allergy",
-      `<div style="font-size:10.5px;font-weight:700;color:#059669;">✓ NKDA — No Known Drug Allergies</div>`)
+  ? suiLine("Drug Allergy", suiText("NKDA — No Known Drug Allergies", "#15803D"), true)
   : d.allergies
-  ? inlineCard("Drug Allergy",
-      `<div style="font-size:10.5px;font-weight:700;color:#DC2626;">${escapeHtml(d.allergies)}</div>`)
+  ? suiLine("Drug Allergy", suiText(escapeHtml(d.allergies), "#DC2626", 700), true)
   : ""}
 
-<!-- 2 · CLINICAL IMPRESSION -->
-${inlineCard("Clinical Impression",
-  d.diagnoses.length
-    ? `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
-      d.diagnoses.map((dx) =>
-        (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
-        (dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
-        escapeHtml(dx.description)
-      ).join("<br>") +
-      `</div>`
-    : none("No diagnosis recorded"))}
+<!-- 3 · DIAGNOSIS -->
+${d.diagnoses.length ? suiLine("Diagnosis", suiDiagnosisChips(d.diagnoses)) : ""}
 
-<!-- 2b · MINOR PROCEDURE (only when recorded) -->
-${procDisplay
-  ? inlineCard("Minor Procedure",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
-      [
-        d.minorProcedure!.procedureLaterality ? escapeHtml(d.minorProcedure!.procedureLaterality!) : "",
-        escapeHtml(procDisplay),
-        d.minorProcedure!.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure!.anesthesiaType!)}` : "",
-      ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
-      `</div>` +
-      (d.minorProcedure!.procedureNotes ? `<div style="margin-top:6px;padding:6px 10px;background:#F0F8F6;border:1px solid #C7DED9;border-left:3px solid #2BA89C;border-radius:0 5px 5px 0;font-size:9px;color:#2A4A46;line-height:1.55;white-space:pre-wrap;">${escapeHtml(d.minorProcedure!.procedureNotes)}</div>` : ""))
-  : ""}
+<!-- 4 · MINOR PROCEDURE -->
+${procDisplay ? suiLine("Minor Procedure", suiProcedure(d.minorProcedure!, procDisplay)) : ""}
 
-<!-- 3 · MEDICATIONS -->
+<!-- 5 · MEDICATIONS -->
 ${d.medications.length
-  ? card("Medications",
-      `<table style="width:100%;border-collapse:collapse;">
-    <colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>
-    <tbody>${medRows}</tbody>
-  </table>`)
+  ? suiBlock("Medications", suiTable(SUI_MED_COLS, "", suiMedicationRows(d.medications, d.visit.date, false)))
   : ""}
 
-<!-- 4 · SPECTACLES / REFRACTION (only if an Rx exists) -->
-${hasRx
-  ? card(`Spectacles / Refraction${d.opticalRx?.re.method || d.opticalRx?.le.method ? ` — ${escapeHtml(d.opticalRx!.re.method || d.opticalRx!.le.method || "")}` : ""}`,
-      `<table>
-        <thead><tr>
-          <th style="${TH}width:90px;">Eye</th>
-          <th style="${TH}text-align:center;">Sph</th>
-          <th style="${TH}text-align:center;">Cyl</th>
-          <th style="${TH}text-align:center;">Axis°</th>
-          <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
-          <th style="${TH}text-align:center;">Add</th>
-          <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
-        </tr></thead>
-        <tbody>
-          ${(() => {
-            const rxRowGrey2 = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
-              `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
-              rxTd(sph) + rxTd(cyl) + rxTd(axis) +
-              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(va)}</td>` +
-              rxTd(near) +
-              `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(nearVa)}</td></tr>`;
-            return rxRowGrey2("Right Eye", d.opticalRx!.re.sph, d.opticalRx!.re.cyl, d.opticalRx!.re.axis, d.opticalRx!.re.va, d.opticalRx!.re.nearSph, d.opticalRx!.re.nearVa) +
-                   rxRowGrey2("Left Eye", d.opticalRx!.le.sph, d.opticalRx!.le.cyl, d.opticalRx!.le.axis, d.opticalRx!.le.va, d.opticalRx!.le.nearSph, d.opticalRx!.le.nearVa);
-          })()}
-        </tbody>
-      </table>`)
-  : ""}
+<!-- 6 · SPECTACLE RX — the Subjective prescription only (matches the screen) -->
+${hasRx ? suiBlock("Spectacle Rx", suiRxTable(d.opticalRx!.re, d.opticalRx!.le)) : ""}
 
-<!-- 4b · EXTRA CORRECTIONS -->
-${d.extraCorrections && d.extraCorrections.length > 0
-  ? d.extraCorrections.map((ec) => {
-      const ecMethod = ec.re?.method || ec.le?.method || "";
-      const rxRowGrey = (eye: string, sph?: string, cyl?: string, axis?: string, va?: string, near?: string, nearVa?: string) =>
-        `<tr><td style="${TD}font-weight:700;color:#0B3D3A;">${eye}</td>` +
-        rxTd(sph) + rxTd(cyl) + rxTd(axis) +
-        `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(va)}</td>` +
-        rxTd(near) +
-        `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(nearVa)}</td></tr>`;
-      return card(`${escapeHtml(ec.label)}${ecMethod ? ` · ${escapeHtml(ecMethod)}` : ""}`,
-        `<table>
-          <thead><tr>
-            <th style="${TH}width:90px;">Eye</th>
-            <th style="${TH}text-align:center;">Sph</th>
-            <th style="${TH}text-align:center;">Cyl</th>
-            <th style="${TH}text-align:center;">Axis°</th>
-            <th style="${TH}text-align:center;background:#f4f6f5;">VA</th>
-            <th style="${TH}text-align:center;">Add</th>
-            <th style="${TH}text-align:center;background:#f4f6f5;">NV</th>
-          </tr></thead>
-          <tbody>
-            ${rxRowGrey("Right Eye", ec.re?.sph, ec.re?.cyl, ec.re?.axis, ec.re?.va, ec.re?.nearSph, ec.re?.nearVa)}
-            ${rxRowGrey("Left Eye", ec.le?.sph, ec.le?.cyl, ec.le?.axis, ec.le?.va, ec.le?.nearSph, ec.le?.nearVa)}
-          </tbody>
-        </table>`);
-    }).join("")
-  : ""}
+<!-- 7 · INVESTIGATIONS -->
+${d.investigations.length ? suiBlock("Investigations", suiInvestigationList(d.investigations)) : ""}
 
-<!-- 5 · INVESTIGATIONS -->
-${d.investigations.length
-  ? card("Investigations",
-      `<table style="width:100%;">
-        <tbody>
-          ${d.investigations.map((inv, i) =>
-            `<tr>` +
-            `<td style="${TD}text-align:center;color:#8A9793;font-size:9px;width:24px;">${i + 1}</td>` +
-            `<td style="${TD}font-size:9.5px;font-weight:600;">` +
-            (inv.laterality ? `<span style="font-size:8px;font-weight:700;color:${BRAND};margin-right:4px;">${escapeHtml(inv.laterality)}</span>` : "") +
-            escapeHtml(inv.testName) +
-            (inv.notes ? `<span style="font-weight:400;font-style:italic;color:#555;margin-left:5px;">· In view of: ${escapeHtml(inv.notes)}</span>` : "") +
-            `</td>` +
-            `</tr>`
-          ).join("")}
-        </tbody>
-      </table>`)
-  : ""}
+<!-- 8 · FOLLOW-UP with In View Of -->
+${d.visit.followUpDate ? suiLine("Follow-up", suiFollowUp(new Date(d.visit.followUpDate), d.visit.inViewOf)) : ""}
 
-<!-- 6 · FOLLOW-UP with In View Of -->
-${d.visit.followUpDate
-  ? inlineCard("Follow-up",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>` +
-      (d.visit.inViewOf && d.visit.inViewOf.trim()
-        ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
-        : ""))
-  : ""}
+<!-- 9 · ADVICE -->
+${d.advice && d.advice.trim() ? suiBlock("Advice", suiNote(d.advice.trim(), "amber", false)) : ""}
 
-<!-- 7 · ADVICE NOTES -->
-${d.advice && d.advice.trim()
-  ? `<div class="no-break" style="font-size:9.5px;color:#1a1a1a;white-space:pre-wrap;line-height:1.5;margin-bottom:11px;padding:8px 12px;border:1px solid #FDE68A;border-left:4px solid #F59E0B;border-radius:4px;background:#FFFBEB;">${escapeHtml(d.advice.trim())}</div>`
-  : ""}
-
-<!-- 8 · REFERRAL with In View Of -->
+<!-- 10 · REFERRAL -->
 ${d.visit.referralEnabled
-  ? inlineCard("Referral",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred"}</div>` +
+  ? suiLine("Referral",
+      suiText(d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred") +
       (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
-        ? `<div style="font-size:9px;color:#4A5A57;margin-top:3px;line-height:1.4;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(d.visit.inViewOf.trim())}</span>`
         : ""))
   : ""}
 
@@ -1451,21 +1453,9 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     return ge.medications;
   })();
 
-  const v2 = (x: unknown) => (x === null || x === undefined || x === "") ? "" : escapeHtml(String(x));
-
   /* ── Brand palette (matches Short Summary exactly) ── */
   const INK = "#0B3D3A", LABEL_C = "#115E59", BRAND = "#157A73", MINT = "#2BA89C";
-  const TINT = "#F0F8F6", LINE = "#D3E6E2";
-
-  /* ── Rounded section card (matches Short Summary) ── */
-  const card = (label: string, inner: string) =>
-    `<div class="no-break" style="border:1px solid ${LINE};border-radius:6px;overflow:hidden;margin-bottom:12px;">` +
-    `<div style="background:${TINT};border-bottom:1px solid ${LINE};padding:4.5px 10px;">` +
-    `<span style="font-size:8.5px;font-weight:800;letter-spacing:0.11em;text-transform:uppercase;color:${LABEL_C};">${label}</span>` +
-    `</div>` +
-    `<div style="padding:7px 10px;">${inner}</div>` +
-    `</div>`;
-
+  const LINE = "#D3E6E2";
   /* ── Field box (matches Short Summary) ── */
   const fbox = (label: string, value: string) =>
     `<td style="padding-right:10px;padding-bottom:6px;vertical-align:top;">` +
@@ -1475,161 +1465,9 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     `</div>` +
     `</td>`;
 
-  /* ── None / empty state ── */
-  const none = (t: string) => `<span style="color:#9AA5A3;font-style:italic;font-size:9.5px;">${t}</span>`;
-  const emptyNote = none("Not recorded");
-
-  /* ── Table header / cell style (matches Short Summary) ── */
-  const TH = `padding:4px 7px;color:#0D4A45;border-bottom:2px solid #C8E8E4;font-size:8.5px;font-weight:700;text-align:left;`;
-  const TD = `padding:3.5px 7px;border-bottom:1px solid #ECF3F1;font-size:9.5px;`;
-  const MED_TD = `padding:6px 5px;border-bottom:1px dotted #C8DBD8;font-size:9.5px;`;
-
-  /* ── Diagnosis badge ── */
-  const diagBadge = (s: string) => {
-    const u = s.toUpperCase();
-    const [fg, bg] = u === "RESOLVED" || u === "INACTIVE"
-      ? ["#15803D", "#F0FDF4"]
-      : u === "CHRONIC"
-      ? ["#B45309", "#FFFBEB"]
-      : ["#DC2626", "#FEF2F2"];
-    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(s)}</span>`;
-  };
-
-  /* ── Priority badge ── */
-  const prioBadge = (p: string | null | undefined) => {
-    if (!p) return "";
-    const u = p.toUpperCase();
-    const [fg, bg] = u === "STAT" ? ["#92400E", "#FEF3C7"] : u === "URGENT" ? ["#B91C1C", "#FEE2E2"] : [LABEL_C, "#DCF5EF"];
-    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(p)}</span>`;
-  };
-
-  /* ── Status badge ── */
-  const statusBadge = (s: string | null | undefined) => {
-    if (!s) return "";
-    const l = s.toLowerCase().replace(/_/g, " ");
-    const [fg, bg] = l.includes("resolv") || l.includes("complet") ? ["#15803D", "#F0FDF4"]
-      : l.includes("active") ? ["#15803D", "#DCFCE7"]
-      : ["#92400E", "#FEF3C7"];
-    return `<span style="font-size:8px;font-weight:700;color:${fg};background:${bg};padding:1px 6px;border-radius:3px;">${escapeHtml(l)}</span>`;
-  };
-
-  /* ── Medication badge (matches Short Summary) ── */
-  const medBadge = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
-    const r = route ?? "";
-    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
-      const lbl = lat || "OU";
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
-    }
-    if (/syrup|suspension/i.test(r) || /syrup|suspension/i.test(name))
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#D1FAE5;color:#065F46;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">SYP</span>`;
-    if (r === "IM" || r === "IV" || r === "Intravitreal" || r === "Subconjunctival" || r === "Subtenon" || /inject/i.test(name))
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FFE4E6;color:#9F1239;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">INJ</span>`;
-    if (r === "Oral" || /tablet|capsule/i.test(name))
-      return `<span style="display:inline-block;min-width:24px;padding:1px 4px;border-radius:3px;background:#FEF3C7;color:#92400E;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">TAB</span>`;
-    return "";
-  };
-
-  /* ── Segment table (anterior / posterior data) ── */
-  const renderSegment = (segData: Record<string, any> | null | undefined): string => {
-    if (!segData || Object.keys(segData).length === 0) return emptyNote;
-    const rows = Object.entries(segData).map(([k, v]: [string, any]) => {
-      const label = k.replace(/([A-Z])/g, " $1").trim();
-      const re = Array.isArray(v?.re) ? v.re.join(", ") : String(v?.re ?? "—");
-      const le = Array.isArray(v?.le) ? v.le.join(", ") : String(v?.le ?? "—");
-      return `<tr>` +
-        `<td style="${TD}font-weight:600;color:${LABEL_C};width:130px;">${escapeHtml(label)}</td>` +
-        `<td style="${TD}">${escapeHtml(re || "—")}</td>` +
-        `<td style="${TD}">${escapeHtml(le || "—")}</td>` +
-        `</tr>`;
-    }).join("");
-    return `<table style="width:100%;border-collapse:collapse;">` +
-      `<thead><tr>` +
-      `<th style="${TH}width:130px;">Structure</th>` +
-      `<th style="${TH}">Right Eye (RE)</th>` +
-      `<th style="${TH}">Left Eye (LE)</th>` +
-      `</tr></thead><tbody>${rows}</tbody></table>`;
-  };
-
   /* ── Strip leading bullet char (matches screen's stripBullet) ── */
   const stripB = (v: string | null | undefined): string =>
     v ? v.replace(/^[•·]\s*/, "") : "";
-
-  /* ── Eye-section table builder (section label | RE | LE, with row dividers) ── */
-  const eyeTbl = (sectionLabel: string, rows: Array<[string, string | null | undefined, string | null | undefined]>): string => {
-    const bodyRows = rows.filter(([, re, le]) => re || le)
-      .map(([label, re, le]) =>
-        `<tr style="border-bottom:1px solid #ECF3F1;">` +
-        `<td style="${TD}color:#555;">${escapeHtml(label)}</td>` +
-        `<td style="${TD}">${re ? escapeHtml(re) : `<span style="color:#ccc;">—</span>`}</td>` +
-        `<td style="${TD}">${le ? escapeHtml(le) : `<span style="color:#ccc;">—</span>`}</td>` +
-        `</tr>`
-      ).join("");
-    if (!bodyRows) return "";
-    return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">` +
-      `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
-      `<thead><tr>` +
-      `<th style="${TH}">${sectionLabel}</th>` +
-      `<th style="${TH}color:${LABEL_C};">RE</th>` +
-      `<th style="${TH}color:${LABEL_C};">LE</th>` +
-      `</tr></thead>` +
-      `<tbody>${bodyRows}</tbody>` +
-      `</table>`;
-  };
-
-  /* ── Data rows ── */
-  const diagRows = d.diagnoses.length
-    ? d.diagnoses.map((dx, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
-        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}font-weight:600;">${dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;margin-right:4px;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span>` : ""}${dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:5px;">${escapeHtml(dx.laterality)}</span>` : ""}${escapeHtml(dx.description)}</td>` +
-        `<td style="${TD}font-family:'Courier New',monospace;font-size:8.5px;color:#555;">${dx.icd10Code ? escapeHtml(dx.icd10Code) : ""}</td>` +
-        `<td style="${TD}">${dx.status ? diagBadge(dx.status) : ""}</td>` +
-        `</tr>`).join("")
-    : `<tr><td colspan="4" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No diagnoses recorded</td></tr>`;
-
-  const medRows = d.medications.length
-    ? d.medications.map((m, i) => {
-        const split = splitTaperPdf(m.instructions, m.duration);
-        const baseDur = durCellPdf(split.baseDuration, d.visit.date);
-        let offsetDays = baseDur.days ?? null;
-        const mainRow =
-          `<tr style="background:#fff;">` +
-          `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
-          `<td style="${MED_TD}">${medBadge(m.route, m.laterality, m.drugName)}` +
-          `<span style="font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</span>` +
-          (split.note ? `<span style="font-size:8.5px;color:#777;margin-left:5px;">${escapeHtml(split.note)}</span>` : "") +
-          `</td>` +
-          `<td style="${MED_TD}">${v2(m.dosage)}</td>` +
-          `<td style="${MED_TD}">${v2(m.frequency)}</td>` +
-          `<td style="${MED_TD}">${baseDur.html}</td>` +
-          `</tr>`;
-        const taperRows = split.taper.map((t) => {
-          const taperStart = offsetDays !== null ? addDaysPdf(d.visit.date, offsetDays!) : d.visit.date;
-          const taperDur = durCellPdf(`${t.durationNum} ${t.durationUnit}`, taperStart);
-          if (taperDur.days !== null && offsetDays !== null) offsetDays += taperDur.days;
-          else offsetDays = null;
-          return `<tr style="background:#f8fafa;">` +
-            `<td style="${MED_TD}text-align:center;color:#bbb;">↓</td>` +
-            `<td style="${MED_TD}padding-left:16px;font-size:8.5px;color:#888;">↓ Taper</td>` +
-            `<td style="${MED_TD}">${t.dose ? escapeHtml(t.dose) : `<span style="color:#aaa;">—</span>`}</td>` +
-            `<td style="${MED_TD}">${t.frequency ? escapeHtml(t.frequency) : `<span style="color:#aaa;">—</span>`}</td>` +
-            `<td style="${MED_TD}">${taperDur.html}</td>` +
-            `</tr>`;
-        }).join("");
-        return mainRow + taperRows;
-      }).join("")
-    : `<tr><td colspan="5" style="padding:4px 8px;border:none;">${none("No medications prescribed")}</td></tr>`;
-
-  const invRows = d.investigations.length
-    ? d.investigations.map((inv, i) =>
-        `<tr style="background:${i % 2 === 0 ? "#fff" : TINT};">` +
-        `<td style="${TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${TD}font-weight:600;">${escapeHtml(inv.testName)}</td>` +
-        `<td style="${TD}">${prioBadge(inv.priority)}</td>` +
-        `<td style="${TD}">${statusBadge(inv.status)}</td>` +
-        `<td style="${TD}color:#555;">${v2(inv.result ?? inv.notes)}</td>` +
-        `</tr>`).join("")
-    : `<tr><td colspan="5" style="padding:6px 8px;font-size:9.5px;color:#aaa;font-style:italic;">No investigations ordered</td></tr>`;
 
   const CSS = `
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1650,6 +1488,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     .page-num::after { content: counter(page); }
     .page-total::after { content: counter(pages); }
     @media print { .no-break { page-break-inside: avoid; break-inside: avoid; } }
+    ${SUMMARY_UI_CSS}
   `;
 
   return `<!DOCTYPE html>
@@ -1747,174 +1586,121 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
 </table>
 
 <!-- 1 · CHIEF COMPLAINT -->
-${ge?.chiefComplaint
-  ? card("Chief Complaint",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${complaintHtml(ge.chiefComplaint)}</div>`)
-  : ""}
+${ge?.chiefComplaint ? suiLine("Chief Complaint", suiComplaintChips(ge.chiefComplaint)) : ""}
 
-<!-- 2 · ALLERGY — separate, bright red bold -->
+<!-- 2 · DRUG ALLERGY -->
 ${ge?.nkda
-  ? card("Drug Allergy",
-      `<div style="font-size:10.5px;font-weight:700;color:#059669;">✓ NKDA — No Known Drug Allergies</div>`)
+  ? suiLine("Drug Allergy", suiText("NKDA — No Known Drug Allergies", "#15803D"), true)
   : ge?.allergies
-  ? card("Drug Allergy",
-      `<div style="font-size:10.5px;font-weight:700;color:#DC2626;">${escapeHtml(ge.allergies)}</div>`)
+  ? suiLine("Drug Allergy", suiText(escapeHtml(ge.allergies), "#DC2626", 700), true)
   : ""}
 
 <!-- 3 · HPI -->
-${ge?.hpi
-  ? card("History of Present Illness",
-      `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;line-height:1.65;white-space:pre-wrap;">${escapeHtml(ge.hpi)}</div>`)
-  : ""}
+${ge?.hpi ? suiBlock("History of Present Illness", suiNote(ge.hpi, "sky", false)) : ""}
 
 <!-- 4 · PAST HISTORY -->
 ${ge && pmhList.length
-  ? card("Past History",
-      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">${pmhList.map(escapeHtml).join(", ")}</div>`)
+  ? suiLine("Past History",
+      `<span style="display:inline-flex;flex-wrap:wrap;gap:5px;">` +
+      pmhList.map((item: string) => {
+        const [name, ...since] = item.split(" · ");
+        return `<span style="display:inline-block;padding:1px 8px;border:1px solid #BFDBFE;border-radius:999px;background:#EFF6FF;color:#1E40AF;font-size:9.5px;font-weight:500;line-height:15px;">` +
+          escapeHtml(name) +
+          (since.length ? `<span style="opacity:0.6;font-weight:400;margin-left:3px;">· ${escapeHtml(since.join(" · "))}</span>` : "") +
+          `</span>`;
+      }).join("") +
+      `</span>`)
   : ""}
 
 <!-- 5 · SYSTEMIC HISTORY -->
 ${ge && (ge.pmhOtherText || ge.familyHistory || ge.socialHistory)
-  ? card("Systemic History",
-      `<div style="font-size:9.5px;color:${INK};line-height:1.7;">` +
-      (ge.pmhOtherText ? `<div style="background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;line-height:1.65;white-space:pre-wrap;${ge.familyHistory || ge.socialHistory ? "margin-bottom:4px;" : ""}">${escapeHtml(ge.pmhOtherText)}</div>` : "") +
-      (ge.familyHistory ? `<div><strong style="color:${LABEL_C};">Family History:</strong> ${escapeHtml(ge.familyHistory)}</div>` : "") +
-      (ge.socialHistory ? `<div><strong style="color:${LABEL_C};">Social History:</strong> ${escapeHtml(ge.socialHistory)}</div>` : "") +
-      `</div>`)
+  ? suiBlock("Systemic History",
+      (ge.pmhOtherText ? suiNote(ge.pmhOtherText, "slate", false) : "") +
+      (ge.familyHistory ? `<div style="margin-top:4px;font-size:9.5px;color:${SUI.INK_700};"><span style="color:${SUI.INK_400};">Family History:</span> ${escapeHtml(ge.familyHistory)}</div>` : "") +
+      (ge.socialHistory ? `<div style="margin-top:2px;font-size:9.5px;color:${SUI.INK_700};"><span style="color:${SUI.INK_400};">Social History:</span> ${escapeHtml(ge.socialHistory)}</div>` : ""))
   : ""}
 
 <!-- 5b · CURRENT MEDICATIONS -->
 ${currentMedsText
-  ? card("Current Medications", `<div style="font-size:9.5px;color:${INK};white-space:pre-wrap;">${escapeHtml(currentMedsText)}</div>`)
+  ? suiBlock("Current Medications", `<div style="font-size:9.5px;color:${SUI.INK_700};white-space:pre-wrap;">${escapeHtml(currentMedsText)}</div>`)
   : currentMeds.length
-  ? card("Current Medications",
-      `<table style="width:100%;border-collapse:collapse;">` +
-      `<colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>` +
-      `<tbody>` +
+  ? suiBlock("Current Medications", suiTable(SUI_MED_COLS, "",
       currentMeds.map((m, i) =>
         `<tr>` +
-        `<td style="${MED_TD}text-align:center;color:#888;">${i + 1}</td>` +
-        `<td style="${MED_TD}font-weight:700;color:#1a1a1a;">${escapeHtml(m.drugName)}</td>` +
-        `<td style="${MED_TD}">${m.dosage ? escapeHtml(m.dosage) : "—"}</td>` +
-        `<td style="${MED_TD}">${m.frequency ? escapeHtml(m.frequency) : "—"}</td>` +
-        `<td style="${MED_TD}">${m.duration ? escapeHtml(m.duration) : "—"}</td>` +
-        `</tr>`).join("") +
-      `</tbody></table>`)
+        `<td style="${SUI_TD_MUTED}">${i + 1}</td>` +
+        `<td style="${SUI_TD}font-weight:600;">${escapeHtml(m.drugName)}</td>` +
+        `<td style="${SUI_TD_MUTED}">${suiVal(m.dosage)}</td>` +
+        `<td style="${SUI_TD_MUTED}">${suiVal(m.frequency)}</td>` +
+        `<td style="${SUI_TD_MUTED}white-space:nowrap;">${suiVal(m.duration)}</td>` +
+        `</tr>`).join("")))
   : ""}
 
-<!-- 6 · VITALS — single compact line -->
+<!-- 6 · VITALS — one line -->
 ${ge && (ge.bp || ge.pulse || ge.temperature || ge.weight)
-  ? card("Vitals",
-      `<div style="font-size:9.5px;color:${INK};display:flex;flex-wrap:wrap;gap:0 20px;">` +
-      (ge.bp        ? `<span><strong style="color:${LABEL_C};">BP:</strong> ${escapeHtml(ge.bp)} mmHg</span>` : "") +
-      (ge.pulse     ? `<span><strong style="color:${LABEL_C};">Pulse:</strong> ${escapeHtml(ge.pulse)} bpm</span>` : "") +
-      (ge.weight    ? `<span><strong style="color:${LABEL_C};">Weight:</strong> ${escapeHtml(ge.weight)}${String(ge.weight).includes("kg") ? "" : " kg"}</span>` : "") +
-      (ge.temperature ? `<span><strong style="color:${LABEL_C};">Temp:</strong> ${escapeHtml(ge.temperature)}${String(ge.temperature).includes("°C") ? "" : " °C"}</span>` : "") +
-      `</div>`)
+  ? suiLine("Vitals",
+      `<span style="font-size:9.5px;color:${SUI.INK_700};">` +
+      ([
+        ["BP", ge.bp, "mmHg"], ["Pulse", ge.pulse, "bpm"], ["Weight", ge.weight, "kg"], ["Temp", ge.temperature, "°C"],
+      ] as [string, string | null | undefined, string][])
+        .filter(([, v]) => !!v)
+        .map(([k, v, unit]) =>
+          `<span style="color:${SUI.INK_400};">${k}:</span> <span style="font-weight:500;">${escapeHtml(v)}${String(v).includes(unit) ? "" : ` ${unit}`}</span>`)
+        .join(`<span style="color:${SUI.INK_300};margin:0 6px;">·</span>`) +
+      `</span>`)
   : ""}
 
 <!-- 7 · VISUAL ACUITY -->
-${va
-  ? card(`Visual Acuity${va.testMethod ? ` · ${escapeHtml(va.testMethod)}` : ""}`,
-      `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">
-        <colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>
-        <thead><tr>
-          <th style="${TH}"></th>
-          <th style="${TH}font-weight:700;color:${LABEL_C};">RE</th>
-          <th style="${TH}font-weight:700;color:${LABEL_C};">LE</th>
-        </tr></thead>
-        <tbody>
-          <tr style="background:#fff;">
-            <td style="${TD}color:#555;">Unaided / UCVA <span style="font-size:8px;">(Dist)</span></td>
-            <td style="${TD}">${v2(va.reDistance?.unaided)}</td>
-            <td style="${TD}">${v2(va.leDistance?.unaided)}</td>
-          </tr>
-          <tr style="background:${TINT};">
-            <td style="${TD}color:#555;">Pinhole (PH)</td>
-            <td style="${TD}">${v2(va.reDistance?.ph)}</td>
-            <td style="${TD}">${v2(va.leDistance?.ph)}</td>
-          </tr>
-          <tr style="background:#fff;">
-            <td style="${TD}color:#555;">Best Corrected (BCVA)</td>
-            <td style="${TD}">${v2(va.reDistance?.bcva)}</td>
-            <td style="${TD}">${v2(va.leDistance?.bcva)}</td>
-          </tr>
-          ${va.reNear || va.leNear ? `<tr style="background:${TINT};"><td style="${TD}color:#555;">Unaided / UCNV <span style="font-size:8px;">(Near)</span></td><td style="${TD}">${v2(va.reNear)}</td><td style="${TD}">${v2(va.leNear)}</td></tr>` : ""}
-          ${va.reNearN || va.leNearN ? `<tr style="background:#fff;"><td style="${TD}color:#555;">Best Corrected (BCNV)</td><td style="${TD}">${v2(va.reNearN)}</td><td style="${TD}">${v2(va.leNearN)}</td></tr>` : ""}
-        </tbody>
-      </table>`)
+${va && [va.reDistance?.unaided, va.reDistance?.ph, va.reDistance?.bcva, va.leDistance?.unaided, va.leDistance?.ph, va.leDistance?.bcva, va.reNear, va.leNear, va.reNearN, va.leNearN].some(Boolean)
+  ? suiBlock(`Visual Acuity${va.testMethod ? ` · ${escapeHtml(va.testMethod)}` : ""}`,
+      suiTable(["40%", "30%", "30%"], suiEyeHead(),
+        suiEyeRow(`Unaided / UCVA <span style="color:${SUI.INK_400};font-size:8px;">(Dist)</span>`, suiVal(va.reDistance?.unaided), suiVal(va.leDistance?.unaided)) +
+        suiEyeRow("Pinhole (PH)", suiVal(va.reDistance?.ph), suiVal(va.leDistance?.ph), { stripe: true }) +
+        suiEyeRow("Best Corrected (BCVA)", suiVal(va.reDistance?.bcva), suiVal(va.leDistance?.bcva)) +
+        (va.reNear || va.leNear ? suiEyeRow(`Unaided / UCNV <span style="color:${SUI.INK_400};font-size:8px;">(Near)</span>`, suiVal(va.reNear), suiVal(va.leNear), { stripe: true }) : "") +
+        (va.reNearN || va.leNearN ? suiEyeRow("Best Corrected (BCNV)", suiVal(va.reNearN), suiVal(va.leNearN)) : "")))
   : ""}
 
-<!-- 8 · REFRACTIONS — all in spectacle format with method labels -->
+<!-- 8 · REFRACTIONS — one block per method -->
 ${(() => {
-  const rxTable = (label: string, re: any, le: any) =>
-    `<div style="margin-bottom:8px;">` +
-    `<div style="font-size:8px;font-weight:800;color:${LABEL_C};letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;">${escapeHtml(label)}</div>` +
-    `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
-    `<th style="${TH}width:110px;">Eye</th>` +
-    `<th style="${TH}text-align:center;">Sph</th><th style="${TH}text-align:center;">Cyl</th><th style="${TH}text-align:center;">Axis°</th>` +
-    `<th style="${TH}text-align:center;background:#f4f6f5;">VA</th>` +
-    `<th style="${TH}text-align:center;">Add</th>` +
-    `<th style="${TH}text-align:center;background:#f4f6f5;">NV</th>` +
-    `</tr></thead><tbody>` +
-    `<tr style="background:#fff;"><td style="${TD}font-weight:700;color:${INK};">Right Eye</td>` +
-    `<td style="${TD}text-align:center;">${v2(re?.sph)}</td><td style="${TD}text-align:center;">${v2(re?.cyl)}</td><td style="${TD}text-align:center;">${v2(re?.axis)}</td>` +
-    `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(re?.va)}</td><td style="${TD}text-align:center;">${v2(re?.nearSph)}</td><td style="${TD}text-align:center;background:#f4f6f5;">${v2(re?.nearVa)}</td></tr>` +
-    `<tr style="background:${TINT};"><td style="${TD}font-weight:700;color:${INK};">Left Eye</td>` +
-    `<td style="${TD}text-align:center;">${v2(le?.sph)}</td><td style="${TD}text-align:center;">${v2(le?.cyl)}</td><td style="${TD}text-align:center;">${v2(le?.axis)}</td>` +
-    `<td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.va)}</td><td style="${TD}text-align:center;">${v2(le?.nearSph)}</td><td style="${TD}text-align:center;background:#f4f6f5;">${v2(le?.nearVa)}</td></tr>` +
-    `</tbody></table></div>`;
   const blocks: string[] = [];
+  const push = (label: string, re: any, le: any) => {
+    const grid = suiRxTable(re, le);
+    if (grid) blocks.push(suiBlock(escapeHtml(label), grid));
+  };
   if (d.opticalRx) {
-    const rxMethod = (d.opticalRx as any).re?.method || (d.opticalRx as any).le?.method || "";
-    const hasRxData = (d.opticalRx as any).re?.sph || (d.opticalRx as any).re?.cyl || (d.opticalRx as any).le?.sph || (d.opticalRx as any).le?.cyl || (d.opticalRx as any).re?.nearSph || (d.opticalRx as any).le?.nearSph;
-    if (hasRxData) blocks.push(rxTable(`Spectacles / Refraction${rxMethod ? " · " + rxMethod : ""}`, (d.opticalRx as any).re, (d.opticalRx as any).le));
+    const rxMethod = d.opticalRx.re?.method || d.opticalRx.le?.method || "";
+    push(`Spectacles / Refraction${rxMethod ? " · " + rxMethod : ""}`, d.opticalRx.re, d.opticalRx.le);
   }
-  if (d.extraCorrections && d.extraCorrections.length > 0) {
-    d.extraCorrections.forEach((ec) => {
-      const method = ec.re?.method || ec.le?.method || "";
-      blocks.push(rxTable(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le));
-    });
-  }
-  if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) {
-    blocks.push(rxTable("Retinoscopy", d.retinoscopy.re, d.retinoscopy.le));
-  }
-  return blocks.length ? card("Refractions", blocks.join("")) : "";
+  (d.extraCorrections ?? []).forEach((ec) => {
+    const method = ec.re?.method || ec.le?.method || "";
+    push(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le);
+  });
+  if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) push("Retinoscopy", d.retinoscopy.re, d.retinoscopy.le);
+  return blocks.join("");
 })()}
 
 <!-- 9 · EOM / DEVIATION (Diplopia & Hess Charts) -->
 ${(() => {
   const dp = d.diplopiaChart;
   const hc = d.hessChart;
-  if (!dp && !hc) return "";
   const POSITIONS = ["TL","T","TR","L","C","R","BL","B","BR"];
   const POS_LABELS: Record<string,string> = { TL:"↖ Up-Left",T:"↑ Up",TR:"↗ Up-Right",L:"← Left",C:"Primary",R:"→ Right",BL:"↙ Down-Left",B:"↓ Down",BR:"↘ Down-Right" };
-  let inner = "";
-  if (dp && Object.keys(dp).length > 0) {
-    const dpRows = POSITIONS.map((pos) => {
-      const cell = dp[pos];
-      if (!cell) return "";
-      const status = cell.status ?? "";
-      const hasData = status && status !== "NOT_TESTED";
-      if (!hasData) return "";
-      const color = status === "DIPLOPIA_PRESENT" ? "#DC2626" : "#059669";
-      return `<tr><td style="${TD}font-weight:600;color:${LABEL_C};">${POS_LABELS[pos] ?? pos}</td>` +
-        `<td style="${TD};color:${color};font-weight:600;">${escapeHtml(status.replace(/_/g," "))}</td>` +
-        `<td style="${TD}color:#555;">${cell.notes ? escapeHtml(cell.notes) : "—"}</td></tr>`;
-    }).filter(Boolean).join("");
-    if (dpRows) {
-      inner += `<div style="font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Diplopia Chart</div>` +
-        `<table style="width:100%;border-collapse:collapse;"><thead><tr>` +
-        `<th style="${TH}">Position</th><th style="${TH}">Diplopia</th><th style="${TH}">Notes</th>` +
-        `</tr></thead><tbody>${dpRows}</tbody></table>`;
-    }
-  }
-  if (hc) {
-    if (inner) inner += `<div style="height:8px;"></div>`;
-    inner += `<div style="font-size:8px;font-weight:800;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;">Hess Chart</div>`;
-    if (hc.interpretation) inner += `<div style="font-size:9.5px;color:${INK};margin-bottom:4px;">${escapeHtml(hc.interpretation)}</div>`;
-  }
-  return inner ? card("Ocular Motility / EOM & Deviation", inner) : "";
+  const rows = dp ? POSITIONS.map((pos) => ({ pos, cell: dp[pos] }))
+    .filter(({ cell }) => cell && cell.status && cell.status !== "NOT_TESTED") : [];
+  const interp = hc?.interpretation ?? "";
+  if (!rows.length && !interp) return "";
+  const table = rows.length
+    ? suiTable(["30%", "35%", "35%"],
+        `<thead><tr><th style="${SUI_TH}">Position</th><th style="${SUI_TH}">Diplopia</th><th style="${SUI_TH}">Notes</th></tr></thead>`,
+        rows.map(({ pos, cell }, i) =>
+          `<tr style="${i % 2 !== 0 ? `background:${SUI.SUNKEN};` : ""}">` +
+          `<td style="${SUI_TD_MUTED}">${POS_LABELS[pos] ?? pos}</td>` +
+          `<td style="${SUI_TD}font-weight:500;color:${cell!.status === "DIPLOPIA_PRESENT" ? "#DC2626" : "#15803D"};">${escapeHtml(cell!.status!.replace(/_/g, " "))}</td>` +
+          `<td style="${SUI_TD_MUTED}">${cell!.notes ? escapeHtml(cell!.notes) : "—"}</td>` +
+          `</tr>`).join(""))
+    : "";
+  return suiBlock("Ocular Motility / EOM &amp; Deviation",
+    table + (interp ? `<p style="margin-top:5px;font-size:9.5px;font-style:italic;line-height:1.55;color:${SUI.INK_600};">${escapeHtml(interp)}</p>` : ""));
 })()}
 
 <!-- 10 · COLOUR VISION & CONTRAST SENSITIVITY -->
@@ -1932,27 +1718,18 @@ ${d.colourVision
       };
       const cvRows = buildRows(re?.cvMethod || "", le?.cvMethod || "", re?.result || "", re?.notes || "", le?.result || "", le?.notes || "");
       const csRows = buildRows(re?.csMethod || "", le?.csMethod || "", re?.csResult || "", re?.csNotes || "", le?.csResult || "", le?.csNotes || "");
+      const cell = (v: string, n: string) =>
+        `<div>${suiVal(v)}</div>` + (n ? `<div style="font-size:8px;font-style:italic;color:${SUI.INK_400};margin-top:1px;">[${escapeHtml(n)}]</div>` : "");
       const methodGrid = (rows: MRow[], label: string) => {
-        if (!rows.some(r => r.method || r.re || r.le)) return "";
-        const hdrTh = `font-size:8px;font-weight:700;color:${LABEL_C};text-transform:uppercase;letter-spacing:0.05em;padding:4px 7px;border-bottom:1px solid ${LINE};`;
-        const bodyRows = rows.map((row, i) =>
-          `<tr style="${i % 2 !== 0 ? `background:#F7FBFA;` : ""}">` +
-          `<td style="${TD}vertical-align:top;">` +
-          `<span style="color:${LABEL_C};margin-right:5px;">•</span>` +
-          `<span style="font-weight:600;color:${INK};">${escapeHtml(row.method || "—")}</span></td>` +
-          `<td style="${TD}vertical-align:top;"><div>${v2(row.re)}</div>${row.reNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.reNotes)}]</div>` : ""}</td>` +
-          `<td style="${TD}vertical-align:top;"><div>${v2(row.le)}</div>${row.leNotes ? `<div style="font-size:8px;color:#777;font-style:italic;">[${escapeHtml(row.leNotes)}]</div>` : ""}</td>` +
-          `</tr>`
-        ).join("");
-        return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:8px;">` +
-          `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
-          `<thead><tr><th style="${hdrTh}text-align:left;">${label}</th><th style="${hdrTh}text-align:left;">RE</th><th style="${hdrTh}text-align:left;">LE</th></tr></thead>` +
-          `<tbody>${bodyRows}</tbody></table>`;
+        if (!rows.some((r) => r.re || r.le)) return "";
+        return `<div class="no-break" style="margin-bottom:12px;">` +
+          suiTable(COLS_EYE_PDF, suiEyeHead(label, true),
+            rows.map((row) => suiEyeRow(suiBullet + escapeHtml(row.method || "—"), cell(row.re, row.reNotes), cell(row.le, row.leNotes))).join(""),
+            { indent: true, divided: true }) +
+          `</div>`;
       };
-      const inner = methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity") +
-        (d.colourVision!.notes ? `<div style="margin-top:4px;font-size:9.5px;"><span style="font-weight:700;color:${LABEL_C};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
-      if (!inner.trim()) return "";
-      return card("Colour Vision & Contrast Sensitivity", inner);
+      return methodGrid(cvRows, "Colour Vision") + methodGrid(csRows, "Contrast Sensitivity") +
+        (d.colourVision!.notes ? `<div style="margin:-6px 0 12px;padding-left:${SUI.INDENT}px;font-size:9.5px;color:${SUI.INK_700};"><span style="color:${SUI.INK_400};">Notes:</span> ${escapeHtml(d.colourVision!.notes)}</div>` : "");
     })()
   : ""}
 
@@ -1971,52 +1748,54 @@ ${(() => {
     if (!f) return deg;
     return `${deg} ${f}`;
   };
-  const gonioHdr = "Gonioscopy";
-  let inner = "";
+  let out = "";
   if (hasI) {
-    inner += `<table style="width:100%;border-collapse:collapse;table-layout:fixed;${hasG ? "margin-bottom:8px;" : ""}">` +
-      `<colgroup><col style="width:38%"><col style="width:31%"><col style="width:31%"></colgroup>` +
-      `<thead><tr>` +
-      `<th style="${TH}color:${LABEL_C};">IOP</th>` +
-      `<th style="${TH}color:${LABEL_C};">RE (mmHg)</th>` +
-      `<th style="${TH}color:${LABEL_C};">LE (mmHg)</th>` +
-      `</tr></thead><tbody>` +
-      d.iopReadings.map((r) =>
-        `<tr style="border-bottom:1px solid #ECF3F1;">` +
-        `<td style="${TD}color:#555;">${escapeHtml(r.method || "—")}${fmtTime((r as any).takenAt) ? ` · ${escapeHtml(fmtTime((r as any).takenAt))}` : ""}</td>` +
-        `<td style="${TD}font-weight:600;">${v2(r.re)}</td>` +
-        `<td style="${TD}font-weight:600;">${v2(r.le)}</td>` +
-        `</tr>`
-      ).join("") +
-      `</tbody></table>`;
+    out += `<div class="no-break" style="margin-bottom:12px;">` +
+      suiTable(COLS_EYE_PDF, suiEyeHead("IOP", true, " (mmHg)", " (mmHg)"),
+        d.iopReadings.map((r) => {
+          const t = fmtTime(r.takenAt);
+          return suiEyeRow(suiBullet + escapeHtml(r.method || "—") + (t ? ` · ${escapeHtml(t)}` : ""), suiVal(r.re), suiVal(r.le), { strong: true });
+        }).join(""),
+        { indent: true, divided: true }) +
+      `</div>`;
   }
   if (hasG) {
-    const gonioRe = fmtGonio(gonio!.re, gonio!.reDeg);
-    const gonioLe = fmtGonio(gonio!.le, gonio!.leDeg);
-    inner += eyeTbl(gonioHdr, [[gonio?.method || "—", gonioRe, gonioLe]]);
+    out += `<div class="no-break" style="margin-bottom:12px;">` +
+      suiTable(COLS_EYE_PDF, suiEyeHead("Gonioscopy", true),
+        suiEyeRow(suiBullet + escapeHtml(gonio?.method || "—"), suiVal(fmtGonio(gonio!.re, gonio!.reDeg)), suiVal(fmtGonio(gonio!.le, gonio!.leDeg))),
+        { indent: true, divided: true }) +
+      `</div>`;
   }
-  const cardLabel = hasI && hasG ? "IOP &amp; Gonioscopy" : hasI ? "IOP" : "Gonioscopy";
-  return inner ? card(cardLabel, inner) : "";
+  return out;
 })()}
 
 <!-- 12 · TEAR FILM -->
-${d.tearFilm && (d.tearFilm.tbutRe != null || d.tearFilm.tbutLe != null || d.tearFilm.schirmer1Re != null || d.tearFilm.schirmer1Le != null || d.tearFilm.schirmer2Re != null || d.tearFilm.schirmer2Le != null)
-  ? card("Tear Film", eyeTbl("Tear Film", [
-      ["TBUT (sec)", d.tearFilm.tbutRe != null ? String(d.tearFilm.tbutRe) : null, d.tearFilm.tbutLe != null ? String(d.tearFilm.tbutLe) : null],
-      ["Schirmer’s 1 (mm)", d.tearFilm.schirmer1Re != null ? String(d.tearFilm.schirmer1Re) : null, d.tearFilm.schirmer1Le != null ? String(d.tearFilm.schirmer1Le) : null],
-      ["Schirmer’s 2 (mm)", d.tearFilm.schirmer2Re != null ? String(d.tearFilm.schirmer2Re) : null, d.tearFilm.schirmer2Le != null ? String(d.tearFilm.schirmer2Le) : null],
-    ]))
-  : ""}
+${(() => {
+  const tf = d.tearFilm;
+  if (!tf) return "";
+  const rows = ([
+    ["TBUT (sec)", tf.tbutRe, tf.tbutLe],
+    ["Schirmer’s 1 (mm)", tf.schirmer1Re, tf.schirmer1Le],
+    ["Schirmer’s 2 (mm)", tf.schirmer2Re, tf.schirmer2Le],
+  ] as [string, number | null | undefined, number | null | undefined][])
+    .filter(([, re, le]) => re != null || le != null)
+    .map(([label, re, le]) => suiEyeRow(label, suiVal(re), suiVal(le))).join("");
+  return rows
+    ? `<div class="no-break" style="margin-bottom:12px;">${suiTable(COLS_EYE_PDF, suiEyeHead("Tear Film"), rows, { indent: true, divided: true })}</div>`
+    : "";
+})()}
 
 <!-- 13 · LACRIMAL SAC -->
-${d.lacrimalSac && (d.lacrimalSac.re || d.lacrimalSac.le)
-  ? card("Lacrimal Sac Syringing", eyeTbl("Lacrimal Sac Syringing", [
-      ["Findings",
-        d.lacrimalSac.re ? ([...(d.lacrimalSac.re.chips ?? []), d.lacrimalSac.re.findings].filter(Boolean).join(" · ")) || null : null,
-        d.lacrimalSac.le ? ([...(d.lacrimalSac.le.chips ?? []), d.lacrimalSac.le.findings].filter(Boolean).join(" · ")) || null : null,
-      ],
-    ]))
-  : ""}
+${(() => {
+  const ls = d.lacrimalSac;
+  if (!ls) return "";
+  const re = ls.re ? [(ls.re.chips ?? []).join(", "), ls.re.findings].filter(Boolean).join(" · ") : "";
+  const le = ls.le ? [(ls.le.chips ?? []).join(", "), ls.le.findings].filter(Boolean).join(" · ") : "";
+  if (!re && !le) return "";
+  return `<div class="no-break" style="margin-bottom:12px;">` +
+    suiTable(COLS_EYE_PDF, suiEyeHead("Lacrimal Sac Syringing", true), suiEyeRow("Findings", suiVal(re), suiVal(le)), { indent: true, divided: true }) +
+    `</div>`;
+})()}
 
 <!-- 14 · ANTERIOR SEGMENT -->
 ${d.anteriorSegment
@@ -2024,20 +1803,21 @@ ${d.anteriorSegment
       const re: Record<string, any> = (d.anteriorSegment.re as any) ?? {};
       const le: Record<string, any> = (d.anteriorSegment.le as any) ?? {};
       const antMethod: string = (re._method ?? le._method ?? "") as string;
-      const sLabel = `Anterior Segment · ${escapeHtml(antMethod || "Slit Lamp")}`;
       const ANT_FIELDS: [string, string][] = [
         ["upperLid", "Upper Lid"], ["lowerLid", "Lower Lid"], ["conjunctiva", "Conjunctiva"],
         ["sclera", "Sclera"], ["cornea", "Cornea"], ["anteriorChamber", "Ant. Chamber"],
         ["iris", "Iris"], ["pupil", "Pupil"], ["lens", "Lens"],
       ];
-      const rows: Array<[string, string | null, string | null]> = [
-        ...ANT_FIELDS
-          .filter(([k]) => re[k] || le[k])
-          .map(([k, label]): [string, string | null, string | null] => [label, stripB(re[k] as string | undefined) || null, stripB(le[k] as string | undefined) || null]),
-        ...(re.freeText || le.freeText ? [["Notes", (re.freeText as string | null) || null, (le.freeText as string | null) || null] as [string, string | null, string | null]] : []),
+      const rows: [string, string, string][] = [
+        ...ANT_FIELDS.filter(([k]) => re[k] || le[k]).map(([k, label]): [string, string, string] => [label, stripB(re[k]), stripB(le[k])]),
+        ...(re.freeText || le.freeText ? [["Notes", String(re.freeText ?? ""), String(le.freeText ?? "")] as [string, string, string]] : []),
       ];
-      const tbl = eyeTbl(sLabel, rows);
-      return tbl ? card("Anterior Segment Examination", tbl) : "";
+      if (!rows.length) return "";
+      return `<div class="no-break" style="margin-bottom:12px;">` +
+        suiTable(COLS_EYE_PDF, suiEyeHead(`Anterior Segment · ${escapeHtml(antMethod || "Slit Lamp")}`),
+          rows.map(([label, r, l], i) => suiEyeRow(escapeHtml(label), suiVal(r), suiVal(l), { stripe: i % 2 !== 0 })).join(""),
+          { indent: true }) +
+        `</div>`;
     })()
   : ""}
 
@@ -2050,104 +1830,54 @@ ${(() => {
   const posMethod: string = (re._method ?? le._method ?? "") as string;
   const posReNotes: string = (re._notes ?? "") as string;
   const posLeNotes: string = (le._notes ?? "") as string;
-  const POS_LABELS: [string, string][] = [
-    ["media", "Media"], ["discSize", "Disc Size"], ["discShape", "Disc Shape"],
-    ["discColour", "Disc Colour"], ["discVessels", "Disc Vessels"], ["discMargin", "Disc Margin"],
-    ["cdr", "CDR"], ["nrr", "NRR"], ["macula", "Macula"],
-    ["retinalVessels", "Retinal Vessels"], ["background", "Background"], ["periphery", "Periphery"],
-  ];
-  const sLabel = `Posterior Segment · ${escapeHtml(posMethod || "Indirect Ophthalmoscope")}`;
-  const allKeys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)]));
-  const posRows: Array<[string, string | null, string | null]> = [
-    ...allKeys
-      .filter((k) => !k.startsWith("_") && (re[k] || le[k]))
-      .map((k): [string, string | null, string | null] => {
-        const found = POS_LABELS.find(([fk]) => fk === k);
-        const label = found ? found[1] : k.replace(/([A-Z])/g, " $1").trim();
-        return [label, stripB(re[k] as string | undefined) || null, stripB(le[k] as string | undefined) || null];
-      }),
-    ...(posReNotes || posLeNotes ? [["Notes", posReNotes || null, posLeNotes || null] as [string, string | null, string | null]] : []),
-  ];
-  if (!posRows.length && !ps.notes) return "";
-  let inner = eyeTbl(sLabel, posRows);
-  if (ps.notes) inner += `<div style="margin-top:6px;background:${TINT};border-left:3px solid ${BRAND};border-radius:0 4px 4px 0;padding:6px 10px;font-size:9.5px;white-space:pre-wrap;">${escapeHtml(ps.notes)}</div>`;
-  return inner ? card("Posterior Segment Examination", inner) : "";
+  const POS_LABELS: Record<string, string> = {
+    media: "Media", discSize: "Disc Size", discShape: "Disc Shape",
+    discColour: "Disc Colour", discVessels: "Disc Vessels", discMargin: "Disc Margin",
+    cdr: "CDR", nrr: "NRR", macula: "Macula", retinalVessels: "Retinal Vessels",
+    background: "Background", periphery: "Periphery",
+  };
+  const keys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)])).filter((k) => !k.startsWith("_") && (re[k] || le[k]));
+  if (!keys.length && !posReNotes && !posLeNotes && !ps.notes) return "";
+  const rows = keys.map((k, i) => suiEyeRow(escapeHtml(POS_LABELS[k] ?? k), suiVal(stripB(re[k])), suiVal(stripB(le[k])), { stripe: i % 2 !== 0 })).join("") +
+    (posReNotes || posLeNotes ? suiEyeRow("Notes", suiVal(posReNotes), suiVal(posLeNotes), { stripe: keys.length % 2 !== 0 }) : "");
+  return `<div class="no-break" style="margin-bottom:12px;">` +
+    (rows ? suiTable(COLS_EYE_PDF, suiEyeHead(`Posterior Segment · ${escapeHtml(posMethod || "Indirect Ophthalmoscope")}`), rows, { indent: true }) : "") +
+    (ps.notes ? `<p style="margin-top:5px;padding-left:${SUI.INDENT}px;font-size:9.5px;font-style:italic;line-height:1.4;color:${SUI.INK_500};">${escapeHtml(ps.notes)}</p>` : "") +
+    `</div>`;
 })()}
 
-<!-- 16 · ASSESSMENT / DIAGNOSIS -->
+<!-- 16 · DIAGNOSIS -->
 ${d.diagnoses.length
-  ? card("Diagnosis",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};line-height:1.9;">` +
-      d.diagnoses.map((dx) =>
-        (dx.status && dx.status !== "BLANK" ? `<span style="color:#888;font-weight:400;">${escapeHtml(dx.status.charAt(0) + dx.status.slice(1).toLowerCase())} ·</span> ` : "") +
-        (dx.laterality ? `<span style="color:#1a6e6a;font-weight:700;margin-right:4px;">${escapeHtml(dx.laterality)}</span>` : "") +
-        escapeHtml(dx.description) +
-        (dx.icd10Code ? ` <span style="font-family:'Courier New',monospace;font-size:8px;color:#888;font-weight:400;">${escapeHtml(dx.icd10Code)}</span>` : "")
-      ).join("<br>") +
-      `</div>`)
+  ? suiLine("Diagnosis", suiDiagnosisChips(
+      [...d.diagnoses].sort((a, b) => {
+        const ord: Record<string, number> = { ACTIVE: 0, CHRONIC: 1, RESOLVED: 2 };
+        return (ord[a.status] ?? 3) - (ord[b.status] ?? 3);
+      }), true))
   : ""}
 
 <!-- 17 · MINOR PROCEDURE -->
-${d.minorProcedure?.procedureName
-  ? card("Minor Procedure",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">` +
-      [
-        d.minorProcedure.procedureLaterality ? escapeHtml(d.minorProcedure.procedureLaterality) : "",
-        escapeHtml(d.minorProcedure.procedureName),
-        d.minorProcedure.anesthesiaType ? `Under ${escapeHtml(d.minorProcedure.anesthesiaType)}` : "",
-      ].filter(Boolean).join(`<span style="color:#B0BDBA;margin:0 5px;">·</span>`) +
-      `</div>` +
-      (d.minorProcedure.procedureNotes
-        ? `<div style="margin-top:6px;padding:7px 11px;background:#F0F8F6;border:1px solid #C7DED9;border-left:3px solid #2BA89C;border-radius:0 5px 5px 0;font-size:9px;color:#2A4A46;line-height:1.55;white-space:pre-wrap;">${escapeHtml(d.minorProcedure.procedureNotes)}</div>`
-        : ""))
-  : ""}
+${d.minorProcedure?.procedureName ? suiLine("Minor Procedure", suiProcedure(d.minorProcedure, d.minorProcedure.procedureName)) : ""}
 
-<!-- 18 · MEDICATIONS PRESCRIBED -->
+<!-- 18 · TREATMENT PLAN: MEDICATIONS -->
 ${d.medications.length
-  ? card("Treatment Plan: Medications",
-    `<table style="width:100%;border-collapse:collapse;">
-    <colgroup><col style="width:5%"><col style="width:32%"><col style="width:14%"><col style="width:22%"><col style="width:27%"></colgroup>
-    <tbody>${medRows}</tbody>
-  </table>`)
+  ? suiBlock("Treatment Plan: Medications", suiTable(SUI_MED_COLS, "", suiMedicationRows(d.medications, d.visit.date, true)))
   : ""}
 
-<!-- 19 · INVESTIGATIONS WITH IN VIEW OF -->
-${d.investigations.length
-  ? card("Investigations",
-      `<div>` +
-      d.investigations.map((inv, i) =>
-        `<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;${i > 0 ? "border-top:1px solid #ECF3F1;" : ""}">` +
-        `<span style="font-size:9px;color:#8A9793;width:20px;text-align:right;flex-shrink:0;font-weight:600;">${i + 1}.</span>` +
-        `<div style="font-size:9.5px;font-weight:600;color:#1a1a1a;flex:1;">` +
-        (inv.laterality ? `<span style="font-weight:700;color:${BRAND};margin-right:5px;">${escapeHtml(inv.laterality)}</span>` : "") +
-        escapeHtml(inv.testName) +
-        (inv.notes ? `<span style="font-weight:400;font-style:italic;color:#555;margin-left:5px;">· In view of: ${escapeHtml(inv.notes)}</span>` : "") +
-        `</div></div>`
-      ).join("") +
-      `</div>`)
-  : ""}
+<!-- 19 · INVESTIGATIONS -->
+${d.investigations.length ? suiBlock("Investigations", suiInvestigationList(d.investigations)) : ""}
 
-<!-- 20 · FOLLOW-UP WITH IN VIEW OF -->
-${d.visit.followUpDate
-  ? card("Follow-up",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${format(new Date(d.visit.followUpDate), "EEEE, dd MMM yyyy")}</div>` +
-      (d.visit.inViewOf && d.visit.inViewOf.trim()
-        ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
-        : ""))
-  : ""}
+<!-- 20 · FOLLOW-UP with In View Of -->
+${d.visit.followUpDate ? suiLine("Follow-up", suiFollowUp(new Date(d.visit.followUpDate), d.visit.inViewOf)) : ""}
 
-<!-- 18b · ADVICE NOTES -->
-${d.adviseNotes
-  ? card("Advice",
-      `<div style="font-size:9.5px;color:${INK};line-height:1.6;white-space:pre-wrap;">${escapeHtml(d.adviseNotes)}</div>`)
-  : ""}
+<!-- 21 · ADVICE -->
+${d.adviseNotes ? suiBlock("Advice", suiNote(d.adviseNotes, "amber", false)) : ""}
 
-<!-- 21 · REFERRAL WITH IN VIEW OF -->
+<!-- 22 · REFERRAL -->
 ${d.visit.referralEnabled
-  ? card("Referral",
-      `<div style="font-size:10.5px;font-weight:600;color:${INK};">${d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred"}</div>` +
+  ? suiLine("Referral",
+      suiText(d.visit.referralNote && d.visit.referralNote.trim() ? escapeHtml(d.visit.referralNote.trim()) : "Referred") +
       (d.visit.inViewOf && d.visit.inViewOf.trim() && !d.visit.followUpDate
-        ? `<div style="margin-top:4px;font-size:9px;color:#4A5A57;"><span style="font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:8px;color:${LABEL_C};">In View Of:</span> ${escapeHtml(d.visit.inViewOf.trim())}</div>`
+        ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(d.visit.inViewOf.trim())}</span>`
         : ""))
   : ""}
 

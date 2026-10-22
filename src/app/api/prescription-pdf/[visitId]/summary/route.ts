@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { generateShortSummaryPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
+import { isPrescribableMethod } from "@/lib/constants";
 import { format } from "date-fns";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
@@ -121,8 +122,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     ...(inclRx ? c1Corrections : []),
     ...(inclExtras ? extraCorrectionsList : []),
   ];
-  const extraCorrections = allCorrections.length > 0
-    ? allCorrections.map((c) => ({ label: c.label, re: { ...c.re, method: c.method }, le: { ...c.le, method: c.method } }))
+  // The short summary is the patient's glasses prescription: it prints only the
+  // Subjective refraction (the one dispensable as an Rx — Correction 1 or an extra
+  // correction, whichever is Subjective, same as the Plan tab's prescription card).
+  // Every refraction/method prints in the long EMR. allCorrections is already gated
+  // by the print-selection flags, so an unselected Subjective Rx stays out.
+  const subjectiveCorr = allCorrections.find((c) => isPrescribableMethod(c.method));
+  const opticalRx = subjectiveCorr
+    ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }
     : null;
 
   // Visual Acuity
@@ -272,8 +279,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       status: inv.status,
       notes: inv.notes ?? null,
     })) : [],
-    opticalRx: null,
-    extraCorrections,
+    opticalRx,
+    extraCorrections: null,
     visualAcuity,
     retinoscopy,
     anteriorSegment,
