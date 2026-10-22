@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import { canPrintVisit } from "../access";
+import { printDeniedReason } from "../access";
 import { generateFullEmrPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
 
@@ -39,7 +39,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   });
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (!(await canPrintVisit(user, visit))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const denied = await printDeniedReason(user, visit);
+  if (denied) return NextResponse.json({ error: "Forbidden", reason: denied }, { status: 403 });
 
   const ge = visit.generalExam;
   const va = visit.visualAcuity;

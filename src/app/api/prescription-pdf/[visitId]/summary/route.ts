@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
-import { canPrintVisit } from "../../access";
+import { printDeniedReason } from "../../access";
 import { generateShortSummaryPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
 import { isPrescribableMethod } from "@/lib/constants";
@@ -37,7 +37,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   });
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (!(await canPrintVisit(user, visit))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  const denied = await printDeniedReason(user, visit);
+  if (denied) return NextResponse.json({ error: "Forbidden", reason: denied }, { status: 403 });
 
   // Section inclusion params (absent or "1" = include, "0" = exclude)
   const sp = req.nextUrl.searchParams;
