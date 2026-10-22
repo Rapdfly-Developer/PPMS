@@ -1594,12 +1594,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
       ${fbox("Age / Gender", `${d.patient.age} yrs / ${escapeHtml(d.patient.sex)}`)}
       ${fbox("Mobile", d.patient.mobile ? escapeHtml(d.patient.mobile) : "—")}
     </tr>
-    <tr>
-      ${fbox("Date of Visit", format(d.visit.date, "dd MMM yyyy"))}
-      ${fbox("Visit Time", format(d.visit.date, "hh:mm a") + " IST")}
-      ${fbox("Visit Type", escapeHtml(d.visit.visitType ?? "Consultation"))}
-      ${d.patient.address ? fbox("Address", escapeHtml(d.patient.address)) : `<td></td>`}
-    </tr>
+    ${d.patient.address ? `<tr>${fbox("Address", escapeHtml(d.patient.address))}<td></td><td></td><td></td></tr>` : ""}
   </tbody>
 </table>
 

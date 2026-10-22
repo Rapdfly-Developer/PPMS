@@ -89,7 +89,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     // v2: per-method map stored in re field
     const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
     Object.entries(methods).forEach(([method, entry]) => {
-      if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+      if (Object.values(entry.re || {}).some(Boolean)) {
         c1Corrections.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
       }
     });
@@ -97,8 +97,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     // v1: flat re/le
     const re = parseJSON((rc as any)?.re, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" } as any);
     const le = parseJSON((rc as any)?.le, { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" } as any);
-    const included = (re as any).includedInPrint !== false;
-    if (included && rc && (re.sph || re.cyl || re.axis || (le as any).sph || (le as any).cyl || (le as any).axis || re.nearSph || (le as any).nearSph || re.va || (le as any).va)) {
+    if (rc && (re.sph || re.cyl || re.axis || (le as any).sph || (le as any).cyl || (le as any).axis || re.nearSph || (le as any).nearSph || re.va || (le as any).va)) {
       c1Corrections.push({ label: "Refraction 1", re: re as any, le: le as any, method: (re as any).method || "" });
     }
   }
@@ -109,12 +108,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     if (ex._v === 2) {
       const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
       Object.entries(methods).forEach(([method, entry]) => {
-        if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+        if (Object.values(entry.re || {}).some(Boolean)) {
           extraCorrectionsList.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method });
         }
       });
     } else {
-      if (ex.includedInPrint !== false) {
+      if (Object.values(ex.re || {}).some(Boolean)) {
         extraCorrectionsList.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
       }
     }
@@ -127,8 +126,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   // The short summary is the patient's glasses prescription: it prints only the
   // Subjective refraction (the one dispensable as an Rx — Correction 1 or an extra
   // correction, whichever is Subjective, same as the Plan tab's prescription card).
-  // Every refraction/method prints in the long EMR. allCorrections is already gated
-  // by the print-selection flags, so an unselected Subjective Rx stays out.
+  // Every refraction/method prints in the long EMR.
   const subjectiveCorr = allCorrections.find((c) => isPrescribableMethod(c.method));
   const opticalRx = subjectiveCorr
     ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }

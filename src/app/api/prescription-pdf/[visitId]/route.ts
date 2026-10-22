@@ -140,6 +140,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         route: m.route ?? null, laterality: m.laterality ?? null,
       })),
       opticalRx: null,
+      // Every refraction and method that has values, same as the Previous Visits long summary.
       extraCorrections: (() => {
         type FlatCorr = { label: string; re: any; le: any; method: string };
         const c1Corrs: FlatCorr[] = [];
@@ -148,13 +149,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         if (reRaw._v === 2) {
           const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
           Object.entries(methods).forEach(([method, entry]) => {
-            if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+            if (Object.values(entry.re || {}).some(Boolean)) {
               c1Corrs.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
             }
           });
         } else {
-          const rcRe = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "", includedInPrint: true } as any);
-          if (rcRe.includedInPrint !== false) {
+          const rcRe = parseJSON(rc?.re, { sph: "", cyl: "", axis: "", nearSph: "", nearCyl: "", nearAxis: "" } as any);
+          if (Object.values(rcRe).some(Boolean)) {
             c1Corrs.push({ label: "Refraction 1", re: rcRe, le: parseJSON(rc?.le, {} as any), method: rcRe.method || "" });
           }
         }
@@ -164,12 +165,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
             if (ex._v === 2) {
               const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
               Object.entries(methods).forEach(([method, entry]) => {
-                if (entry.includedInPrint !== false && Object.values(entry.re || {}).some(Boolean)) {
+                if (Object.values(entry.re || {}).some(Boolean)) {
                   extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method });
                 }
               });
             } else {
-              if (ex.includedInPrint !== false) {
+              if (Object.values(ex.re || {}).some(Boolean)) {
                 extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: ex.re || {}, le: ex.le || {}, method: ex.re?.method || "" });
               }
             }

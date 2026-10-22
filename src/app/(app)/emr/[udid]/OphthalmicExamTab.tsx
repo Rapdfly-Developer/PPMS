@@ -749,18 +749,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <SaveIndicator state={state} />
         </div>
       </div>
-      {/* Per-method print checkbox — reflects the currently selected method */}
-      <div className="flex justify-end mb-3">
-        <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-          <input
-            type="checkbox"
-            checked={activeEntry(c1).includedInPrint}
-            onChange={(e) => { const v = e.target.checked; setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, includedInPrint: v }))); }}
-            className="accent-[var(--color-primary-600)]"
-          />
-          Include in summary &amp; print
-        </label>
-      </div>
       <EyeColumns>
         {eyeFields(
           activeEntry(c1).re,
@@ -807,18 +795,6 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 </button>
               )}
             </div>
-          </div>
-          {/* Per-method print checkbox */}
-          <div className="flex justify-end mb-3">
-            <label className="flex items-center gap-1.5 text-caption cursor-pointer select-none text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]">
-              <input
-                type="checkbox"
-                checked={activeEntry(ex).includedInPrint}
-                onChange={(e) => { const v = e.target.checked; setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, includedInPrint: v }))); }}
-                className="accent-[var(--color-primary-600)]"
-              />
-              Include in summary &amp; print
-            </label>
           </div>
           <EyeColumns>
             {eyeFields(
