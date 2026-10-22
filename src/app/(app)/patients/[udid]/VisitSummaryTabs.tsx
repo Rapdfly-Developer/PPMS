@@ -1235,9 +1235,13 @@ function LongContent({
               sclera: "Sclera", cornea: "Cornea", anteriorChamber: "Ant. Chamber",
               iris: "Iris", pupil: "Pupil", lens: "Lens",
             };
+            const joinNotes = (e: Record<string, unknown>) =>
+              Array.from(new Set([e.freeText, e._notes].filter((x): x is string => typeof x === "string" && !!x.trim()))).join("\n");
+            const antNoteRe = joinNotes(re);
+            const antNoteLe = joinNotes(le);
             const antRows = [
               ...fields.filter((f) => re[f] || le[f]).map((f) => ({ key: f, label: labels[f], re: stripBullet(re[f] as string | undefined), le: stripBullet(le[f] as string | undefined) })),
-              ...(re.freeText || le.freeText ? [{ key: "notes", label: "Notes", re: re.freeText as string | undefined, le: le.freeText as string | undefined }] : []),
+              ...(antNoteRe || antNoteLe ? [{ key: "notes", label: "Notes", re: antNoteRe, le: antNoteLe }] : []),
             ];
             if (!antRows.length) return null;
             return (

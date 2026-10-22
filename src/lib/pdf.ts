@@ -1829,9 +1829,13 @@ ${d.anteriorSegment
         ["sclera", "Sclera"], ["cornea", "Cornea"], ["anteriorChamber", "Ant. Chamber"],
         ["iris", "Iris"], ["pupil", "Pupil"], ["lens", "Lens"],
       ];
+      const joinNotes = (e: Record<string, any>) =>
+        Array.from(new Set([e.freeText, e._notes].filter((x): x is string => typeof x === "string" && !!x.trim()))).join("\n");
+      const noteRe = joinNotes(re);
+      const noteLe = joinNotes(le);
       const rows: [string, string, string][] = [
         ...ANT_FIELDS.filter(([k]) => re[k] || le[k]).map(([k, label]): [string, string, string] => [label, stripB(re[k]), stripB(le[k])]),
-        ...(re.freeText || le.freeText ? [["Notes", String(re.freeText ?? ""), String(le.freeText ?? "")] as [string, string, string]] : []),
+        ...(noteRe || noteLe ? [["Notes", noteRe, noteLe] as [string, string, string]] : []),
       ];
       if (!rows.length) return "";
       return `<div class="no-break" style="margin-bottom:12px;">` +
