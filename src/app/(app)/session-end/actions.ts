@@ -9,6 +9,7 @@ import {
   closeEndedSessions, openAppointmentsForSession, markAppointmentsIncomplete,
   SESSION_INCOMPLETE_NOTIFICATION,
 } from "@/lib/sessionClose";
+import { generateMonthlySchedule } from "@/app/(app)/appointments/availability/actions";
 
 /** The pop-up appears this many minutes before a session ends. */
 const WARN_MINUTES = 5;
@@ -24,7 +25,25 @@ export type SessionPrompt = {
   startTime: string;
   endTime: string;
   patients: string[];
+  /** Set when extending by 30 min would run into the doctor's next session that day. */
+  overlap: { hospitalName: string; startTime: string; newStartTime: string } | null;
 };
+
+/** The doctor's next session that day after `current` (any hospital), or null. */
+function nextSessionAfter(sessions: DoctorSession[], current: DoctorSession): DoctorSession | null {
+  const end = toMins(current.endTime);
+  return sessions
+    .filter((s) => !(s.hospitalId === current.hospitalId && s.startTime === current.startTime) && toMins(s.startTime) >= end)
+    .sort((a, b) => toMins(a.startTime) - toMins(b.startTime))[0] ?? null;
+}
+
+/** New end after extending, and the next session it would run into (gap under 30 min). */
+function extensionPlan(sessions: DoctorSession[], current: DoctorSession) {
+  const newEnd = Math.min(toMins(current.endTime) + EXTEND_MINUTES, 23 * 60 + 59);
+  const next = nextSessionAfter(sessions, current);
+  const overlaps = !!next && toMins(next.startTime) < newEnd;
+  return { newEnd, next: overlaps ? next : null };
+}
 
 export type SessionNotice = { id: string; message: string };
 
@@ -50,10 +69,17 @@ export async function getSessionPrompt(): Promise<{ prompt: SessionPrompt | null
     const open = await openAppointmentsForSession(doctorId, today, s);
     if (open.length === 0) continue;
     const hospital = await prisma.hospital.findUnique({ where: { id: s.hospitalId }, select: { name: true } });
+    const plan = extensionPlan(sessions, s);
+    const nextHospital = plan.next
+      ? await prisma.hospital.findUnique({ where: { id: plan.next.hospitalId }, select: { name: true } })
+      : null;
     prompt = {
       dateStr: today, hospitalId: s.hospitalId, hospitalName: hospital?.name ?? "",
       startTime: s.startTime, endTime: s.endTime,
       patients: open.map((a) => a.patient.name),
+      overlap: plan.next
+        ? { hospitalName: nextHospital?.name ?? "", startTime: plan.next.startTime, newStartTime: toHHMM(plan.newEnd) }
+        : null,
     };
     break;
   }
@@ -112,22 +138,60 @@ export async function markSessionIncomplete(p: Pick<SessionPrompt, "dateStr" | "
   return { marked };
 }
 
+/** Start of one session part (calendar entry or extra OP) at a hospital on a date, moved to `newStart`. */
+async function moveSessionStart(doctorId: string, hospitalId: string, dateStr: string, startTime: string, newStart: string) {
+  const day = dateOnlyWindow(dateStr);
+  const gen = await prisma.generatedSchedule.findFirst({ where: { doctorId, hospitalId, date: day, startTime } });
+  if (gen) { await prisma.generatedSchedule.update({ where: { id: gen.id }, data: { startTime: newStart, isModified: true } }); return; }
+  const extra = await prisma.scheduleException.findFirst({ where: { doctorId, hospitalId, type: "EXTRA_OP", status: "ACTIVE", date: day, startTime } });
+  if (extra) await prisma.scheduleException.update({ where: { id: extra.id }, data: { startTime: newStart } });
+}
+
 /**
- * "Extend by 30 minutes": moves that date's session end in Hospital Manager — the calendar
- * entry when the month is generated, otherwise an extra OP slot right after the session
- * (shown in the calendar and merged into the same session).
+ * "Extend by 30 minutes". Every change is saved as that date's entries in Hospital Manager:
+ *  - the month is generated first if it is not yet (same as "Generate Month"), so the day
+ *    has calendar entries to edit;
+ *  - the session's end moves 30 minutes later;
+ *  - if the doctor's next session that day starts within those 30 minutes, its start moves
+ *    to the new end time (that day only).
  */
 export async function extendSession(p: Pick<SessionPrompt, "dateStr" | "hospitalId" | "startTime" | "endTime">): Promise<{ endTime: string } | { error: string }> {
   const user = await requireRole("DOCTOR");
   const doctorId = scopeDoctorId(user);
-  const session = await findSession(doctorId, p);
+  let session = await findSession(doctorId, p);
   if (!session) return { error: "This session has changed. Please check your schedule in Hospital Manager." };
 
-  const newEnd = Math.min(toMins(session.endTime) + EXTEND_MINUTES, 23 * 60 + 59);
+  const [y, m] = p.dateStr.split("-").map(Number);
+  const monthStr  = `${y}-${String(m).padStart(2, "0")}-01`;
+  const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+  const monthGenerated = await prisma.generatedSchedule.count({
+    where: { doctorId, date: { gte: dateOnlyWindow(monthStr).gte, lt: new Date(`${nextMonth}T00:00:00.000Z`) } },
+  });
+
+  let sessions = await getDoctorSessions(doctorId, p.dateStr);
+  if (monthGenerated === 0) {
+    // Generate Month fills the calendar from the weekly template. Only do it when today's
+    // schedule IS the weekly template, otherwise generating would change the doctor's day.
+    const onlyWeekly = sessions.every((s) => s.source === "weekly" || s.source === "extra_op");
+    if (onlyWeekly) {
+      await generateMonthlySchedule(y, m);
+      sessions = await getDoctorSessions(doctorId, p.dateStr);
+      session = sessions.find((s) => s.hospitalId === p.hospitalId && s.startTime === p.startTime) ?? null;
+      if (!session) return { error: "This session has changed. Please check your schedule in Hospital Manager." };
+    }
+  }
+
+  const { newEnd, next } = extensionPlan(sessions, session);
   if (newEnd <= toMins(session.endTime)) return { error: "The session cannot be extended past midnight." };
   const newEndStr = toHHMM(newEnd);
-  const day = dateOnlyWindow(p.dateStr);
+  if (next && newEnd >= toMins(next.endTime)) {
+    return { error: "Extending would cover your whole next session. Please adjust your schedule in Hospital Manager." };
+  }
+  if (next && next.source !== "generated" && next.source !== "extra_op") {
+    return { error: "Your next session today comes from a monthly plan or day override. Please adjust it in Hospital Manager." };
+  }
 
+  const day = dateOnlyWindow(p.dateStr);
   // The part of the session that ends last: a calendar entry or an earlier extension
   const [gen, extra] = await Promise.all([
     prisma.generatedSchedule.findFirst({ where: { doctorId, hospitalId: p.hospitalId, date: day, endTime: session.endTime } }),
@@ -147,6 +211,9 @@ export async function extendSession(p: Pick<SessionPrompt, "dateStr" | "hospital
       },
     });
   }
+
+  // Next session starts within the extension: push its start to the new end (that day only)
+  if (next) await moveSessionStart(doctorId, next.hospitalId, p.dateStr, next.startTime, newEndStr);
 
   revalidateAll();
   return { endTime: newEndStr };

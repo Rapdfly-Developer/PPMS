@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { checkWithinSession } from "@/lib/doctorSessions";
+import { checkWithinSession, getDoctorSessions, sessionAt, dateOnlyWindow, SESSION_CLOSED_TYPE } from "@/lib/doctorSessions";
 import { requireUser, userCan } from "@/lib/rbac";
 import { getBookingScope } from "@/lib/booking-scope";
 import { generateUDID } from "@/lib/udid";
@@ -45,6 +45,31 @@ export async function getBookedSlots(doctorId: string, dateStr: string, requeste
     counts[t] = (counts[t] ?? 0) + 1;
   }
   return counts;
+}
+
+/**
+ * The doctor's sessions on a date (one hospital, or all of them when hospitalId is empty) —
+ * the same schedule the server checks when booking: Hospital Manager calendar, extensions,
+ * moved starts, overrides, leave, falling back to the weekly template. Sessions the doctor
+ * closed with "Mark as incomplete" are flagged so the form offers no slots in them.
+ */
+export async function getBookingSessions(doctorId: string, dateStr: string, requestedHospitalId: string): Promise<
+  { hospitalId: string; startTime: string; endTime: string; slotMins: number; maxPatients: number; closed: boolean }[]
+> {
+  const scope = await getBookingScope();
+  if (!scope || !doctorId || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return [];
+  const hospitalId = scope.hospitalId ?? (requestedHospitalId || undefined);
+  const sessions = await getDoctorSessions(doctorId, dateStr, hospitalId);
+  if (sessions.length === 0) return [];
+  const closed = await prisma.scheduleException.findMany({
+    where: { doctorId, type: SESSION_CLOSED_TYPE, status: "ACTIVE", date: dateOnlyWindow(dateStr), ...(hospitalId ? { hospitalId } : {}) },
+    select: { hospitalId: true, startTime: true },
+  });
+  return sessions.map((s) => ({
+    hospitalId: s.hospitalId, startTime: s.startTime, endTime: s.endTime,
+    slotMins: s.slotMins, maxPatients: s.maxPatients,
+    closed: closed.some((c) => c.hospitalId === s.hospitalId && c.startTime === s.startTime),
+  }));
 }
 
 export async function bookAppointment(formData: FormData) {
@@ -205,8 +230,10 @@ export async function bookAppointment(formData: FormData) {
   const outsideSession = await checkWithinSession(doctorId, hospitalId, dateTime);
   if (outsideSession) return { error: outsideSession };
 
-  const slotMins = avail?.slotMins ?? 15;
-  const capacity = avail?.maxPatients ?? (slotMins === 30 ? 2 : 1);
+  // Slot length and patients per slot come from the same session the form shows
+  const session = sessionAt(await getDoctorSessions(doctorId, dateStr, hospitalId), istHHMM(dateTime));
+  const slotMins = session?.slotMins ?? avail?.slotMins ?? 15;
+  const capacity = session?.maxPatients ?? avail?.maxPatients ?? (slotMins === 30 ? 2 : 1);
 
   // Check slot capacity
   const slotCount = await prisma.appointment.count({

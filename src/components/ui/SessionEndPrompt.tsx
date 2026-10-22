@@ -104,6 +104,11 @@ export function SessionEndPrompt() {
             <ul className="mb-4 max-h-32 overflow-y-auto rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2 text-caption text-[var(--color-ink-600)] space-y-0.5">
               {prompt.patients.map((name, i) => <li key={i}>• {name}</li>)}
             </ul>
+            {prompt.overlap && (
+              <p className="mb-3 text-caption font-medium text-amber-700">
+                ⚠️ Your {prompt.overlap.hospitalName} session starts at {fmt12(prompt.overlap.startTime)}.
+              </p>
+            )}
             {error && <p className="mb-3 text-caption text-red-600">{error}</p>}
             <div className="flex gap-2">
               <button
@@ -120,7 +125,9 @@ export function SessionEndPrompt() {
                 onClick={onExtend}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-[var(--color-primary-600)] text-sm font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
               >
-                Extend by 30 min
+                {prompt.overlap
+                  ? `Extend 30 min & start ${prompt.overlap.hospitalName} at ${fmt12(prompt.overlap.newStartTime)}`
+                  : "Extend by 30 min"}
               </button>
             </div>
           </>

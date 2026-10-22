@@ -7,7 +7,7 @@ import {
   Calendar, Clock, FileText, ChevronRight,
   User, Phone, AlertCircle, CheckCircle2, Building2,
 } from "lucide-react";
-import { bookAppointment, getBookedSlots, getLastVisitCC } from "./actions";
+import { bookAppointment, getBookedSlots, getLastVisitCC, getBookingSessions } from "./actions";
 import { istTodayStr } from "@/lib/ist";
 import { BackButton } from "@/components/ui/BackButton";
 import { SmartUploadBox, type UploadedFile } from "@/components/ui/SmartUploadBox";
@@ -116,6 +116,11 @@ export function BookAppointmentForm({
   const [sinceNum,   setSinceNum]   = useState("");
   const [sinceUnit,  setSinceUnit]  = useState("days");
   const [bookedCounts, setBookedCounts] = useState<Record<string, number>>({});
+  // The doctor's real sessions (Hospital Manager calendar, extensions, overrides, leave —
+  // the same schedule the server checks): for the chosen date, and for today (walk-ins).
+  type BookingSession = Awaited<ReturnType<typeof getBookingSessions>>[number];
+  const [daySessions, setDaySessions]     = useState<BookingSession[]>([]);
+  const [todaySessions, setTodaySessions] = useState<BookingSession[]>([]);
 
   // Follow-up auto-fill
   const [followUpBase, setFollowUpBase] = useState<{
@@ -136,9 +141,8 @@ export function BookAppointmentForm({
     const hhmm = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
-    const todayWeekday = now.getDay();
-    const match = (availabilityByDoctor[doctorId] ?? []).find(
-      (a) => a.weekday === todayWeekday && nowMins >= hhmm(a.startTime) && nowMins < hhmm(a.endTime)
+    const match = todaySessions.find(
+      (a) => !a.closed && nowMins >= hhmm(a.startTime) && nowMins < hhmm(a.endTime)
     );
     return match?.hospitalId ?? null;
   })();
@@ -168,11 +172,11 @@ export function BookAppointmentForm({
 
   const todayStr = new Date().toISOString().split("T")[0];
 
-  // Compute slots: filter by selected hospital + weekday — support multiple windows per day
-  const doctorAvail = availabilityByDoctor[doctorId] ?? [];
-  const weekday = new Date(date + "T12:00:00").getDay(); // noon to avoid DST edge
-  const todayAvails = doctorAvail.filter(
-    (a) => a.weekday === weekday && (!effectiveHospitalId || a.hospitalId === effectiveHospitalId)
+  // Compute slots from the doctor's sessions on that date at the selected hospital (support
+  // multiple windows per day). Sessions closed with "Mark as incomplete" offer no slots.
+  const weekday = new Date(date + "T12:00:00").getDay(); // for the "no schedule" message
+  const todayAvails = daySessions.filter(
+    (a) => !a.closed && (!effectiveHospitalId || a.hospitalId === effectiveHospitalId)
   );
 
   // Merge slots from all windows (e.g. 09:00–13:00 + 15:00–18:00), sorted by time
@@ -200,6 +204,21 @@ export function BookAppointmentForm({
     if ((bookedCounts[t] ?? 0) >= capacityFor(t)) return false;
     return true;
   });
+
+  // Fetch the doctor's sessions for the chosen date / hospital, and for today (walk-ins)
+  useEffect(() => {
+    if (!doctorId || !date) return;
+    let live = true;
+    getBookingSessions(doctorId, date, effectiveHospitalId ?? "").then((r) => { if (live) setDaySessions(r); }).catch(() => {});
+    return () => { live = false; };
+  }, [doctorId, date, effectiveHospitalId]);
+  useEffect(() => {
+    if (!doctorId) return;
+    let live = true;
+    const istToday = new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+    getBookingSessions(doctorId, istToday, hospitalId ?? "").then((r) => { if (live) setTodaySessions(r); }).catch(() => {});
+    return () => { live = false; };
+  }, [doctorId, hospitalId]);
 
   // Fetch booked slot counts whenever doctor, date or hospital changes
   useEffect(() => {

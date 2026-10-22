@@ -14,6 +14,8 @@ export type DoctorSession = {
   startTime: string; // "HH:MM"
   endTime: string;   // "HH:MM"
   source: "generated" | "extra_op" | "individual" | "monthly" | "weekly";
+  slotMins: number;
+  maxPatients: number;
   /** GeneratedSchedule row id, when the session is a calendar entry. */
   generatedId?: string;
 };
@@ -59,21 +61,21 @@ export async function getDoctorSessions(doctorId: string, dateStr: string, hospi
 
   const extras: DoctorSession[] = extraOps
     .filter((e) => e.hospitalId && e.startTime && e.endTime)
-    .map((e) => ({ hospitalId: e.hospitalId!, startTime: e.startTime!, endTime: e.endTime!, source: "extra_op" }));
+    .map((e) => ({ hospitalId: e.hospitalId!, startTime: e.startTime!, endTime: e.endTime!, source: "extra_op", slotMins: e.slotMins ?? 15, maxPatients: e.maxPatients ?? 5 }));
 
   let base: DoctorSession[];
   if (monthGenerated > 0) {
     // A generated month is authoritative: it is exactly what Hospital Manager's calendar shows.
-    base = generated.map((g) => ({ hospitalId: g.hospitalId, startTime: g.startTime, endTime: g.endTime, source: "generated", generatedId: g.id }));
+    base = generated.map((g) => ({ hospitalId: g.hospitalId, startTime: g.startTime, endTime: g.endTime, source: "generated", generatedId: g.id, slotMins: g.slotMins, maxPatients: g.maxPatients }));
   } else if (indiv.length > 0) {
-    base = indiv.map((i) => ({ hospitalId: i.hospitalId, startTime: i.startTime, endTime: i.endTime, source: "individual" }));
+    base = indiv.map((i) => ({ hospitalId: i.hospitalId, startTime: i.startTime, endTime: i.endTime, source: "individual", slotMins: i.slotMins, maxPatients: i.maxPatients }));
   } else {
     const dayDate = new Date(`${dateStr}T00:00:00.000Z`);
     const monthlyToday = monthly.filter((p) =>
       p.validFrom <= dayDate && p.validTo >= day.gte && p.weekdays.split(",").map(Number).includes(weekday));
     base = monthlyToday.length > 0
-      ? monthlyToday.map((p) => ({ hospitalId: p.hospitalId, startTime: p.startTime, endTime: p.endTime, source: "monthly" }))
-      : weekly.map((w) => ({ hospitalId: w.hospitalId, startTime: w.startTime, endTime: w.endTime, source: "weekly" }));
+      ? monthlyToday.map((p) => ({ hospitalId: p.hospitalId, startTime: p.startTime, endTime: p.endTime, source: "monthly", slotMins: p.slotMins, maxPatients: p.maxPatients }))
+      : weekly.map((w) => ({ hospitalId: w.hospitalId, startTime: w.startTime, endTime: w.endTime, source: "weekly", slotMins: w.slotMins, maxPatients: w.maxPatients }));
   }
 
   const sorted = [...base, ...extras].sort((a, b) => toMins(a.startTime) - toMins(b.startTime));
@@ -119,7 +121,7 @@ export async function checkWithinSession(doctorId: string, hospitalId: string, a
       where: { doctorId, hospitalId, type: SESSION_CLOSED_TYPE, status: "ACTIVE", date: dateOnlyWindow(dateStr), startTime: session.startTime },
       select: { id: true },
     });
-    return closed ? "The doctor has closed this session. No more patients can be added to it." : null;
+    return closed ? "No more patients can be added to this session." : null;
   }
   const windows = sessions.map((s) => `${s.startTime}–${s.endTime}`).join(", ");
   return `This time is outside the doctor's schedule at this hospital (${windows}).`;
