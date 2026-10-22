@@ -3,6 +3,7 @@ import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
 import { complaintLabel, parseComplaintItems } from "@/lib/appointment-cc";
+import { MONTSERRAT_600_WOFF2 } from "@/lib/pdfFonts";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
@@ -841,6 +842,8 @@ export async function htmlToPdf(html: string): Promise<Buffer> {
           setTimeout(done, 3000);
         })),
     ));
+    // Embedded fonts (summary headings) must finish decoding before the PDF is cut.
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -922,12 +925,17 @@ const SUI = {
 
 /** CSS the summary helpers rely on (row dividers between table rows). */
 const SUMMARY_UI_CSS = `
+  @font-face { font-family: "PdfHeading"; font-weight: 600; font-style: normal; src: url(data:font/woff2;base64,${MONTSERRAT_600_WOFF2}) format("woff2"); }
   .sui-div > tr + tr > td { border-top: 1px solid ${SUI.BORDER}; }
   .sui-list > li + li { border-top: 1px solid ${SUI.BORDER}; }
 `;
 
-const SUI_LABEL = `font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.16em;color:${SUI.INK_400};`;
-const SUI_TH = `padding:0 12px 5px 0;text-align:left;vertical-align:bottom;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${SUI.INK_400};`;
+/* Section headings: Montserrat SemiBold in solid dark teal, so they print firmly even on
+   a low-ink printer, while staying smaller and lighter than the values they label. */
+const SUI_HEAD_COLOR = "#115E59";
+const SUI_HEAD_FONT = `font-family:'PdfHeading','Segoe UI',Arial,sans-serif;font-weight:600;text-transform:uppercase;`;
+const SUI_LABEL = `${SUI_HEAD_FONT}font-size:8.5px;letter-spacing:0.1em;color:${SUI_HEAD_COLOR};`;
+const SUI_TH = `padding:0 12px 5px 0;text-align:left;vertical-align:bottom;${SUI_HEAD_FONT}font-size:8px;letter-spacing:0.08em;color:${SUI_HEAD_COLOR};`;
 const SUI_TD = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_700};`;
 const SUI_TD_MUTED = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_500};`;
 const SUI_DASH = `<span style="color:${SUI.INK_300};">—</span>`;
@@ -936,7 +944,7 @@ const suiVal = (v: unknown) => (v === null || v === undefined || v === "") ? SUI
 
 /** One line: "LABEL · value". */
 function suiLine(label: string, valueHtml: string, danger = false): string {
-  const lc = danger ? "#DC2626" : SUI.INK_400;
+  const lc = danger ? "#DC2626" : SUI_HEAD_COLOR;
   const dc = danger ? "#FCA5A5" : SUI.INK_300;
   return `<div class="no-break" style="display:flex;align-items:baseline;flex-wrap:wrap;gap:6px;margin-bottom:12px;">` +
     `<span style="${SUI_LABEL}color:${lc};white-space:nowrap;">${label}</span>` +
@@ -1001,7 +1009,7 @@ function suiRxTable(re: Record<string, string | undefined> | null | undefined, l
   if (!hasRe && !hasLe) return "";
   const cell = `padding:5px 8px;border-right:1px solid ${SUI.BORDER};`;
   const th = (c?: { label: string; grey?: boolean }) =>
-    `<th style="${cell}text-align:center;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${SUI.INK_400};${c?.grey ? `background:${SUI.SUNKEN};` : ""}">${c ? c.label : ""}</th>`;
+    `<th style="${cell}text-align:center;${SUI_HEAD_FONT}font-size:8px;letter-spacing:0.08em;color:${SUI_HEAD_COLOR};${c?.grey ? `background:${SUI.SUNKEN};` : ""}">${c ? c.label : ""}</th>`;
   const row = (eye: string, v: Record<string, string | undefined>) =>
     `<tr style="border-top:1px solid ${SUI.BORDER};">` +
     `<td style="${cell}font-size:9.5px;font-weight:600;color:${SUI.P700};white-space:nowrap;">${eye}</td>` +
@@ -1123,6 +1131,19 @@ const COLS_EYE_PDF = ["38%", "31%", "31%"];
 function suiFollowUp(date: Date, inViewOf?: string | null): string {
   return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_700};">${format(date, "EEEE, d MMM yyyy")}</span>` +
     (inViewOf && inViewOf.trim() ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(inViewOf.trim())}</span>` : "");
+}
+
+/**
+ * Doctor sign-off, from the doctor profile only (Settings): "Dr. {name}", then the
+ * qualifications, then the registration number exactly as entered (e.g. "KMC 154173").
+ * A field left blank in the profile is simply not printed.
+ */
+function suiDoctorSignOff(name: string, qualifications?: string | null, regNumber?: string | null): string {
+  const line = (v?: string | null) => v && v.trim()
+    ? `<div style="font-size:9px;color:${SUI.INK_700};margin-top:2px;">${escapeHtml(v.trim())}</div>`
+    : "";
+  return `<div style="font-size:11px;font-weight:700;color:#0B3D3A;margin-top:5px;">Dr. ${escapeHtml(name)}</div>` +
+    line(qualifications) + line(regNumber);
 }
 
 const suiText = (html: string, color: string = SUI.INK_700, weight = 600) =>
@@ -1341,15 +1362,7 @@ ${d.visit.referralEnabled
     <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
       Doctor&rsquo;s Signature
     </div>
-    <div style="font-size:11px;font-weight:700;color:${INK};margin-top:5px;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-    ${d.visit.doctorQualifications
-      ? `<div style="font-size:8.5px;color:#4A5A57;margin-top:1px;">${escapeHtml(d.visit.doctorQualifications)}</div>`
-      : ""}
-    <div style="font-size:8.5px;color:#4A5A57;margin-top:1px;">${escapeHtml(d.visit.doctorSpecialty || "Consultant Ophthalmologist")}</div>
-    ${d.visit.doctorRegNumber
-      ? `<div style="font-size:7.5px;color:#8A9793;margin-top:1px;">Reg. No. ${escapeHtml(d.visit.doctorRegNumber)}</div>`
-      : ""}
-    <div style="font-size:7.5px;color:#8A9793;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+    ${suiDoctorSignOff(d.visit.doctorName, d.visit.doctorQualifications, d.visit.doctorRegNumber)}
   </div>
 </div>
 
@@ -1384,6 +1397,8 @@ export type FullEmrData = {
   visit: {
     date: Date; visitType?: string | null; hospitalName: string; hospitalLogo?: string | null;
     hospitalAddress?: string | null; hospitalContact?: string | null; hospitalEmail?: string | null; doctorName: string;
+    /* Sign-off, from the doctor profile. Absent fields are not printed. */
+    doctorQualifications?: string | null; doctorRegNumber?: string | null;
     followUpDate?: Date | null; referralEnabled?: boolean; referralNote?: string | null; inViewOf?: string | null;
   };
   generalExam?: {
@@ -1887,9 +1902,7 @@ ${d.visit.referralEnabled
     <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
       Doctor&rsquo;s Signature
     </div>
-    <div style="font-size:11px;font-weight:700;color:${INK};margin-top:5px;">Dr. ${escapeHtml(d.visit.doctorName)}</div>
-    <div style="font-size:8.5px;color:#4A5A57;margin-top:1px;">Consultant Ophthalmologist</div>
-    <div style="font-size:7.5px;color:#8A9793;margin-top:1px;">${escapeHtml(d.visit.hospitalName)}</div>
+    ${suiDoctorSignOff(d.visit.doctorName, d.visit.doctorQualifications, d.visit.doctorRegNumber)}
   </div>
 </div>
 

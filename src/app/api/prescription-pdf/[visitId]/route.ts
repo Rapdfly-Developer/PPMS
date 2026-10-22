@@ -80,6 +80,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         hospitalContact: (visit.hospital as any).contact ?? null,
         hospitalEmail: (visit.hospital as any).email ?? null,
         doctorName: visit.doctor.name,
+        doctorQualifications: visit.doctor.qualifications ?? null,
+        doctorRegNumber: visit.doctor.medicalRegNumber ?? null,
         followUpDate: (visit as any).followUpDate ?? null,
         referralEnabled: (visit as any).referralEnabled ?? false,
         referralNote: (visit as any).referralNote ?? null,
