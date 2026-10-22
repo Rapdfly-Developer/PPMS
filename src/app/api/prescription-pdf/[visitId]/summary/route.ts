@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireUser } from "@/lib/rbac";
+import { canPrintVisit } from "../../access";
 import { generateShortSummaryPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
 import { isPrescribableMethod } from "@/lib/constants";
@@ -9,7 +10,7 @@ import { format } from "date-fns";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
   try {
   const { visitId } = await params;
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
@@ -36,7 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   });
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.doctorId !== user.profileId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await canPrintVisit(user, visit))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   // Section inclusion params (absent or "1" = include, "0" = exclude)
   const sp = req.nextUrl.searchParams;

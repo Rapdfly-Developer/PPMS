@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireUser } from "@/lib/rbac";
+import { canPrintVisit } from "../access";
 import { generateFullEmrPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
   const { visitId } = await params;
-  const user = await requireRole("DOCTOR");
+  const user = await requireUser();
 
   // Refraction-section inclusion params (absent or "1" = include, "0" = exclude)
   const sp = req.nextUrl.searchParams;
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   });
 
   if (!visit) return NextResponse.json({ error: "Visit not found" }, { status: 404 });
-  if (visit.doctorId !== user.profileId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await canPrintVisit(user, visit))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const ge = visit.generalExam;
   const va = visit.visualAcuity;
