@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { istTodayStr, istHHMM } from "@/lib/ist";
-import { getDoctorSessions, dateOnlyWindow, type DoctorSession } from "@/lib/doctorSessions";
+import { getDoctorSessions, dateOnlyWindow, SESSION_CLOSED_TYPE, type DoctorSession } from "@/lib/doctorSessions";
 import {
   closeEndedSessions, openAppointmentsForSession, markAppointmentsIncomplete,
   SESSION_INCOMPLETE_NOTIFICATION,
@@ -81,7 +81,10 @@ function revalidateAll() {
   revalidatePath("/appointments/availability");
 }
 
-/** "Mark as incomplete": the session's open patients become incomplete visits now. */
+/**
+ * "Mark as incomplete": the session's open patients become incomplete visits now, and the
+ * session is closed to new patients (walk-ins / appointments) for the rest of its planned time.
+ */
 export async function markSessionIncomplete(p: Pick<SessionPrompt, "dateStr" | "hospitalId" | "startTime" | "endTime">): Promise<{ marked: number }> {
   const user = await requireRole("DOCTOR");
   const doctorId = scopeDoctorId(user);
@@ -89,6 +92,22 @@ export async function markSessionIncomplete(p: Pick<SessionPrompt, "dateStr" | "
   if (!session) return { marked: 0 };
   const open = await openAppointmentsForSession(doctorId, p.dateStr, session);
   const marked = await markAppointmentsIncomplete(open.map((a) => a.id));
+
+  // No more patients for the rest of this session (it still ends at its planned time)
+  const alreadyClosed = await prisma.scheduleException.findFirst({
+    where: { doctorId, hospitalId: p.hospitalId, type: SESSION_CLOSED_TYPE, status: "ACTIVE", date: dateOnlyWindow(p.dateStr), startTime: session.startTime },
+    select: { id: true },
+  });
+  if (!alreadyClosed) {
+    await prisma.scheduleException.create({
+      data: {
+        doctorId, date: new Date(p.dateStr), type: SESSION_CLOSED_TYPE, hospitalId: p.hospitalId,
+        startTime: session.startTime, endTime: session.endTime,
+        reason: "Closed by doctor: remaining patients marked incomplete", isRecurring: false, status: "ACTIVE",
+      },
+    });
+  }
+
   revalidateAll();
   return { marked };
 }

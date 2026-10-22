@@ -98,14 +98,29 @@ export function sessionAt(sessions: DoctorSession[], hhmm: string): DoctorSessio
 }
 
 /**
+ * Marker (a ScheduleException of this type) recorded when the doctor answers the end-of-session
+ * pop-up with "Mark as incomplete": the session keeps its planned end time, but no more
+ * patients can be added to it. Only booking reads it; schedule screens ignore this type.
+ */
+export const SESSION_CLOSED_TYPE = "SESSION_CLOSED";
+
+/**
  * Appointments and walk-ins may only be created inside one of the doctor's sessions at
- * that hospital. Returns an error message, or null when the time is allowed.
+ * that hospital, and not in a session the doctor has closed. Returns an error message,
+ * or null when the time is allowed.
  */
 export async function checkWithinSession(doctorId: string, hospitalId: string, at: Date): Promise<string | null> {
   const dateStr  = istTodayStr(at);
   const sessions = await getDoctorSessions(doctorId, dateStr, hospitalId);
   if (sessions.length === 0) return "The doctor has no schedule at this hospital on this day.";
-  if (sessionAt(sessions, istHHMM(at))) return null;
+  const session = sessionAt(sessions, istHHMM(at));
+  if (session) {
+    const closed = await prisma.scheduleException.findFirst({
+      where: { doctorId, hospitalId, type: SESSION_CLOSED_TYPE, status: "ACTIVE", date: dateOnlyWindow(dateStr), startTime: session.startTime },
+      select: { id: true },
+    });
+    return closed ? "The doctor has closed this session. No more patients can be added to it." : null;
+  }
   const windows = sessions.map((s) => `${s.startTime}–${s.endTime}`).join(", ");
   return `This time is outside the doctor's schedule at this hospital (${windows}).`;
 }
