@@ -917,8 +917,8 @@ export type ShortSummaryData = {
   tokens from globals.css; sizes are scaled to A4.
 */
 const SUI = {
-  INK_800: "#1E293B", INK_700: "#334155", INK_600: "#475569", INK_500: "#64748B",
-  INK_400: "#94A3B8", INK_300: "#CBD5E1", BORDER: "#E2E8F0", SUNKEN: "#F1F5F9",
+  INK_800: "#111111", INK_700: "#111111", INK_600: "#111111", INK_500: "#111111",
+  INK_400: "#111111", INK_300: "#111111", BORDER: "#E2E8F0", SUNKEN: "#F1F5F9",
   P700: "#0F766E", P600: "#0D9488", P50: "#F0FDFA",
   INDENT: 14,
 };
@@ -928,16 +928,21 @@ const SUMMARY_UI_CSS = `
   @font-face { font-family: "PdfHeading"; font-weight: 600; font-style: normal; src: url(data:font/woff2;base64,${MONTSERRAT_600_WOFF2}) format("woff2"); }
   .sui-div > tr + tr > td { border-top: 1px solid ${SUI.BORDER}; }
   .sui-list > li + li { border-top: 1px solid ${SUI.BORDER}; }
+  /* Print: solid black, no transparency, colours exactly as authored. */
+  @media print {
+    html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body, body * { color: #000000 !important; opacity: 1 !important; }
+  }
 `;
 
 /* Section headings: Montserrat SemiBold in solid dark teal, so they print firmly even on
    a low-ink printer, while staying smaller and lighter than the values they label. */
-const SUI_HEAD_COLOR = "#115E59";
+const SUI_HEAD_COLOR = "#000000";
 const SUI_HEAD_FONT = `font-family:'PdfHeading','Segoe UI',Arial,sans-serif;font-weight:600;text-transform:uppercase;`;
 const SUI_LABEL = `${SUI_HEAD_FONT}font-size:8.5px;letter-spacing:0.1em;color:${SUI_HEAD_COLOR};`;
 const SUI_TH = `padding:0 12px 5px 0;text-align:left;vertical-align:bottom;${SUI_HEAD_FONT}font-size:8px;letter-spacing:0.08em;color:${SUI_HEAD_COLOR};`;
-const SUI_TD = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_700};`;
-const SUI_TD_MUTED = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;line-height:1.35;color:${SUI.INK_500};`;
+const SUI_TD = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;font-weight:500;line-height:1.35;color:${SUI.INK_700};`;
+const SUI_TD_MUTED = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;font-weight:600;line-height:1.35;color:${SUI.INK_500};`;
 const SUI_DASH = `<span style="color:${SUI.INK_300};">—</span>`;
 
 const suiVal = (v: unknown) => (v === null || v === undefined || v === "") ? SUI_DASH : escapeHtml(String(v));
@@ -1193,14 +1198,14 @@ async function renderShortSummaryHtml(d: ShortSummaryData): Promise<string> {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      font-size: 9.5px; line-height: 1.4; color: #1a1a1a;
+      font-size: 9.5px; font-weight: 500; line-height: 1.4; color: #000000;
       background: #fff;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     table { width: 100%; border-collapse: collapse; }
     .footer {
       position: running(footer);
-      font-size: 7.5px; color: #888;
+      font-size: 7.5px; color: #000000;
       display: flex; align-items: center; justify-content: space-between;
       border-top: 1px solid #ddd; padding-top: 4px;
     }
@@ -1491,14 +1496,14 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-      font-size: 9.5px; line-height: 1.4; color: #1a1a1a;
+      font-size: 9.5px; font-weight: 500; line-height: 1.4; color: #000000;
       background: #fff;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
     table { width: 100%; border-collapse: collapse; }
     .footer {
       position: running(footer);
-      font-size: 7.5px; color: #888;
+      font-size: 7.5px; color: #000000;
       display: flex; align-items: center; justify-content: space-between;
       border-top: 1px solid #ddd; padding-top: 4px;
     }
@@ -1619,7 +1624,7 @@ ${ge && pmhList.length
         const [name, ...since] = item.split(" · ");
         return `<span style="display:inline-block;padding:1px 8px;border:1px solid #BFDBFE;border-radius:999px;background:#EFF6FF;color:#1E40AF;font-size:9.5px;font-weight:500;line-height:15px;">` +
           escapeHtml(name) +
-          (since.length ? `<span style="opacity:0.6;font-weight:400;margin-left:3px;">· ${escapeHtml(since.join(" · "))}</span>` : "") +
+          (since.length ? `<span style="font-weight:400;margin-left:3px;">· ${escapeHtml(since.join(" · "))}</span>` : "") +
           `</span>`;
       }).join("") +
       `</span>`)
