@@ -1133,6 +1133,10 @@ function suiFollowUp(date: Date, inViewOf?: string | null): string {
     (inViewOf && inViewOf.trim() ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(inViewOf.trim())}</span>` : "");
 }
 
+/** Blank space (~17mm) with a line, for the doctor's wet signature when none is uploaded. */
+const suiSignSpace = (lineColor: string) =>
+  `<div style="height:64px;"></div><div style="height:1px;background:${lineColor};"></div>`;
+
 /**
  * Doctor sign-off, from the doctor profile only (Settings): "Dr. {name}", then the
  * qualifications, then the registration number exactly as entered (e.g. "KMC 154173").
@@ -1358,7 +1362,7 @@ ${d.visit.referralEnabled
              <img src="${escapeHtml(d.visit.doctorSignatureUrl)}" alt="Signature of Dr. ${escapeHtml(d.visit.doctorName)}" style="max-height:32px;max-width:190px;object-fit:contain;display:block;" />
            </div>
            <div style="height:1px;background:${BRAND};"></div>`
-        : ""}
+        : suiSignSpace(BRAND)}
     <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
       Doctor&rsquo;s Signature
     </div>
@@ -1907,6 +1911,7 @@ ${d.visit.referralEnabled
 <!-- DOCTOR SIGNATURE (matches Short Summary sign-off block) -->
 <div class="no-break" style="margin-top:0;display:flex;justify-content:flex-end;">
   <div style="width:210px;text-align:center;">
+    ${suiSignSpace(BRAND)}
     <div style="font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${LABEL_C};margin-top:3px;">
       Doctor&rsquo;s Signature
     </div>
