@@ -9,6 +9,7 @@ import { ChevronLeft, ChevronRight, Building2, Clock } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
 import { VisitSummaryTabs } from "../VisitSummaryTabs";
 import { NO_SHOW_KIND_LABEL, type NoShowKind } from "@/lib/noShowKinds";
+import { waitingMinutes } from "@/lib/visit-durations";
 
 /* ── types ──────────────────────────────────────────────────────────────────── */
 export interface VisitTimestamps {
@@ -236,7 +237,12 @@ const TS_STEPS: TsStep[] = [
 
 function fmtDuration(fromIso: string | null, toIso: string | null): string | null {
   if (!fromIso || !toIso) return null;
-  const mins = Math.round((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60000);
+  return fmtMins((new Date(toIso).getTime() - new Date(fromIso).getTime()) / 60000);
+}
+
+function fmtMins(raw: number | null): string | null {
+  if (raw === null) return null;
+  const mins = Math.round(raw);
   if (mins <= 0) return null;
   if (mins < 60) return `${mins} min`;
   const h = Math.floor(mins / 60);
@@ -245,9 +251,11 @@ function fmtDuration(fromIso: string | null, toIso: string | null): string | nul
 }
 
 const DURATION_METRICS: { label: string; from: keyof VisitTimestamps; to: keyof VisitTimestamps }[] = [
-  { label: "Waiting Time",    from: "arrivedAt",           to: "seenAt"                  },
   { label: "Consultation",    from: "seenAt",              to: "consultationCompletedAt"  },
   { label: "Refraction",      from: "refractionStartedAt", to: "refractionCompletedAt"   },
+  // Partial dispense: how long the consultation ran before it, and how long until the visit was finalized after it.
+  { label: "Before Partial Dispense", from: "seenAt",            to: "partialDispenseAt" },
+  { label: "After Partial Dispense",  from: "partialDispenseAt", to: "finalizedAt"       },
   { label: "Total Visit",     from: "arrivedAt",           to: "finalizedAt"             },
 ];
 
@@ -262,9 +270,17 @@ function TimestampSection({ ts, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boo
     .sort((a, b) => new Date(ts[a.key]!).getTime() - new Date(ts[b.key]!).getTime());
   if (active.length === 0) return null;
 
-  const durations = DURATION_METRICS
-    .map((d) => ({ label: d.label, value: fmtDuration(ts[d.from], ts[d.to]) }))
-    .filter((d) => d.value);
+  const durations = [
+    {
+      label: "Waiting Time",
+      value: fmtMins(waitingMinutes({
+        arrivedAt: ts.arrivedAt, consultationStartedAt: ts.seenAt,
+        refractionStartedAt: ts.refractionStartedAt, refractionCompletedAt: ts.refractionCompletedAt,
+        refractionPassedOverAt: ts.refractionPassedOverAt,
+      })),
+    },
+    ...DURATION_METRICS.map((d) => ({ label: d.label, value: fmtDuration(ts[d.from], ts[d.to]) })),
+  ].filter((d) => d.value);
 
   return (
     <div className="bg-white rounded-xl border border-[var(--color-border)] p-3">

@@ -134,6 +134,7 @@ export type TimelineEvent = {
     seenAt?: string | null;             // Visit.consultationStartedAt
     consultationCompletedAt?: string | null;
     refractionStartedAt?: string | null;
+    refractionCompletedAt?: string | null;
     refractionPassedOverAt?: string | null;
     partialDispenseAt?: string | null;  // Appointment.partialDispenseAt
     finalizedAt?: string | null;        // Visit.finalizedAt (dispensed)
@@ -227,6 +228,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
           ?? (v.status === "CLOSED" ? v.date.toISOString() : null),
         consultationCompletedAt: v.consultationCompletedAt?.toISOString()    ?? null,
         refractionStartedAt:     v.refractionStartedAt?.toISOString()        ?? null,
+        refractionCompletedAt:   v.refractionCompletedAt?.toISOString()      ?? null,
         refractionPassedOverAt:  v.refractionPassedOverAt?.toISOString()     ?? null,
         partialDispenseAt: v.appointment?.partialDispenseAt?.toISOString() ?? null,
         finalizedAt:       v.finalizedAt?.toISOString()                     ?? null,

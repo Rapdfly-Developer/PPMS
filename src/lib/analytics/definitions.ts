@@ -266,9 +266,9 @@ export const METRICS = {
     tooltip: "Average number of days between a consultation and the follow-up it scheduled.",
   },
   avgWait: {
-    label: "Avg waiting time", source: "Appointment + Visit", calc: "mean(visit opened − arrivedAt)",
+    label: "Avg waiting time", source: "Appointment + Visit", calc: "mean((refraction start − arrivedAt) + (consultation start − refraction end))",
     dateField: "Appointment.dateTime", format: "minutes",
-    tooltip: "Average time from a patient being marked arrived to the doctor opening the consultation. Only appointments with both times are included.",
+    tooltip: "Average time a patient spent waiting: from arrival to refraction start, plus from refraction end to consultation start (arrival to consultation start when there was no refraction). Only appointments with arrival and consultation times are included.",
   },
   avgTimeInClinic: {
     label: "Avg time in clinic", source: "Appointment", calc: "mean(completedAt − arrivedAt)",

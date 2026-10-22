@@ -14,6 +14,7 @@ import {
   ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
+import { waitingMinutes } from "@/lib/visit-durations";
 
 /* ── Config ─────────────────────────────────────────────────────────────────── */
 const EVENT_CFG = {
@@ -81,9 +82,11 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
     const refractionStartedAt = d.refractionStartedAt ? new Date(d.refractionStartedAt) : null;
     const refractionPassedOverAt = d.refractionPassedOverAt ? new Date(d.refractionPassedOverAt) : null;
     const finalizedAt = d.finalizedAt ? new Date(d.finalizedAt) : null;
-    const waitMins    = arrivedAt && seenAt
-      ? Math.max(0, Math.round((seenAt.getTime() - arrivedAt.getTime()) / 60000))
-      : null;
+    const wait = waitingMinutes({
+      arrivedAt, consultationStartedAt: seenAt,
+      refractionStartedAt, refractionCompletedAt: d.refractionCompletedAt, refractionPassedOverAt,
+    });
+    const waitMins    = wait === null ? null : Math.round(wait);
     const totalMins   = arrivedAt && finalizedAt
       ? Math.max(0, Math.round((finalizedAt.getTime() - arrivedAt.getTime()) / 60000))
       : null;

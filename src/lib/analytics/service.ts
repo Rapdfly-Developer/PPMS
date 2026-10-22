@@ -16,6 +16,7 @@ import {
   type AnalyticsFilters,
 } from "./filters";
 import { scopeUserIds, type AnalyticsScope } from "./scope";
+import { waitingMinutes } from "@/lib/visit-durations";
 
 /* ═══ Time helpers (IST) ═══════════════════════════════════════════════════ */
 
@@ -1308,7 +1309,7 @@ export function getOperations(scope: AnalyticsScope, f: AnalyticsFilters): Promi
     const [appts, prevCount, openDocs, openInv, overdueFu, awaiting, partial] = await Promise.all([
       prisma.appointment.findMany({
         where: apptWhere(scope, f, cur),
-        select: { dateTime: true, arrivedAt: true, completedAt: true, status: true, hospitalId: true, visit: { select: { date: true, consultationStartedAt: true } } },
+        select: { dateTime: true, arrivedAt: true, completedAt: true, status: true, hospitalId: true, visit: { select: { date: true, consultationStartedAt: true, refractionStartedAt: true, refractionCompletedAt: true, refractionPassedOverAt: true } } },
       }),
       prisma.appointment.count({ where: apptWhere(scope, f, prev) }),
       prisma.visit.count({ where: { ...vAll, finalizedAt: null } }),
@@ -1323,8 +1324,14 @@ export function getOperations(scope: AnalyticsScope, f: AnalyticsFilters): Promi
     const MAX_MIN = 12 * 60;
     const waits = appts
       .filter((a) => a.arrivedAt && a.visit)
-      .map((a) => ((a.visit!.consultationStartedAt ?? a.visit!.date).getTime() - a.arrivedAt!.getTime()) / 60_000)
-      .filter((m) => m >= 0 && m <= MAX_MIN);
+      .map((a) => waitingMinutes({
+        arrivedAt: a.arrivedAt,
+        consultationStartedAt: a.visit!.consultationStartedAt ?? a.visit!.date,
+        refractionStartedAt: a.visit!.refractionStartedAt,
+        refractionCompletedAt: a.visit!.refractionCompletedAt,
+        refractionPassedOverAt: a.visit!.refractionPassedOverAt,
+      }))
+      .filter((m): m is number => m !== null && m >= 0 && m <= MAX_MIN);
     const inClinic = appts
       .filter((a) => a.arrivedAt && a.completedAt)
       .map((a) => (a.completedAt!.getTime() - a.arrivedAt!.getTime()) / 60_000)

@@ -440,7 +440,7 @@ export function OperationsView({ data, ctx }: { data: OperationsData; ctx: ViewC
       </Panel>
       <Grid2>
         <Panel title="Arrivals by hour" subtitle="When patients were marked arrived"><ColumnChart title="Arrivals by hour" data={data.arrivalsByHour} /></Panel>
-        <Panel title="Waiting time" subtitle="Arrival to consultation opened"><Donut data={data.waitBuckets} title="Waiting time distribution" centerLabel="Visits" /></Panel>
+        <Panel title="Waiting time" subtitle="Before refraction + before consultation"><Donut data={data.waitBuckets} title="Waiting time distribution" centerLabel="Visits" /></Panel>
       </Grid2>
       <Panel title="Daily workload">
         <TrendChart title="Daily workload" points={data.daily} series={[s("appointments", "Scheduled", COLORS.primary), s("arrived", "Arrived", COLORS.info), s("completed", "Completed", COLORS.completed)]} />
