@@ -21,7 +21,7 @@ import {
 import { type MedEntry, searchMedications, categoryColor, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
-import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
 
@@ -1507,6 +1507,15 @@ const ANESTHESIA_KEYWORDS = [
 ];
 
 // Default keywords for Minor Procedure notes; "+ Keyword" adds the doctor's own.
+const MED_INSTRUCTION_KEYWORDS = [
+  "Shake well before use",
+  "Wait 5 minutes between drops",
+  "At bedtime",
+  "After meals",
+  "Before meals",
+  "Keep refrigerated",
+] as const;
+
 const PROCEDURE_NOTE_KEYWORDS = [
   "Procedure uneventful", "Patient tolerated well", "No complications",
   "Informed consent taken", "Asepsis maintained", "Haemostasis achieved",
@@ -2220,8 +2229,15 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
             </div>
             <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={13} /></button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
-            <div className="col-span-2">
+          {/* Route, drug, dose, frequency and duration on one line */}
+          <div className="grid grid-cols-2 md:grid-cols-[110px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] gap-2 mb-2">
+            <div>
+              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
+              <select value={route} onChange={(e) => setRoute(e.target.value)} className={inputCls}>
+                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2 md:col-span-1">
               <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
               <DrugNameInput
                 value={drugName}
@@ -2235,14 +2251,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={inputCls} />
             </div>
             <div>
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
-              <select value={route} onChange={(e) => setRoute(e.target.value)} className={inputCls}>
-                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-2 max-w-3xl">
-            <div className="col-span-2">
               <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
               <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={inputCls} />
             </div>
@@ -2250,15 +2258,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
               <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={inputCls} />
             </div>
-            <div className="flex flex-col justify-end">
-              <button onClick={submitDrug} disabled={pending} className="w-full rounded-lg bg-[var(--color-primary-600)] text-white text-xs font-medium py-1.5 hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60">
-                Add to Prescription
-              </button>
-            </div>
           </div>
 
-          {/* Tapering toggle — own row, aligned left */}
-          <div className="mb-2 max-w-3xl">
+          {/* Tapering toggle — own row */}
+          <div className="mb-2">
             <label className="flex items-center gap-1.5 cursor-pointer w-fit">
               <input
                 type="checkbox"
@@ -2342,9 +2345,28 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               )}
             </div>
           ))}
-          <div className="max-w-3xl">
-            <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Instructions</label>
-            <input value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use" className={inputCls} />
+          {/* Instructions — label beside the box, keywords below it */}
+          <div className="flex items-start gap-3">
+            <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide shrink-0 pt-2 w-24">Instructions</label>
+            <div className="flex-1 min-w-0">
+              <KeywordInput
+                fieldKey="med_instructions"
+                value={instructions}
+                onChange={setInstructions}
+                builtIns={MED_INSTRUCTION_KEYWORDS}
+                placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use"
+                className={inputCls}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end mt-3">
+            <button
+              onClick={submitDrug}
+              disabled={pending}
+              className="inline-flex items-center gap-1 rounded-full bg-[var(--color-primary-600)] text-white text-xs font-medium px-3.5 py-1.5 shadow-sm hover:bg-[var(--color-primary-700)] transition-colors disabled:opacity-60"
+            >
+              <Plus size={12} /> Add to Prescription
+            </button>
           </div>
         </div>
       )}
