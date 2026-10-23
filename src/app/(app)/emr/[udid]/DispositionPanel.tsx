@@ -129,8 +129,8 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-5">
       {/* Follow-up date */}
-      <div>
-        <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Follow-up</p>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">Follow-up</p>
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
@@ -151,9 +151,17 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 
       {/* In View Of */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase">In View Of</p>
-          <div data-overview-hide className="flex items-center gap-1.5">
+        <div className="flex items-start gap-3">
+          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase shrink-0 pt-2.5">In View Of</p>
+          <textarea
+            ref={inViewOfRef}
+            value={inViewOf}
+            onChange={(e) => { setInViewOf(e.target.value); setSaved(false); }}
+            placeholder="e.g. Review of treatment response, IOP check…"
+            rows={Math.max(1, Math.min(8, inViewOf.replace(/\r/g, "").split("\n").length))}
+            className="flex-1 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+          <div data-overview-hide className="flex items-center gap-1.5 shrink-0 pt-1">
             <button
               onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
               className={`${btnCls} ${showHistory
@@ -172,15 +180,6 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
             </button>
           </div>
         </div>
-
-        <textarea
-          ref={inViewOfRef}
-          value={inViewOf}
-          onChange={(e) => { setInViewOf(e.target.value); setSaved(false); }}
-          placeholder="e.g. Review of treatment response, IOP check…"
-          rows={Math.max(1, Math.min(8, inViewOf.replace(/\r/g, "").split("\n").length))}
-          className="w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-        />
 
         {/* History panel */}
         {showHistory && (
@@ -293,10 +292,11 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
-      <p className={`${labelCls} -mb-2`}>Referral</p>
+      <div className="flex flex-wrap items-center gap-3">
+          <p className={labelCls}>Referral</p>
 
           {/* Internal / External flip */}
-          <div role="radiogroup" aria-label="Referral type" className="relative inline-grid grid-cols-2 self-start rounded-full bg-[var(--color-surface-sunken)] p-0.5 text-xs font-medium">
+          <div role="radiogroup" aria-label="Referral type" className="relative inline-grid grid-cols-2 rounded-full bg-[var(--color-surface-sunken)] p-0.5 text-xs font-medium">
             <span
               aria-hidden
               className={`absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)] transition-transform duration-200 ${referralType === "EXTERNAL" ? "translate-x-full" : ""}`}
@@ -314,20 +314,24 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
               </button>
             ))}
           </div>
+      </div>
 
           {/* Stored in referralNote, as the referral details were. */}
-          <div>
-            <p className={`${labelCls} mb-2`}>Referred By</p>
-            <KeywordInput
-              fieldKey="referral_referred_by"
-              value={referralNote}
-              onChange={(v) => { setReferralNote(v); setSaved(false); }}
-              placeholder="e.g. Dr. name, hospital or clinic…"
-            />
+          <div className="flex items-start gap-3">
+            <p className={`${labelCls} shrink-0 pt-2.5`}>Referred By</p>
+            <div className="flex-1 min-w-0">
+              <KeywordInput
+                fieldKey="referral_referred_by"
+                value={referralNote}
+                onChange={(v) => { setReferralNote(v); setSaved(false); }}
+                placeholder="e.g. Dr. name, hospital or clinic…"
+              />
+            </div>
           </div>
 
-          <div>
-            <p className={`${labelCls} mb-2`}>In View Of</p>
+          <div className="flex items-start gap-3">
+            <p className={`${labelCls} shrink-0 pt-2.5`}>In View Of</p>
+            <div className="flex-1 min-w-0">
             <KeywordInput
               fieldKey="referral_in_view_of"
               builtIns={REFERRAL_IN_VIEW_OF_KEYWORDS}
@@ -335,6 +339,7 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
               onChange={(v) => { setInViewOf(v); setSaved(false); }}
               placeholder="e.g. Retina evaluation, Physician fitness for surgery…"
             />
+            </div>
           </div>
 
       <div data-overview-hide className="flex items-center gap-3">
