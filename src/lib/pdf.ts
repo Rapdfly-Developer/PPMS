@@ -1007,12 +1007,25 @@ function suiEyeRow(labelHtml: string, re: string, le: string, opts: { stripe?: b
 }
 
 /** Spectacle grid: Right Eye / Left Eye rows under Sph · Cyl · Axis° · VA · Add · NV. */
-function suiRxTable(re: Record<string, string | undefined> | null | undefined, le: Record<string, string | undefined> | null | undefined): string {
-  const cols: { key: string; label: string; grey?: boolean }[] = [
-    { key: "sph", label: "Sph" }, { key: "cyl", label: "Cyl" }, { key: "axis", label: "Axis°" },
-    { key: "va", label: "VA", grey: true }, { key: "nearSph", label: "Add" }, { key: "nearVa", label: "NV", grey: true },
-  ];
-  const r = re ?? {}, l = le ?? {};
+function suiRxTable(re: Record<string, string | undefined> | null | undefined, le: Record<string, string | undefined> | null | undefined, method = ""): string {
+  // Auto-Refraction prints keratometry (K1, K2, ΔK) in place of the VA columns.
+  const isAR = method === "Auto-Refraction";
+  const withDk = (v: Record<string, string | undefined> | null | undefined) => {
+    const o = { ...(v ?? {}) };
+    const a = parseFloat(o.k1 ?? ""), b = parseFloat(o.k2 ?? "");
+    if (Number.isFinite(a) && Number.isFinite(b)) o.dk = Math.abs(a - b).toFixed(2);
+    return o;
+  };
+  const cols: { key: string; label: string; grey?: boolean }[] = isAR
+    ? [
+        { key: "sph", label: "Sph" }, { key: "cyl", label: "Cyl" }, { key: "axis", label: "Axis°" },
+        { key: "k1", label: "K1" }, { key: "k2", label: "K2" }, { key: "dk", label: "ΔK", grey: true },
+      ]
+    : [
+        { key: "sph", label: "Sph" }, { key: "cyl", label: "Cyl" }, { key: "axis", label: "Axis°" },
+        { key: "va", label: "VA", grey: true }, { key: "nearSph", label: "Add" }, { key: "nearVa", label: "NV", grey: true },
+      ];
+  const r = isAR ? withDk(re) : (re ?? {}), l = isAR ? withDk(le) : (le ?? {});
   const hasRe = cols.some((c) => r[c.key]);
   const hasLe = cols.some((c) => l[c.key]);
   if (!hasRe && !hasLe) return "";
@@ -1689,8 +1702,8 @@ ${va && [va.reDistance?.unaided, va.reDistance?.ph, va.reDistance?.bcva, va.leDi
 <!-- 8 · REFRACTIONS — one block per method -->
 ${(() => {
   const blocks: string[] = [];
-  const push = (label: string, re: any, le: any) => {
-    const grid = suiRxTable(re, le);
+  const push = (label: string, re: any, le: any, method = "") => {
+    const grid = suiRxTable(re, le, method);
     if (grid) blocks.push(suiBlock(escapeHtml(label), grid));
   };
   if (d.opticalRx) {
@@ -1699,7 +1712,7 @@ ${(() => {
   }
   (d.extraCorrections ?? []).forEach((ec) => {
     const method = ec.re?.method || ec.le?.method || "";
-    push(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le);
+    push(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le, method);
   });
   if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) push("Retinoscopy", d.retinoscopy.re, d.retinoscopy.le);
   return blocks.join("");

@@ -495,7 +495,7 @@ function ArSlipUpload({
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
   // ── Types ──────────────────────────────────────────────────────────────────
-  type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
+  type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; k1?: string; k2?: string };
   const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
   // Each method within a correction card stores its own eye data, print flag, and AR slip.
@@ -652,7 +652,28 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
-  const eyeFields = (val: RxEye, setVal: (v: RxEye) => void, showNear: boolean) => (
+  // Keratometry (Auto-Refraction only): ΔK is derived from K1 and K2, never stored.
+  // K options span 35.00–55.00 D in 0.25 D steps (normal cornea ~40–48 D, with room for keratoconus / post-refractive).
+  const K_OPTS = ["", ...Array.from({ length: 81 }, (_, i) => (35 + i * 0.25).toFixed(2))];
+  const kInput = (label: string, value: string, onChange: (v: string) => void) => (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
+      <select
+        disabled={!editable}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full min-w-0 ${SEL} tabular-nums`}
+      >
+        {K_OPTS.map((k) => <option key={k} value={k}>{k || "—"}</option>)}
+      </select>
+    </div>
+  );
+  const deltaK = (k1?: string, k2?: string) => {
+    const a = parseFloat(k1 ?? ""), b = parseFloat(k2 ?? "");
+    return Number.isFinite(a) && Number.isFinite(b) ? Math.abs(a - b).toFixed(2) : "";
+  };
+
+  const eyeFields = (val: RxEye, setVal: (v: RxEye) => void, showNear: boolean, showK = false) => (
     <div
       className="grid grid-cols-2 sm:grid-cols-[88px_88px_64px_20px_80px] gap-x-2 gap-y-2 items-end"
       {...(!Object.values(val).some(Boolean) ? { "data-ov-empty": "" } : {})}
@@ -662,7 +683,19 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {signedSelect("Cyl",   val.cyl,  (v) => setVal({ ...val, cyl: v }),  CYL_MAGS)}
       {axisSelect("Axis°",   val.axis, (v) => setVal({ ...val, axis: v }))}
       <div aria-hidden="true" className="hidden sm:block" />
-      {vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+      {showK
+        ? <div aria-hidden="true" className="hidden sm:block" />
+        : vaSelect("Resulting VA", val.va, (v) => setVal({ ...val, va: v }))}
+      {showK && (
+        <>
+          {kInput("K1", val.k1 ?? "", (v) => setVal({ ...val, k1: v }))}
+          {kInput("K2", val.k2 ?? "", (v) => setVal({ ...val, k2: v }))}
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">ΔK</span>
+            <div className="w-full min-w-0 h-[26px] rounded border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-1.5 py-1 text-xs text-[var(--color-ink-800)] tabular-nums">{deltaK(val.k1, val.k2)}</div>
+          </div>
+        </>
+      )}
       {showNear && (
         <>
           <p className={`${SECTION_LABEL} mt-2`}>Near</p>
@@ -753,12 +786,14 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         {eyeFields(
           activeEntry(c1).re,
           (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
-          methodHasNear(c1.activeMethod)
+          methodHasNear(c1.activeMethod),
+          c1.activeMethod === "Auto-Refraction"
         )}
         {eyeFields(
           activeEntry(c1).le,
           (le) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
-          methodHasNear(c1.activeMethod)
+          methodHasNear(c1.activeMethod),
+          c1.activeMethod === "Auto-Refraction"
         )}
       </EyeColumns>
 
@@ -800,12 +835,14 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             {eyeFields(
               activeEntry(ex).re,
               (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
-              methodHasNear(ex.activeMethod)
+              methodHasNear(ex.activeMethod),
+              ex.activeMethod === "Auto-Refraction"
             )}
             {eyeFields(
               activeEntry(ex).le,
               (le) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
-              methodHasNear(ex.activeMethod)
+              methodHasNear(ex.activeMethod),
+              ex.activeMethod === "Auto-Refraction"
             )}
           </EyeColumns>
         </div>
