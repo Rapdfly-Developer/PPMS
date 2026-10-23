@@ -618,14 +618,14 @@ export function AppointmentsClient({
 
               return (
                 <div key={key} id={`appt-section-${key}`}>
-                  {/* Section header */}
-                  <div className="flex items-center gap-2 mb-3">
+                  {/* Section header — not shown for No Shows (the card above already names it) */}
+                  {key !== "noshow" && <div className="flex items-center gap-2 mb-3">
                     <h2 className={`text-label sm:text-sm font-bold uppercase tracking-wide ${head}`}>{label}</h2>
                     {sub && <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">· {sub}</span>}
                     <span className={`ml-auto shrink-0 text-caption sm:text-xs font-bold px-2 py-0.5 rounded-full ${badge}`}>
                       {grpAppts.length}
                     </span>
-                  </div>
+                  </div>}
 
                   {/* By-date sub-groups within each section */}
                   <div className="flex flex-col gap-3">
