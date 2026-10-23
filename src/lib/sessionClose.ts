@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { istTodayStr, istHHMM, istDateTime, istDayRange } from "@/lib/ist";
-import { getDoctorSessions, sessionAt, type DoctorSession } from "@/lib/doctorSessions";
+import { getDoctorSessions, sessionAt, dateOnlyWindow, SESSION_CLOSED_TYPE, type DoctorSession } from "@/lib/doctorSessions";
 
 /**
  * End-of-session close (replaces the old midnight auto-close).
@@ -45,6 +45,24 @@ function addDays(dateStr: string, n: number) {
  *     session — same hospital first on that day — so it is decided in that session's pop-up.
  * Never closed at midnight. Null only when the doctor has no upcoming session at all.
  */
+/**
+ * True when the doctor answered the end-of-session pop-up with "Mark as incomplete" for the
+ * session this appointment belongs to (the session is closed to anything new, including
+ * returning a dispensed patient to the queue).
+ */
+export async function isAppointmentSessionClosed(appt: OpenAppt, cache: SessionCache = new Map()): Promise<boolean> {
+  const r = await sessionForAppointment(appt, cache);
+  if (!r) return false;
+  const closed = await prisma.scheduleException.findFirst({
+    where: {
+      doctorId: appt.doctorId!, hospitalId: r.session.hospitalId, type: SESSION_CLOSED_TYPE, status: "ACTIVE",
+      date: dateOnlyWindow(r.dateStr), startTime: r.session.startTime,
+    },
+    select: { id: true },
+  });
+  return !!closed;
+}
+
 export async function sessionForAppointment(appt: OpenAppt, cache: SessionCache = new Map()): Promise<{ dateStr: string; session: DoctorSession } | null> {
   if (!appt.doctorId) return null;
   const dateStr = istTodayStr(appt.dateTime);

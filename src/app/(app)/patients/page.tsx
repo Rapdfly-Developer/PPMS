@@ -1,4 +1,4 @@
-import { closeEndedSessions } from "@/lib/sessionClose";
+import { closeEndedSessions, isAppointmentSessionClosed, type SessionCache } from "@/lib/sessionClose";
 import { istTodayRange } from "@/lib/ist";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
@@ -175,7 +175,7 @@ export default async function PatientsPage({
         date: true,
         finalizedAt: true,
         generalExam: { select: { chiefComplaint: true } },
-        appointment: { select: { id: true, arrivedAt: true, status: true, consultationStatus: true } },
+        appointment: { select: { id: true, arrivedAt: true, status: true, consultationStatus: true, doctorId: true, hospitalId: true, dateTime: true } },
         diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
       },
     },
@@ -267,6 +267,16 @@ export default async function PatientsPage({
   // This ensures Undo targets the exact appointment tied to the finalized visit,
   // not an unrelated appointment that also happens to be DISPENSED today.
 
+  // Patients whose session the doctor closed ("Mark as incomplete") cannot be reverted to the queue.
+  const sessionCache: SessionCache = new Map();
+  const undoLockedIds = new Set<string>();
+  if (opStatusFilter === "dispensed") {
+    for (const p of patients) {
+      const a = p.visits[0]?.appointment;
+      if (a && a.status === "DISPENSED" && (await isAppointmentSessionClosed(a, sessionCache))) undoLockedIds.add(p.id);
+    }
+  }
+
   const serialized = patients.map(p => ({
     id:           p.id,
     udid:         p.udid ?? "",
@@ -288,6 +298,7 @@ export default async function PatientsPage({
       p.visits[0]?.appointment?.consultationStatus === "FINALIZED" &&
       p.visits[0]?.finalizedAt != null
     ) ? (p.visits[0].appointment?.id ?? null) : null,
+    undoLocked: undoLockedIds.has(p.id),
     diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null, status: d.status ?? null })) ?? [],
   }));
 

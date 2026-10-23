@@ -36,6 +36,8 @@ export interface PatientRow {
   chiefComplaint: string | null;
   photoUrl: string | null;
   dispensedApptId?: string | null;
+  /** The doctor closed this patient's session ("Mark as incomplete"): no revert to the queue. */
+  undoLocked?: boolean;
   diagnoses: { description: string; laterality?: string | null; status?: string | null }[];
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
@@ -983,13 +985,15 @@ export function PatientsClient({
                         </div>
                         {opStatusFilter === "dispensed" && p.dispensedApptId && (
                           <button
+                            disabled={!!p.undoLocked}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (p.undoLocked) return;
                               setUndoError(null);
                               setUndoTarget({ apptId: p.dispensedApptId! });
                             }}
-                            title="Return patient to today's queue"
-                            className="shrink-0 flex items-center justify-center p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+                            title={p.undoLocked ? "The session was closed (marked incomplete), so this patient cannot be returned to the queue" : "Return patient to today's queue"}
+                            className="shrink-0 flex items-center justify-center p-1.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-amber-50"
                           >
                             <Undo2 size={13} />
                           </button>
