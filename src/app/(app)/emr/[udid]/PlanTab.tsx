@@ -1508,6 +1508,14 @@ const ANESTHESIA_KEYWORDS = [
   "Sedation + Topical",
 ];
 
+// Default keywords for Minor Procedure notes; "+ Keyword" adds the doctor's own.
+const PROCEDURE_NOTE_KEYWORDS = [
+  "Procedure uneventful", "Patient tolerated well", "No complications",
+  "Informed consent taken", "Asepsis maintained", "Haemostasis achieved",
+  "Specimen sent for HPE", "Antibiotic ointment applied", "Pad and bandage applied",
+  "Review after 1 week",
+];
+
 const PROCEDURE_KEYWORDS = [
   "Chalazion excision",
   "Chalazion incision and curettage",
@@ -1742,12 +1750,15 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
         <label className="text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5">
           Procedure Notes
         </label>
-        <textarea
+        <KeywordTextarea
+          fieldKey="minor_procedure_notes"
+          builtIns={PROCEDURE_NOTE_KEYWORDS}
+          showControls={!readOnly}
           value={procNotes}
-          onChange={(e) => setProcNotes(e.target.value)}
+          onChange={setProcNotes}
           placeholder="Add notes about the procedure…"
           rows={3}
-          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none"
+          className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
         />
       </div>
 

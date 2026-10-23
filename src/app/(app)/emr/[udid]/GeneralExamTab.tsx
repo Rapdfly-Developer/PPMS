@@ -243,7 +243,11 @@ function ComplaintKeywordButton({
 
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean }) {
   const ge = visit.generalExam;
-  const [vitalsOpen, setVitalsOpen] = useState(true);
+  const [vitalsOpen, setVitalsOpen] = useState(false);
+  // Cards other than Chief Complaint and Past History start closed, like the
+  // Plan tab's Minor Procedure / Patient Disposition cards.
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
+  const toggleCard = (key: string) => setOpenCards((cur) => ({ ...cur, [key]: !cur[key] }));
   const [bp, setBp] = useState(ge?.bp ?? "");
   const [pulse, setPulse] = useState(ge?.pulse ?? "");
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
@@ -507,9 +511,13 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       {/* HISTORY OF PRESENT ILLNESS */}
       <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
-          <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
-        </FieldWithHistory>
+        {overview || openCards.hpi ? (
+          <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" headerExtra={<CardChevron open onClick={() => toggleCard("hpi")} />} history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
+            <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+          </FieldWithHistory>
+        ) : (
+          <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />
+        )}
       </Card>
       </div>
 
@@ -641,37 +649,54 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       {/* CURRENT MEDICATIONS */}
       <div {...(overview && !hasMeds ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <FieldWithHistory label="CURRENT MEDICATIONS" history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : (v) => setMedRows(parseMeds(v))}>
-          {readOnly ? (
-            <CmReadOnly meds={medRows.filter((m) => m.drugName.trim())} />
-          ) : (
-            <CmEditor rows={medRows} onChange={setMedRows} />
-          )}
-        </FieldWithHistory>
+        {overview || openCards.meds ? (
+          <FieldWithHistory label="CURRENT MEDICATIONS" headerExtra={<CardChevron open onClick={() => toggleCard("meds")} />} history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : (v) => setMedRows(parseMeds(v))}>
+            {readOnly ? (
+              <CmReadOnly meds={medRows.filter((m) => m.drugName.trim())} />
+            ) : (
+              <CmEditor rows={medRows} onChange={setMedRows} />
+            )}
+          </FieldWithHistory>
+        ) : (
+          <ClosedCardHeader label="CURRENT MEDICATIONS" onClick={() => toggleCard("meds")} />
+        )}
       </Card>
       </div>
 
       {/* SYSTEMIC HISTORY */}
       <div {...(overview && !hasOtherHistory ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <FieldWithHistory label="SYSTEMIC HISTORY" history={histFor((g) => g.pmhOtherText)} currentValue={pmhOther} onLoad={readOnly ? undefined : setPmhOther}>
-          <KeywordTextarea fieldKey="ge_pmh_other" value={pmhOther} onChange={setPmhOther} disabled={readOnly} rows={3} placeholder="Add relevant systemic history..." />
-        </FieldWithHistory>
+        {overview || openCards.systemic ? (
+          <FieldWithHistory label="SYSTEMIC HISTORY" headerExtra={<CardChevron open onClick={() => toggleCard("systemic")} />} history={histFor((g) => g.pmhOtherText)} currentValue={pmhOther} onLoad={readOnly ? undefined : setPmhOther}>
+            <KeywordTextarea fieldKey="ge_pmh_other" value={pmhOther} onChange={setPmhOther} disabled={readOnly} rows={3} placeholder="Add relevant systemic history..." />
+          </FieldWithHistory>
+        ) : (
+          <ClosedCardHeader label="SYSTEMIC HISTORY" onClick={() => toggleCard("systemic")} />
+        )}
       </Card>
       </div>
 
       {/* ALLERGIES */}
       <div {...(overview && !hasAllergies ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Allergies</p>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
-            <input type="checkbox" disabled={readOnly} checked={nkda} onChange={(e) => setNkda(e.target.checked)} />
-            NKDA (No Known Drug Allergies)
-          </label>
-        </div>
-        {!nkda && (
-          <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={readOnly} rows={2} />
+        {overview || openCards.allergies ? (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Allergies</p>
+                <CardChevron open onClick={() => toggleCard("allergies")} />
+              </div>
+              <label className="flex items-center gap-2 text-xs text-[var(--color-ink-500)]">
+                <input type="checkbox" disabled={readOnly} checked={nkda} onChange={(e) => setNkda(e.target.checked)} />
+                NKDA (No Known Drug Allergies)
+              </label>
+            </div>
+            {!nkda && (
+              <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={readOnly} rows={2} />
+            )}
+          </>
+        ) : (
+          <ClosedCardHeader label="ALLERGIES" onClick={() => toggleCard("allergies")} />
         )}
       </Card>
       </div>
@@ -687,10 +712,10 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
           <span className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">Vitals</span>
           <ChevronDown
             size={16}
-            className={`text-[var(--color-ink-400)] transition-transform duration-200 ${vitalsOpen ? "rotate-180" : ""}`}
+            className={`text-[var(--color-ink-400)] transition-transform duration-200 ${vitalsOpen || overview ? "rotate-180" : ""}`}
           />
         </button>
-        {vitalsOpen && (
+        {(vitalsOpen || overview) && (
           <div className="px-4 pb-4 pt-1 grid grid-cols-2 md:grid-cols-4 gap-x-3 gap-y-4 border-t border-[var(--color-border)] items-end">
             <FieldWithHistory label="BP" history={histFor((g) => g.bp)} currentValue={bp} onLoad={readOnly ? undefined : setBp} buttonPosition="below-label">
               <input disabled={readOnly} value={bp} onChange={(e) => setBp(e.target.value)} placeholder="120/80"
@@ -717,6 +742,25 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       </Card>
       </div>
     </div>
+  );
+}
+
+/** Collapse chevron shown next to an open card's title. */
+function CardChevron({ open, onClick }: { open: boolean; onClick: () => void }) {
+  return (
+    <button data-overview-hide type="button" onClick={onClick} aria-label={open ? "Collapse" : "Expand"} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+      <ChevronDown size={14} className={`transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+    </button>
+  );
+}
+
+/** A closed card: just its title and a chevron; clicking anywhere opens it. */
+function ClosedCardHeader({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="flex items-center gap-3 w-full text-left">
+      <span className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">{label}</span>
+      <ChevronDown size={14} className="text-[var(--color-ink-400)] shrink-0" />
+    </button>
   );
 }
 
