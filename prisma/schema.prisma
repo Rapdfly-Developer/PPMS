@@ -504,6 +504,8 @@ model Visit {
   followUpDate   DateTime?
   referralEnabled Boolean @default(false)
   referralNote   String?
+  referralType     String?  // INTERNAL | EXTERNAL
+  referralInViewOf String?
   adviseNotes    String?
   anesthesiaType      String?
   procedureLaterality String?

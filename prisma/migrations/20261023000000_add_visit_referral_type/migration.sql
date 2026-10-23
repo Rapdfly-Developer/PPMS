@@ -1,0 +1,2 @@
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "referralType"     TEXT;
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "referralInViewOf" TEXT;

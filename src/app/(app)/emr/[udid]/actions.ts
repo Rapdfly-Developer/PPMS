@@ -691,16 +691,20 @@ export async function saveDispense(visitId: string, udid: string, shortSummary: 
   revalidate(udid);
 }
 
-export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled: boolean; referralNote?: string; inViewOf?: string }) {
+// Updates only the fields present in `data`: the Follow-up and Referral panels
+// each save their own fields without touching the other's.
+export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled?: boolean; referralNote?: string | null; inViewOf?: string | null; referralType?: string | null; referralInViewOf?: string | null }) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
   await prisma.visit.update({
     where: { id: visitId },
     data: {
-      followUpDate: data.followUpDate ? new Date(data.followUpDate) : null,
-      referralEnabled: data.referralEnabled,
-      referralNote: data.referralNote ?? null,
-      inViewOf: data.inViewOf ?? null,
+      ...("followUpDate" in data ? { followUpDate: data.followUpDate ? new Date(data.followUpDate) : null } : {}),
+      ...("referralEnabled" in data ? { referralEnabled: !!data.referralEnabled } : {}),
+      ...("referralNote" in data ? { referralNote: data.referralNote ?? null } : {}),
+      ...("inViewOf" in data ? { inViewOf: data.inViewOf ?? null } : {}),
+      ...("referralType" in data ? { referralType: data.referralType === "INTERNAL" || data.referralType === "EXTERNAL" ? data.referralType : null } : {}),
+      ...("referralInViewOf" in data ? { referralInViewOf: data.referralInViewOf ?? null } : {}),
     },
   });
   revalidate(udid);

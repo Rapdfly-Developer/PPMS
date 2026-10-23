@@ -11,16 +11,18 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
-import { type MedEntry, searchMedications } from "@/lib/ophthalmic-medications";
+import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
 type Laterality = typeof LATERALITY_OPTIONS[number];
 const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
+const PMH_CUSTOM_KEY = "kw_ge_pmh_custom";
 
-type CurrentMed = { drugName: string; dosage: string; frequency: string; duration: string };
+type CurrentMed = { drugName: string; laterality?: string; dosage: string; frequency: string; duration: string };
 
 function parseMeds(raw: string): CurrentMed[] {
   if (!raw.trim()) return [{ drugName: "", dosage: "", frequency: "", duration: "" }];
@@ -36,9 +38,10 @@ function serializeMeds(meds: CurrentMed[]): string {
   return filled.length === 0 ? "" : JSON.stringify(filled);
 }
 
-const CM_DOSE_OPTIONS = ["1 drop","2 drops","½ tablet","1 tablet","2 tablets","1 capsule","25 mg","50 mg","100 mg","250 mg","500 mg","1 g"];
-const CM_FREQ_OPTIONS = ["OD (Once daily)","BD (Twice daily)","TID (Three times daily)","QID (Four times daily)","5 times daily","QHS (At bedtime)","PRN (As needed)"];
-const CM_DUR_OPTIONS  = ["1 day","3 days","1 week","2 weeks","1 month","3 months","6 months","1 year","Long-term","As needed","Until healed"];
+// Same dose / frequency / duration options as the Plan tab prescription.
+const CM_DOSE_OPTIONS = DOSE_OPTIONS;
+const CM_FREQ_OPTIONS = FREQUENCY_OPTIONS;
+const CM_DUR_OPTIONS  = DURATION_OPTIONS;
 
 function parseComplaintPrefixes(text: string): { lat: Laterality | null; sinceNum: string; sinceUnit: string; body: string } {
   let rest = text;
@@ -265,7 +268,52 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
 
   const cumulativePmh = pmh.filter((entry) => entry.name.trim());
-  const displayPmhOptions = [...new Set([...PAST_MEDICAL_HISTORY_CHIPS, ...cumulativePmh.map((entry) => entry.name)])];
+
+  // Past-history keywords the doctor added through "Other" — kept in this
+  // browser (localStorage) and offered as chips on every visit from then on.
+  const [customPmh, setCustomPmh] = useState<string[]>([]);
+  useEffect(() => {
+    try { setCustomPmh(JSON.parse(localStorage.getItem(PMH_CUSTOM_KEY) ?? "[]")); } catch { /* storage unavailable */ }
+  }, []);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
+  const builtInPmh = PAST_MEDICAL_HISTORY_CHIPS.filter((option) => option !== "Other");
+  // An entry literally named "Other" (saved before "Other" opened the keyword
+  // box) is left out here so it does not show as a second "Other" chip.
+  const displayPmhOptions = [...new Map(
+    [...builtInPmh, ...customPmh, ...cumulativePmh.map((entry) => entry.name.trim())]
+      .filter((option) => option.toLowerCase() !== "other")
+      .map((option) => [option.toLowerCase(), option] as const),
+  ).values()];
+
+  const addOtherKeyword = () => {
+    const name = otherText.trim();
+    setOtherText("");
+    setOtherOpen(false);
+    if (!name) return;
+    if (!displayPmhOptions.some((option) => option.toLowerCase() === name.toLowerCase())) {
+      const next = [...customPmh, name];
+      setCustomPmh(next);
+      try { localStorage.setItem(PMH_CUSTOM_KEY, JSON.stringify(next)); } catch { /* storage unavailable */ }
+    }
+    addPmhRow(name);
+  };
+
+  // Double-tap on a selected chip removes that entry; a single tap does nothing.
+  const lastPmhTap = useRef<{ option: string; at: number } | null>(null);
+  const tapSelectedPmh = (option: string) => {
+    const now = Date.now();
+    const last = lastPmhTap.current;
+    if (last && last.option === option && now - last.at < 350) {
+      lastPmhTap.current = null;
+      setPmh((current) => {
+        const next = current.filter((entry) => entry.name.trim().toLowerCase() !== option.toLowerCase());
+        return next.length > 0 ? next : [emptyPmh()];
+      });
+    } else {
+      lastPmhTap.current = { option, at: now };
+    }
+  };
 
   const patchPmh = (index: number, patch: Partial<PmhEntry>) =>
     setPmh((current) => current.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)));
@@ -552,20 +600,39 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
           <div data-overview-hide className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-[var(--color-border)] pt-3">
             <span className="mr-1 text-caption font-semibold text-[var(--color-ink-400)]">Keywords</span>
             {visiblePmhOptions.map((option) => {
-              const active = cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase());
+              const active = cumulativePmh.some((entry) => entry.name.trim().toLowerCase() === option.toLowerCase());
               return (
                 <button
                   key={option}
                   type="button"
-                  disabled={active}
-                  className="chip disabled:cursor-default"
+                  className="chip"
                   data-active={active}
-                  onClick={() => addPmhRow(option)}
+                  title={active ? "Double-tap to remove" : undefined}
+                  onClick={() => (active ? tapSelectedPmh(option) : addPmhRow(option))}
                 >
                   {option}
                 </button>
               );
             })}
+            {otherOpen ? (
+              <input
+                autoFocus
+                value={otherText}
+                onChange={(event) => setOtherText(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") { event.preventDefault(); addOtherKeyword(); }
+                  if (event.key === "Escape") { setOtherText(""); setOtherOpen(false); }
+                }}
+                onBlur={addOtherKeyword}
+                placeholder="New keyword…"
+                aria-label="New past history keyword"
+                className="w-36 rounded-full border border-[var(--color-primary-400)] bg-white px-3 py-1 text-caption text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              />
+            ) : (
+              <button type="button" className="chip" onClick={() => setOtherOpen(true)}>
+                Other
+              </button>
+            )}
           </div>
         )}
       </Card>
@@ -674,6 +741,10 @@ function CmDrugInput({ value, onChange, className }: { value: string; onChange: 
   const [open, setOpen] = useState(false);
   const blurRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const suggestions = useMemo(() => searchMedications(value), [value]);
+  // A typed name that is not in the list can be saved as a custom drug; it then
+  // shows in this dropdown (and the Plan tab's) from then on.
+  const typed = value.trim();
+  const canAddCustom = !!typed && !suggestions.some((med) => med.name.toLowerCase() === typed.toLowerCase());
 
   return (
     <div className="relative flex-1 min-w-0">
@@ -686,12 +757,21 @@ function CmDrugInput({ value, onChange, className }: { value: string; onChange: 
         className={className}
         autoComplete="off"
       />
-      {open && suggestions.length > 0 && (
+      {open && (suggestions.length > 0 || canAddCustom) && (
         <div
           className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
           style={{ maxHeight: 200 }}
           onMouseDown={(e) => { e.preventDefault(); if (blurRef.current) clearTimeout(blurRef.current); }}
         >
+          {canAddCustom && (
+            <button
+              type="button"
+              onClick={() => { saveCustomMedication({ name: typed }); onChange(typed); setOpen(false); }}
+              className="w-full text-left px-3 py-1.5 text-xs border-b border-[var(--color-border)] last:border-0 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+            >
+              + Add &ldquo;<span className="font-semibold">{typed}</span>&rdquo; as custom drug
+            </button>
+          )}
           {suggestions.map((med: MedEntry) => (
             <button
               key={med.id}
@@ -765,6 +845,15 @@ function CmEditor({ rows, onChange }: { rows: CurrentMed[]; onChange: (r: Curren
     <div className="flex flex-col gap-1.5">
       {rows.map((row, i) => (
         <div key={i} className="flex items-center gap-1.5">
+          <select
+            value={row.laterality ?? ""}
+            onChange={(e) => set(i, "laterality", e.target.value)}
+            aria-label="Laterality"
+            className={`${inputCls.replace("w-full ", "")} w-16 shrink-0`}
+          >
+            <option value="">Eye</option>
+            {LATERALITY_OPTIONS.map((lat) => <option key={lat} value={lat}>{lat}</option>)}
+          </select>
           <CmDrugInput
             value={row.drugName}
             onChange={(name, defaultDose) =>
@@ -797,6 +886,7 @@ function CmReadOnly({ meds }: { meds: CurrentMed[] }) {
     <div className="flex flex-col gap-1">
       {meds.map((m, i) => (
         <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
+          {m.laterality && <span className="font-semibold text-[var(--color-primary-700)]">{m.laterality}</span>}
           <span className="font-medium text-[var(--color-ink-800)]">{m.drugName}</span>
           {m.dosage    && <span className="text-[var(--color-ink-500)]">{m.dosage}</span>}
           {m.frequency && <span className="text-[var(--color-ink-500)]">{m.frequency}</span>}

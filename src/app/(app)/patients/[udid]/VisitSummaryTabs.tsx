@@ -802,7 +802,7 @@ function LongContent({
     return [eye.chips.join(", "), repeats ? "" : note].filter(Boolean).join(" · ") || null;
   };
 
-  const currentMedList: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
+  const currentMedList: { drugName: string; laterality?: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
     if (!g?.medications) return [];
     try { const a = JSON.parse(g.medications); if (Array.isArray(a)) return a.filter((m: any) => m.drugName?.trim()); } catch {}
     return [];
@@ -932,7 +932,10 @@ function LongContent({
               {currentMedList.map((m, i) => (
                 <tr key={i}>
                   <td className={TD_MUTED}>{i + 1}</td>
-                  <td className={`${TD} font-semibold`}>{m.drugName}</td>
+                  <td className={`${TD} font-semibold`}>
+                    {m.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>}
+                    {m.drugName}
+                  </td>
                   <td className={TD_MUTED}>{m.dosage || DASH}</td>
                   <td className={TD_MUTED}>{m.frequency || DASH}</td>
                   <td className={`${TD_MUTED} whitespace-nowrap`}>{m.duration || DASH}</td>

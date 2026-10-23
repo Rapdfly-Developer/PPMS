@@ -1464,7 +1464,7 @@ async function renderFullEmrHtml(d: FullEmrData): Promise<string> {
   }).filter(Boolean);
 
   /* Current medications (General Exam) — structured list, same as screen */
-  const currentMeds: { drugName: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
+  const currentMeds: { drugName: string; laterality?: string; dosage?: string; frequency?: string; duration?: string }[] = (() => {
     if (!ge?.medications) return [];
     try { const a = JSON.parse(ge.medications); if (Array.isArray(a)) return a.filter((m: any) => m?.drugName?.trim()); } catch { /* not JSON */ }
     return [];
@@ -1646,7 +1646,9 @@ ${currentMedsText
       currentMeds.map((m, i) =>
         `<tr>` +
         `<td style="${SUI_TD_MUTED}">${i + 1}</td>` +
-        `<td style="${SUI_TD}font-weight:600;">${escapeHtml(m.drugName)}</td>` +
+        `<td style="${SUI_TD}font-weight:600;">` +
+        (m.laterality ? `<span style="font-weight:700;color:${SUI.P700};margin-right:6px;">${escapeHtml(m.laterality)}</span>` : "") +
+        `${escapeHtml(m.drugName)}</td>` +
         `<td style="${SUI_TD_MUTED}">${suiVal(m.dosage)}</td>` +
         `<td style="${SUI_TD_MUTED}">${suiVal(m.frequency)}</td>` +
         `<td style="${SUI_TD_MUTED}white-space:nowrap;">${suiVal(m.duration)}</td>` +

@@ -8,8 +8,8 @@ import { useEMRSaveContext } from "./EmrSaveContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
-import { DispositionToggle, FollowUpdatesPanel } from "./DispositionPanel";
-import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
+import { DispositionToggle, FollowUpdatesPanel, ReferralPanel } from "./DispositionPanel";
+import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -21,6 +21,7 @@ import {
 import { type MedEntry, searchMedications, categoryColor, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
+import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 /* ── Preset types & storage ──────────────────────────────────────────────── */
@@ -1820,30 +1821,6 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
   );
 }
 
-const FREQUENCY_OPTIONS = [
-  "OD (Once daily)", "BD (Twice daily)", "TID (Three times daily)",
-  "QID (Four times daily)", "5 times daily", "6 times daily",
-  "Half an hourly", "Hourly", "2nd hourly", "3rd hourly", "4th hourly",
-  "QHS (At bedtime)", "PRN (As needed)",
-  "Stat (Immediately)",
-];
-
-const DOSE_OPTIONS = [
-  "1 drop", "2 drops",
-  "½ tablet", "1 tablet", "2 tablets",
-  "1 capsule", "2 capsules",
-  "0.05 mL", "0.1 mL", "0.5 mL", "1 mL",
-  "5 mL", "10 mL",
-  "25 mg", "50 mg", "100 mg", "250 mg", "500 mg", "1 g",
-];
-
-const DURATION_OPTIONS = [
-  "1 day", "2 days", "3 days", "4 days", "5 days", "6 days", "7 days",
-  "10 days", "14 days", "3 weeks", "4 weeks",
-  "1 month", "2 months", "3 months", "6 months", "1 year",
-  "Long-term",
-];
-
 const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
 
 const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
@@ -2958,13 +2935,18 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
     [
     ].filter(Boolean) as string[]
   );
+  // One panel at a time: opening Referral closes Follow Up Dates and vice versa.
   const togglePanel = (id: string) =>
-    setActivePanels((cur) => (cur.includes(id) ? cur.filter((p) => p !== id) : [...cur, id]));
+    setActivePanels((cur) => (cur.includes(id) ? [] : [id]));
 
   const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf);
-  // In overview with data, auto-open the follow panel so the values are visible
+  // In overview with data, auto-open the panels that hold it so the values are visible
   const displayPanels = overview && hasFollowUpData
-    ? [...new Set([...activePanels, "follow"])]
+    ? [...new Set([
+        ...activePanels,
+        ...(visit.followUpDate || visit.inViewOf ? ["follow"] : []),
+        ...(visit.referralEnabled ? ["referral"] : []),
+      ])]
     : activePanels;
 
   return (
@@ -2977,11 +2959,13 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
       {open && !readOnly && (
         <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
           <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
+          <DispositionToggle icon={<Share2 size={16} />}     label="Referral"             active={activePanels.includes("referral")} onClick={() => togglePanel("referral")} />
         </div>
       )}
       {open && (
         <div className="flex flex-col gap-4">
           {displayPanels.includes("follow") && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
+          {displayPanels.includes("referral") && <ReferralPanel visit={visit} udid={udid} />}
         </div>
       )}
     </Card>

@@ -6,7 +6,7 @@ import { WARDS } from "@/lib/constants";
 import { saveDispense, saveFollowUp } from "./actions";
 import { AlertTriangle, History, Plus, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
-import { appendKeywordAsBullet, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -76,13 +76,10 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
 export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
   const toInputDate = (d: any) => d ? new Date(d).toISOString().slice(0, 10) : "";
   const [followUpDate, setFollowUpDate] = useState(toInputDate(visit.followUpDate));
-  const [referralEnabled, setReferralEnabled] = useState(visit.referralEnabled ?? false);
-  const [referralNote, setReferralNote]       = useState(visit.referralNote ?? "");
   const [inViewOf, setInViewOf]               = useState(visit.inViewOf ?? "");
   const [showHistory, setShowHistory]         = useState(false);
   const [showKeywords, setShowKeywords]       = useState(false);
   const [pending, startTransition]            = useTransition();
-  const overview = useEmrOverview();
   const [saved, setSaved]                     = useState(false);
   const inViewOfRef = useRef<HTMLTextAreaElement>(null);
 
@@ -123,7 +120,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 
   const save = () =>
     startTransition(async () => {
-      await saveFollowUp(visit.id, udid, { followUpDate: followUpDate || null, referralEnabled, referralNote, inViewOf });
+      await saveFollowUp(visit.id, udid, { followUpDate: followUpDate || null, inViewOf });
       setSaved(true);
     });
 
@@ -134,7 +131,6 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       {/* Follow-up date */}
       <div>
         <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Follow-up</p>
-        <p className="text-xs text-[var(--color-ink-500)] mb-1.5">Follow-up Date</p>
         <div className="flex flex-wrap items-center gap-2">
           <input
             type="date"
@@ -236,39 +232,6 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
         )}
       </div>
 
-      {/* Referral */}
-      {overview ? (
-        referralEnabled ? (
-          <div>
-            <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-1">Referral</p>
-            <p className="text-label sm:text-sm text-[var(--color-ink-700)]">
-              {referralNote.trim() || "Referral enabled"}
-            </p>
-          </div>
-        ) : null
-      ) : (
-        <div>
-          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase mb-2">Referral</p>
-          <label className="flex items-center gap-2 text-label sm:text-sm text-[var(--color-ink-700)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={referralEnabled}
-              onChange={(e) => { setReferralEnabled(e.target.checked); setSaved(false); }}
-            />
-            Enable referral
-          </label>
-          {referralEnabled && (
-            <textarea
-              value={referralNote}
-              onChange={(e) => { setReferralNote(e.target.value); setSaved(false); }}
-              rows={2}
-              placeholder="Referral details..."
-              className="mt-2 w-full rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
-            />
-          )}
-        </div>
-      )}
-
       <div data-overview-hide className="flex items-center gap-3">
         <button
           disabled={pending}
@@ -283,3 +246,107 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   );
 }
 
+// Default "In view of" keywords for a referral; ones saved with "+ Keyword"
+// are kept on top of these (localStorage kw_referral_in_view_of).
+const REFERRAL_IN_VIEW_OF_KEYWORDS = [
+  "Retina evaluation", "Glaucoma evaluation", "Cornea opinion", "Neuro-ophthalmic evaluation",
+  "Oculoplasty opinion", "Paediatric ophthalmology", "Low vision aids",
+  "Diabetes control", "Hypertension control", "Physician fitness for surgery", "Cardiology clearance", "Neurology opinion",
+];
+
+type ReferralType = "INTERNAL" | "EXTERNAL";
+
+export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
+  const [referralType, setReferralType]       = useState<ReferralType>(visit.referralType === "EXTERNAL" ? "EXTERNAL" : "INTERNAL");
+  const [referralNote, setReferralNote]       = useState<string>(visit.referralNote ?? "");
+  const [inViewOf, setInViewOf]               = useState<string>(visit.referralInViewOf ?? "");
+  const [pending, startTransition]            = useTransition();
+  const [saved, setSaved]                     = useState(false);
+  const overview = useEmrOverview();
+  // No checkbox: a referral exists once details or "In view of" are filled in.
+  // referralEnabled is still stored because the prints and Overview read it.
+  const referralEnabled = !!(referralNote.trim() || inViewOf.trim());
+
+  const save = () =>
+    startTransition(async () => {
+      await saveFollowUp(visit.id, udid, {
+        referralEnabled,
+        referralNote,
+        referralType: referralEnabled ? referralType : null,
+        referralInViewOf: inViewOf,
+      });
+      setSaved(true);
+    });
+
+  const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase";
+
+  if (overview) {
+    if (!referralEnabled) return null;
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-1">
+        <p className={labelCls}>Referral · {referralType === "EXTERNAL" ? "External" : "Internal"}</p>
+        {referralNote.trim() && <p className="text-label sm:text-sm text-[var(--color-ink-700)]">Referred by: {referralNote.trim()}</p>}
+        {inViewOf.trim() && <p className="text-label sm:text-sm text-[var(--color-ink-500)]">In view of: {inViewOf.trim()}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
+      <p className={`${labelCls} -mb-2`}>Referral</p>
+
+          {/* Internal / External flip */}
+          <div role="radiogroup" aria-label="Referral type" className="relative inline-grid grid-cols-2 self-start rounded-full bg-[var(--color-surface-sunken)] p-0.5 text-xs font-medium">
+            <span
+              aria-hidden
+              className={`absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)] transition-transform duration-200 ${referralType === "EXTERNAL" ? "translate-x-full" : ""}`}
+            />
+            {(["INTERNAL", "EXTERNAL"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={referralType === t}
+                onClick={() => { setReferralType(t); setSaved(false); }}
+                className={`relative z-10 px-4 py-1.5 rounded-full transition-colors ${referralType === t ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}
+              >
+                {t === "INTERNAL" ? "Internal" : "External"}
+              </button>
+            ))}
+          </div>
+
+          {/* Stored in referralNote, as the referral details were. */}
+          <div>
+            <p className={`${labelCls} mb-2`}>Referred By</p>
+            <KeywordInput
+              fieldKey="referral_referred_by"
+              value={referralNote}
+              onChange={(v) => { setReferralNote(v); setSaved(false); }}
+              placeholder="e.g. Dr. name, hospital or clinic…"
+            />
+          </div>
+
+          <div>
+            <p className={`${labelCls} mb-2`}>In View Of</p>
+            <KeywordInput
+              fieldKey="referral_in_view_of"
+              builtIns={REFERRAL_IN_VIEW_OF_KEYWORDS}
+              value={inViewOf}
+              onChange={(v) => { setInViewOf(v); setSaved(false); }}
+              placeholder="e.g. Retina evaluation, Physician fitness for surgery…"
+            />
+          </div>
+
+      <div data-overview-hide className="flex items-center gap-3">
+        <button
+          disabled={pending}
+          onClick={save}
+          className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+        >
+          Save
+        </button>
+        {saved && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
+      </div>
+    </div>
+  );
+}
