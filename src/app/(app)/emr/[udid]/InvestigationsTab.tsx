@@ -9,6 +9,7 @@ import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "./actions";
 import { KeywordInput } from "@/components/emr/KeywordField";
+import { INV_IN_VIEW_OF_DEFAULTS } from "@/lib/investigation-keywords";
 import { useAutoSave } from "@/lib/useAutoSave";
 import { format } from "date-fns";
 import {
@@ -663,13 +664,14 @@ function NewInvestigations({
                 {checked && (
                   <div className="px-3 py-2 rounded-b-xl border border-t-0 border-[var(--color-primary-400)] bg-[var(--color-primary-50)]">
                     <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-600)] mb-1">In view of</p>
-                    <input
-                      type="text"
+                    {/* Default keywords for this test, plus ones saved with "+ Keyword" — kept per test. */}
+                    <KeywordInput
+                      fieldKey={`inv_in_view_of:${item.name}`}
+                      builtIns={INV_IN_VIEW_OF_DEFAULTS[item.name]}
                       value={testNotes[item.name] ?? ""}
-                      onChange={(e) => setTestNotes((prev) => ({ ...prev, [item.name]: e.target.value }))}
+                      onChange={(v) => setTestNotes((prev) => ({ ...prev, [item.name]: v }))}
                       placeholder="Indication for this test…"
                       className="w-full text-xs bg-white/70 rounded-lg border border-[var(--color-primary-200)] px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] placeholder:text-[var(--color-ink-300)]"
-                      onClick={(e) => e.preventDefault()}
                     />
                   </div>
                 )}

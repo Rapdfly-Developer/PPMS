@@ -1065,7 +1065,20 @@ function InvestigationPickerModal({
   onAdd: (names: string[]) => void;
   onClose: () => void;
 }) {
-  const categories = Object.keys(INV_CATALOG);
+  // Custom tests added in the Investigations tab ("+ Add Test"), from the same
+  // browser library that tab reads. Ones outside a catalog category go under
+  // "Other", as they do there.
+  const [customTests] = useState<{ name: string; category: string }[]>(() => {
+    try {
+      const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem("ppms_inv_favorites") ?? "[]");
+      return stored.filter((t) => t?.name && !Object.values(INV_CATALOG).flat().some((i) => i.name === t.name));
+    } catch { return []; }
+  });
+  const inCatalogCategory = (t: { category: string }) => Object.keys(INV_CATALOG).includes(t.category);
+  const categories = [
+    ...Object.keys(INV_CATALOG),
+    ...(customTests.some((t) => !inCatalogCategory(t)) ? ["Other"] : []),
+  ];
   const [activeCategory, setActiveCategory] = useState(categories[0]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState("");
@@ -1077,9 +1090,18 @@ function InvestigationPickerModal({
       return next;
     });
 
-  const items = query.trim()
-    ? Object.values(INV_CATALOG).flat().filter((i) => i.name.toLowerCase().includes(query.toLowerCase()))
-    : INV_CATALOG[activeCategory] ?? [];
+  const allItems: { name: string; isCustom?: boolean }[] = [
+    ...Object.values(INV_CATALOG).flat(),
+    ...customTests.map((t) => ({ name: t.name, isCustom: true })),
+  ];
+  const items: { name: string; isCustom?: boolean }[] = query.trim()
+    ? allItems.filter((i) => i.name.toLowerCase().includes(query.toLowerCase()))
+    : [
+        ...(INV_CATALOG[activeCategory] ?? []),
+        ...customTests
+          .filter((t) => (activeCategory === "Other" ? !inCatalogCategory(t) : t.category === activeCategory))
+          .map((t) => ({ name: t.name, isCustom: true })),
+      ];
 
   return (
     <div
@@ -1160,6 +1182,11 @@ function InvestigationPickerModal({
                   className="accent-[#0F766E]"
                 />
                 {item.name}
+                {item.isCustom && !alreadyAdded && (
+                  <span className="ml-auto text-caption font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] shrink-0">
+                    Custom
+                  </span>
+                )}
                 {alreadyAdded && <span className="ml-auto text-caption italic">Added</span>}
               </label>
             );
