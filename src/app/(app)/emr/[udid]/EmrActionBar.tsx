@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect, useCallback } from "react";
-import { readCustomPrintPref } from "@/lib/useCustomPrintPref";
-import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
-import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, Download, ChevronDown, FileText, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { PrintOptionsModal } from "./PrintOptionsModal";
+import { ChevronRight, Printer, FileSignature, CheckCircle2, CheckCheck, ChevronDown, PackageOpen, X, Lock, PenLine, Search, Clock, Plus } from "lucide-react";
 import { isSameDay } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useSidebar } from "@/components/ui/SidebarContext";
@@ -260,104 +259,6 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
   );
 }
 
-export type CustomSection = {
-  id: string;
-  label: string;
-  param: string;
-  hasData: boolean;
-};
-
-export function CustomPrintModal({
-  summaryBase,
-  spv,
-  sections,
-  visitId,
-  onClose,
-}: {
-  summaryBase: string;
-  spv: string | null;
-  sections: CustomSection[];
-  visitId: string;
-  onClose: () => void;
-}) {
-  const [checked, setChecked] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(sections.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
-  );
-
-  const toggle = (id: string) => {
-    const next = !checked[id];
-    setChecked((prev) => ({ ...prev, [id]: next }));
-    try { localStorage.setItem(`cp_${visitId}_${id}`, next ? "1" : "0"); } catch {}
-  };
-
-  const handlePrint = () => {
-    const params = new URLSearchParams();
-    if (spv) params.set("spv", spv);
-    for (const s of sections) {
-      if (!checked[s.id]) params.set(s.param, "0");
-    }
-    const url = `${summaryBase}${params.toString() ? `?${params.toString()}` : ""}`;
-    void openPdfNative(url);
-    onClose();
-  };
-
-  const anyChecked = sections.some((s) => checked[s.id]);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-          <div>
-            <h2 className="text-sm font-semibold text-[var(--color-ink-800)]">Custom Print</h2>
-            <p className="text-caption text-[var(--color-ink-400)] mt-0.5">Select sections to include</p>
-          </div>
-          <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="px-5 py-3 max-h-96 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
-          {sections.map((s) => (
-            <label
-              key={s.id}
-              className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-[var(--color-surface-sunken)] cursor-pointer select-none"
-            >
-              <input
-                type="checkbox"
-                checked={checked[s.id] ?? false}
-                onChange={() => toggle(s.id)}
-                className="accent-[var(--color-primary-600)] w-4 h-4 shrink-0"
-              />
-              <span className={`text-sm ${s.hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>
-                {s.label}
-              </span>
-              {!s.hasData && (
-                <span className="ml-auto text-caption text-[var(--color-ink-300)] shrink-0">no data</span>
-              )}
-            </label>
-          ))}
-        </div>
-
-        <div className="flex justify-end gap-3 px-5 py-4 border-t border-[var(--color-border)]">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"
-          >
-            Cancel
-          </button>
-          <button
-            disabled={!anyChecked}
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors"
-          >
-            <Printer size={14} /> Print
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
   editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
@@ -385,8 +286,7 @@ export function EmrActionBar({
   const [partialPending, startPartialTransition] = useTransition();
   const [passOverPending, startPassOver] = useTransition();
   const [passOverDone, setPassOverDone] = useState(false);
-  const [printOpen, setPrintOpen] = useState(false);
-  const [showCustomPrint, setShowCustomPrint] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPartialModal, setShowPartialModal] = useState(false);
   // The exit guard asks for this modal by bumping openPartialSignal. Derived
@@ -400,7 +300,6 @@ export function EmrActionBar({
     setDismissedSignal(openPartialSignal);
   };
   const [partialDone, setPartialDone] = useState(false);
-  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (partialDone) router.push("/dashboard");
@@ -419,18 +318,7 @@ export function EmrActionBar({
   const autoClosed = closed && !!visit.finalizedBy?.startsWith("SYSTEM");
   const sessionIncomplete = autoClosed && !!visit.finalizedBy?.includes("end of session");
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (printRef.current && !printRef.current.contains(e.target as Node)) {
-        setPrintOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
-  const pdfBase = `/api/prescription-pdf/${visit.id}`;
-  const summaryBase = `/api/prescription-pdf/${visit.id}/summary`;
   const desktopSidebarOffset = collapsed
     ? "min-[1025px]:left-16"
     : "min-[1025px]:left-60 min-[1920px]:left-[268px] min-[2560px]:left-[288px] min-[3840px]:left-[312px]";
@@ -439,48 +327,7 @@ export function EmrActionBar({
     <>
       {showSuccess && <SuccessModal udid={udid} onClose={() => setShowSuccess(false)} />}
       {passOverDone && <Toast message="Passed over to doctor." onDone={() => {}} />}
-      {showCustomPrint && (() => {
-        const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
-        const parseSegField = (s: any): Record<string, string> => {
-          try { return s ? (typeof s === "string" ? JSON.parse(s) : s) : {}; } catch { return {}; }
-        };
-        const hasSegData = (seg: any) =>
-          seg && (
-            Object.values(parseSegField(seg.re)).some((v: any) => v && String(v).trim()) ||
-            Object.values(parseSegField(seg.le)).some((v: any) => v && String(v).trim())
-          );
-        const customSections: CustomSection[] = [
-          { id: "cc", label: "Chief Complaint", param: "cc", hasData: !!visit.generalExam?.chiefComplaint },
-          { id: "allergy", label: "Drug Allergy", param: "allergy", hasData: !!visit.generalExam?.allergies },
-          { id: "rx", label: "Refraction", param: "rx", hasData: !!(visit.refraction) },
-          { id: "cv", label: "Colour Vision", param: "cv", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.result || re.notes || le.result || le.notes); } catch { return false; } })() },
-          { id: "cs", label: "Contrast Sensitivity", param: "cs", hasData: (() => { try { const re = parseSegField(visit.colourVisionCS?.re); const le = parseSegField(visit.colourVisionCS?.le); return !!(re.csResult || re.csNotes || le.csResult || le.csNotes); } catch { return false; } })() },
-          { id: "iop", label: "Intra-Ocular Pressure", param: "iop", hasData: (visit.iopReadings?.length ?? 0) > 0 },
-          { id: "gonio", label: "Gonioscopy", param: "gonio", hasData: (() => { try { return Object.values(parseSegField(visit.gonioNotes)).some((value: any) => !!value); } catch { return false; } })() },
-          { id: "extras", label: "Extra Corrections", param: "extras", hasData: !!(visit.refraction?.extraCorrections) },
-          { id: "retino", label: "Retinoscopy", param: "retino", hasData: !!visit.retinoscopy },
-          { id: "ant", label: "Anterior Segment", param: "ant", hasData: (() => { try { return hasSegData(visit.anteriorSegment); } catch { return false; } })() },
-          { id: "pos", label: "Posterior Segment", param: "pos", hasData: (() => { try { return hasSegData(visit.posteriorSegment) || !!visit.posteriorSegment?.notes; } catch { return false; } })() },
-          { id: "tear", label: "Tear Film", param: "tear", hasData: !!(visit.tearFilm?.tbutRe != null || visit.tearFilm?.tbutLe != null || visit.tearFilm?.schirmer1Re != null || visit.tearFilm?.schirmer1Le != null || visit.tearFilm?.schirmer2Re != null || visit.tearFilm?.schirmer2Le != null) },
-          { id: "lacrimal", label: "Lacrimal Sac Syringing", param: "lacrimal", hasData: (() => { try { const re = parseSegField(visit.lacrimalSac?.re); const le = parseSegField(visit.lacrimalSac?.le); return Object.values(re).some((value: any) => (Array.isArray(value) ? value.length > 0 : !!value)) || Object.values(le).some((value: any) => (Array.isArray(value) ? value.length > 0 : !!value)); } catch { return false; } })() },
-          { id: "diplopia", label: "Diplopia Charting", param: "diplopia", hasData: (() => { try { return Object.keys(parseSegField(visit.diplopiaChart?.grid)).length > 0; } catch { return false; } })() },
-          { id: "hess", label: "Hess Charting", param: "hess", hasData: (() => { try { return Object.keys(parseSegField(visit.hessChart?.grid)).length > 0 || !!visit.hessChart?.interpretation; } catch { return false; } })() },
-          { id: "dx", label: "Diagnoses", param: "dx", hasData: visit.diagnoses?.length > 0 },
-          { id: "meds", label: "Medications", param: "meds", hasData: visit.medications?.length > 0 },
-          { id: "inv", label: "Investigations", param: "inv", hasData: visit.investigationOrders?.length > 0 },
-          { id: "proc", label: "Minor Procedure", param: "proc", hasData: !!visit.procedureName },
-          { id: "advice", label: "Advice & Follow-up", param: "advice", hasData: !!visit.adviseNotes || !!visit.followUpDate },
-        ];
-        return (
-          <CustomPrintModal
-            summaryBase={summaryBase}
-            spv={spv}
-            sections={customSections}
-            visitId={visit.id}
-            onClose={() => setShowCustomPrint(false)}
-          />
-        );
-      })()}
+      {showPrint && <PrintOptionsModal visitId={visit.id} udid={udid} onClose={() => setShowPrint(false)} />}
       {showPartial && (
         <PartialDispenseModal
           loading={partialPending}
@@ -500,14 +347,9 @@ export function EmrActionBar({
           cannot be scrolled to — the first button (Next) was simply stranded
           off-screen. "safe" keeps end-alignment while the row fits and falls
           back to start-alignment when it does not, so any overflow lands on the
-          END edge where overflow-x-auto can reach it.
-
-          overflow-x-auto is dropped while the Print Rx menu is open: a scroll
-          container computes overflow-y to auto as well, which would clip that
-          menu (it renders above the bar via bottom-full). The row fits outright
-          at >=360px now, so the scroll only ever engages on very narrow phones,
-          and never while the menu is open. */}
-      <div className={`fixed bottom-16 lg:bottom-0 short:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-3 flex flex-nowrap items-center gap-2 md:gap-3 md:justify-end shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200 ${printOpen ? "" : "overflow-x-auto"}`}>
+          END edge where overflow-x-auto can reach it. The row fits outright at
+          >=360px, so the scroll only ever engages on very narrow phones. */}
+      <div className={`fixed bottom-16 lg:bottom-0 short:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-2 md:px-8 py-3 flex flex-nowrap items-center gap-2 md:gap-3 md:justify-end shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200 overflow-x-auto`}>
         {!closed && !isLastTab && (
           <button
             onClick={onNextSection}
@@ -517,95 +359,16 @@ export function EmrActionBar({
           </button>
         )}
 
-        {/* Print Rx dropdown — shown when emr.print permission is granted */}
-        {canPrint && <div className="flex-1 md:flex-none relative" ref={printRef}>
+        {/* Print Rx — opens the print pop-up; shown when emr.print permission is granted */}
+        {canPrint && <div className="flex-1 md:flex-none relative">
           <button
-            onClick={() => setPrintOpen((v) => !v)}
+            onClick={() => setShowPrint(true)}
             className="w-full flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] whitespace-nowrap"
           >
-            <Printer size={13} /> Print Rx <ChevronDown size={11} className={`transition-transform ${printOpen ? "rotate-180" : ""}`} />
+            <Printer size={13} /> Print Rx <ChevronDown size={11} />
           </button>
-
-          {printOpen && (
-            <div className="absolute bottom-full mb-2 left-0 md:left-auto md:right-0 w-56 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-30">
-              {/* 1. Print Long Summary */}
-              <button
-                type="button"
-                onClick={() => {
-                  setPrintOpen(false);
-                  void openPdfNative(pdfBase);
-                }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-              >
-                <Printer size={15} className="text-[var(--color-primary-600)] shrink-0" />
-                <div>
-                  <p className="font-medium">Print Long Summary</p>
-                  <p className="text-caption text-[var(--color-ink-400)]">Full Rx in browser</p>
-                </div>
-              </button>
-
-              <div className="border-t border-[var(--color-border)]" />
-
-              {/* 2. Download PDF */}
-              {/* Stays a real <a download> on the web so it saves straight to disk
-                  without opening a tab. On the native shell the anchor does nothing,
-                  so preventDefault and hand it to the Filesystem/FileOpener path. */}
-              <a
-                href={`${pdfBase}?dl=1`}
-                download
-                onClick={(e) => {
-                  setPrintOpen(false);
-                  if (isNativeShell()) {
-                    e.preventDefault();
-                    void openPdfNative(`${pdfBase}?dl=1`);
-                  }
-                }}
-                className="flex items-center gap-3 px-4 py-3 text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-              >
-                <Download size={15} className="text-[var(--color-primary-600)] shrink-0" />
-                <div>
-                  <p className="font-medium">Download PDF</p>
-                  <p className="text-caption text-[var(--color-ink-400)]">Save full EMR to device</p>
-                </div>
-              </a>
-
-              <div className="border-t border-[var(--color-border)]" />
-
-              {/* 3. Print Short Summary */}
-              <button
-                onClick={() => {
-                  setPrintOpen(false);
-                  const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
-                  void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`);
-                }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-              >
-                <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
-                <div>
-                  <p className="font-medium">Print Short Summary</p>
-                  <p className="text-caption text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
-                </div>
-              </button>
-
-              <div className="border-t border-[var(--color-border)]" />
-
-              {/* 4. Custom Print */}
-              <button
-                onClick={() => {
-                  setPrintOpen(false);
-                  setShowCustomPrint(true);
-                }}
-                className="flex items-center gap-3 px-4 py-3 w-full text-left text-label sm:text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
-              >
-                <FileText size={15} className="text-[var(--color-primary-600)] shrink-0" />
-                <div>
-                  <p className="font-medium">Custom Print</p>
-                  <p className="text-caption text-[var(--color-ink-400)]">Choose sections to include</p>
-                </div>
-              </button>
-            </div>
-          )}
         </div>}
+
 
         {canPartialDispense && !closed && (
           <button

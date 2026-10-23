@@ -9,10 +9,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const { visitId } = await params;
   const user = await requireUser();
 
-  // Refraction-section inclusion params (absent or "1" = include, "0" = exclude)
+  // Section inclusion params (absent or "1" = include, "0" = exclude). The
+  // plain long print sends none, so it prints every section; Custom Print sends
+  // "0" for each section left unticked (ids in src/lib/print-sections.ts).
   const sp = req.nextUrl.searchParams;
-  const inclExtras = sp.get("extras") !== "0";
-  const inclRetino = sp.get("retino") !== "0";
+  const on = (key: string) => sp.get(key) !== "0";
+  const inclExtras = on("extras") && on("rx");
+  // Retinoscopy has no EMR section of its own; it prints with the refractions.
+  const inclRetino = on("retino") && on("rx");
 
   const visit = await prisma.visit.findUnique({
     where: { id: visitId },
@@ -84,61 +88,66 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         doctorName: visit.doctor.name,
         doctorQualifications: visit.doctor.qualifications ?? null,
         doctorRegNumber: visit.doctor.medicalRegNumber ?? null,
-        followUpDate: (visit as any).followUpDate ?? null,
-        referralEnabled: (visit as any).referralEnabled ?? false,
+        followUpDate: on("followup") ? (visit as any).followUpDate ?? null : null,
+        referralEnabled: on("referral") ? (visit as any).referralEnabled ?? false : false,
         referralNote: (visit as any).referralNote ?? null,
         inViewOf: (visit as any).inViewOf ?? null,
       },
       generalExam: ge ? {
-        bp: ge.bp, pulse: ge.pulse, temperature: ge.temperature, weight: ge.weight,
-        chiefComplaint: ge.chiefComplaint, hpi: (ge as any).hpi ?? null,
-        pastMedicalHistory: parseJSON((ge as any).pastMedicalHistory, [] as string[]),
-        pmhOtherText: (ge as any).pmhOtherText ?? null,
-        medications: (ge as any).medications ?? null,
-        allergies: (ge as any).allergies ?? null,
-        nkda: (ge as any).nkda ?? null,
-        familyHistory: (ge as any).familyHistory ?? null,
-        socialHistory: (ge as any).socialHistory ?? null,
+        bp: on("vitals") ? ge.bp : null,
+        pulse: on("vitals") ? ge.pulse : null,
+        temperature: on("vitals") ? ge.temperature : null,
+        weight: on("vitals") ? ge.weight : null,
+        chiefComplaint: on("cc") ? ge.chiefComplaint : null,
+        hpi: on("hpi") ? (ge as any).hpi ?? null : null,
+        pastMedicalHistory: on("pmh") ? parseJSON((ge as any).pastMedicalHistory, [] as string[]) : [],
+        pmhOtherText: on("systemic") ? (ge as any).pmhOtherText ?? null : null,
+        medications: on("curmeds") ? (ge as any).medications ?? null : null,
+        allergies: on("allergy") ? (ge as any).allergies ?? null : null,
+        nkda: on("allergy") ? (ge as any).nkda ?? null : null,
+        familyHistory: on("systemic") ? (ge as any).familyHistory ?? null : null,
+        socialHistory: on("systemic") ? (ge as any).socialHistory ?? null : null,
       } : null,
-      visualAcuity: vaData,
-      iopReadings: visit.iopReadings.map((r: any) => ({
+      visualAcuity: on("va") ? vaData : null,
+      iopReadings: on("iop") ? visit.iopReadings.map((r: any) => ({
         method: r.method, re: r.re, le: r.le, takenAt: r.takenAt,
-      })),
-      colourVision: cv ? (() => {
+      })) : [],
+      colourVision: cv && (on("cv") || on("cs")) ? (() => {
         const parseCvEye = (raw: unknown) => {
           if (!raw) return null;
           const eye: any = typeof raw === "string" ? (() => { try { return JSON.parse(raw); } catch { return null; } })() : raw;
           if (!eye) return null;
+          const inclCv = on("cv"), inclCs = on("cs");
           return {
-            cvMethod: eye.cvMethod ?? undefined,
-            result: eye.result ?? undefined,
-            notes: eye.notes ?? undefined,
-            csMethod: eye.csMethod ?? undefined,
-            csResult: eye.csResult ?? undefined,
-            csNotes: eye.csNotes ?? undefined,
+            cvMethod: inclCv ? eye.cvMethod ?? undefined : undefined,
+            result: inclCv ? eye.result ?? undefined : undefined,
+            notes: inclCv ? eye.notes ?? undefined : undefined,
+            csMethod: inclCs ? eye.csMethod ?? undefined : undefined,
+            csResult: inclCs ? eye.csResult ?? undefined : undefined,
+            csNotes: inclCs ? eye.csNotes ?? undefined : undefined,
           };
         };
-        return { re: parseCvEye((cv as any).re), le: parseCvEye((cv as any).le), notes: (cv as any).notes ?? null };
+        return { re: parseCvEye((cv as any).re), le: parseCvEye((cv as any).le), notes: on("cv") ? (cv as any).notes ?? null : null };
       })() : null,
       // Raw per-eye records (incl. _method / _notes / freeText), the shape renderFullEmrHtml reads.
-      anteriorSegment: as_ ? {
+      anteriorSegment: as_ && on("ant") ? {
         re: parseJSON((as_ as any).re, {} as Record<string, any>),
         le: parseJSON((as_ as any).le, {} as Record<string, any>),
       } : null,
-      posteriorSegment: ps ? {
+      posteriorSegment: ps && on("pos") ? {
         re: parseJSON((ps as any).re, {} as Record<string, any>),
         le: parseJSON((ps as any).le, {} as Record<string, any>),
         notes: (ps as any).notes ?? null,
       } : null,
-      diagnoses: visit.diagnoses.map((d: any) => ({
+      diagnoses: visit.diagnoses.filter((d: any) => on(d.provisional ? "pdx" : "dx")).map((d: any) => ({
         description: d.description, icd10Code: d.icd10Code,
         status: d.status, laterality: d.laterality ?? null,
       })),
-      medications: visit.medications.map((m: any) => ({
+      medications: on("meds") ? visit.medications.map((m: any) => ({
         drugName: m.drugName, dosage: m.dosage, frequency: m.frequency,
         duration: m.duration, instructions: m.instructions ?? null,
         route: m.route ?? null, laterality: m.laterality ?? null,
-      })),
+      })) : [],
       opticalRx: null,
       // Every refraction and method that has values, same as the Previous Visits long summary.
       extraCorrections: (() => {
@@ -176,7 +185,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
             }
           });
         }
-        const all = [...c1Corrs, ...extraCorrs];
+        const all = [...(on("rx") ? c1Corrs : []), ...extraCorrs];
         return all.length > 0
           ? all.map((c) => ({ label: c.label, re: { ...c.re, method: c.method }, le: { ...c.le, method: c.method } }))
           : null;
@@ -191,10 +200,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         };
       })(),
       gonioscopy: (() => {
+        if (!on("gonio")) return null;
         const raw = parseJSON((visit as any).gonioNotes, {} as Record<string, string>);
         return Object.values(raw).some(Boolean) ? raw : null;
       })(),
-      tearFilm: (visit as any).tearFilm ? {
+      tearFilm: (visit as any).tearFilm && on("tear") ? {
         tbutRe: (visit as any).tearFilm.tbutRe ?? null,
         tbutLe: (visit as any).tearFilm.tbutLe ?? null,
         schirmer1Re: (visit as any).tearFilm.schirmer1Re ?? null,
@@ -204,7 +214,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       } : null,
       lacrimalSac: (() => {
         const ls = (visit as any).lacrimalSac;
-        if (!ls) return null;
+        if (!ls || !on("lacrimal")) return null;
         const parseEye = (raw: unknown) => {
           const parsed = parseJSON(raw as any, {} as any);
           return Array.isArray(parsed)
@@ -213,24 +223,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         };
         return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null };
       })(),
-      diplopiaChart: (visit as any).diplopiaChart
+      diplopiaChart: (visit as any).diplopiaChart && on("diplopia")
         ? parseJSON((visit as any).diplopiaChart.grid, null)
         : null,
-      hessChart: (visit as any).hessChart
+      hessChart: (visit as any).hessChart && on("hess")
         ? { grid: parseJSON((visit as any).hessChart.grid, undefined) as Record<string, any> | undefined, interpretation: (visit as any).hessChart.interpretation ?? null }
         : null,
-      minorProcedure: (visit as any).procedureName ? {
+      minorProcedure: (visit as any).procedureName && on("proc") ? {
         procedureName: (visit as any).procedureName ?? null,
         procedureLaterality: (visit as any).procedureLaterality ?? null,
         anesthesiaType: (visit as any).anesthesiaType ?? null,
         procedureNotes: (visit as any).procedureNotes ?? null,
       } : null,
-      adviseNotes: (visit as any).adviseNotes ?? null,
-      investigations: visit.investigationOrders.map((i: any) => ({
+      adviseNotes: on("advice") ? (visit as any).adviseNotes ?? null : null,
+      investigations: on("inv") ? visit.investigationOrders.map((i: any) => ({
         testName: i.testName, priority: i.priority, status: i.status,
         laterality: i.laterality ?? null,
         result: i.result ?? null, notes: i.notes ?? null,
-      })),
+      })) : [],
     });
   } catch (err: any) {
     console.error("[prescription-pdf] generation error:", err);
