@@ -228,7 +228,6 @@ const TS_STEPS: TsStep[] = [
   { key: "seenAt",                  label: "Consult. Start",    group: "clinical" },
   { key: "refractionStartedAt",     label: "Refraction Start",  group: "clinical" },
   { key: "refractionCompletedAt",   label: "Refraction Done",   group: "clinical" },
-  { key: "refractionPassedOverAt",  label: "Passed Over",       group: "clinical" },
   { key: "investigationOrderedAt",  label: "Inv. Ordered",      group: "clinical" },
   { key: "reportUploadedAt",        label: "Report Upload",     group: "clinical" },
   { key: "partialDispenseAt",       label: "Partial Dispense",  group: "dispense" },
@@ -259,7 +258,10 @@ const DURATION_METRICS: { label: string; from: keyof VisitTimestamps; to: keyof 
   { label: "Total Visit",     from: "arrivedAt",           to: "finalizedAt"             },
 ];
 
-function TimestampSection({ ts, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boolean }) {
+function TimestampSection({ ts: raw, isWalkIn }: { ts: VisitTimestamps; isWalkIn: boolean }) {
+  // "Passed over" happens at the same moment as "Refraction done", so only one tile is shown;
+  // when done was not recorded, the pass-over time stands in for it.
+  const ts: VisitTimestamps = { ...raw, refractionCompletedAt: raw.refractionCompletedAt ?? raw.refractionPassedOverAt };
   const active = TS_STEPS
     .filter((s) => ts[s.key])
     .filter((s) => isWalkIn ? s.group !== "booking" : true)
