@@ -42,7 +42,8 @@ export const PRINT_SECTIONS: PrintSection[] = [
   { id: "hpi",      label: "History of Present Illness", short: false, long: true, hasData: (v) => filled(v.generalExam?.hpi) },
   { id: "pmh",      label: "Past History",               short: false, long: true, hasData: (v) => arr(v.generalExam?.pastMedicalHistory).length > 0 },
   { id: "curmeds",  label: "Current Medications",        short: false, long: true, hasData: (v) => { const m = v.generalExam?.medications; const a = arr(m); return a.length ? a.some((x: any) => filled(x?.drugName)) : filled(m) && m.trim() !== "[]"; } },
-  { id: "systemic", label: "Systemic History",           short: false, long: true, hasData: (v) => filled(v.generalExam?.pmhOtherText) || filled(v.generalExam?.familyHistory) || filled(v.generalExam?.socialHistory) },
+  { id: "systemic", label: "Systemic History",           short: false, long: true, hasData: (v) => filled(v.generalExam?.pmhOtherText) || filled(v.generalExam?.socialHistory) },
+  { id: "family",   label: "Family History",             short: false, long: true, hasData: (v) => filled(v.generalExam?.familyHistory) },
   { id: "allergy",  label: "Drug Allergy",               short: true,  long: true, hasData: (v) => filled(v.generalExam?.allergies) || !!v.generalExam?.nkda },
   { id: "vitals",   label: "Vitals",                     short: false, long: true, hasData: (v) => ["bp", "pulse", "temperature", "weight"].some((k) => filled(v.generalExam?.[k])) },
   // Ophthalmic

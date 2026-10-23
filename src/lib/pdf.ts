@@ -946,6 +946,10 @@ const SUI_TD_MUTED = `padding:4px 12px 4px 0;vertical-align:top;font-size:9.5px;
 const SUI_DASH = `<span style="color:${SUI.INK_300};">—</span>`;
 
 const suiVal = (v: unknown) => (v === null || v === undefined || v === "") ? SUI_DASH : escapeHtml(String(v));
+/** Like suiVal, but keeps the line breaks the doctor typed (multi-line notes). */
+const suiValLines = (v: unknown) => (v === null || v === undefined || String(v).trim() === "")
+  ? SUI_DASH
+  : `<span style="white-space:pre-wrap;">${escapeHtml(String(v).replace(/\r/g, ""))}</span>`;
 
 /** One line: "LABEL · value". */
 function suiLine(label: string, valueHtml: string, danger = false): string {
@@ -1631,12 +1635,14 @@ ${ge && pmhList.length
   : ""}
 
 <!-- 5 · SYSTEMIC HISTORY -->
-${ge && (ge.pmhOtherText || ge.familyHistory || ge.socialHistory)
+${ge && (ge.pmhOtherText || ge.socialHistory)
   ? suiBlock("Systemic History",
       (ge.pmhOtherText ? suiNote(ge.pmhOtherText, "slate", false) : "") +
-      (ge.familyHistory ? `<div style="margin-top:4px;font-size:9.5px;color:${SUI.INK_700};"><span style="color:${SUI.INK_400};">Family History:</span> ${escapeHtml(ge.familyHistory)}</div>` : "") +
       (ge.socialHistory ? `<div style="margin-top:2px;font-size:9.5px;color:${SUI.INK_700};"><span style="color:${SUI.INK_400};">Social History:</span> ${escapeHtml(ge.socialHistory)}</div>` : ""))
   : ""}
+
+<!-- 5a · FAMILY HISTORY -->
+${ge?.familyHistory && ge.familyHistory.trim() ? suiBlock("Family History", suiNote(ge.familyHistory, "slate", false)) : ""}
 
 <!-- 5b · CURRENT MEDICATIONS -->
 ${currentMedsText
@@ -1847,7 +1853,9 @@ ${d.anteriorSegment
       if (!rows.length) return "";
       return `<div class="no-break" style="margin-bottom:12px;">` +
         suiTable(COLS_EYE_PDF, suiEyeHead(`Anterior Segment · ${escapeHtml(antMethod || "Slit Lamp")}`),
-          rows.map(([label, r, l], i) => suiEyeRow(escapeHtml(label), suiVal(r), suiVal(l), { stripe: i % 2 !== 0 })).join(""),
+          rows.map(([label, r, l], i) => label === "Notes"
+            ? suiEyeRow("Notes", suiValLines(r), suiValLines(l), { stripe: i % 2 !== 0 })
+            : suiEyeRow(escapeHtml(label), suiVal(r), suiVal(l), { stripe: i % 2 !== 0 })).join(""),
           { indent: true }) +
         `</div>`;
     })()
@@ -1871,10 +1879,10 @@ ${(() => {
   const keys = Array.from(new Set([...Object.keys(re), ...Object.keys(le)])).filter((k) => !k.startsWith("_") && (re[k] || le[k]));
   if (!keys.length && !posReNotes && !posLeNotes && !ps.notes) return "";
   const rows = keys.map((k, i) => suiEyeRow(escapeHtml(POS_LABELS[k] ?? k), suiVal(stripB(re[k])), suiVal(stripB(le[k])), { stripe: i % 2 !== 0 })).join("") +
-    (posReNotes || posLeNotes ? suiEyeRow("Notes", suiVal(posReNotes), suiVal(posLeNotes), { stripe: keys.length % 2 !== 0 }) : "");
+    (posReNotes || posLeNotes ? suiEyeRow("Notes", suiValLines(posReNotes), suiValLines(posLeNotes), { stripe: keys.length % 2 !== 0 }) : "");
   return `<div class="no-break" style="margin-bottom:12px;">` +
     (rows ? suiTable(COLS_EYE_PDF, suiEyeHead(`Posterior Segment · ${escapeHtml(posMethod || "Indirect Ophthalmoscope")}`), rows, { indent: true }) : "") +
-    (ps.notes ? `<p style="margin-top:5px;padding-left:${SUI.INDENT}px;font-size:9.5px;font-style:italic;line-height:1.4;color:${SUI.INK_500};">${escapeHtml(ps.notes)}</p>` : "") +
+    (ps.notes ? `<p style="margin-top:5px;padding-left:${SUI.INDENT}px;font-size:9.5px;font-style:italic;line-height:1.4;color:${SUI.INK_500};white-space:pre-wrap;">${escapeHtml(ps.notes)}</p>` : "") +
     `</div>`;
 })()}
 

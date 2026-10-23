@@ -811,6 +811,7 @@ function LongContent({
   const hasVitals   = !!(g?.bp || g?.pulse || g?.weight || g?.temperature);
   const hasPMH      = pmhList.length > 0 || g?.allergies || g?.nkda;
   const hasSystemicHistory = !!g?.pmhOtherText;
+  const hasFamilyHistory = !!g?.familyHistory?.trim();
   const hasDiag     = data.diagnoses?.length > 0;
   const hasMeds     = data.medications?.length > 0;
   const hasInv      = data.investigationOrders?.length > 0;
@@ -920,6 +921,17 @@ function LongContent({
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Systemic History</span>
           </div>
           <div className="ml-5 px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.pmhOtherText}</div>
+        </div>
+      )}
+
+      {/* ── 5a. Family History ──────────────────────────────────────── */}
+      {hasFamilyHistory && (
+        <div>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <BookOpen size={11} className="text-slate-500" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Family History</span>
+          </div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-slate-200 border-l-4 border-l-slate-400 bg-slate-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g!.familyHistory}</div>
         </div>
       )}
 

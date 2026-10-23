@@ -265,6 +265,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
     return initial.length > 0 ? initial : [emptyPmh()];
   });
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
+  const [familyHistory, setFamilyHistory] = useState(ge?.familyHistory ?? "");
 
   const [medRows, setMedRows] = useState<CurrentMed[]>(() => parseMeds(ge?.medications ?? ""));
   const medications = serializeMeds(medRows);
@@ -343,7 +344,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
     setPmh((current) => current.filter((_, i) => i !== index));
 
   const chiefComplaintFull = serializeComplaints(complaints);
-  const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, medications, allergies, nkda };
+  const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, familyHistory, medications, allergies, nkda };
 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
     setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -374,6 +375,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const hasPmh        = cumulativePmh.length > 0;
   const hasMeds       = medRows.some((m) => m.drugName.trim());
   const hasOtherHistory = !!pmhOther.trim();
+  const hasFamilyHistory = !!familyHistory.trim();
   const hasAllergies  = nkda || !!allergies.trim();
   const hasVitals     = !!(bp || pulse || temperature || weight);
 
@@ -672,6 +674,19 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
           </FieldWithHistory>
         ) : (
           <ClosedCardHeader label="SYSTEMIC HISTORY" onClick={() => toggleCard("systemic")} />
+        )}
+      </Card>
+      </div>
+
+      {/* FAMILY HISTORY */}
+      <div {...(overview && !hasFamilyHistory ? { "data-overview-empty-section": "" } : {})}>
+      <Card>
+        {overview || openCards.family ? (
+          <FieldWithHistory label="FAMILY HISTORY" headerExtra={<CardChevron open onClick={() => toggleCard("family")} />} history={histFor((g) => g.familyHistory)} currentValue={familyHistory} onLoad={readOnly ? undefined : setFamilyHistory}>
+            <KeywordTextarea fieldKey="ge_family_history" value={familyHistory} onChange={setFamilyHistory} disabled={readOnly} rows={3} placeholder="Add relevant family history..." />
+          </FieldWithHistory>
+        ) : (
+          <ClosedCardHeader label="FAMILY HISTORY" onClick={() => toggleCard("family")} />
         )}
       </Card>
       </div>

@@ -105,7 +105,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         medications: on("curmeds") ? (ge as any).medications ?? null : null,
         allergies: on("allergy") ? (ge as any).allergies ?? null : null,
         nkda: on("allergy") ? (ge as any).nkda ?? null : null,
-        familyHistory: on("systemic") ? (ge as any).familyHistory ?? null : null,
+        familyHistory: on("family") ? (ge as any).familyHistory ?? null : null,
         socialHistory: on("systemic") ? (ge as any).socialHistory ?? null : null,
       } : null,
       visualAcuity: on("va") ? vaData : null,

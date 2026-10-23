@@ -575,6 +575,7 @@ model GeneralExamination {
   provisionalDx       String?
   pastMedicalHistory  String? // JSON array of chip values, cumulative
   pmhOtherText        String?
+  familyHistory       String?
   medications         String? // free text list
   allergies           String?
   nkda                Boolean  @default(false)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { Card } from "@/components/ui/Card";
@@ -507,8 +507,11 @@ function NewInvestigations({
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Every custom test is retained in the existing browser library.
-  const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>(() => {
-    if (typeof window === "undefined") return [];
+  // Read from browser storage after mount, not during the first render: the
+  // server has no storage, so reading it up front made the server and client
+  // HTML differ (hydration error) whenever a custom test existed.
+  const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>([]);
+  useEffect(() => {
     try {
       const favs: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
       const session: { name: string; category: string }[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
@@ -516,9 +519,9 @@ function NewInvestigations({
       for (const t of session) {
         if (!merged.some((f) => f.name === t.name)) merged.push(t);
       }
-      return merged;
-    } catch { return []; }
-  });
+      setCustomTests((prev) => [...merged, ...prev.filter((p) => !merged.some((m) => m.name === p.name))]);
+    } catch { /* storage unavailable */ }
+  }, []);
 
   const toggleTest = (name: string) =>
     setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
