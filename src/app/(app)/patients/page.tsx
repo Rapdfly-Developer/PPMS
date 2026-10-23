@@ -1,5 +1,5 @@
-import { closeEndedSessions, sessionForAppointment, type SessionCache } from "@/lib/sessionClose";
-import { istTodayRange, istDateTime } from "@/lib/ist";
+import { closeEndedSessions } from "@/lib/sessionClose";
+import { istTodayRange } from "@/lib/ist";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, subDays, format } from "date-fns";
@@ -68,26 +68,6 @@ export default async function PatientsPage({
   const noShowRecords = await getNoShowRegistry(await noShowScopeFor(user));
   const noShowPatientIds = [...new Set(noShowRecords.map(r => r.patientId))];
 
-  // Dispensed Today = consultations finalized today whose doctor's session has not ended yet.
-  // When the session ends they move to Total Dispensed.
-  const { dayStart: istToday, dayEnd: istTodayEnd } = istTodayRange();
-  const finalizedToday = await prisma.appointment.findMany({
-    where: {
-      patient: scopeWhere,
-      status: "DISPENSED",
-      consultationStatus: "FINALIZED",
-      visit: { is: { finalizedAt: { gte: istToday, lte: istTodayEnd } } },
-    },
-    select: { id: true, patientId: true, doctorId: true, hospitalId: true, dateTime: true },
-  });
-  const sessionCache: SessionCache = new Map();
-  const todayDispensedSet = new Set<string>();
-  for (const a of finalizedToday) {
-    const r = await sessionForAppointment(a, sessionCache);
-    if (r && istDateTime(r.dateStr, r.session.endTime).getTime() > new Date().getTime()) todayDispensedSet.add(a.patientId);
-  }
-  const todayDispensedIds = [...todayDispensedSet];
-
   // ── List conditions ─────────────────────────────────────────────────────────
   const listConds = [...scopeConds];
   if (q) {
@@ -126,19 +106,21 @@ export default async function PatientsPage({
       visits: { some: { generalExam: ccConds.length === 1 ? ccConds[0] : { AND: ccConds } } },
     });
   }
-  const listToday    = startOfDay(new Date());
-  const listTodayEnd = new Date(listToday); listTodayEnd.setHours(23, 59, 59, 999);
+  // The day runs midnight to midnight IST. A patient finalized today is in Dispensed Today
+  // only; at 12 am IST they move to Total Dispensed.
+  const { dayStart: listToday, dayEnd: listTodayEnd } = istTodayRange();
+  const finalizedTodayVisit = { finalizedAt: { gte: listToday, lte: listTodayEnd }, appointment: { status: "DISPENSED", consultationStatus: "FINALIZED" } };
   if (opStatusFilter === "dispensed") {
-    listConds.push({ id: { in: todayDispensedIds } });
+    listConds.push({ visits: { some: finalizedTodayVisit } });
   }
   if (opStatusFilter === "totaldispensed") {
     // Patients with at least one completed consultation who are NOT currently in queue today
-    // and not still in Dispensed Today (they move here when their session ends)
+    // and were not finalized today (those are still in Dispensed Today)
     listConds.push({
       AND: [
         { appointments: { some: { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
         { appointments: { none: { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: listToday, lte: listTodayEnd } } } },
-        { id: { notIn: todayDispensedIds } },
+        { visits: { none: finalizedTodayVisit } },
       ],
     });
   }
@@ -222,7 +204,6 @@ export default async function PatientsPage({
 
   const today     = startOfDay(new Date());
   const weekStart = subDays(today, 6);
-  const todayEnd = new Date(today); todayEnd.setHours(23, 59, 59, 999);
 
   const [
     totalDispensed,
@@ -238,13 +219,15 @@ export default async function PatientsPage({
         AND: [
           ...scopeConds,
           { appointments: { some:  { status: "DISPENSED", consultationStatus: "FINALIZED" } } },
-          { appointments: { none:  { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: today, lte: todayEnd } } } },
-          { id: { notIn: todayDispensedIds } },
+          { appointments: { none:  { status: { in: ["CONFIRMED", "PARTIAL_DISPENSE"] }, dateTime: { gte: listToday, lte: listTodayEnd } } } },
+          { visits: { none: finalizedTodayVisit } },
         ],
       },
     }),
     prisma.patient.count({ where: { AND: [...scopeConds, { category: { in: ["ECHS", "INSURANCE"] } }] } }),
-    Promise.resolve(todayDispensedIds.length),
+    prisma.patient.count({
+      where: { AND: [...scopeConds, { visits: { some: finalizedTodayVisit } }] },
+    }),
     prisma.patient.groupBy({
       by:    ["category"],
       where: scopeWhere,
