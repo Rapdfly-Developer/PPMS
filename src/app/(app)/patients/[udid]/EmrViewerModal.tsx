@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2, Activity, FlaskConical, Pill, ClipboardList, CalendarClock, Scissors, BookOpen, AlertCircle, Eye } from "lucide-react";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
 import { format } from "date-fns";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
-import { PrintOptionsModal } from "@/app/(app)/emr/[udid]/PrintOptionsModal";
+import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -488,23 +488,93 @@ function VitalCard({ label, value, unit }: { label: string; value: string; unit:
 }
 
 export function VisitDownloadButton({ visitId, udid }: { visitId: string; udid: string }) {
-  const [showPrint, setShowPrint] = useState(false);
+  // Simple three-option menu (no custom print here — that lives in the EMR's Print Rx).
+  const [open, setOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ bottom: 0, right: 0 });
+  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleToggle = () => {
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setDropdownPos({
+        bottom: window.innerHeight - r.top + 8,
+        right:  window.innerWidth - r.right,
+      });
+    }
+    setOpen((v) => !v);
+  };
+
+  const pdfBase     = `/api/prescription-pdf/${visitId}`;
+  const summaryBase = `/api/prescription-pdf/${visitId}/summary`;
+  const spv = typeof window !== "undefined" ? localStorage.getItem(`spect_pin_${udid}`) : null;
 
   return (
-    <>
-      {showPrint && <PrintOptionsModal visitId={visitId} udid={udid} onClose={() => setShowPrint(false)} />}
-      <div className="relative shrink-0">
-        <button
-          onClick={() => setShowPrint(true)}
-          title="Print options"
-          className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-60"
+    <div className="relative shrink-0" ref={ref}>
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        title="Print options"
+        className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-500 hover:text-white transition-colors disabled:opacity-60"
+      >
+        <Printer size={13} />
+      </button>
+
+      {open && (
+        <div
+          className="fixed w-52 rounded-xl border border-[var(--color-border)] bg-white shadow-lg overflow-hidden z-[200]"
+          style={{ bottom: dropdownPos.bottom, right: dropdownPos.right }}
         >
-          <Printer size={13} />
-        </button>
-      </div>
-    </>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); void openPdfNative(pdfBase); }}
+            className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            <Printer size={14} className="text-[var(--color-primary-600)] shrink-0" />
+            <div>
+              <p className="font-medium">Print Long Summary</p>
+              <p className="text-xs text-[var(--color-ink-400)]">Full Rx in browser</p>
+            </div>
+          </button>
+          <div className="border-t border-[var(--color-border)]" />
+          <a
+            href={`${pdfBase}?dl=1`}
+            download
+            onClick={(e) => { setOpen(false); if (isNativeShell()) { e.preventDefault(); void openPdfNative(`${pdfBase}?dl=1`); } }}
+            className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            <Download size={14} className="text-[var(--color-primary-600)] shrink-0" />
+            <div>
+              <p className="font-medium">Download PDF</p>
+              <p className="text-xs text-[var(--color-ink-400)]">Save full EMR to device</p>
+            </div>
+          </a>
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={() => { setOpen(false); void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`); }}
+            className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+          >
+            <FileText size={14} className="text-[var(--color-primary-600)] shrink-0" />
+            <div>
+              <p className="font-medium">Print Short Summary</p>
+              <p className="text-xs text-[var(--color-ink-400)]">Plan, Rx &amp; advice only</p>
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
+
 export function EmrViewerButton({ visitId, visitNumber, udid, visitDate }: { visitId: string; visitNumber: number; udid: string; visitDate: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();

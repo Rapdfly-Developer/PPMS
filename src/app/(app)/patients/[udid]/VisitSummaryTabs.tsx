@@ -596,6 +596,12 @@ function EyeHead({ first = "", line = false }: { first?: string; line?: boolean 
   );
 }
 
+/** ΔK = |K1 − K2| for an Auto-Refraction eye; empty unless both K values are set. */
+function deltaK(eye: { k1?: string; k2?: string } | null | undefined): string {
+  const a = parseFloat(eye?.k1 ?? ""), b = parseFloat(eye?.k2 ?? "");
+  return Number.isFinite(a) && Number.isFinite(b) ? Math.abs(a - b).toFixed(2) : "";
+}
+
 function RxTable({ rows }: { rows: { label: string; re?: string | null; le?: string | null; grey?: boolean }[] }) {
   const allCols = rows;
   const hasRe = allCols.some((r) => r.re);
@@ -1036,7 +1042,15 @@ function LongContent({
 
           {hasRC && corrections.map((c, i) => (
             <Block key={i} label={c.method ? `${c.label} · ${c.method}` : c.label}>
-              <RxTable rows={[
+              {/* Auto-Refraction shows keratometry (K1, K2, ΔK) in place of VA / Add / NV. */}
+              <RxTable rows={c.method === "Auto-Refraction" ? [
+                { label: "Sph",   re: c.re.sph,     le: c.le.sph },
+                { label: "Cyl",   re: c.re.cyl,     le: c.le.cyl },
+                { label: "Axis°", re: c.re.axis,    le: c.le.axis },
+                { label: "K1",    re: c.re.k1,      le: c.le.k1 },
+                { label: "K2",    re: c.re.k2,      le: c.le.k2 },
+                { label: "ΔK",    re: deltaK(c.re), le: deltaK(c.le), grey: true },
+              ] : [
                 { label: "Sph",   re: c.re.sph,     le: c.le.sph },
                 { label: "Cyl",   re: c.re.cyl,     le: c.le.cyl },
                 { label: "Axis°", re: c.re.axis,    le: c.le.axis },
