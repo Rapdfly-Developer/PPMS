@@ -233,6 +233,8 @@ export default async function PatientDetailedEMR({
         v.posteriorSegment)
   );
   const latestDiagnosis = patient.visits.flatMap((v) => v.diagnoses)[0];
+  // Header "Dx:" shows every diagnosis of the most recent visit that has any.
+  const latestDiagnoses = patient.visits.find((v) => v.diagnoses.length > 0)?.diagnoses ?? [];
 
   const chiefComplaintSummary = activeVisit?.generalExam?.chiefComplaint ?? latestDiagnosis?.description ?? null;
 
@@ -436,9 +438,14 @@ export default async function PatientDetailedEMR({
                       "bg-white/15 text-white/70"
                     }`}>{patient.category}</span>
                   )}
-                  {latestDiagnosis && (
+                  {latestDiagnoses.length > 0 && (
                     <span className="clinical-diagnosis-chip-dark text-micro px-2 py-0.5 rounded-full border">
-                      Dx: {latestDiagnosis.laterality && <span className="clinical-laterality">{latestDiagnosis.laterality} </span>}{latestDiagnosis.description}
+                      Dx: {latestDiagnoses.map((d, i) => (
+                        <span key={d.id}>
+                          {i > 0 && ", "}
+                          {d.laterality && <span className="clinical-laterality">{d.laterality} </span>}{d.description}
+                        </span>
+                      ))}
                     </span>
                   )}
                 </div>

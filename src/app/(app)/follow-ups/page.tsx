@@ -54,10 +54,8 @@ export default async function FollowUpsPage() {
       doctor: { select: { id: true, name: true } },
       hospital: { select: { id: true, name: true } },
       diagnoses: {
-        where: { confirmedAt: { not: null } },
         select: { description: true, icd10Code: true, laterality: true, status: true },
-        orderBy: { confirmedAt: "desc" },
-        take: 3,
+        orderBy: { createdAt: "asc" },
       },
       generalExam: { select: { chiefComplaint: true } },
     },

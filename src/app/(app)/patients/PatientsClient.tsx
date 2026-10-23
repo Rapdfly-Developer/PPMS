@@ -924,16 +924,13 @@ export function PatientsClient({
                           )}
                           {displayDiagnoses.length > 0 ? (
                             <div className="flex max-w-full flex-wrap gap-1">
-                              {displayDiagnoses.slice(0, 2).map((d, i) => (
+                              {displayDiagnoses.map((d, i) => (
                                 <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
                                   {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                                   <span className="truncate">{d.description}</span>
                                 </span>
                               ))}
-                              {displayDiagnoses.length > 2 && (
-                                <span className="self-center text-micro sm:text-caption text-[var(--color-ink-400)]">+{displayDiagnoses.length - 2}</span>
-                              )}
                             </div>
                           ) : (
                             <span className="text-caption sm:text-caption italic text-[var(--color-ink-300)]">Diagnosis not recorded</span>

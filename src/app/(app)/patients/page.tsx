@@ -176,7 +176,7 @@ export default async function PatientsPage({
         finalizedAt: true,
         generalExam: { select: { chiefComplaint: true } },
         appointment: { select: { id: true, arrivedAt: true, status: true, consultationStatus: true, doctorId: true, hospitalId: true, dateTime: true } },
-        diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" as const }, take: 4 },
+        diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" as const } },
       },
     },
   };

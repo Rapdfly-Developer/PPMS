@@ -550,11 +550,13 @@ export async function saveProvisionalDiagnosis(visitId: string, udid: string, te
 export async function addDiagnosis(
   visitId: string,
   udid: string,
-  data: { icd10Code: string; description: string; laterality?: string; provisional?: boolean }
+  data: { icd10Code: string; description: string; laterality?: string; provisional?: boolean; status?: string }
 ) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
-  await prisma.diagnosis.create({ data: { visitId, status: "ACTIVE", ...data } });
+  const { status, ...rest } = data;
+  const allowed = ["ACTIVE", "RESOLVED", "CHRONIC", "QUERY", "BLANK"];
+  await prisma.diagnosis.create({ data: { visitId, status: status && allowed.includes(status) ? status : "ACTIVE", ...rest } });
   await writeAudit(user.id, "Diagnosis", visitId, "ADD", data);
   revalidate(udid);
 }
@@ -564,6 +566,15 @@ export async function updateDiagnosisStatus(id: string, udid: string, status: st
   await assertRowOwner("diagnosis", id);
   await prisma.diagnosis.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "Diagnosis", id, "STATUS", { status });
+  revalidate(udid);
+}
+
+export async function updateDiagnosisLaterality(id: string, udid: string, laterality: string) {
+  const user = await requireRole("DOCTOR");
+  await assertRowOwner("diagnosis", id);
+  if (!["RE", "LE", "OU"].includes(laterality)) throw new Error("Invalid laterality");
+  await prisma.diagnosis.update({ where: { id }, data: { laterality } });
+  await writeAudit(user.id, "Diagnosis", id, "LATERALITY", { laterality });
   revalidate(udid);
 }
 

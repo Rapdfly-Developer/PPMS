@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
-import { addDiagnosis, updateDiagnosisStatus, removeDiagnosis, removeMedication, saveAdviseNotes } from "./actions";
+import { addDiagnosis, updateDiagnosisStatus, updateDiagnosisLaterality, removeDiagnosis, removeMedication, saveAdviseNotes } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
@@ -191,6 +191,68 @@ function DiagnosisRow({
   );
 }
 
+/* ── Provisional diagnosis row: Status | Laterality | Diagnosis ──────────── */
+
+const DX_ROW_INPUT = "rounded-lg border border-[var(--color-border)] bg-white px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]";
+
+function ProvDiagnosisRow({
+  d, isCustom, pending, readOnly,
+  onReject, onStatusChange, onLateralityChange,
+}: {
+  d: any;
+  isCustom: boolean;
+  pending: boolean;
+  readOnly: boolean;
+  onReject: (d: any) => void;
+  onStatusChange: (d: any, status: string) => void;
+  onLateralityChange: (d: any, laterality: string) => void;
+}) {
+  return (
+    <li className="flex items-center gap-1.5">
+      <select
+        value={d.status}
+        disabled={readOnly}
+        onChange={(e) => onStatusChange(d, e.target.value)}
+        aria-label="Status"
+        className={`${DX_ROW_INPUT} w-24 shrink-0`}
+      >
+        {DIAGNOSIS_STATUSES.map((s) => (
+          <option key={s} value={s}>{s === "BLANK" ? "—" : s}</option>
+        ))}
+      </select>
+      <select
+        value={d.laterality ?? ""}
+        disabled={readOnly}
+        onChange={(e) => onLateralityChange(d, e.target.value)}
+        aria-label="Laterality"
+        className={`${DX_ROW_INPUT} w-20 shrink-0`}
+      >
+        {!d.laterality && <option value="">Laterality</option>}
+        {LATERALITY.map((l) => <option key={l} value={l}>{l}</option>)}
+      </select>
+      <div className={`${DX_ROW_INPUT} flex-1 min-w-0 flex items-center gap-2 bg-[var(--color-surface-sunken)]`}>
+        <span className="clinical-diagnosis-text truncate">{d.description}</span>
+        {isCustom && (
+          <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">Custom</span>
+        )}
+        {d.icd10Code && <span className="ml-auto font-mono text-[var(--color-ink-400)] shrink-0">{d.icd10Code}</span>}
+      </div>
+      {!readOnly && (
+        <button
+          type="button"
+          data-overview-hide
+          onClick={() => onReject(d)}
+          disabled={pending}
+          className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors disabled:opacity-50"
+          aria-label={`Remove ${d.description}`}
+        >
+          <X size={13} />
+        </button>
+      )}
+    </li>
+  );
+}
+
 /* ── Protocol picker modal ───────────────────────────────────────────────── */
 
 const PROTOCOL_SLOTS = ["Protocol 1", "Protocol 2", "Protocol 3"] as const;
@@ -362,6 +424,9 @@ export function AssessmentTab({
     () => (typeof window !== "undefined" ? sessionStorage.getItem(`prov-lat-${visit.id}`) : null) ?? "OU"
   );
   const setProvLaterality = (v: string) => { if (typeof window !== "undefined") sessionStorage.setItem(`prov-lat-${visit.id}`, v); setProvLateralityState(v); };
+  // The blank "new diagnosis" row (like Current Medications' "+ Add medication").
+  const [provDraftOpen, setProvDraftOpen] = useState(false);
+  const [provStatus, setProvStatus] = useState<string>("ACTIVE");
   const [showProvSuggestions, setShowProvSuggestions] = useState(false);
   const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
   const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -587,6 +652,12 @@ export function AssessmentTab({
   };
 
 
+  const handleLateralityChange = (d: any, laterality: string) => {
+    run(async () => {
+      await updateDiagnosisLaterality(d.id, udid, laterality);
+    });
+  };
+
   const handleStatusChange = (d: any, status: string) => {
     run(async () => {
       await updateDiagnosisStatus(d.id, udid, status);
@@ -605,8 +676,10 @@ export function AssessmentTab({
   // Add provisional diagnosis
   const addProv = (code: string, description: string) => {
     run(async () => {
-      await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true });
+      await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true, status: provStatus });
       setProvQuery("");
+      setProvStatus("ACTIVE");
+      setProvDraftOpen(false);
     });
   };
 
@@ -776,275 +849,137 @@ export function AssessmentTab({
           </div>
         )}
 
-        <div data-overview-hide className="flex items-end gap-3 flex-wrap mb-2">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
-            <SingleChipSelect options={LATERALITY} value={provLaterality} onChange={setProvLaterality} />
-          </div>
-          <div className="relative flex-1 min-w-[240px]">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-            <input
-              value={provQuery}
-              disabled={readOnly}
-              onChange={(e) => { setProvQuery(e.target.value); setShowProvSuggestions(true); setProvSuggestionIndex(-1); }}
-              onFocus={() => { if (provBlurTimerRef.current) clearTimeout(provBlurTimerRef.current); setShowProvSuggestions(true); }}
-              onBlur={() => { provBlurTimerRef.current = setTimeout(() => setShowProvSuggestions(false), 150); }}
-              onKeyDown={handleProvKeyDown}
-              placeholder="Search ICD-10 code or description..."
-              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:opacity-60 disabled:cursor-not-allowed"
+        {/* Rows: Status | Laterality | Diagnosis — same pattern as Current Medications */}
+        <ul className="flex flex-col gap-1.5">
+          {provisionalDiagnoses.map((d) => (
+            <ProvDiagnosisRow
+              key={d.id}
+              d={d}
+              isCustom={isCustomDiagnosis(d)}
+              pending={pending}
+              readOnly={readOnly}
+              onReject={handleReject}
+              onStatusChange={handleStatusChange}
+              onLateralityChange={handleLateralityChange}
             />
-            {showProvSuggestions && provQuery.length >= 2 && !readOnly && (
-              <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-                {provSuggestions.length === 0 ? (
-                  <li>
-                    <button
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
-                      className="w-full text-left px-3.5 py-3.5 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                    >
-                      <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
-                      <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provQuery.trim()}&rdquo;</span> as Custom Diagnosis</span>
-                    </button>
-                  </li>
-                ) : (
-                  <>
-                    {provSuggestions.map((s, i) => (
-                      <li key={s.code || s.description}>
+          ))}
+          {!readOnly && (provDraftOpen || provisionalDiagnoses.length === 0) && (
+            <li data-overview-hide className="flex items-center gap-1.5">
+              <select
+                value={provStatus}
+                onChange={(e) => setProvStatus(e.target.value)}
+                aria-label="Status"
+                className={`${DX_ROW_INPUT} w-24 shrink-0`}
+              >
+                {DIAGNOSIS_STATUSES.map((st) => (
+                  <option key={st} value={st}>{st === "BLANK" ? "—" : st}</option>
+                ))}
+              </select>
+              <select
+                value={provLaterality}
+                onChange={(e) => setProvLaterality(e.target.value)}
+                aria-label="Laterality"
+                className={`${DX_ROW_INPUT} w-20 shrink-0`}
+              >
+                {LATERALITY.map((l) => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <div className="relative flex-1 min-w-0">
+                <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                <input
+                  autoFocus={provDraftOpen}
+                  value={provQuery}
+                  onChange={(e) => { setProvQuery(e.target.value); setShowProvSuggestions(true); setProvSuggestionIndex(-1); }}
+                  onFocus={() => { if (provBlurTimerRef.current) clearTimeout(provBlurTimerRef.current); setShowProvSuggestions(true); }}
+                  onBlur={() => { provBlurTimerRef.current = setTimeout(() => setShowProvSuggestions(false), 150); }}
+                  onKeyDown={handleProvKeyDown}
+                  placeholder="Search ICD-10 code or description..."
+                  className={`${DX_ROW_INPUT} w-full pl-7`}
+                />
+                {showProvSuggestions && provQuery.length >= 2 && !readOnly && (
+                  <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {provSuggestions.length === 0 ? (
+                      <li>
                         <button
                           type="button"
-                          onMouseDown={(e) => { e.preventDefault(); addProv(s.code, s.description); setShowProvSuggestions(false); setProvSuggestionIndex(-1); }}
-                          className={`w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4 transition-colors ${
-                            i === provSuggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
-                          }`}
+                          onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
+                          className="w-full text-left px-3.5 py-3.5 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                         >
-                          <span className="flex-1 min-w-0 truncate">{s.description}</span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {s.custom && (
-                              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
-                            )}
-                            {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
-                          </div>
+                          <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
+                          <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{provQuery.trim()}&rdquo;</span> as Custom Diagnosis</span>
                         </button>
                       </li>
-                    ))}
-                    <li className="border-t border-[var(--color-border)]">
-                      <button
-                        type="button"
-                        onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
-                        className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                      >
-                        <Plus size={13} className="shrink-0" />
-                        <span>Add &ldquo;<span className="font-medium">{provQuery.trim()}</span>&rdquo; as Custom Diagnosis</span>
-                      </button>
-                    </li>
-                  </>
-                )}
-              </ul>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => openCustomModal("provisional")}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
-          >
-            <PenLine size={13} />
-            Add Manually
-          </button>
-        </div>
-
-        {provisionalDiagnoses.length === 0 ? (
-          <p data-overview-hide className="text-label sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No provisional diagnoses added yet. Search above to begin.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {provisionalDiagnoses.map((d) => (
-              <DiagnosisRow
-                key={d.id}
-                d={d}
-                provisional
-                isCustom={isCustomDiagnosis(d)}
-                pending={pending}
-                onReject={handleReject}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </ul>
-        )}
-      </Card>
-      </div>
-
-      {/* ── Diagnosis (ICD-10) ────────────────────────────────────────────── */}
-      <div {...(overview && diagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
-      <Card>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Diagnosis (ICD-10)</p>
-          <button
-            type="button"
-            data-overview-hide
-            onClick={() => setHistoryOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
-          >
-            <History size={11} />
-            History {priorDxGroups.length > 0 && `(${priorDxGroups.length})`}
-            <ChevronDown size={11} className={historyOpen ? "rotate-180 transition-transform" : "transition-transform"} />
-          </button>
-        </div>
-        {historyOpen && (
-          <div className="mb-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-caption font-bold uppercase tracking-widest text-[#0F766E]">Previous Diagnoses</p>
-              {priorDxGroups.length > 0 && (
-                <p className="text-caption text-[#0D9488]">Double-click a visit to load its diagnoses</p>
-              )}
-            </div>
-            {priorDxGroups.length === 0 ? (
-              <p className="text-xs text-[var(--color-ink-400)] py-2 text-center">No previous records found.</p>
-            ) : (
-              <div className="space-y-3 max-h-56 overflow-y-auto scrollbar-thin">
-                {priorDxGroups.map((g, gi) => (
-                  <div
-                    key={gi}
-                    onDoubleClick={() => handleDxGroupDoubleClick(g.diagnoses)}
-                    title="Double-click to add these diagnoses"
-                    className="cursor-pointer rounded-lg px-2 py-1.5 -mx-1.5 hover:bg-[#DCF3F1] transition-colors select-none"
-                  >
-                    <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-2">{format(new Date(g.date), "EEEE, d MMM yyyy")}</p>
-                    <div className="flex flex-col gap-1.5">
-                      {g.diagnoses.map((d: any, di: number) => {
-                        const sm = ({
-                          ACTIVE:   { pill: "bg-amber-100 text-amber-700 border-amber-200",   label: "Active" },
-                          CHRONIC:  { pill: "bg-orange-100 text-orange-700 border-orange-200", label: "Chronic" },
-                          RESOLVED: { pill: "bg-emerald-100 text-emerald-700 border-emerald-200", label: "Resolved" },
-                          QUERY:    { pill: "bg-blue-100 text-blue-700 border-blue-200",       label: "Query" },
-                        } as Record<string, { pill: string; label: string }>)[d.status] ?? { pill: "bg-slate-100 text-slate-500 border-slate-200", label: d.status ?? "—" };
-                        const nextStatus = d.status === "RESOLVED" ? "ACTIVE" : "RESOLVED";
-                        const nextLabel  = d.status === "RESOLVED" ? "Still Active" : "Resolved";
-                        return (
-                          <div key={di} className="flex items-center gap-2 py-1 border-b border-[#B2DEDA]/40 last:border-0">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-[var(--color-ink-800)] leading-tight truncate">
-                                <span className="clinical-diagnosis-text">
-                                  {d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}
-                                  {d.description}
-                                </span>
-                              </p>
-                              {d.icd10Code && (
-                                <p className="text-caption font-mono text-[var(--color-ink-400)] mt-0.5">
-                                  {d.icd10Code}
-                                </p>
-                              )}
-                            </div>
-                            <span className={`inline-flex shrink-0 text-caption font-bold px-2 py-0.5 rounded-full border whitespace-nowrap ${sm.pill}`}>
-                              {sm.label}
-                            </span>
+                    ) : (
+                      <>
+                        {provSuggestions.map((s, i) => (
+                          <li key={s.code || s.description}>
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleStatusChange(d, nextStatus); }}
-                              disabled={pending}
-                              className="shrink-0 text-caption font-semibold px-2.5 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors disabled:opacity-40"
+                              onMouseDown={(e) => { e.preventDefault(); addProv(s.code, s.description); setShowProvSuggestions(false); setProvSuggestionIndex(-1); }}
+                              className={`w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4 transition-colors ${
+                                i === provSuggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
+                              }`}
                             >
-                              {nextLabel}
+                              <span className="flex-1 min-w-0 truncate">{s.description}</span>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {s.custom && (
+                                  <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
+                                )}
+                                {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
+                              </div>
                             </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div data-overview-hide className="flex items-end gap-3 flex-wrap mb-2">
-          <div>
-            <p className="text-xs font-medium text-[var(--color-ink-500)] mb-1.5">Laterality</p>
-            <SingleChipSelect options={LATERALITY} value={laterality} onChange={setLaterality} />
-          </div>
-          <div className="relative flex-1 min-w-[240px]">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-            <input
-              value={query}
-              disabled={readOnly}
-              onChange={(e) => { setQuery(e.target.value); }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && query.trim() && icdMatches.length === 0) openCustomModal("icd");
-              }}
-              placeholder="Search ICD-10 code or description..."
-              className="w-full rounded-xl border border-[var(--color-border)] pl-9 pr-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:opacity-60 disabled:cursor-not-allowed"
-            />
-            {query.length > 0 && !readOnly && (
-              <ul className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-[var(--color-border)] bg-white shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-                {icdMatches.length === 0 ? (
-                  <li>
-                    <button
-                      onClick={() => openCustomModal("icd")}
-                      className="w-full text-left px-3.5 py-3.5 text-sm flex items-center gap-2.5 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                    >
-                      <Plus size={15} className="shrink-0 text-[var(--color-primary-500)]" />
-                      <span>No diagnosis found. Add <span className="font-semibold">&ldquo;{query.trim()}&rdquo;</span> as Custom Diagnosis</span>
-                    </button>
-                  </li>
-                ) : (
-                  <>
-                    {icdMatches.map((m) => (
-                      <li key={m.code || m.description}>
-                        <button
-                          onClick={() => { addIcd(m.code, m.description); setQuery(""); }}
-                          className="w-full text-left px-3.5 py-2.5 text-sm text-[var(--color-ink-800)] hover:bg-[var(--color-surface-sunken)] flex items-center justify-between gap-4"
-                        >
-                          <span className="flex-1 min-w-0 truncate">{m.description}</span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {m.custom && (
-                              <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
-                            )}
-                            {m.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{m.code}</span>}
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                    <li className="border-t border-[var(--color-border)]">
-                      <button
-                        onClick={() => openCustomModal("icd")}
-                        className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
-                      >
-                        <Plus size={13} className="shrink-0" />
-                        <span>Add &ldquo;<span className="font-medium">{query.trim()}</span>&rdquo; as Custom Diagnosis</span>
-                      </button>
-                    </li>
-                  </>
+                          </li>
+                        ))}
+                        <li className="border-t border-[var(--color-border)]">
+                          <button
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); openCustomModal("provisional"); }}
+                            className="w-full text-left px-3.5 py-2.5 text-sm flex items-center gap-2 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                          >
+                            <Plus size={13} className="shrink-0" />
+                            <span>Add &ldquo;<span className="font-medium">{provQuery.trim()}</span>&rdquo; as Custom Diagnosis</span>
+                          </button>
+                        </li>
+                      </>
+                    )}
+                  </ul>
                 )}
-              </ul>
-            )}
+              </div>
+              {provisionalDiagnoses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setProvDraftOpen(false); setProvQuery(""); setProvStatus("ACTIVE"); }}
+                  className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors"
+                  aria-label="Cancel new diagnosis"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </li>
+          )}
+        </ul>
+        {!readOnly && (
+          <div data-overview-hide className="flex items-center gap-3 mt-1.5">
+            <button
+              type="button"
+              onClick={() => setProvDraftOpen(true)}
+              className="text-xs text-[var(--color-primary-700)] hover:underline"
+            >
+              + Add Diagnosis
+            </button>
+            <button
+              type="button"
+              onClick={() => openCustomModal("provisional")}
+              className="flex items-center gap-1 text-xs text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-colors"
+            >
+              <PenLine size={12} />
+              Add Manually
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => openCustomModal("icd")}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-2.5 rounded-xl border transition-colors whitespace-nowrap bg-white text-[var(--color-ink-600)] border-[var(--color-border)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-600)]"
-          >
-            <PenLine size={13} />
-            Add Manually
-          </button>
-        </div>
-
-        {diagnoses.length === 0 ? (
-          <p data-overview-hide className="text-label sm:text-sm text-[var(--color-ink-400)] py-4 text-center">No diagnoses added yet. Search above to begin.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {diagnoses.map((d) => (
-              <DiagnosisRow
-                key={d.id}
-                d={d}
-                isCustom={isCustomDiagnosis(d)}
-                pending={pending}
-                onReject={handleReject}
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </ul>
         )}
       </Card>
       </div>
     </div>
+
 
       {/* Custom Diagnosis → Add Preset modal */}
       {customModal && (
