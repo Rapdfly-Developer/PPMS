@@ -19,7 +19,6 @@ import {
   saveTreatmentPresets,
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, categoryColor, saveCustomMedication } from "@/lib/ophthalmic-medications";
-import { VA_SNELLEN_VALUES, DEFAULT_REFRACTION_METHOD, isPrescribableMethod, methodHasNear } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -1489,7 +1488,6 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
         readOnly={readOnly}
       />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
-      <OpticalPrescriptionCard visit={visit} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} />
 
     </div>
@@ -1861,34 +1859,6 @@ const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
   },
 ];
 const ALL_ADVISE_KEYWORDS = ADVISE_KEYWORDS.flatMap((group) => group.items);
-
-/* ── Optical Prescription helpers ────────────────────────────────────────── */
-const OPT_SPH_MAGS  = ["", ...Array.from({ length: 81 }, (_, i) => (i * 0.25).toFixed(2))];
-const OPT_CYL_MAGS  = ["", ...Array.from({ length: 41 }, (_, i) => (i * 0.25).toFixed(2))];
-const OPT_ADD_MAGS  = ["", ...Array.from({ length: 16 }, (_, i) => ((i + 1) * 0.25).toFixed(2))];
-const OPT_AXIS_OPTS = ["", ...Array.from({ length: 180 }, (_, i) => String(i + 1))];
-const OPT_VA_NEAR   = ["-", "N6", "N8", "N10", "N12", "N18", "N24", "N36", "CF", "HM", "PL", "NPL"];
-
-function parseOptSignedVal(v: string): { sign: "+" | "-"; mag: string } {
-  if (!v || v === "+") return { sign: "+", mag: "" };
-  if (v === "-") return { sign: "-", mag: "" };
-  return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
-}
-
-function OptEyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
-      <div className="min-w-0 md:pr-8">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
-        {children[0]}
-      </div>
-      <div className="min-w-0 md:pl-8">
-        <p className="text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
-        {children[1]}
-      </div>
-    </div>
-  );
-}
 
 type TaperLevel = { dose: string; frequency: string; durationNum: string; durationUnit: string };
 
@@ -2814,128 +2784,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         </div>
       )}
     </Card>
-  );
-}
-
-function OpticalPrescriptionCard({ visit }: { visit: any }) {
-  const overview = useEmrOverview();
-  const [open, setOpen] = useState(false);
-  const rc = visit.refraction;
-  type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; method?: string };
-  const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "", method: "" };
-
-  // Only a Subjective refraction is a prescription. This card used to render
-  // Correction 1 unconditionally, so an Auto-Refraction or retinoscopy reading
-  // left in slot 1 was presented to the patient as their glasses Rx.
-  //
-  // Method is read from either eye: older records wrote it to the RE object
-  // only, so LE alone is not a reliable source.
-  const corrections: { label: string; re: RxFields; le: RxFields }[] = [
-    { label: "Correction 1", re: parseJSON(rc?.re, emptyRx), le: parseJSON(rc?.le, emptyRx) },
-    ...parseJSON<{ label: string; re: RxFields; le: RxFields }[]>(rc?.extraCorrections, []),
-  ];
-  const subjective = corrections.find(
-    (c) => isPrescribableMethod(c.re?.method || c.le?.method || DEFAULT_REFRACTION_METHOD),
-  );
-
-  const re: RxFields = subjective?.re ?? emptyRx;
-  const le: RxFields = subjective?.le ?? emptyRx;
-
-  const hasData = !!subjective && [re.sph, re.cyl, re.axis, re.va, re.nearSph, re.nearVa,
-                   le.sph, le.cyl, le.axis, le.va, le.nearSph, le.nearVa]
-    .some((v) => v && v !== "-");
-
-  const cell = (val: string) => (val && val !== "-" ? val : <span className="text-[var(--color-ink-300)]">—</span>);
-
-  const showNear = methodHasNear(subjective?.re?.method || subjective?.le?.method);
-  const HEADERS = ["Sph", "Cyl", "Axis°", "VA", "Add", "NV"];
-  const ROWS: { label: string; rx: RxFields }[] = [
-    { label: "Right Eye", rx: re },
-    { label: "Left Eye",  rx: le },
-  ];
-
-  // No manifest refraction recorded: say so, rather than fall back to whatever
-  // measurement happens to sit in Correction 1.
-  if (!subjective) {
-    const methodsPresent = [...new Set(
-      corrections
-        .map((c) => c.re?.method || c.le?.method)
-        .filter((m): m is string => !!m),
-    )];
-    return (
-      <div {...(overview ? { "data-overview-empty-section": "" } : {})}>
-        <Card>
-          <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-left w-full mb-2">
-            <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
-            <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
-          </button>
-          {open && (
-            <>
-              <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
-                No subjective refraction recorded.
-              </p>
-              <p className="mt-1 text-caption sm:text-xs text-[var(--color-ink-400)]">
-                {methodsPresent.length > 0
-                  ? `Only ${methodsPresent.join(", ")} recorded. A prescription is issued from a subjective refraction, so nothing is carried over here.`
-                  : "Record a subjective refraction in the Ophthalmic Exam tab to issue a prescription."}
-              </p>
-            </>
-          )}
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <div {...(overview && !hasData ? { "data-overview-empty-section": "" } : {})}>
-    <Card>
-      <div className="flex items-center justify-between">
-        <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1.5 text-left flex-1 min-w-0">
-          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Optical Prescription</p>
-          <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
-        </button>
-        {open && hasData && (
-          <span className="flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-600)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] rounded-full px-2 py-0.5">
-            <CheckCircle2 size={10} />
-            Added to Summary
-          </span>
-        )}
-      </div>
-      {open && (
-        <table className="w-full table-fixed border-collapse mt-3">
-          <thead>
-            <tr className="border-b border-[var(--color-border)]">
-              <th className="text-left pb-2 pr-2 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)] w-[22%]" />
-              {HEADERS.map((h) => (
-                <th key={h} className="text-center pb-2 px-1 text-caption font-bold uppercase tracking-wider text-[var(--color-ink-400)]">
-                  {h === "VA" || h === "NV"
-                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]">{h}</span>
-                    : h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {ROWS.map(({ label, rx }) => (
-              <tr key={label} className="border-b border-[var(--color-border)]">
-                <td className="py-3 pr-2 text-xs font-semibold text-[var(--color-primary-700)] whitespace-nowrap">{label}</td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.sph)}</td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.cyl)}</td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{cell(rx.axis)}</td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm">
-                  <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{cell(rx.va)}</span>
-                </td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm text-[var(--color-ink-800)]">{showNear ? cell(rx.nearSph) : cell("")}</td>
-                <td className="text-center py-3 px-1 text-label sm:text-sm">
-                  <span className="inline-block px-1.5 py-0.5 rounded bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{showNear ? cell(rx.nearVa) : cell("")}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Card>
-    </div>
   );
 }
 

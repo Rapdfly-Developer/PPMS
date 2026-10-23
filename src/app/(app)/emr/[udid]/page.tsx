@@ -336,28 +336,6 @@ export default async function PatientDetailedEMR({
         visitDate={activeVisit?.date}
         visitType={activeVisit?.visitType}
       />
-      {/* Header bar — status chip */}
-      {activeVisit?.status === "CLOSED" && (
-        <div className="flex items-center gap-2 mb-3 flex-wrap no-print">
-          <span
-            className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-0.5 rounded-lg ${
-              autoClosed
-                ? "text-amber-700 bg-amber-100"
-                : finalizedToday
-                ? "text-teal-700 bg-teal-50"
-                : "text-emerald-700 bg-emerald-100"
-            }`}
-          >
-            <Lock size={11} />
-            {autoClosed
-              ? (sessionIncomplete ? "Incomplete, closed at end of session, Read-only" : "Auto-closed at EOD, Read-only")
-              : finalizedToday
-              ? "Finalized & Signed, Click to Edit"
-              : "Finalized & Signed, Read-only"}
-          </span>
-        </div>
-      )}
-
       {/* Status banner */}
       {activeVisit?.status === "CLOSED" && (
         <div
