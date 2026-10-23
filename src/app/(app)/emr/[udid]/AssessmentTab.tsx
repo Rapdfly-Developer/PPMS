@@ -8,7 +8,7 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
 import { addDiagnosis, updateDiagnosisStatus, updateDiagnosisLaterality, removeDiagnosis, removeMedication, saveAdviseNotes } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { X, History, ChevronDown, Search, PenLine, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
+import { X, History, ChevronDown, Search, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
 
 const DOSAGE_OPTIONS = [
   "1 Drop","2 Drops","3 Drops","4 Drops","6 Drops",
@@ -965,14 +965,6 @@ export function AssessmentTab({
               className="text-xs text-[var(--color-primary-700)] hover:underline"
             >
               + Add Diagnosis
-            </button>
-            <button
-              type="button"
-              onClick={() => openCustomModal("provisional")}
-              className="flex items-center gap-1 text-xs text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-colors"
-            >
-              <PenLine size={12} />
-              Add Manually
             </button>
           </div>
         )}
