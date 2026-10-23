@@ -1895,6 +1895,9 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
   const [le, setLe] = useState<Record<string, string>>(parseJSON(as_?.le, {}));
   const [confirmImport, setConfirmImport] = useState(false);
   const [importToast, setImportToast] = useState(false);
+  // When the previous visit was itself all-normal, both boxes match the form;
+  // the one the user last clicked is the one shown ticked.
+  const [pickedImport, setPickedImport] = useState(false);
 
   const { savePaused } = useEMRSaveContext();
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
@@ -1927,6 +1930,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
   );
 
   const applyNormal = (checked: boolean) => {
+    setPickedImport(false);
     const patch: Record<string, string> = {};
     AS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
@@ -1940,7 +1944,8 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
      fields away from what the other matches.
 
      The one case where both could read true is a previous visit that was
-     itself all-normal. Normal wins the display there, per spec. */
+     itself all-normal. The box the user last clicked wins the display there
+     (Normal by default, e.g. on reload). */
   const priorSeg = findPriorSegment(priorVisits, "anteriorSegment", AS_KEYS);
 
   const hasAnySeg = AS_KEYS.some((key) => (re[key] ?? "") !== "" || (le[key] ?? "") !== "");
@@ -1962,6 +1967,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
     };
     setRe((prev) => ({ ...prev, ...patch(priorSeg.re) }));
     setLe((prev) => ({ ...prev, ...patch(priorSeg.le) }));
+    setPickedImport(true);
     setImportToast(true);
   };
 
@@ -1998,7 +2004,7 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={isNormal}
+                checked={isNormal && !(pickedImport && isImported)}
                 onChange={(e) => applyNormal(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
@@ -2007,12 +2013,12 @@ function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visi
           )}
           {/* Hidden when there is nothing to import, rather than shown disabled:
               a dead checkbox invites a click that silently does nothing.
-              isNormal wins the checked state so both can never read ticked. */}
+              Only one of Normal / Import ever reads ticked (see pickedImport). */}
           {editable && priorSeg && (
             <label className="flex items-center gap-1.5 cursor-pointer select-none" title={`Copy the values recorded on ${format(new Date(priorSeg.date), "d MMM yyyy")}`}>
               <input
                 type="checkbox"
-                checked={isImported && !isNormal}
+                checked={isImported && (pickedImport || !isNormal)}
                 onChange={(e) => toggleImport(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
@@ -2132,6 +2138,9 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   const [le, setLe] = useState<Record<string, string>>(parseJSON(ps?.le, {}));
   const [confirmImport, setConfirmImport] = useState(false);
   const [importToast, setImportToast] = useState(false);
+  // When the previous visit was itself all-normal, both boxes match the form;
+  // the one the user last clicked is the one shown ticked.
+  const [pickedImport, setPickedImport] = useState(false);
 
   const { savePaused } = useEMRSaveContext();
   const state = useAutoSave({ re: JSON.stringify(re), le: JSON.stringify(le) }, async (d) => {
@@ -2164,6 +2173,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
   );
 
   const applyNormal = (checked: boolean) => {
+    setPickedImport(false);
     const patch: Record<string, string> = {};
     PS_KEYS.forEach((key) => { patch[key] = checked ? normalFor(key) : ""; });
     setRe((prev) => ({ ...prev, ...patch }));
@@ -2177,7 +2187,8 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
      fields away from what the other matches.
 
      The one case where both could read true is a previous visit that was
-     itself all-normal. Normal wins the display there, per spec. */
+     itself all-normal. The box the user last clicked wins the display there
+     (Normal by default, e.g. on reload). */
   const priorSeg = findPriorSegment(priorVisits, "posteriorSegment", PS_KEYS);
 
   const hasAnySeg = PS_KEYS.some((key) => (re[key] ?? "") !== "" || (le[key] ?? "") !== "");
@@ -2199,6 +2210,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
     };
     setRe((prev) => ({ ...prev, ...patch(priorSeg.re) }));
     setLe((prev) => ({ ...prev, ...patch(priorSeg.le) }));
+    setPickedImport(true);
     setImportToast(true);
   };
 
@@ -2235,7 +2247,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
             <label className="flex items-center gap-1.5 cursor-pointer select-none">
               <input
                 type="checkbox"
-                checked={isNormal}
+                checked={isNormal && !(pickedImport && isImported)}
                 onChange={(e) => applyNormal(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
@@ -2244,12 +2256,12 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
           )}
           {/* Hidden when there is nothing to import, rather than shown disabled:
               a dead checkbox invites a click that silently does nothing.
-              isNormal wins the checked state so both can never read ticked. */}
+              Only one of Normal / Import ever reads ticked (see pickedImport). */}
           {editable && priorSeg && (
             <label className="flex items-center gap-1.5 cursor-pointer select-none" title={`Copy the values recorded on ${format(new Date(priorSeg.date), "d MMM yyyy")}`}>
               <input
                 type="checkbox"
-                checked={isImported && !isNormal}
+                checked={isImported && (pickedImport || !isNormal)}
                 onChange={(e) => toggleImport(e.target.checked)}
                 className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
               />
