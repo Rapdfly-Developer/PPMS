@@ -2680,11 +2680,51 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
   const storedRe = parseJSON(ls?.re, {}) as any;
   const storedLe = parseJSON(ls?.le, {}) as any;
 
-  const [reChips, setReChips]       = useState<string[]>(Array.isArray(storedRe) ? storedRe : (storedRe.chips ?? []));
-  const [leChips, setLeChips]       = useState<string[]>(Array.isArray(storedLe) ? storedLe : (storedLe.chips ?? []));
-  const [reFindings, setReFindings] = useState<string>(Array.isArray(storedRe) ? "" : (storedRe.findings ?? ""));
-  const [leFindings, setLeFindings] = useState<string>(Array.isArray(storedLe) ? "" : (storedLe.findings ?? ""));
+  // Chips write their text into the findings box; selected chips are read back from it.
+  // Older visits stored chips separately — fold them into the box on load.
+  const splitParts = (text: string) => text.split(",").map((p) => p.trim()).filter(Boolean);
+  const initFindings = (stored: any): string => {
+    const chips: string[] = Array.isArray(stored) ? stored : (stored.chips ?? []);
+    const findings: string = Array.isArray(stored) ? "" : (stored.findings ?? "");
+    const parts = splitParts(findings);
+    const missing = chips.filter((c) => !parts.includes(c));
+    return missing.length ? [...missing, findings.trim()].filter(Boolean).join(", ") : findings;
+  };
+  const [reFindings, setReFindings] = useState<string>(() => initFindings(storedRe));
+  const [leFindings, setLeFindings] = useState<string>(() => initFindings(storedLe));
+  const selectedChips = (text: string) => LACRIMAL_SAC_CHIPS.filter((c) => splitParts(text).includes(c));
+  const toggleChip = (text: string, next: string[]) => {
+    const prev = selectedChips(text);
+    const chip = next.find((c) => !prev.includes(c)) ?? prev.find((c) => !next.includes(c));
+    if (!chip) return text;
+    const parts = splitParts(text);
+    return (parts.includes(chip) ? parts.filter((p) => p !== chip) : [...parts, chip]).join(", ");
+  };
   const [openHistory, setOpenHistory] = useState<"re" | "le" | null>(null);
+
+  // Syringing method — one per card, kept in the RE JSON. Custom methods are saved per browser.
+  const LS_METHOD_KEY = "kw_lacrimal_methods";
+  const ADD_CUSTOM = "__add_custom__";
+  const [method, setMethod] = useState<string>(Array.isArray(storedRe) ? "Normal saline" : (storedRe.method || "Normal saline"));
+  const [customMethods, setCustomMethods] = useState<string[]>([]);
+  const [addingMethod, setAddingMethod] = useState(false);
+  const [newMethod, setNewMethod] = useState("");
+  useEffect(() => {
+    try { const raw = JSON.parse(localStorage.getItem(LS_METHOD_KEY) || "[]"); if (Array.isArray(raw)) setCustomMethods(raw); } catch {}
+  }, []);
+  const methodOptions = Array.from(new Set(["Normal saline", "Antibiotic", ...customMethods, method]));
+  const addCustomMethod = () => {
+    const m = newMethod.trim();
+    if (!m) return;
+    if (!methodOptions.includes(m)) {
+      const next = [...customMethods, m];
+      setCustomMethods(next);
+      try { localStorage.setItem(LS_METHOD_KEY, JSON.stringify(next)); } catch {}
+    }
+    setMethod(m);
+    setNewMethod("");
+    setAddingMethod(false);
+  };
 
   const priorLs = priorVisits.filter((v) => v.lacrimalSac);
 
@@ -2699,8 +2739,8 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
   const { savePaused } = useEMRSaveContext();
   const state = useAutoSave(
     {
-      re: JSON.stringify({ chips: reChips, findings: reFindings }),
-      le: JSON.stringify({ chips: leChips, findings: leFindings }),
+      re: JSON.stringify({ chips: [], findings: reFindings, method }),
+      le: JSON.stringify({ chips: [], findings: leFindings }),
     },
     async (d) => { if (!editable) return; await saveLacrimalSac(visit.id, udid, d); },
     undefined, { flushOnUnmount: true, paused: savePaused }
@@ -2750,7 +2790,32 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Lacrimal Sac Syringing</p>
+        <div className="flex items-center gap-3 flex-wrap">
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Lacrimal Sac Syringing</p>
+          <div className="flex items-center gap-2">
+            <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
+            <TealSelect
+              value={method}
+              onChange={editable ? (v) => { if (v === ADD_CUSTOM) setAddingMethod(true); else setMethod(v); } : () => {}}
+              options={[...methodOptions.map((m) => ({ value: m, label: m })), ...(editable ? [{ value: ADD_CUSTOM, label: "+ Add custom" }] : [])]}
+              className="min-w-[140px]"
+            />
+          </div>
+          {addingMethod && editable && (
+            <div className="flex items-center gap-1.5">
+              <input
+                autoFocus
+                value={newMethod}
+                onChange={(e) => setNewMethod(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") addCustomMethod(); if (e.key === "Escape") { setAddingMethod(false); setNewMethod(""); } }}
+                placeholder="Custom method"
+                className="w-36 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+              />
+              <button type="button" onClick={addCustomMethod} className="text-caption sm:text-xs font-medium px-2.5 py-1 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]">Add</button>
+              <button type="button" onClick={() => { setAddingMethod(false); setNewMethod(""); }} className="text-caption sm:text-xs text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)] px-1">Cancel</button>
+            </div>
+          )}
+        </div>
         <SaveIndicator state={state} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -2761,7 +2826,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "re" && <HistoryPanel eye="re" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={reChips} onChange={editable ? setReChips : () => {}} chipClassName="chip-sm" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(reFindings)} onChange={editable ? (next) => setReFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-sm" />
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -2770,7 +2835,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "le" && <HistoryPanel eye="le" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={leChips} onChange={editable ? setLeChips : () => {}} chipClassName="chip-sm" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(leFindings)} onChange={editable ? (next) => setLeFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-sm" />
         </div>
       </div>
     </Card>

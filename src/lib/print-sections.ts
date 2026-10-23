@@ -56,7 +56,7 @@ export const PRINT_SECTIONS: PrintSection[] = [
   { id: "ant",      label: "Anterior Segment",           short: false, long: true, hasData: (v) => anyFilled(obj(v.anteriorSegment?.re), (k) => k === "_method") || anyFilled(obj(v.anteriorSegment?.le), (k) => k === "_method") },
   { id: "pos",      label: "Posterior Segment",          short: false, long: true, hasData: (v) => anyFilled(obj(v.posteriorSegment?.re), (k) => k === "_method") || anyFilled(obj(v.posteriorSegment?.le), (k) => k === "_method") || filled(v.posteriorSegment?.notes) },
   { id: "tear",     label: "Tear Film",                  short: false, long: true, hasData: (v) => ["tbutRe", "tbutLe", "schirmer1Re", "schirmer1Le", "schirmer2Re", "schirmer2Le"].some((k) => v.tearFilm?.[k] != null) },
-  { id: "lacrimal", label: "Lacrimal Sac Syringing",     short: false, long: true, hasData: (v) => anyFilled(obj(v.lacrimalSac?.re)) || anyFilled(obj(v.lacrimalSac?.le)) || arr(v.lacrimalSac?.re).length > 0 || arr(v.lacrimalSac?.le).length > 0 },
+  { id: "lacrimal", label: "Lacrimal Sac Syringing",     short: false, long: true, hasData: (v) => anyFilled(obj(v.lacrimalSac?.re), (k) => k === "method") || anyFilled(obj(v.lacrimalSac?.le)) || arr(v.lacrimalSac?.re).length > 0 || arr(v.lacrimalSac?.le).length > 0 },
   { id: "diplopia", label: "Diplopia Charting",          short: false, long: true, hasData: (v) => Object.values(obj(v.diplopiaChart?.grid)).some((c: any) => c?.status && c.status !== "NOT_TESTED") },
   { id: "hess",     label: "Hess Charting",              short: false, long: true, hasData: (v) => filled(v.hessChart?.interpretation) || Object.values(obj(v.hessChart?.grid)).some((c: any) => anyFilled(obj(c))) },
   // Assessment

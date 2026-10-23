@@ -901,7 +901,7 @@ export type ShortSummaryData = {
   iopReadings?: { method?: string | null; takenAt?: Date | string | null; re?: number | null; le?: number | null }[] | null;
   gonioscopy?: Record<string, string> | null;
   tearFilm?: Record<string, number | null> | null;
-  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null } | null;
+  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null; method?: string | null } | null;
   diplopiaChart?: Record<string, { status?: string; notes?: string }> | null;
   hessChart?: { grid?: Record<string, { reH?: string; reV?: string; leH?: string; leV?: string }>; interpretation?: string | null } | null;
 };
@@ -1448,7 +1448,7 @@ export type FullEmrData = {
     notes?: string | null;
   } | null;
   tearFilm?: { tbutRe?: number | null; tbutLe?: number | null; schirmer1Re?: number | null; schirmer1Le?: number | null; schirmer2Re?: number | null; schirmer2Le?: number | null } | null;
-  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null } | null;
+  lacrimalSac?: { re?: { chips?: string[]; findings?: string } | null; le?: { chips?: string[]; findings?: string } | null; method?: string | null } | null;
   diplopiaChart?: Record<string, { status?: string; notes?: string }> | null;
   hessChart?: { grid?: Record<string, any>; interpretation?: string | null } | null;
   anteriorSegment?: { re?: Record<string, any> | null; le?: Record<string, any> | null } | null;
@@ -1840,7 +1840,7 @@ ${(() => {
   const le = eyeText(ls.le);
   if (!re && !le) return "";
   return `<div class="no-break" style="margin-bottom:12px;">` +
-    suiTable(COLS_EYE_PDF, suiEyeHead("Lacrimal Sac Syringing", true), suiEyeRow("Findings", suiVal(re), suiVal(le)), { indent: true, divided: true }) +
+    suiTable(COLS_EYE_PDF, suiEyeHead(`Lacrimal Sac Syringing${ls.method ? ` · ${escapeHtml(ls.method)}` : ""}`, true), suiEyeRow("Findings", suiVal(re), suiVal(le)), { indent: true, divided: true }) +
     `</div>`;
 })()}
 
@@ -2267,7 +2267,9 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
           ? { chips: parsed as string[], findings: "" }
           : { chips: (parsed as any).chips ?? [], findings: (parsed as any).findings ?? "" };
       };
-      return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null };
+      const reRaw = parseJ2(ls.re as any) as any;
+      const method = reRaw && !Array.isArray(reRaw) ? (reRaw.method ?? null) : null;
+      return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null, method };
     })(),
     anteriorSegment: ant ? { re: parseJ2(ant.re) ?? null, le: parseJ2(ant.le) ?? null } : null,
     posteriorSegment: pos ? { re: parseJ2(pos.re) ?? null, le: parseJ2(pos.le) ?? null, notes: pos.notes ?? null } : null,

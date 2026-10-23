@@ -221,7 +221,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
             ? { chips: parsed as string[], findings: "" }
             : { chips: (parsed as any).chips ?? [], findings: (parsed as any).findings ?? "" };
         };
-        return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null };
+        const reRaw = parseJSON(ls.re, {} as any);
+        const method = Array.isArray(reRaw) ? null : ((reRaw as any).method ?? null);
+        return { re: ls.re ? parseEye(ls.re) : null, le: ls.le ? parseEye(ls.le) : null, method };
       })(),
       diplopiaChart: (visit as any).diplopiaChart && on("diplopia")
         ? parseJSON((visit as any).diplopiaChart.grid, null)
