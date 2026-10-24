@@ -2838,7 +2838,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "re" && <HistoryPanel eye="re" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(reFindings)} onChange={editable ? (next) => setReFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-sm" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(reFindings)} onChange={editable ? (next) => setReFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" />
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -2847,7 +2847,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "le" && <HistoryPanel eye="le" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(leFindings)} onChange={editable ? (next) => setLeFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-sm" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(leFindings)} onChange={editable ? (next) => setLeFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" />
         </div>
       </div>
     </Card>

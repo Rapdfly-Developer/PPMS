@@ -421,6 +421,22 @@ h1, h2, h3, h4 { text-wrap: balance; }
   user-select: none;
 }
 .chip-sm:hover { border-color: var(--color-primary-500); }
+
+/* Keyword chip — same size as the Anterior Segment keyword chips (KeywordField). */
+.chip-kw {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--text-caption);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-ink-700);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.chip-kw:hover { border-color: var(--color-primary-400); color: var(--color-primary-700); }
+.chip-kw[data-active="true"] { background: var(--color-primary-600); color: #fff; border-color: var(--color-primary-600); }
 .chip-sm[data-active="true"] { background: var(--color-primary-600); color: white; border-color: var(--color-primary-600); }
 
 .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }

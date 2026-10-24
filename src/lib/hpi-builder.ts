@@ -94,13 +94,25 @@ export const HPI_FACTOR_GROUP: HpiGroup = {
   ],
 };
 
+/** Negative-history options; each reads after the fixed words "No history of". */
+export const HPI_NEGATIVES_PREFIX = "No history of";
 export const HPI_NEGATIVES: readonly string[] = [
-  "No history of blunt/penetrating ocular trauma, vegetative matter injury, or chemical exposure.",
-  "No history of contact lens wear or swimming exposure.",
-  "No history of recent intraocular surgery, laser procedures, or intravitreal injections.",
-  "No history of prolonged topical/systemic corticosteroid use.",
-  "No scalp tenderness, jaw claudication, fever, joint pains, oral/genital ulcers, or focal neurological deficits.",
+  "blunt/penetrating ocular trauma, vegetative matter injury, or chemical exposure",
+  "contact lens wear or swimming exposure",
+  "recent intraocular surgery, laser procedures, or intravitreal injections",
+  "prolonged topical/systemic corticosteroid use",
+  "scalp tenderness, jaw claudication, fever, joint pains, oral/genital ulcers, or focal neurological deficits",
 ];
+
+/** Selected negatives as rows for the dropdowns: older full sentences lose the "No history of" / "No" lead-in. */
+export function negativeRowValue(v: string): string {
+  return v.replace(/^no history of\s+/i, "").replace(/^no\s+/i, "").replace(/\.$/, "");
+}
+
+/** One negative as a sentence: "No history of …." */
+function negativeSentence(v: string): string {
+  return `${HPI_NEGATIVES_PREFIX} ${negativeRowValue(v)}.`;
+}
 
 /* ── helpers ── */
 
@@ -233,7 +245,7 @@ export function buildHpiText(
   if (negatives.length) {
     lines.push("");
     lines.push("PERTINENT NEGATIVES & RISK FACTORS:");
-    negatives.forEach((n) => lines.push(`• ${n}`));
+    negatives.forEach((n) => lines.push(`• ${negativeSentence(n)}`));
   }
 
   const other = one(f, "other").trim();

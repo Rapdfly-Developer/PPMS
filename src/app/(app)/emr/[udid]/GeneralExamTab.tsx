@@ -15,7 +15,7 @@ import { HpiBuilder } from "./HpiBuilder";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
-import { buildHpiText, type HpiFields } from "@/lib/hpi-builder";
+import { buildHpiText, hasHpiFields, type HpiFields } from "@/lib/hpi-builder";
 import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
@@ -23,6 +23,20 @@ import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
+// Default keywords for the Family History card (doctors can add their own).
+const FAMILY_HISTORY_KEYWORDS = [
+  "Glaucoma",
+  "Diabetes mellitus",
+  "Hypertension",
+  "High myopia",
+  "Squint / amblyopia",
+  "Early-onset cataract",
+  "Keratoconus",
+  "Retinitis pigmentosa",
+  "Age-related macular degeneration",
+  "Consanguineous marriage",
+  "No significant family history",
+] as const;
 type Laterality = typeof LATERALITY_OPTIONS[number];
 const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
 const PMH_CUSTOM_KEY = "kw_ge_pmh_custom";
@@ -252,7 +266,7 @@ function ComplaintKeywordButton({
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; patient?: { age?: number | null; sex?: string | null; occupation?: string | null } }) {
   const ge = visit.generalExam;
   const [vitalsOpen, setVitalsOpen] = useState(false);
-  // Cards other than Chief Complaint and Past History start closed, like the
+  // Cards other than Chief Complaint start closed, like the
   // Plan tab's Minor Procedure / Patient Disposition cards.
   const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
   const toggleCard = (key: string) => setOpenCards((cur) => ({ ...cur, [key]: !cur[key] }));
@@ -266,6 +280,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   // Structured HPI selections (dropdowns) and whether the box shows raw text for editing.
   const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
   const [hpiEditing, setHpiEditing] = useState(false);
+  // Template on: dropdowns + Generate HPI. Off: the plain HPI text box. Starts on when this visit has template selections.
+  const [hpiTemplate, setHpiTemplate] = useState(() => hasHpiFields(parseJSON<HpiFields>(ge?.hpiFields, {})));
   const [confirmHpiReplace, setConfirmHpiReplace] = useState(false);
   const [pmh, setPmh] = useState<PmhEntry[]>(() => {
     // Every saved visit contains a cumulative snapshot. Seed from the newest
@@ -549,7 +565,35 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         {overview || openCards.hpi ? (
-          <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" headerExtra={<CardChevron open onClick={() => toggleCard("hpi")} />} history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
+          <FieldWithHistory
+            label="HISTORY OF PRESENT ILLNESS"
+            headerExtra={
+              <span className="flex items-center gap-3">
+                <CardChevron open onClick={() => toggleCard("hpi")} />
+                <button
+                  type="button"
+                  data-overview-hide
+                  role="switch"
+                  aria-checked={hpiTemplate}
+                  onClick={() => { setHpiTemplate((v) => !v); setHpiEditing(false); }}
+                  className={`inline-flex items-center gap-1.5 rounded-full border pl-1 pr-2.5 py-0.5 text-caption font-medium transition-colors ${
+                    hpiTemplate
+                      ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                      : "border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)]"
+                  }`}
+                >
+                  <span className={`relative w-6 h-3.5 rounded-full transition-colors ${hpiTemplate ? "bg-[var(--color-primary-600)]" : "bg-[var(--color-ink-300)]"}`}>
+                    <span className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all ${hpiTemplate ? "left-3" : "left-0.5"}`} />
+                  </span>
+                  {hpiTemplate ? "Template On" : "Template Off"}
+                </button>
+              </span>
+            }
+            history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}
+          >
+            {!hpiTemplate ? (
+              <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+            ) : (
             <div className="flex flex-col gap-2.5">
               {!readOnly && (
                 <HpiBuilder
@@ -594,6 +638,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                 </div>
               )}
             </div>
+            )}
           </FieldWithHistory>
         ) : (
           <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />
@@ -604,10 +649,15 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       {/* PAST HISTORY */}
       <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
       <Card>
+        {overview || openCards.pmh ? (
+        <>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
-            Past History <span className="text-caption font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
+              Past History <span className="text-caption font-normal normal-case tracking-normal text-[var(--color-ink-400)]">(cumulative across visits)</span>
+            </p>
+            <CardChevron open onClick={() => toggleCard("pmh")} />
+          </div>
           {!readOnly && (
             <button
               data-overview-hide
@@ -693,7 +743,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                 <button
                   key={option}
                   type="button"
-                  className="chip"
+                  className="chip-kw"
                   data-active={active}
                   title={active ? "Double-tap to remove" : undefined}
                   onClick={() => (active ? tapSelectedPmh(option) : addPmhRow(option))}
@@ -714,14 +764,18 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                 onBlur={addOtherKeyword}
                 placeholder="New keyword…"
                 aria-label="New past history keyword"
-                className="w-36 rounded-full border border-[var(--color-primary-400)] bg-white px-3 py-1 text-caption text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
+                className="w-36 rounded-full border border-[var(--color-primary-400)] bg-white px-2 py-0.5 text-caption text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]"
               />
             ) : (
-              <button type="button" className="chip" onClick={() => setOtherOpen(true)}>
+              <button type="button" className="chip-kw" onClick={() => setOtherOpen(true)}>
                 Other
               </button>
             )}
           </div>
+        )}
+        </>
+        ) : (
+          <ClosedCardHeader label="PAST HISTORY" onClick={() => toggleCard("pmh")} />
         )}
       </Card>
       </div>
@@ -761,7 +815,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       <Card>
         {overview || openCards.family ? (
           <FieldWithHistory label="FAMILY HISTORY" headerExtra={<CardChevron open onClick={() => toggleCard("family")} />} history={histFor((g) => g.familyHistory)} currentValue={familyHistory} onLoad={readOnly ? undefined : setFamilyHistory}>
-            <KeywordTextarea fieldKey="ge_family_history" value={familyHistory} onChange={setFamilyHistory} disabled={readOnly} rows={3} placeholder="Add relevant family history..." />
+            <KeywordTextarea fieldKey="ge_family_history" builtIns={FAMILY_HISTORY_KEYWORDS} value={familyHistory} onChange={setFamilyHistory} disabled={readOnly} rows={3} placeholder="Add relevant family history..." />
           </FieldWithHistory>
         ) : (
           <ClosedCardHeader label="FAMILY HISTORY" onClick={() => toggleCard("family")} />
