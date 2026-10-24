@@ -1485,7 +1485,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
     <div className="flex flex-col gap-5">
       <PrescriptionCard
         visit={visit} udid={udid} priorVisits={priorVisits}
-        defaultLaterality={diagLaterality} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes}
+        defaultLaterality={diagLaterality}
         toastNames={toastNames} onCloseToast={() => setToastNames([])}
         pendingDiagPrompts={pendingDiagPrompts}
         onConfirmPrompt={(diag) => setActiveDialogDiag({ ...diag, isChanging: false })}
@@ -1502,6 +1502,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
         }
         readOnly={readOnly}
       />
+      <AdviseNotesCard visit={visit} priorVisits={priorVisits} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} readOnly={readOnly} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} />
 
@@ -1595,6 +1596,76 @@ function parseProcedureList(raw: string): string[] {
     if (Array.isArray(parsed)) return parsed.filter((s): s is string => typeof s === "string");
   } catch {}
   return [raw];
+}
+
+function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, readOnly = false }: { visit: any; priorVisits: any[]; adviseNotes: string; onAdviseChange: (notes: string) => void; readOnly?: boolean }) {
+  const overview = useEmrOverview();
+  const [showHistory, setShowHistory] = useState(false);
+  const previous = priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes);
+
+  return (
+    <div {...(overview && !adviseNotes.trim() ? { "data-overview-empty-section": "" } : {})}>
+    <Card>
+      <div className="flex items-center gap-2 mb-3">
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] flex-1 min-w-0">Advise Notes</p>
+        {!readOnly && (
+          <button
+            data-overview-hide
+            onClick={() => setShowHistory((v) => !v)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors shrink-0 ${
+              showHistory
+                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
+                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
+            }`}
+          >
+            <History size={12} /> History
+          </button>
+        )}
+      </div>
+
+      <KeywordTextarea
+        fieldKey="plan_advise_notes"
+        builtIns={ALL_ADVISE_KEYWORDS}
+        showControls={!readOnly}
+        disabled={readOnly}
+        value={adviseNotes}
+        onChange={onAdviseChange}
+        placeholder="Type advise notes or use keywords…"
+        rows={3}
+        className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+      />
+
+      {showHistory && (
+        <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
+          <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
+            <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
+            <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
+          </div>
+          <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border)]">
+            {previous.length === 0 ? (
+              <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous advise notes found.</p>
+            ) : (
+              previous.map((v) => (
+                <div key={v.id} className="px-3 py-2.5">
+                  <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
+                    {new Date(v.date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
+                  </p>
+                  <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
+                  <button
+                    onClick={() => { onAdviseChange(v.adviseNotes); setShowHistory(false); }}
+                    className="mt-1.5 text-caption font-medium text-[var(--color-primary-600)] hover:underline"
+                  >
+                    Use this
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+    </div>
+  );
 }
 
 function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
@@ -1923,14 +1994,12 @@ function splitTaper(instructions: string | null | undefined, duration: string | 
 }
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string; taperLevels: TaperLevel[] };
 
-function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
+function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
   const [pending, startTransition] = useTransition();
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU", taperLevels: [] });
   const [clearConfirm, setClearConfirm] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showKeywords, setShowKeywords] = useState(false);
 
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
@@ -2578,97 +2647,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </table>
         </div>
       )}
-      {/* ── Advise Notes ─────────────────────────────────────────────── */}
-      <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-        <div className="flex items-center justify-between mb-1.5">
-          <label className="text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)]">Advise Notes</label>
-          {!readOnly && (
-            <div data-overview-hide className="flex items-center gap-1.5">
-              <button
-                onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-medium transition-colors
-                  ${showHistory
-                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-              >
-                <History size={11} />
-                History
-              </button>
-              <button
-                onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-medium transition-colors
-                  ${showKeywords
-                    ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-              >
-                <Plus size={11} />
-                Keyword
-              </button>
-            </div>
-          )}
-        </div>
-
-        <textarea
-          value={adviseNotes}
-          onChange={(e) => { if (!readOnly) onAdviseChange(e.target.value); }}
-          readOnly={readOnly}
-          rows={Math.max(2, Math.min(8, adviseNotes.replace(/\r/g, "").split("\n").length))}
-          placeholder="Type advise notes or use keywords below…"
-          className={`w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed${readOnly ? " cursor-default" : ""}`}
-        />
-
-        {/* History panel — below textarea */}
-        {showHistory && (
-          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
-            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Previous Advise Notes</span>
-              <button onClick={() => setShowHistory(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-            </div>
-            <div className="max-h-56 overflow-y-auto divide-y divide-[var(--color-border)]">
-              {priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes).length === 0 ? (
-                <p className="px-3 py-4 text-xs text-[var(--color-ink-400)] text-center">No previous advise notes found.</p>
-              ) : (
-                priorVisits
-                  .filter((v) => v.id !== visit.id && v.adviseNotes)
-                  .map((v) => (
-                    <div key={v.id} className="px-3 py-2.5">
-                      <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-1">
-                        {new Date(v.date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
-                      </p>
-                      <p className="text-xs text-[var(--color-ink-700)] whitespace-pre-wrap leading-relaxed">{v.adviseNotes}</p>
-                      <button
-                        onClick={() => { onAdviseChange(v.adviseNotes); setShowHistory(false); }}
-                        className="mt-1.5 text-caption font-medium text-[var(--color-primary-600)] hover:underline"
-                      >
-                        Use this
-                      </button>
-                    </div>
-                  ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Keyword panel — below textarea */}
-        {showKeywords && (
-          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
-            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
-              <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-            </div>
-            <div className="p-3">
-              <KeywordChipsRow
-                fieldKey="plan_advise_notes"
-                builtIns={ALL_ADVISE_KEYWORDS}
-                getValue={() => adviseNotes}
-                onAppend={(kw) => onAdviseChange(appendKeywordAsBullet(adviseNotes, kw))}
-                onRemoveFromText={(kw) => onAdviseChange(removeKeywordFromText(adviseNotes, kw))}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
       {/* ── Suggested Investigations (from applied protocols) ───────────── */}
       {allSuggestedInvs.length > 0 && (
         <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
