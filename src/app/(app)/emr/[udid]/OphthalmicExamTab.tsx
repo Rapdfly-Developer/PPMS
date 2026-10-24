@@ -47,6 +47,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 import { fileHref } from "@/lib/file-href";
+import { OculoplastyTab, hasOculoplastyData } from "./OculoplastyTab";
 
 
 export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, canEditRefraction, canEditColour, canEditIOP, canEditAnterior, canEditGonioscopy, canEditPosterior, canViewVA, canViewRefraction, canViewColour, canViewIOP, canViewAnterior, canViewPosterior }: {
@@ -133,7 +134,9 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
     const diplopia = Object.keys(parseJSON(visit.diplopiaChart?.grid, {})).length === 0;
     const hess = Object.keys(parseJSON(visit.hessChart?.grid, {})).length === 0 && !visit.hessChart?.interpretation;
 
-    return { va, rx, cv, iop, gonio, ant, post, tear, lacrimal, diplopia, hess };
+    const oculoplasty = !hasOculoplastyData(visit.oculoplasty);
+
+    return { va, rx, cv, iop, gonio, ant, post, tear, lacrimal, diplopia, hess, oculoplasty };
   // visit object identity changes on navigation; re-compute when it does
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visit]);
@@ -154,6 +157,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
           { id: "iop",       label: "IOP / Gonio",       hidden: !(canViewIOP ?? true), content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={iopCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={gonioCanEdit} priorVisits={priorVisits} /></div></div> },
           { id: "anterior",  label: "Anterior Segment",  hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "posterior", label: "Posterior Segment", hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
           { id: "tear",      label: "Tear Film",         hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "lacrimal",  label: "Lacrimal Sac",      hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "diplopia",  label: "Diplopia Chart",    hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },

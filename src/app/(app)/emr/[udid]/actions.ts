@@ -727,6 +727,13 @@ export async function saveGonioNotes(visitId: string, udid: string, data: { re: 
   revalidateAfter(udid);
 }
 
+export async function saveOculoplasty(visitId: string, udid: string, data: string) {
+  const user = await requireVisitWrite(visitId, "emr.posterior.edit", "emr.ophthalmic.edit");
+  await prisma.visit.update({ where: { id: visitId }, data: { oculoplasty: data } });
+  await writeAudit(user.id, "Oculoplasty", visitId, "SAVE", { data });
+  revalidateAfter(udid);
+}
+
 export async function saveAdviseNotes(visitId: string, udid: string, notes: string) {
   await requireRole("DOCTOR");
   await assertVisitAccess(visitId);

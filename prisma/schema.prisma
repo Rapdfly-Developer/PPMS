@@ -515,6 +515,7 @@ model Visit {
   followUpCompleted   Boolean   @default(false)
   followUpCancelledAt DateTime?
   gonioNotes          String?  // JSON: { re: string, le: string }
+  oculoplasty         String?  // JSON: { eom: { re: { sr, io, lr, mr, ir, so, up, down }, le: {…} } }
   consultationStartedAt   DateTime?
   consultationCompletedAt DateTime?
   refractionDone          Boolean   @default(false)
