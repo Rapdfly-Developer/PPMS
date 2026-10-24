@@ -132,10 +132,18 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
     setFormDrugs(next);
   };
 
-  return (
-    <div className="border border-[var(--color-border)] rounded-xl bg-white mb-4 overflow-hidden">
+  // Shown as a pop-up over the page; Esc or a click outside closes it.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[1px]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="w-full max-w-3xl max-h-[85vh] flex flex-col border border-[var(--color-border)] rounded-2xl bg-white shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
         <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
         <div className="flex items-center gap-2">
           <button
@@ -150,7 +158,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
 
       {/* New / Edit form */}
       {showForm && (
-        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] shrink-0 max-h-[45vh] overflow-y-auto">
           <p className="text-xs font-semibold text-[var(--color-ink-600)] mb-2">{editId ? "Edit Preset" : "New Preset"}</p>
           <div className="grid grid-cols-2 gap-2 mb-2">
             <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Category (e.g. Glaucoma)" className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs" />
@@ -178,7 +186,7 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
       )}
 
       {/* Preset list */}
-      <div className="px-4 py-3 max-h-96 overflow-y-auto">
+      <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
         {Object.keys(grouped).length === 0 ? (
           <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
         ) : (
@@ -216,6 +224,8 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
         )}
       </div>
     </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -1600,15 +1610,23 @@ function parseProcedureList(raw: string): string[] {
 
 function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, readOnly = false }: { visit: any; priorVisits: any[]; adviseNotes: string; onAdviseChange: (notes: string) => void; readOnly?: boolean }) {
   const overview = useEmrOverview();
+  const [open, setOpen] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const previous = priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes);
 
   return (
     <div {...(overview && !adviseNotes.trim() ? { "data-overview-empty-section": "" } : {})}>
     <Card>
-      <div className="flex items-center gap-2 mb-3">
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] flex-1 min-w-0">Advise Notes</p>
-        {!readOnly && (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-left flex-1 min-w-0"
+        >
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Advise Notes</p>
+          <ChevronDown size={14} className={`text-[var(--color-ink-400)] transition-transform shrink-0 ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && !readOnly && (
           <button
             data-overview-hide
             onClick={() => setShowHistory((v) => !v)}
@@ -1622,6 +1640,7 @@ function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, read
           </button>
         )}
       </div>
+      {open && <div className="mt-3">
 
       <KeywordTextarea
         fieldKey="plan_advise_notes"
@@ -1663,6 +1682,7 @@ function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, read
           </div>
         </div>
       )}
+      </div>}
     </Card>
     </div>
   );
