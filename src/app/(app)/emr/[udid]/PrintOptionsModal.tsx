@@ -11,8 +11,8 @@ import { getVisitEmrData } from "@/app/(app)/patients/[udid]/emr-viewer-action";
 type PrintMode = "short" | "long" | "custom";
 
 const MODES: { id: PrintMode; label: string }[] = [
-  { id: "long",   label: "Long Print" },
   { id: "short",  label: "Short Print" },
+  { id: "long",   label: "Long Print" },
   { id: "custom", label: "Custom Print" },
 ];
 
