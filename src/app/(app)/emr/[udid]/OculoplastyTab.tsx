@@ -10,16 +10,14 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { saveOculoplasty } from "./actions";
+import {
+  EOM_VALUES, EOM_MUSCLE_LABEL, eomDisplay, hasFindings, hasOculoplastyData,
+  type EomMuscle, type EomEye, type EyeFindings, type OculoplastyData,
+} from "@/lib/oculoplasty";
+
+export { hasOculoplastyData };
 
 /* ── Data ─────────────────────────────────────────────────────────────────── */
-
-export type EomMuscle = "sr" | "io" | "lr" | "mr" | "ir" | "so" | "up" | "down";
-export type EomEye = Partial<Record<EomMuscle, string>>;
-/** Gonioscopy-style card: one method, and per eye a measurement + findings. */
-export type EyeFindings = { method?: string; reVal?: string; re?: string; leVal?: string; le?: string };
-export type OculoplastyData = { deviation?: EyeFindings; eom?: { re?: EomEye; le?: EomEye }; exo?: EyeFindings };
-
-const hasFindings = (f?: EyeFindings) => !!f && !!(f.reVal || f.re || f.leVal || f.le);
 
 export const DEVIATION_METHODS = ["Hirschberg", "Krimsky", "Cover test", "Prism cover test"] as const;
 export const DEVIATION_VALUES = ["0", "15", "30", "45", "60+"] as const;
@@ -35,33 +33,6 @@ export const EXO_KEYWORDS = [
   "Normal", "Proptosis", "Enophthalmos", "Asymmetry > 2 mm", "Axial proptosis",
   "Non-axial proptosis", "Lid retraction", "Lid lag", "Base reading noted",
 ] as const;
-
-/** "" = not recorded; "-" … "----" = restriction level 1–4. */
-export const EOM_VALUES = ["Normal", "-", "--", "---", "----"] as const;
-
-export const EOM_MUSCLE_LABEL: Record<EomMuscle, { name: string; nerve?: string }> = {
-  sr:   { name: "Superior rectus",  nerve: "CN III" },
-  io:   { name: "Inferior oblique", nerve: "CN III" },
-  lr:   { name: "Lateral rectus",   nerve: "CN VI" },
-  mr:   { name: "Medial rectus",    nerve: "CN III" },
-  ir:   { name: "Inferior rectus",  nerve: "CN III" },
-  so:   { name: "Superior oblique", nerve: "CN IV" },
-  up:   { name: "Elevation" },
-  down: { name: "Depression" },
-};
-
-/** "--" → "− −" for display. */
-export function eomDisplay(v?: string): string {
-  if (!v) return "";
-  if (v === "Normal") return "Normal";
-  return v.split("").map(() => "−").join(" ");
-}
-
-export function hasOculoplastyData(raw: string | null | undefined): boolean {
-  const d = parseJSON<OculoplastyData>(raw, {});
-  return hasFindings(d.deviation) || hasFindings(d.exo)
-    || [d.eom?.re, d.eom?.le].some((e) => e && Object.values(e).some(Boolean));
-}
 
 /* ── Geometry: eye drawn at the centre, 8 gaze arrows around it ───────────── */
 

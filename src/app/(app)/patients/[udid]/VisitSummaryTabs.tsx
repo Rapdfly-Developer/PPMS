@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, Component, type ReactNode } from "react";
+import { useState, useEffect, useRef, Component, Fragment, type ReactNode } from "react";
 import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope, BookOpen, CalendarCheck, RefreshCw } from "lucide-react";
 import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
+import { parseOculoplasty, hasFindings, findingsText, eomRows } from "@/lib/oculoplasty";
 
 type Tab = "short" | "long" | "ai";
 
@@ -848,10 +849,13 @@ function LongContent({
   }).filter(Boolean) as { pos: string; label: string; status: string; notes: string | null }[] : [];
   const hessInterp = data.hessChart?.interpretation ?? null;
   const hasEOM = dpRows.length > 0 || !!hessInterp;
-  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost || hasEOM;
+  const ocu = parseOculoplasty(data.oculoplasty);
+  const ocuEomRows = eomRows(ocu);
+  const hasOcu = hasFindings(ocu.deviation) || ocuEomRows.length > 0 || hasFindings(ocu.exo);
+  const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost || hasEOM || hasOcu;
   const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
 
-  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
+  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasOcu && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
   if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
 
   const vitals = [
@@ -1220,6 +1224,33 @@ function LongContent({
               </section>
             );
           })()}
+
+          {hasOcu && (
+            <section className="space-y-4">
+              {([["Deviation", ocu.deviation, "°"], ["Exophthalmometry", ocu.exo, "mm"]] as const).map(([title, f, unit], i) => (
+                <Fragment key={title}>
+                  {i === 1 && ocuEomRows.length > 0 && (
+                    <DataTable minWidth={260} indent>
+                      <Cols widths={COLS_EYE} />
+                      <EyeHead first="EOM" line />
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        {ocuEomRows.map((r) => <EyeRow key={r.label} bullet label={r.label} re={r.re} le={r.le} />)}
+                      </tbody>
+                    </DataTable>
+                  )}
+                  {hasFindings(f) && (
+                    <DataTable minWidth={260} indent>
+                      <Cols widths={COLS_EYE} />
+                      <EyeHead first={title} line />
+                      <tbody className="divide-y divide-[var(--color-border)]">
+                        <EyeRow bullet label={f!.method || "—"} re={findingsText(f!.reVal, f!.re, unit)} le={findingsText(f!.leVal, f!.le, unit)} />
+                      </tbody>
+                    </DataTable>
+                  )}
+                </Fragment>
+              ))}
+            </section>
+          )}
 
           {hasTear && (
             <section>

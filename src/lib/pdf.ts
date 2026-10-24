@@ -1,4 +1,5 @@
 import { format as formatBase } from "date-fns";
+import { parseOculoplasty, hasFindings, hasEom, findingsText, eomRows, type EyeFindings, type OculoplastyData } from "./oculoplasty";
 import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
@@ -1462,6 +1463,7 @@ export type FullEmrData = {
   } | null;
   iopReadings: { method: string; re?: string | null; le?: string | null; takenAt: Date }[];
   gonioscopy?: { re?: string | null; le?: string | null; reDeg?: string | null; leDeg?: string | null; method?: string | null } | null;
+  oculoplasty?: { deviation?: EyeFindings | null; eom?: OculoplastyData["eom"] | null; exo?: EyeFindings | null } | null;
   colourVision?: {
     re?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
     le?: { cvMethod?: string; result?: string; notes?: string; csMethod?: string; csResult?: string; csNotes?: string } | null;
@@ -1826,6 +1828,29 @@ ${(() => {
       `</div>`;
   }
   return out;
+})()}
+
+<!-- 11b · OCULOPLASTY (styled like Anterior / Posterior Segment) -->
+${(() => {
+  const o = d.oculoplasty;
+  if (!o) return "";
+  const block = (head: string, rows: [string, string | null, string | null][]) =>
+    rows.length
+      ? `<div class="no-break" style="margin-bottom:12px;">` +
+        suiTable(COLS_EYE_PDF, suiEyeHead(head),
+          rows.map(([label, r, l], i) => suiEyeRow(escapeHtml(label), suiVal(r), suiVal(l), { stripe: i % 2 !== 0 })).join(""),
+          { indent: true }) +
+        `</div>`
+      : "";
+  const card = (title: string, valueLabel: string, f: EyeFindings | null | undefined, unit: "°" | "mm") => {
+    if (!f || !hasFindings(f)) return "";
+    const rows: [string, string | null, string | null][] = [];
+    if (f.reVal || f.leVal) rows.push([valueLabel, findingsText(f.reVal, "", unit), findingsText(f.leVal, "", unit)]);
+    if (f.re || f.le) rows.push(["Findings", findingsText("", f.re, unit), findingsText("", f.le, unit)]);
+    return block(f.method ? `${title} · ${escapeHtml(f.method)}` : title, rows);
+  };
+  const eom = block("EOM", eomRows({ eom: o.eom ?? undefined }).map((r) => [r.label, r.re, r.le]));
+  return card("Deviation", "Angle", o.deviation, "°") + eom + card("Exophthalmometry", "Reading", o.exo, "mm");
 })()}
 
 <!-- 12 · TEAR FILM -->
@@ -2271,6 +2296,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       };
       return { re: fmtEye(reJ), le: fmtEye(leJ), notes: (visit as any).colourVisionCS.notes ?? null };
     })() : null,
+    oculoplasty: (() => { const o = parseOculoplasty((visit as any).oculoplasty); return hasFindings(o.deviation) || hasEom(o) || hasFindings(o.exo) ? o : null; })(),
     gonioscopy: (visit as any).gonioNotes ? (() => { try { const g = parseJ2((visit as any).gonioNotes) as any; return g ? { re: g.re ?? null, le: g.le ?? null, reDeg: g.reDeg ?? null, leDeg: g.leDeg ?? null, method: g.method ?? null } : null; } catch { return null; } })() : null,
     tearFilm: visit.tearFilm ? {
       tbutRe: visit.tearFilm.tbutRe ?? null, tbutLe: visit.tearFilm.tbutLe ?? null,

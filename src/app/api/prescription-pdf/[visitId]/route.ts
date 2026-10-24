@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseOculoplasty, hasFindings, hasEom } from "@/lib/oculoplasty";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/rbac";
 import { printDeniedReason } from "../access";
@@ -198,6 +199,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
           re: parseJSON(reti.re, null) as { sph?: string; cyl?: string; axis?: string } | null,
           le: parseJSON(reti.le, null) as { sph?: string; cyl?: string; axis?: string } | null,
         };
+      })(),
+      oculoplasty: (() => {
+        const o = parseOculoplasty((visit as any).oculoplasty);
+        const out = {
+          deviation: on("deviation") && hasFindings(o.deviation) ? o.deviation : null,
+          eom: on("eom") && hasEom(o) ? o.eom : null,
+          exo: on("exo") && hasFindings(o.exo) ? o.exo : null,
+        };
+        return out.deviation || out.eom || out.exo ? out : null;
       })(),
       gonioscopy: (() => {
         if (!on("gonio")) return null;
