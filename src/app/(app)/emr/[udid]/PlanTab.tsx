@@ -359,7 +359,7 @@ function DrugNameInput({
       />
       {open && suggestions.length > 0 && (
         <div
-          className="absolute z-50 left-0 right-0 top-full mt-0.5 bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
+          className="absolute z-50 left-0 top-full mt-0.5 min-w-full w-max max-w-[min(460px,90vw)] bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
           style={{ maxHeight: 220 }}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -380,8 +380,8 @@ function DrugNameInput({
               ].join(" ")}
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[var(--color-ink-800)] truncate">{med.name}</p>
-                <p className="text-caption text-[var(--color-ink-400)] truncate">
+                <p className="text-xs font-semibold text-[var(--color-ink-800)] break-words">{med.name}</p>
+                <p className="text-caption text-[var(--color-ink-400)] break-words">
                   {med.category}
                   {med.brand ? ` · ${med.brand}` : ""}
                   {med.defaultDose ? ` · ${med.defaultDose}` : ""}
@@ -2178,7 +2178,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       )}
 
       <div className={`flex items-center mb-2 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-3" : ""}`}>
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Medications</p>
         {!readOnly && (
           <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
             {medications.length > 0 && (
@@ -2229,7 +2229,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               value={route}
               onChange={(e) => setRoute(e.target.value)}
               aria-label="Route"
-              className={`${inputCls.replace("w-full ", "")} w-32 shrink-0`}
+              className={`${inputCls.replace("w-full ", "")} w-28 shrink-0`}
             >
               <option value="">Route</option>
               {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
@@ -2246,7 +2246,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     {["RE", "LE", "OU"].map((l) => <option key={l} value={l}>{l}</option>)}
                   </select>
                 )}
-                <div className="flex-1 min-w-[160px]">
+                <div className="flex-1 min-w-[260px]">
                   <DrugNameInput
                     value={drugName}
                     onChange={(name, defaultDose) => { setDrugName(name); if (defaultDose && !dose) setDose(defaultDose); }}
@@ -2254,9 +2254,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     className={inputCls}
                   />
                 </div>
-                <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={`${inputCls} w-24 shrink-0`} />
-                <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={`${inputCls} w-36 shrink-0`} />
-                <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={`${inputCls} w-28 shrink-0`} />
+                <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={`${inputCls} w-20 shrink-0`} />
+                <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={`${inputCls} w-32 shrink-0`} />
+                <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={`${inputCls} w-24 shrink-0`} />
                 <button type="button" onClick={resetDraft} aria-label="Clear" className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors">
                   <X size={13} />
                 </button>
@@ -2265,9 +2265,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           </div>
           {route && (
           <>
-          {/* Tapering toggle — own row */}
-          <div>
-            <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+          {/* Tapering toggle + Instructions on one row; keywords below the box */}
+          <div className="flex items-start gap-3">
+            <label className="flex items-center gap-1.5 cursor-pointer w-fit shrink-0 pt-2">
               <input
                 type="checkbox"
                 checked={taperLevels.length > 0}
@@ -2276,6 +2276,16 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               />
               <span className="text-xs font-medium text-[var(--color-ink-600)]">Tapering dose</span>
             </label>
+            <div className="flex-1 min-w-0">
+              <KeywordInput
+                fieldKey="med_instructions"
+                value={instructions}
+                onChange={setInstructions}
+                builtIns={MED_INSTRUCTION_KEYWORDS}
+                placeholder="Instructions — e.g. Apply 1 drop in RE at bedtime, shake well before use"
+                className={inputCls}
+              />
+            </div>
           </div>
           {taperLevels.map((level, i) => (
             <div
@@ -2350,20 +2360,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               )}
             </div>
           ))}
-          {/* Instructions — label beside the box, keywords below it */}
-          <div className="flex items-start gap-3">
-            <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide shrink-0 pt-2 w-24">Instructions</label>
-            <div className="flex-1 min-w-0">
-              <KeywordInput
-                fieldKey="med_instructions"
-                value={instructions}
-                onChange={setInstructions}
-                builtIns={MED_INSTRUCTION_KEYWORDS}
-                placeholder="e.g. Apply 1 drop in RE at bedtime, shake well before use"
-                className={inputCls}
-              />
-            </div>
-          </div>
           <div className="flex justify-end mt-1.5">
             <button
               onClick={submitDrug}
