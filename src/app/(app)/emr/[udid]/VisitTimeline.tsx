@@ -146,9 +146,9 @@ export function VisitTimeline({
         return (
           <Fragment key={i}>
             <span className={lbl}>{left?.label ?? ""}</span>
-            <span className={val(left?.live)}>{left?.value ?? ""}</span>
+            <span className={val(left?.live)} suppressHydrationWarning>{left?.value ?? ""}</span>
             <span className={`${lbl} pl-2`}>{right?.label ?? ""}</span>
-            <span className={val(right?.live)}>{right?.value ?? ""}</span>
+            <span className={val(right?.live)} suppressHydrationWarning>{right?.value ?? ""}</span>
           </Fragment>
         );
       })}

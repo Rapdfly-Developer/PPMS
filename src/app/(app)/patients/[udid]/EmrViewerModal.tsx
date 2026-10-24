@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
+import { HpiFormatted } from "@/components/emr/HpiFormatted";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -195,7 +196,12 @@ function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
               <ComplaintChips value={ge.chiefComplaint} wrap />
             </div>
           )}
-          <Row label="History of Illness" value={ge.hpi} />
+          {ge.hpi && (
+            <div className="grid grid-cols-[140px_1fr] gap-2 text-sm py-1">
+              <span className="text-[var(--color-ink-400)] text-xs">History of Illness</span>
+              <HpiFormatted text={ge.hpi} />
+            </div>
+          )}
           <Row label="Known Medications" value={ge.medications} />
           <Row label="Allergies" value={ge.allergies || (ge.nkda ? "NKDA (No Known Drug Allergies)" : null)} />
         </Section>

@@ -6,6 +6,7 @@ import { getVisitEmrData } from "./emr-viewer-action";
 import { generateAiSummary } from "@/app/(app)/patients/actions";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
+import { HpiFormatted } from "@/components/emr/HpiFormatted";
 
 type Tab = "short" | "long" | "ai";
 
@@ -894,7 +895,9 @@ function LongContent({
             <ClipboardList size={11} className="text-sky-500" />
             <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">History of Present Illness</span>
           </div>
-          <div className="ml-5 px-3 py-2.5 rounded-md border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50 text-caption leading-relaxed text-[var(--color-ink-700)] whitespace-pre-wrap">{g.hpi}</div>
+          <div className="ml-5 px-3 py-2.5 rounded-md border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50">
+            <HpiFormatted text={g.hpi} />
+          </div>
         </div>
       )}
 

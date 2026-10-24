@@ -572,6 +572,7 @@ model GeneralExamination {
   weight              String?
   chiefComplaint      String?
   hpi                 String?
+  hpiFields           String? // JSON selections from the structured HPI dropdowns
   provisionalDx       String?
   pastMedicalHistory  String? // JSON array of chip values, cumulative
   pmhOtherText        String?

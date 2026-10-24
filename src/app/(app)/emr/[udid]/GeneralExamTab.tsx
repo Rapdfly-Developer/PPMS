@@ -11,6 +11,9 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
+import { HpiBuilder } from "./HpiBuilder";
+import { HpiFormatted } from "@/components/emr/HpiFormatted";
+import { buildHpiText, type HpiFields } from "@/lib/hpi-builder";
 import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
@@ -244,7 +247,7 @@ function ComplaintKeywordButton({
   );
 }
 
-export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean }) {
+export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; patient?: { age?: number | null; sex?: string | null; occupation?: string | null } }) {
   const ge = visit.generalExam;
   const [vitalsOpen, setVitalsOpen] = useState(false);
   // Cards other than Chief Complaint and Past History start closed, like the
@@ -258,6 +261,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
+  // Structured HPI selections (dropdowns) and whether the box shows raw text for editing.
+  const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
+  const [hpiEditing, setHpiEditing] = useState(false);
   const [pmh, setPmh] = useState<PmhEntry[]>(() => {
     // Every saved visit contains a cumulative snapshot. Seed from the newest
     // prior snapshot so deleted entries do not reappear from older visits.
@@ -347,7 +353,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
     setPmh((current) => current.filter((_, i) => i !== index));
 
   const chiefComplaintFull = serializeComplaints(complaints);
-  const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, familyHistory, medications, allergies, nkda };
+  const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, hpiFields: JSON.stringify(hpiFields), pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, familyHistory, medications, allergies, nkda };
 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
     setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
@@ -518,7 +524,44 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly }: { visit: 
       <Card>
         {overview || openCards.hpi ? (
           <FieldWithHistory label="HISTORY OF PRESENT ILLNESS" headerExtra={<CardChevron open onClick={() => toggleCard("hpi")} />} history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}>
-            <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+            <div className="flex flex-col gap-2.5">
+              {!readOnly && (
+                <HpiBuilder
+                  fields={hpiFields}
+                  onChange={setHpiFields}
+                  disabled={readOnly}
+                  onGenerate={() => {
+                    if (hpi.trim() && !window.confirm("Replace the current HPI text with the generated one?")) return;
+                    setHpi(buildHpiText(hpiFields, patient ?? {}, chiefComplaintFull));
+                    setHpiEditing(false);
+                  }}
+                />
+              )}
+              {hpi.trim() && !hpiEditing ? (
+                <div className="relative rounded-xl border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50/60 px-3.5 py-2.5">
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      data-overview-hide
+                      onClick={() => setHpiEditing(true)}
+                      className="absolute top-2 right-2 text-caption font-medium px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  <HpiFormatted text={hpi} />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors... or use the fields above and Generate HPI" />
+                  {hpiEditing && (
+                    <button type="button" onClick={() => setHpiEditing(false)} className="self-end text-caption font-medium text-[var(--color-primary-700)] hover:underline">
+                      Done
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </FieldWithHistory>
         ) : (
           <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />

@@ -606,6 +606,7 @@ export default async function PatientDetailedEMR({
                       visit={activeVisit}
                       priorVisits={priorVisits}
                       udid={udid}
+                      patient={{ age: patient.age, sex: patient.sex, occupation: (patient as any).occupation ?? null }}
                       readOnly={generalReadOnly}
                     />
                   </div>

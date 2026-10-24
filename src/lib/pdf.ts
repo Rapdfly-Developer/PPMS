@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
 import { complaintLabel, parseComplaintItems } from "@/lib/appointment-cc";
 import { MONTSERRAT_600_WOFF2 } from "@/lib/pdfFonts";
+import { formatHpi } from "./hpi-builder";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
@@ -1054,6 +1055,25 @@ function suiNote(text: string, tone: "sky" | "slate" | "amber" | "plain", indent
   return `<div style="${indent ? `margin-left:${SUI.INDENT}px;` : ""}padding:6px 10px;border:1px solid ${border};border-left:${w}px solid ${left};border-radius:5px;background:${bg};font-size:9.5px;line-height:1.55;color:${tone === "plain" ? SUI.INK_600 : SUI.INK_700};white-space:pre-wrap;">${escapeHtml(text)}</div>`;
 }
 
+/** HPI laid out like the screen: headings, numbered complaints, labelled bullets (sky note box). */
+function suiHpi(text: string): string {
+  const body = formatHpi(text).map((b, i) => {
+    switch (b.kind) {
+      case "heading":
+        return `<div style="${SUI_HEAD_FONT}font-size:8px;letter-spacing:0.1em;color:${SUI.P700};${i > 0 ? "margin-top:6px;" : ""}margin-bottom:2px;">${escapeHtml(b.text)}</div>`;
+      case "numbered":
+        return `<div style="display:flex;gap:5px;padding-left:3px;"><span style="font-weight:600;color:${SUI.P700};">${escapeHtml(b.num)}.</span><span>${escapeHtml(b.text)}</span></div>`;
+      case "bullet":
+        return `<div style="display:flex;gap:5px;padding-left:3px;"><span style="color:${SUI.P600};">•</span><span>${b.label ? `<span style="font-weight:600;">${escapeHtml(b.label)}:</span> ` : ""}${escapeHtml(b.text)}</span></div>`;
+      case "para":
+        return `<div>${escapeHtml(b.text)}</div>`;
+      default:
+        return "";
+    }
+  }).join("");
+  return `<div style="padding:6px 10px;border:1px solid #BAE6FD;border-left:3px solid #38BDF8;border-radius:5px;background:#F0F9FF;font-size:9.5px;line-height:1.55;color:${SUI.INK_700};">${body}</div>`;
+}
+
 /** Chief-complaint chips ("RE • Blurred Vision • 8 days"). */
 function suiComplaintChips(raw: string): string {
   const items = parseComplaintItems(raw);
@@ -1631,7 +1651,7 @@ ${ge?.nkda
   : ""}
 
 <!-- 3 · HPI -->
-${ge?.hpi ? suiBlock("History of Present Illness", suiNote(ge.hpi, "sky", false)) : ""}
+${ge?.hpi ? suiBlock("History of Present Illness", suiHpi(ge.hpi)) : ""}
 
 <!-- 4 · PAST HISTORY -->
 ${ge && pmhList.length
