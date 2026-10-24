@@ -22,7 +22,10 @@ type Laterality = typeof LATERALITY_OPTIONS[number];
 const SINCE_UNITS = ["days", "weeks", "months", "years"] as const;
 const PMH_CUSTOM_KEY = "kw_ge_pmh_custom";
 
-type CurrentMed = { drugName: string; laterality?: string; dosage: string; frequency: string; duration: string };
+type CurrentMed = { drugName: string; route?: string; laterality?: string; dosage: string; frequency: string; duration: string };
+// Same routes as the Plan tab; systemic routes (Oral, IV, IM) take no eye.
+const CM_ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"] as const;
+const CM_NO_LATERALITY_ROUTES = ["Oral", "IV", "IM"];
 
 function parseMeds(raw: string): CurrentMed[] {
   if (!raw.trim()) return [{ drugName: "", dosage: "", frequency: "", duration: "" }];
@@ -902,8 +905,30 @@ function CmEditor({ rows, onChange }: { rows: CurrentMed[]; onChange: (r: Curren
 
   return (
     <div className="flex flex-col gap-1.5">
-      {rows.map((row, i) => (
+      {rows.map((row, i) => {
+        // Route first; the rest of the row appears once it is chosen. Rows saved
+        // before routes existed keep showing their fields.
+        const showFields = !!row.route || !!(row.drugName || row.dosage || row.frequency || row.duration || row.laterality);
+        const showEye = !row.route || !CM_NO_LATERALITY_ROUTES.includes(row.route);
+        return (
         <div key={i} className="flex items-center gap-1.5">
+          <select
+            value={row.route ?? ""}
+            onChange={(e) => {
+              const route = e.target.value;
+              onChange(rows.map((r, idx) => idx === i
+                ? { ...r, route, ...(CM_NO_LATERALITY_ROUTES.includes(route) ? { laterality: "" } : {}) }
+                : r));
+            }}
+            aria-label="Route"
+            className={`${inputCls.replace("w-full ", "")} ${showFields ? "w-28" : "w-32"} shrink-0`}
+          >
+            <option value="">Route</option>
+            {CM_ROUTE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+          {showFields && (
+          <>
+          {showEye && (
           <select
             value={row.laterality ?? ""}
             onChange={(e) => set(i, "laterality", e.target.value)}
@@ -913,6 +938,7 @@ function CmEditor({ rows, onChange }: { rows: CurrentMed[]; onChange: (r: Curren
             <option value="">Eye</option>
             {LATERALITY_OPTIONS.map((lat) => <option key={lat} value={lat}>{lat}</option>)}
           </select>
+          )}
           <CmDrugInput
             value={row.drugName}
             onChange={(name, defaultDose) =>
@@ -923,11 +949,14 @@ function CmEditor({ rows, onChange }: { rows: CurrentMed[]; onChange: (r: Curren
           <CmOptionsInput value={row.dosage} options={CM_DOSE_OPTIONS} onChange={(v) => set(i, "dosage", v)} placeholder="Dose" className={`${inputCls} w-20 shrink-0`} />
           <CmOptionsInput value={row.frequency} options={CM_FREQ_OPTIONS} onChange={(v) => set(i, "frequency", v)} placeholder="Frequency" className={`${inputCls} w-32 shrink-0`} />
           <CmOptionsInput value={row.duration} options={CM_DUR_OPTIONS} onChange={(v) => set(i, "duration", v)} placeholder="Duration" className={`${inputCls} w-24 shrink-0`} />
-          <button type="button" onClick={() => remove(i)} className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors">
+          </>
+          )}
+          <button type="button" onClick={() => remove(i)} className={`shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors ${showFields ? "" : "ml-auto"}`}>
             <X size={13} />
           </button>
         </div>
-      ))}
+        );
+      })}
       <button
         type="button"
         onClick={() => onChange([...rows, { drugName: "", dosage: "", frequency: "", duration: "" }])}

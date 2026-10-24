@@ -18,7 +18,7 @@ import {
   getDismissedPresets, addDismissedPreset, clearDismissedPresets,
   saveTreatmentPresets,
 } from "./treatmentPresets";
-import { type MedEntry, searchMedications, categoryColor, saveCustomMedication } from "@/lib/ophthalmic-medications";
+import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -1840,6 +1840,9 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
 }
 
 const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
+// Systemic routes carry no eye; every other route is given a laterality.
+const NO_LATERALITY_ROUTES = ["Oral", "IV", "IM"];
+const routeHasLaterality = (r: string | null | undefined) => !!r && !NO_LATERALITY_ROUTES.includes(r);
 
 const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
   {
@@ -1907,7 +1910,6 @@ type EditDraft = { drugName: string; dosage: string; frequency: string; duration
 
 function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", adviseNotes, onAdviseChange, toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; adviseNotes: string; onAdviseChange: (notes: string) => void; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
   const [pending, startTransition] = useTransition();
-  const [showAddDrug, setShowAddDrug] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<EditDraft>({ drugName: "", dosage: "", frequency: "", duration: "", instructions: "", route: "Topical", laterality: "OU", taperLevels: [] });
@@ -1917,7 +1919,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
   const [drugName, setDrugName]       = useState("");
   const [dose, setDose]               = useState("");
-  const [route, setRoute]             = useState("Topical");
+  const [route, setRoute]             = useState("");
   const [laterality, setLaterality]   = useState(defaultLaterality);
   useEffect(() => { setLaterality(defaultLaterality); }, [defaultLaterality]);
   const [frequency, setFrequency]         = useState("");
@@ -1956,50 +1958,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   useEffect(() => { setInvOrderMap(buildInvMap(visit.investigationOrders ?? [])); }, [visit.investigationOrders]);
   const [, startInvTransition] = useTransition();
 
-  // Medication search state
-  const [searchQuery, setSearchQuery]     = useState("");
-  const [activeIndex, setActiveIndex]     = useState(-1);
-  const [showDropdown, setShowDropdown]   = useState(false);
-  const searchRef  = useRef<HTMLInputElement>(null);
-  const blurTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const medications: any[] = visit.medications ?? [];
 
-  const suggestions = useMemo(() => searchMedications(searchQuery), [searchQuery]);
-
-  const openWithDrug = (name: string, defaultRoute?: string, defaultDose?: string) => {
-    setDrugName(name);
-    setDose(defaultDose ?? "");
-    setRoute(defaultRoute ?? "Topical");
-    setLaterality(defaultLaterality);
+  const resetDraft = () => {
+    setDrugName(""); setDose(""); setRoute(""); setLaterality(defaultLaterality);
     setFrequency(""); setDurationSel("");
     setTaperLevels([]);
     setInstructions("");
-    setShowAddDrug(true);
-  };
-
-  const selectMed = (med: MedEntry) => {
-    setSearchQuery(med.name);
-    setShowDropdown(false);
-    setActiveIndex(-1);
-    openWithDrug(med.name, med.route, med.defaultDose);
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showDropdown || suggestions.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActiveIndex((i) => Math.max(i - 1, -1));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
-      e.preventDefault();
-      selectMed(suggestions[activeIndex]);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setActiveIndex(-1);
-    }
   };
 
   const applyPreset = (drugs: PresetDrug[]) => {
@@ -2034,7 +1999,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       const tapParts = formatTaperSteps(editDraft.taperLevels);
       const taperNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [editDraft.instructions.trim(), taperNote].filter(Boolean).join(" | ");
-      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: finalInstructions, route: editDraft.route, laterality: editDraft.route === "Topical" ? editDraft.laterality : undefined });
+      await updateMedication(id, udid, { drugName: editDraft.drugName.trim(), dosage: editDraft.dosage, frequency: editDraft.frequency, duration: editDraft.duration, instructions: finalInstructions, route: editDraft.route, laterality: routeHasLaterality(editDraft.route) ? editDraft.laterality : undefined });
       setEditingId(null);
     });
   };
@@ -2055,14 +2020,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       const tapParts = formatTaperSteps(taperLevels);
       const tapNote = tapParts.length ? `Tapering: ${tapParts.join(" → ")}` : "";
       const finalInstructions = [instructions, tapNote].filter(Boolean).join(" | ");
-      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions, route, laterality: route === "Topical" ? laterality : undefined } as any);
-      setDrugName(""); setDose(""); setRoute("Topical"); setFrequency(""); setDurationSel("");
-      setTaperLevels([]);
-      setInstructions("");
-      setShowAddDrug(false);
-      setSearchQuery("");
-      setShowDropdown(false);
-      setTimeout(() => searchRef.current?.focus(), 80);
+      await addMedication(visit.id, udid, { drugName, dosage: dose, frequency, duration, instructions: finalInstructions, route, laterality: routeHasLaterality(route) ? laterality : undefined } as any);
+      resetDraft();
     });
   };
 
@@ -2139,73 +2098,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         )}
       </div>
 
-      {/* Medication search — hidden when readOnly */}
-      {!readOnly && <div data-overview-hide className="relative mb-3">
-        <div className="relative">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-          <input
-            ref={searchRef}
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setActiveIndex(-1); setShowDropdown(true); }}
-            onFocus={() => { if (blurTimer.current) clearTimeout(blurTimer.current); if (searchQuery.length >= 2) setShowDropdown(true); }}
-            onBlur={() => { blurTimer.current = setTimeout(() => setShowDropdown(false), 150); }}
-            onKeyDown={handleSearchKeyDown}
-            placeholder="Search medication by generic name, brand name, or strength..."
-            className="w-full rounded-xl border border-[var(--color-border)] bg-white pl-10 pr-9 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] focus:border-[var(--color-primary-500)] transition-colors placeholder:text-[var(--color-ink-300)]"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onMouseDown={(e) => { e.preventDefault(); setSearchQuery(""); setShowDropdown(false); setShowAddDrug(false); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] transition-colors"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
 
-        {showDropdown && suggestions.length > 0 && (
-          <ul className="absolute z-30 left-0 right-0 mt-1.5 rounded-xl border border-[var(--color-border)] bg-white shadow-2xl overflow-hidden max-h-72 overflow-y-auto divide-y divide-[var(--color-border)]">
-            {suggestions.map((med, i) => (
-              <li key={med.id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => { e.preventDefault(); selectMed(med); }}
-                  className={`w-full text-left px-3.5 py-2.5 flex items-center gap-3 transition-colors ${
-                    i === activeIndex ? "bg-[var(--color-primary-50)]" : "hover:bg-[var(--color-surface-sunken)]"
-                  }`}
-                >
-                  {(() => {
-                    const badge = getMedBadge(med.route, null, med.name);
-                    return badge ? (
-                      <span className={`min-w-[32px] h-8 px-1.5 rounded-lg flex items-center justify-center text-caption font-bold shrink-0 ${badge.bg} ${badge.text}`}>
-                        {badge.label === "OU" || badge.label === "RE" || badge.label === "LE" ? "EYE" : badge.label}
-                      </span>
-                    ) : (
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                        i === activeIndex ? "bg-[var(--color-primary-100)]" : "bg-[var(--color-surface-sunken)]"
-                      }`}>
-                        <Pill size={15} className="text-[var(--color-ink-400)]" />
-                      </div>
-                    );
-                  })()}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-label sm:text-sm font-medium text-[var(--color-ink-900)]">{med.name}</span>
-                      <span className={`text-caption px-1.5 py-0.5 rounded-full border font-medium shrink-0 ${categoryColor(med.category)}`}>
-                        {med.category}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--color-ink-400)] mt-0.5">{med.form} · {med.route}</p>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>}
-
-      {/* Per-diagnosis protocol prompt cards — shown below search */}
+      {/* Per-diagnosis protocol prompt cards */}
       {!readOnly && pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
         <ProtocolPromptCard
           key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
@@ -2217,51 +2111,52 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
       {showPresets && <PresetPanel onApply={applyPreset} onClose={() => setShowPresets(false)} />}
 
-      {/* Add Drug form */}
-      {showAddDrug && (
-        <div data-overview-hide className="mb-4 p-3.5 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] shadow-sm">
-          <div className="flex items-center justify-between mb-3 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-[var(--color-primary-600)] flex items-center justify-center">
-                <Pill size={13} className="text-white" />
-              </div>
-              <p className="text-xs font-semibold text-[var(--color-primary-700)]">#{medications.length + 1}</p>
-            </div>
-            <button onClick={() => setShowAddDrug(false)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={13} /></button>
+      {/* Add medication — route first, then the whole row on one line (like Current Medications) */}
+      {!readOnly && (
+        <div data-overview-hide className="mb-4 flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap md:flex-nowrap">
+            <select
+              value={route}
+              onChange={(e) => setRoute(e.target.value)}
+              aria-label="Route"
+              className={`${inputCls.replace("w-full ", "")} w-32 shrink-0`}
+            >
+              <option value="">Route</option>
+              {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+            </select>
+            {route && (
+              <>
+                {routeHasLaterality(route) && (
+                  <select
+                    value={laterality}
+                    onChange={(e) => setLaterality(e.target.value)}
+                    aria-label="Laterality"
+                    className={`${inputCls.replace("w-full ", "")} w-16 shrink-0`}
+                  >
+                    {["RE", "LE", "OU"].map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                )}
+                <div className="flex-1 min-w-[160px]">
+                  <DrugNameInput
+                    value={drugName}
+                    onChange={(name, defaultDose) => { setDrugName(name); if (defaultDose && !dose) setDose(defaultDose); }}
+                    placeholder="Drug name"
+                    className={inputCls}
+                  />
+                </div>
+                <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={`${inputCls} w-24 shrink-0`} />
+                <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={`${inputCls} w-36 shrink-0`} />
+                <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={`${inputCls} w-28 shrink-0`} />
+                <button type="button" onClick={resetDraft} aria-label="Clear" className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors">
+                  <X size={13} />
+                </button>
+              </>
+            )}
           </div>
-          {/* Route, drug, dose, frequency and duration on one line */}
-          <div className="grid grid-cols-2 md:grid-cols-[110px_minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.4fr)_minmax(0,1fr)] gap-2 mb-2">
-            <div>
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Route</label>
-              <select value={route} onChange={(e) => setRoute(e.target.value)} className={inputCls}>
-                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
-              </select>
-            </div>
-            <div className="col-span-2 md:col-span-1">
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Drug Name</label>
-              <DrugNameInput
-                value={drugName}
-                onChange={(name, defaultDose) => { setDrugName(name); if (defaultDose && !dose) setDose(defaultDose); }}
-                placeholder="Drug name"
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Dose</label>
-              <OptionsInput value={dose} onChange={setDose} options={DOSE_OPTIONS} placeholder="Dose" className={inputCls} />
-            </div>
-            <div>
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Frequency</label>
-              <OptionsInput value={frequency} onChange={setFrequency} options={FREQUENCY_OPTIONS} placeholder="Frequency" className={inputCls} />
-            </div>
-            <div>
-              <label className="text-caption font-medium text-[var(--color-ink-400)] uppercase tracking-wide block mb-0.5">Duration</label>
-              <OptionsInput value={durationSel} onChange={setDurationSel} options={DURATION_OPTIONS} placeholder="Duration" className={inputCls} />
-            </div>
-          </div>
-
+          {route && (
+          <>
           {/* Tapering toggle — own row */}
-          <div className="mb-2">
+          <div>
             <label className="flex items-center gap-1.5 cursor-pointer w-fit">
               <input
                 type="checkbox"
@@ -2359,7 +2254,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               />
             </div>
           </div>
-          <div className="flex justify-end mt-3">
+          <div className="flex justify-end mt-1.5">
             <button
               onClick={submitDrug}
               disabled={pending}
@@ -2368,6 +2263,8 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               <Plus size={12} /> Add to Prescription
             </button>
           </div>
+          </>
+          )}
         </div>
       )}
 
@@ -2376,23 +2273,21 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
             <Pill size={20} className="text-[var(--color-ink-300)]" />
           </div>
-          <p className="text-label sm:text-sm text-[var(--color-ink-400)]">Search for a medication above to add it to the prescription.</p>
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)]">Choose a route above to add a medication to the prescription.</p>
         </div>
       ) : (
         // The columns are fixed-width and total ~470px, so on a phone the table
         // scrolls inside its own card rather than pushing the page sideways.
         <div className="mt-1 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="border-b border-[var(--color-border)]">
-                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-10">#</th>
-                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-40">Drug Name</th>
-                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-20">Dose</th>
-                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-44">Frequency</th>
-                <th className="px-3 py-1.5 text-left text-caption font-bold text-[var(--color-ink-300)] uppercase tracking-widest w-28">Duration</th>
-                <th data-overview-hide className="px-3 py-1.5 w-20" />
-              </tr>
-            </thead>
+          <table className="w-full min-w-[640px] text-sm table-fixed">
+            <colgroup>
+              <col className="w-8" />
+              <col />
+              <col className="w-24" />
+              <col className="w-40" />
+              <col className="w-28" />
+              <col data-overview-hide className="w-16" />
+            </colgroup>
             <tbody>
               {medications.map((m, idx) => {
                 const isEditing = editingId === m.id;
@@ -2403,11 +2298,11 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                      A `<>` shorthand cannot carry one, so each medication row
                      went unkeyed even though the inner <tr> had key={m.id}. */
                   <Fragment key={m.id}>
-                    <tr className={isEditing ? "bg-[var(--color-primary-50)]" : "bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}>
-                      <td className="px-3 py-3 text-xs font-bold text-[var(--color-primary-600)] whitespace-nowrap">{idx + 1}</td>
+                    <tr className={`${idx > 0 ? "border-t border-[var(--color-border)]" : ""} ${isEditing ? "bg-[var(--color-primary-50)]" : "group bg-white hover:bg-[var(--color-surface-sunken)] transition-colors"}`}>
+                      <td className="pl-1 pr-2 py-2 text-caption font-semibold text-[var(--color-ink-300)] tabular-nums whitespace-nowrap">{idx + 1}</td>
 
                       {/* Drug Name */}
-                      <td className="px-3 py-2.5">
+                      <td className="px-2 py-2">
                         {isEditing ? (
                           <div className="flex flex-col gap-1">
                             <DrugNameInput
@@ -2428,22 +2323,23 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                             {(() => {
                               const badge = getMedBadge(m.route, m.laterality, m.drugName);
                               return badge ? (
-                                <span className={`min-w-[32px] h-7 px-1.5 rounded-lg flex items-center justify-center text-caption font-bold shrink-0 ${badge.bg} ${badge.text}`}>
+                                <span className={`min-w-[28px] h-5 px-1.5 rounded-md flex items-center justify-center text-micro font-bold shrink-0 ${badge.bg} ${badge.text}`}>
                                   {badge.label}
                                 </span>
                               ) : (
-                                <div className="w-7 h-7 rounded-lg bg-[var(--color-surface-sunken)] flex items-center justify-center shrink-0">
-                                  <Pill size={13} className="text-[var(--color-ink-400)]" />
+                                <div className="w-5 h-5 rounded-md bg-[var(--color-surface-sunken)] flex items-center justify-center shrink-0">
+                                  <Pill size={11} className="text-[var(--color-ink-400)]" />
                                 </div>
                               );
                             })()}
-                            <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] break-words">{m.drugName}</span>
+                            <span className="text-label sm:text-sm font-medium text-[var(--color-ink-900)] break-words">{m.drugName}</span>
+                            {m.route && <span className="text-caption text-[var(--color-ink-400)] shrink-0">· {m.route}</span>}
                           </div>
                         )}
                       </td>
 
                       {/* Dose */}
-                      <td className="px-3 py-2.5">
+                      <td className="px-2 py-2">
                         {isEditing ? (
                           <OptionsInput
                             value={editDraft.dosage}
@@ -2458,7 +2354,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       </td>
 
                       {/* Frequency */}
-                      <td className="px-3 py-2.5">
+                      <td className="px-2 py-2">
                         {isEditing ? (
                           <OptionsInput
                             value={editDraft.frequency}
@@ -2473,7 +2369,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       </td>
 
                       {/* Duration */}
-                      <td className="px-3 py-2.5">
+                      <td className="px-2 py-2">
                         {isEditing ? (
                           <OptionsInput
                             value={editDraft.duration}
@@ -2488,9 +2384,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       </td>
 
                       {/* Actions — hidden when readOnly */}
-                      <td data-overview-hide className="px-3 py-2.5">
+                      <td data-overview-hide className="px-1 py-2">
                         {!readOnly && (
-                          <div className="flex items-center justify-end gap-1.5">
+                          <div className={`flex items-center justify-end gap-0.5 ${isEditing ? "" : "opacity-60 group-hover:opacity-100 transition-opacity"}`}>
                             {isEditing ? (
                               <>
                                 <button
@@ -2514,16 +2410,16 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                                 <button
                                   onClick={() => startEdit(m)}
                                   title="Edit"
-                                  className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
+                                  className="p-1 rounded-md text-[var(--color-ink-300)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors"
                                 >
-                                  <Pencil size={13} />
+                                  <Pencil size={12} />
                                 </button>
                                 <button
                                   onClick={() => removeMedication(m.id, udid)}
                                   title="Delete"
-                                  className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                                  className="p-1 rounded-md text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"
                                 >
-                                  <Trash2 size={13} />
+                                  <Trash2 size={12} />
                                 </button>
                               </>
                             )}
@@ -2536,14 +2432,14 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     {!isEditing && view.taper.map((t, ti) => (
                       <tr key={`${m.id}-taper-${ti}`}>
                         <td />
-                        <td className="px-3 pb-2 pt-0">
-                          <span className="pl-9 text-caption font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
+                        <td className="px-2 pb-1.5 pt-0">
+                          <span className="pl-7 text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)]">
                             ↓ Taper{view.taper.length > 1 ? ` ${ti + 1}` : ""}
                           </span>
                         </td>
-                        <td className="px-3 pb-2 pt-0 text-xs text-[var(--color-ink-600)]">{t.dose || <span className="text-[var(--color-ink-300)]">—</span>}</td>
-                        <td className="px-3 pb-2 pt-0 text-xs text-[var(--color-ink-600)]">{t.frequency}</td>
-                        <td className="px-3 pb-2 pt-0 text-xs text-[var(--color-ink-600)]">{t.durationNum} {t.durationUnit}</td>
+                        <td className="px-2 pb-1.5 pt-0 text-xs text-[var(--color-ink-600)]">{t.dose || <span className="text-[var(--color-ink-300)]">—</span>}</td>
+                        <td className="px-2 pb-1.5 pt-0 text-xs text-[var(--color-ink-600)]">{t.frequency}</td>
+                        <td className="px-2 pb-1.5 pt-0 text-xs text-[var(--color-ink-600)]">{t.durationNum} {t.durationUnit}</td>
                         <td data-overview-hide />
                       </tr>
                     ))}
@@ -2552,7 +2448,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                     {(isEditing || view.note) && (
                       <tr key={`${m.id}-note`} className={isEditing ? "bg-[var(--color-primary-50)]" : ""}>
                         <td />
-                        <td colSpan={4} className="px-3 pb-2.5 pt-0">
+                        <td colSpan={4} className={`px-2 pt-0 ${isEditing ? "pb-2.5" : "pb-2 pl-9 text-caption text-[var(--color-ink-500)]"}`}>
                           {isEditing ? (
                             <div className="space-y-2">
                               <input
@@ -2650,7 +2546,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                               ))}
                             </div>
                           ) : (
-                            <span className="text-xs text-[var(--color-ink-600)]">{view.note}</span>
+                            <span className="whitespace-pre-line">{view.note}</span>
                           )}
                         </td>
                         <td />

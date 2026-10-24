@@ -1121,7 +1121,7 @@ function suiMedicationRows(
       `<div>` +
       (m.laterality ? `<span style="font-weight:700;color:${SUI.P700};margin-right:6px;">${escapeHtml(m.laterality)}</span>` : "") +
       escapeHtml(m.drugName) +
-      (long && m.route ? `<span style="font-weight:400;color:${SUI.INK_400};margin-left:3px;">· ${escapeHtml(m.route)}</span>` : "") +
+      (m.route ? `<span style="font-weight:400;color:${SUI.INK_400};margin-left:3px;">· ${escapeHtml(m.route)}</span>` : "") +
       `</div>` +
       (split.note ? `<div style="font-weight:400;font-style:italic;color:${SUI.INK_400};font-size:8px;margin-top:1px;">${escapeHtml(split.note)}</div>` : "") +
       `</td>` +
