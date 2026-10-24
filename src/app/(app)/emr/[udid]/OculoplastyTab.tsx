@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { History, X } from "lucide-react";
+import { format } from "date-fns";
 import { Card } from "@/components/ui/Card";
+import { TealSelect } from "@/components/ui/TealSelect";
+import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { useEMRSaveContext } from "./EmrSaveContext";
@@ -11,7 +15,26 @@ import { saveOculoplasty } from "./actions";
 
 export type EomMuscle = "sr" | "io" | "lr" | "mr" | "ir" | "so" | "up" | "down";
 export type EomEye = Partial<Record<EomMuscle, string>>;
-export type OculoplastyData = { eom?: { re?: EomEye; le?: EomEye } };
+/** Gonioscopy-style card: one method, and per eye a measurement + findings. */
+export type EyeFindings = { method?: string; reVal?: string; re?: string; leVal?: string; le?: string };
+export type OculoplastyData = { deviation?: EyeFindings; eom?: { re?: EomEye; le?: EomEye }; exo?: EyeFindings };
+
+const hasFindings = (f?: EyeFindings) => !!f && !!(f.reVal || f.re || f.leVal || f.le);
+
+export const DEVIATION_METHODS = ["Hirschberg", "Krimsky", "Cover test", "Prism cover test"] as const;
+export const DEVIATION_VALUES = ["0", "15", "30", "45", "60+"] as const;
+export const DEVIATION_KEYWORDS = [
+  "Orthotropic", "Esotropia", "Exotropia", "Hypertropia", "Hypotropia", "Central reflex",
+  "Pupillary margin (~15°)", "Mid-iris (~30°)", "Limbus (~45°)", "Beyond limbus (~60°)",
+  "Constant", "Intermittent", "Alternating",
+] as const;
+
+export const EXO_METHODS = ["Hertel", "Luedde", "Naugle", "Ruler"] as const;
+export const EXO_VALUES = Array.from({ length: 21 }, (_, i) => String(10 + i));
+export const EXO_KEYWORDS = [
+  "Normal", "Proptosis", "Enophthalmos", "Asymmetry > 2 mm", "Axial proptosis",
+  "Non-axial proptosis", "Lid retraction", "Lid lag", "Base reading noted",
+] as const;
 
 /** "" = not recorded; "-" … "----" = restriction level 1–4. */
 export const EOM_VALUES = ["Normal", "-", "--", "---", "----"] as const;
@@ -36,7 +59,8 @@ export function eomDisplay(v?: string): string {
 
 export function hasOculoplastyData(raw: string | null | undefined): boolean {
   const d = parseJSON<OculoplastyData>(raw, {});
-  return [d.eom?.re, d.eom?.le].some((e) => e && Object.values(e).some(Boolean));
+  return hasFindings(d.deviation) || hasFindings(d.exo)
+    || [d.eom?.re, d.eom?.le].some((e) => e && Object.values(e).some(Boolean));
 }
 
 /* ── Geometry: eye drawn at the centre, 8 gaze arrows around it ───────────── */
@@ -293,7 +317,166 @@ function CardTitle({ children, extra }: { children: React.ReactNode; extra?: Rea
   );
 }
 
-export function OculoplastyTab({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+function FindingsCard({
+  title, subtitle, methods, methodKey, valueOptions, unit, valuePlaceholder, keywords, fieldKey, value, onChange,
+  editable, saveState, history,
+}: {
+  title: string; subtitle?: string; methods: readonly string[]; methodKey: string;
+  valueOptions: readonly string[]; unit: string; valuePlaceholder: string;
+  keywords: readonly string[]; fieldKey: string;
+  value: EyeFindings; onChange: (f: EyeFindings) => void; editable: boolean;
+  saveState: ReturnType<typeof useAutoSave>;
+  history: { date: string; f: EyeFindings }[];
+}) {
+  const [showHistory, setShowHistory] = useState(false);
+  const [custom, setCustom] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem(methodKey) ?? "[]"); } catch { return []; }
+  });
+  const [adding, setAdding] = useState(false);
+  const [newText, setNewText] = useState("");
+  const set = (patch: Partial<EyeFindings>) => onChange({ ...value, ...patch });
+
+  const addMethod = () => {
+    const t = newText.trim();
+    if (t && !methods.includes(t) && !custom.includes(t)) {
+      const next = [...custom, t];
+      setCustom(next);
+      try { localStorage.setItem(methodKey, JSON.stringify(next)); } catch {}
+      set({ method: t });
+    } else if (t) set({ method: t });
+    setAdding(false); setNewText("");
+  };
+
+  const selCls = "rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]";
+  const fmt = (v?: string) => (v ? `${v}${unit === "°" ? "°" : ` ${unit}`}` : "—");
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">
+            {title}{subtitle && <span className="ml-1 text-caption font-normal text-[var(--color-ink-400)]">{subtitle}</span>}
+          </h3>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
+              <TealSelect
+                value={adding ? "__add_custom__" : (value.method || "")}
+                onChange={(v) => {
+                  if (v === "__add_custom__") { setAdding(true); setNewText(""); return; }
+                  setAdding(false); set({ method: v });
+                }}
+                options={[
+                  { value: "", label: "Not recorded" },
+                  ...methods.map((m) => ({ value: m, label: m })),
+                  ...custom.map((m) => ({ value: m, label: m })),
+                  ...(editable ? [{ value: "__add_custom__", label: "+ Add custom method…" }] : []),
+                ]}
+                className="min-w-[160px]"
+              />
+            </div>
+              {editable && adding && (
+                <div className="flex items-center gap-1 self-end">
+                  <input
+                    autoFocus
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMethod(); } if (e.key === "Escape") { setAdding(false); setNewText(""); } }}
+                    placeholder="Method name…"
+                    className="rounded-md border border-[var(--color-border)] px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] w-36"
+                  />
+                  <button type="button" onClick={addMethod} className="text-xs text-[var(--color-primary-600)] font-semibold px-2 py-0.5 rounded hover:bg-[var(--color-primary-50)] transition-colors">Add</button>
+                  <button type="button" onClick={() => { setAdding(false); setNewText(""); }} className="text-xs text-[var(--color-ink-400)] px-1.5 py-0.5 rounded hover:bg-[var(--color-surface-sunken)] transition-colors"><X size={11} /></button>
+                </div>
+              )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {history.length > 0 && (
+            <button
+              type="button"
+              data-overview-hide
+              onClick={() => setShowHistory((v) => !v)}
+              className="flex items-center gap-1 text-caption sm:text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+            >
+              <History size={11} /> History ({history.length})
+            </button>
+          )}
+          <SaveIndicator state={saveState} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {(["re", "le"] as const).map((side) => {
+          const valKey = side === "re" ? "reVal" : "leVal";
+          return (
+            <div key={side} className="flex flex-col gap-1.5">
+              <label className="text-caption sm:text-xs font-semibold tracking-widest text-[var(--color-ink-500)] uppercase">
+                {side.toUpperCase()} {title}
+              </label>
+              <div className="flex items-start gap-2">
+                <select
+                  value={value[valKey] ?? ""}
+                  onChange={(e) => set({ [valKey]: e.target.value })}
+                  disabled={!editable}
+                  className={`${selCls} w-[88px] shrink-0`}
+                >
+                  <option value="">{valuePlaceholder}</option>
+                  {valueOptions.map((v) => <option key={v} value={v}>{fmt(v)}</option>)}
+                </select>
+                <KeywordTextarea
+                  value={value[side] ?? ""}
+                  onChange={(v) => set({ [side]: v })}
+                  disabled={!editable}
+                  placeholder={`${side === "re" ? "Right" : "Left"} eye ${title.toLowerCase()} findings…`}
+                  fieldKey={`${fieldKey}_${side}`}
+                  builtIns={keywords}
+                  rows={2}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {showHistory && history.length > 0 && (
+        <div className="mt-4 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+          <table className="w-full table-fixed text-caption sm:text-xs">
+            <thead>
+              <tr className="border-b border-[#B2DEDA] bg-[#E0F2F0]/60">
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide w-[22%]">Date</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[#0F766E] uppercase tracking-wide">RE</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[#0F766E] uppercase tracking-wide">LE</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D5EFED]">
+              {history.slice(0, 5).map((h, i) => (
+                <tr
+                  key={i}
+                  onDoubleClick={() => { if (editable) { onChange({ ...h.f, method: h.f.method || value.method }); setShowHistory(false); } }}
+                  title={editable ? "Double-click to load into form" : undefined}
+                  className={`align-top hover:bg-[#DCF3F1]/60 transition-colors ${editable ? "cursor-pointer select-none" : ""}`}
+                >
+                  <td className="py-2 px-3 text-[var(--color-ink-600)] whitespace-nowrap">{format(new Date(h.date), "d MMM yyyy")}</td>
+                  {(["re", "le"] as const).map((side) => (
+                    <td key={side} className="py-2 px-3 text-[var(--color-ink-700)]">
+                      <span className="font-semibold">{fmt(h.f[side === "re" ? "reVal" : "leVal"])}</span>
+                      {h.f[side] && <span className="block text-[var(--color-ink-500)] whitespace-pre-wrap">{h.f[side]}</span>}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {editable && <p className="px-3 py-1.5 border-t border-[#D5EFED] text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+export function OculoplastyTab({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const [data, setData] = useState<OculoplastyData>(() => parseJSON<OculoplastyData>(visit.oculoplasty, {}));
   const { savePaused } = useEMRSaveContext();
   const state = useAutoSave(data, async (d) => {
@@ -301,14 +484,24 @@ export function OculoplastyTab({ visit, udid, editable }: { visit: any; udid: st
     await saveOculoplasty(visit.id, udid, JSON.stringify(d));
   }, undefined, { flushOnUnmount: true, paused: savePaused });
 
+  const historyOf = (key: "deviation" | "exo") => priorVisits
+    .filter((v) => v.id !== visit.id)
+    .map((v) => ({ date: v.date ?? v.createdAt, f: parseJSON<OculoplastyData>(v.oculoplasty, {})[key] ?? {} }))
+    .filter((h) => hasFindings(h.f));
+
   const setEom = (side: "re" | "le", m: EomMuscle, v: string) =>
     setData((d) => ({ ...d, eom: { ...d.eom, [side]: { ...(d.eom?.[side] ?? {}), [m]: v } } }));
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardTitle>Deviation <span className="text-caption font-normal text-[var(--color-ink-400)]">(Hirschberg&apos;s corneal reflex)</span></CardTitle>
-      </Card>
+      <FindingsCard
+        title="Deviation" subtitle="(Hirschberg's corneal reflex)"
+        methods={DEVIATION_METHODS} methodKey="ppms_custom_deviation_methods"
+        valueOptions={DEVIATION_VALUES} unit="°" valuePlaceholder="° Deg"
+        keywords={DEVIATION_KEYWORDS} fieldKey="ocu_deviation"
+        value={data.deviation ?? {}} onChange={(f) => setData((d) => ({ ...d, deviation: f }))}
+        editable={editable} saveState={state} history={historyOf("deviation")}
+      />
 
       <Card>
         <CardTitle extra={<SaveIndicator state={state} />}>
@@ -328,9 +521,14 @@ export function OculoplastyTab({ visit, udid, editable }: { visit: any; udid: st
         </div>
       </Card>
 
-      <Card>
-        <CardTitle>Exophthalmometry</CardTitle>
-      </Card>
+      <FindingsCard
+        title="Exophthalmometry"
+        methods={EXO_METHODS} methodKey="ppms_custom_exo_methods"
+        valueOptions={EXO_VALUES} unit="mm" valuePlaceholder="mm"
+        keywords={EXO_KEYWORDS} fieldKey="ocu_exo"
+        value={data.exo ?? {}} onChange={(f) => setData((d) => ({ ...d, exo: f }))}
+        editable={editable} saveState={state} history={historyOf("exo")}
+      />
     </div>
   );
 }

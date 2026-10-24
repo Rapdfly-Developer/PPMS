@@ -157,7 +157,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
           { id: "iop",       label: "IOP / Gonio",       hidden: !(canViewIOP ?? true), content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={iopCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={gonioCanEdit} priorVisits={priorVisits} /></div></div> },
           { id: "anterior",  label: "Anterior Segment",  hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "posterior", label: "Posterior Segment", hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
+          { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "tear",      label: "Tear Film",         hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "lacrimal",  label: "Lacrimal Sac",      hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "diplopia",  label: "Diplopia Chart",    hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
@@ -1613,9 +1613,9 @@ function GonioscopyCard({
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
           <h3 className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Gonioscopy</h3>
-          <div className="flex items-start gap-2">
-            <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
-            <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
               <TealSelect
                 value={addingMethod ? "__add_custom__" : (method || "")}
                 onChange={(v) => {
@@ -1636,8 +1636,9 @@ function GonioscopyCard({
                 ]}
                 className="min-w-[160px]"
               />
+            </div>
               {editable && addingMethod && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 self-end">
                 <input
                   autoFocus
                   type="text"
@@ -1651,7 +1652,6 @@ function GonioscopyCard({
                 <button type="button" onClick={() => { setAddingMethod(false); setNewMethodText(""); }} className="text-xs text-[var(--color-ink-400)] px-1.5 py-0.5 rounded hover:bg-[var(--color-surface-sunken)] transition-colors"><X size={11} /></button>
                 </div>
               )}
-            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
