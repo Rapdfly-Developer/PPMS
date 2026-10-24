@@ -11,8 +11,8 @@ import { getVisitEmrData } from "@/app/(app)/patients/[udid]/emr-viewer-action";
 type PrintMode = "short" | "long" | "custom";
 
 const MODES: { id: PrintMode; label: string }[] = [
-  { id: "short",  label: "Print Short Summary" },
-  { id: "long",   label: "Print Long Summary" },
+  { id: "long",   label: "Long Print" },
+  { id: "short",  label: "Short Print" },
   { id: "custom", label: "Custom Print" },
 ];
 
@@ -34,14 +34,14 @@ function PrintCheck({ checked, locked, onToggle, label }: {
         onChange={locked ? undefined : onToggle}
         onClick={locked ? (e) => e.preventDefault() : undefined}
         aria-label={label}
-        className={`peer appearance-none w-[18px] h-[18px] rounded-[5px] border-[1.5px] bg-white transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-100)] focus-visible:ring-offset-1 ${
+        className={`peer appearance-none w-4 h-4 rounded-[4px] border-[1.5px] bg-white transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-100)] focus-visible:ring-offset-1 ${
           locked
             ? "border-[var(--color-ink-300)] checked:bg-[var(--color-primary-400)] checked:border-[var(--color-primary-400)]"
             : "border-[var(--color-ink-300)] hover:border-[var(--color-primary-500)] checked:bg-[var(--color-primary-600)] checked:border-[var(--color-primary-600)]"
         }`}
       />
       <Check
-        size={12}
+        size={11}
         strokeWidth={3}
         className="pointer-events-none absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-150"
       />
@@ -134,11 +134,11 @@ export function PrintOptionsModal({
       className="fixed inset-0 z-[210] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-[0_24px_48px_-16px_rgba(15,23,42,0.28)] ring-1 ring-black/5 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
-        <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-[var(--color-border)]">
+      <div className="bg-white rounded-2xl shadow-[0_24px_48px_-16px_rgba(15,23,42,0.28)] ring-1 ring-black/5 w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="flex items-start justify-between px-5 pt-4 pb-3">
           <div>
-            <h2 className="text-[15px] font-semibold tracking-tight text-[var(--color-ink-900)]">Print</h2>
-            <p className="text-caption text-[var(--color-ink-500)] mt-0.5">Choose a summary, or tick sections for a custom print</p>
+            <h2 className="text-sm font-semibold tracking-tight text-[var(--color-ink-900)]">Print</h2>
+            <p className="text-caption text-[var(--color-ink-400)] mt-0.5">Choose a summary, or tick sections for a custom print</p>
           </div>
           <button
             onClick={onClose}
@@ -149,69 +149,68 @@ export function PrintOptionsModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-2 sm:px-3 pb-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
-          <table className="w-full table-fixed border-separate border-spacing-0">
-            <thead className="sticky top-0 z-10 bg-white">
-              <tr>
-                <th className="w-[31%] sm:w-[40%] px-2 sm:px-3 pt-4 pb-3" />
-                {MODES.map((m) => (
-                  <th key={m.id} className="px-1 sm:px-1.5 pt-4 pb-3 align-top">
-                    <button
-                      type="button"
-                      onClick={() => setMode(m.id)}
-                      aria-pressed={mode === m.id}
-                      className={`w-full min-h-[44px] px-1 sm:px-2 py-2 rounded-lg border text-caption sm:text-[13px] font-medium leading-tight transition-colors duration-150 ${
-                        mode === m.id
-                          ? "bg-[var(--color-primary-800)] border-[var(--color-primary-800)] text-white"
-                          : "bg-white border-[var(--color-border)] text-[var(--color-ink-700)] hover:border-[var(--color-primary-500)]"
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                    {m.id === "custom" && (
-                      <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-0.5">
-                        <button type="button" onClick={() => startFrom("short")}
-                          className="text-caption font-medium text-[var(--color-ink-500)] underline decoration-[var(--color-ink-300)] underline-offset-2 hover:text-[var(--color-primary-700)] hover:decoration-[var(--color-primary-500)] transition-colors">
-                          Start from Short
-                        </button>
-                        <button type="button" onClick={() => startFrom("long")}
-                          className="text-caption font-medium text-[var(--color-ink-500)] underline decoration-[var(--color-ink-300)] underline-offset-2 hover:text-[var(--color-primary-700)] hover:decoration-[var(--color-primary-500)] transition-colors">
-                          Start from Long
-                        </button>
-                      </div>
-                    )}
-                  </th>
+        <div className="overflow-y-auto flex-1 px-4 pb-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-200">
+          {/* Slider: only the chosen print's column is shown */}
+          <div className="sticky top-0 z-10 bg-white pt-0.5 pb-3">
+            <div className="relative grid grid-cols-3 rounded-lg bg-[var(--color-surface-sunken)] p-1">
+              <span
+                aria-hidden
+                className="absolute top-1 bottom-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-md bg-[var(--color-primary-800)] shadow-sm transition-transform duration-200 ease-out"
+                style={{ transform: `translateX(${MODES.findIndex((m) => m.id === mode) * 100}%)` }}
+              />
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => setMode(m.id)}
+                  aria-pressed={mode === m.id}
+                  className={`relative z-[1] py-1.5 rounded-md text-caption font-medium transition-colors duration-200 ${
+                    mode === m.id ? "text-white" : "text-[var(--color-ink-600)] hover:text-[var(--color-ink-900)]"
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {mode === "custom" && (
+              <div className="mt-2 flex items-center gap-1.5">
+                <span className="text-micro text-[var(--color-ink-400)] mr-0.5">Start from</span>
+                {(["short", "long"] as const).map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => startFrom(preset)}
+                    className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-micro font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] hover:border-[var(--color-primary-300)] transition-colors"
+                  >
+                    {preset === "short" ? "Short" : "Long"}
+                  </button>
                 ))}
-              </tr>
-            </thead>
+              </div>
+            )}
+          </div>
+          <table className="w-full table-fixed border-separate border-spacing-0">
             <tbody>
               {PRINT_SECTIONS.map((s) => {
                 const hasData = !loading && visit ? s.hasData(visit) : true;
+                const label = MODES.find((m) => m.id === mode)!.label;
                 return (
                   <tr key={s.id} className="group">
-                    <td className="pl-2 pr-1 sm:px-3 py-2.5 border-t border-[var(--color-border)]/70 group-hover:bg-[var(--color-primary-50)]/50 transition-colors">
+                    <td className="px-2.5 py-2 border-t border-[var(--color-border)]/70 group-hover:bg-[var(--color-primary-50)]/50 transition-colors">
                       <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-0.5">
                         <span className={`text-caption sm:text-[13px] ${hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
                         {!hasData && (
-                          <span className="ml-auto shrink-0 text-[11px] text-[var(--color-ink-300)]">no data</span>
+                          <span className="ml-auto shrink-0 text-micro text-[var(--color-ink-300)]">no data</span>
                         )}
                       </div>
                     </td>
-                    {MODES.map((m) => (
-                      <td
-                        key={m.id}
-                        className={`text-center py-2.5 border-t border-[var(--color-border)]/70 transition-colors ${
-                          mode === m.id ? "bg-[var(--color-primary-50)]" : "group-hover:bg-[var(--color-primary-50)]/50"
-                        }`}
-                      >
-                        <PrintCheck
-                          checked={isChecked(m.id, s.id)}
-                          locked={m.id !== "custom"}
-                          onToggle={() => toggle(s.id)}
-                          label={`${s.label} — ${m.label}`}
-                        />
-                      </td>
-                    ))}
+                    <td className="w-16 text-center py-2 border-t border-[var(--color-border)]/70 bg-[var(--color-primary-50)] transition-colors">
+                      <PrintCheck
+                        checked={isChecked(mode, s.id)}
+                        locked={mode !== "custom"}
+                        onToggle={() => toggle(s.id)}
+                        label={`${s.label} — ${label}`}
+                      />
+                    </td>
                   </tr>
                 );
               })}
@@ -224,14 +223,14 @@ export function PrintOptionsModal({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-6 py-4 border-t border-[var(--color-border)]">
+        <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
           <button
             type="button"
             disabled={mode === "custom" && !anyCustom}
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium bg-[var(--color-primary-800)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--color-primary-800)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors"
           >
-            <Printer size={14} /> Print
+            <Printer size={13} /> Print
           </button>
           {/* Same Download as before: always the full PDF. A real <a download> on
               the web; on the native shell the anchor does nothing, so hand it to
@@ -246,14 +245,14 @@ export function PrintOptionsModal({
               }
               onClose();
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium border border-[var(--color-border)] text-[var(--color-ink-700)] hover:border-[var(--color-primary-500)] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-[var(--color-border)] text-[var(--color-ink-700)] hover:border-[var(--color-primary-500)] transition-colors"
           >
-            <Download size={14} /> Download
+            <Download size={13} /> Download
           </a>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-[13px] font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-900)] transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-900)] transition-colors"
           >
             Cancel
           </button>
