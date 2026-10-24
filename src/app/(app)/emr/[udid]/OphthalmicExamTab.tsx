@@ -1030,18 +1030,18 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {cvHistoryOpen && priorCv.length > 0 && (
-          <div className="mt-4 max-w-3xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+          <div className="mt-5 max-w-4xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-micro sm:text-caption font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <table className="text-caption sm:text-xs">
+            <table className="w-full table-fixed text-caption sm:text-xs">
               <thead>
-                <tr className="border-b border-[#B2DEDA]">
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+                <tr className="border-b border-[#B2DEDA] bg-[#E0F2F0]/60">
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Method</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Date</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[18%]">Time</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">RE</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">LE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D5EFED]">
@@ -1065,7 +1065,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 ))}
               </tbody>
             </table>
-            {editable && <p className="px-3 pb-2 text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
+            {editable && <p className="px-3 py-1.5 border-t border-[#D5EFED] text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
       </Card>
@@ -1107,18 +1107,18 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
           ))}
         </div>
         {csHistoryOpen && priorCv.length > 0 && (
-          <div className="mt-4 max-w-3xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+          <div className="mt-5 max-w-4xl mx-auto rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
             <div className="px-3 pt-2.5 pb-2 border-b border-[#B2DEDA]">
               <p className="text-micro sm:text-caption font-bold text-[#0F766E] uppercase tracking-widest">Previous</p>
             </div>
-            <table className="text-caption sm:text-xs">
+            <table className="w-full table-fixed text-caption sm:text-xs">
               <thead>
-                <tr className="border-b border-[#B2DEDA]">
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">RE</th>
-                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-24">LE</th>
+                <tr className="border-b border-[#B2DEDA] bg-[#E0F2F0]/60">
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Method</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Date</th>
+                  <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[18%]">Time</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">RE</th>
+                  <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">LE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#D5EFED]">
@@ -1142,7 +1142,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
                 ))}
               </tbody>
             </table>
-            {editable && <p className="px-3 pb-2 text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
+            {editable && <p className="px-3 py-1.5 border-t border-[#D5EFED] text-micro text-[var(--color-ink-400)]">· double-click a row to load</p>}
           </div>
         )}
       </Card>
@@ -1159,6 +1159,7 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
   const [method, setMethod] = useState<string>(IOP_METHODS[0]);
   const [deletePending, startDelete] = useTransition();
   const [iopLoadToast, setIopLoadToast] = useState(false);
+  const [iopHistoryOpen, setIopHistoryOpen] = useState(false);
   const readings: any[] = visit.iopReadings ?? [];
 
   const priorIOPRows = priorVisits
@@ -1179,7 +1180,20 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
 
   return (
     <Card>
-      <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] mb-3">Intra-Ocular Pressure (mmHg)</p>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Intra-Ocular Pressure (mmHg)</p>
+        {priorIOPRows.length > 0 && (
+          <button
+            type="button"
+            data-overview-hide
+            onClick={() => setIopHistoryOpen((open) => !open)}
+            aria-expanded={iopHistoryOpen}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#B2DEDA] bg-[#EEF8F7] px-2.5 py-1 text-caption font-medium text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"
+          >
+            <History size={11} /> History ({priorIOPRows.length})
+          </button>
+        )}
+      </div>
 
       {editable && (
         <div data-overview-hide className="flex items-end gap-3 mb-4 flex-wrap">
@@ -1202,17 +1216,17 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
       )}
 
       {/* Combined IOP Table */}
-      <div className="rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
+      <div className="max-w-3xl rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] overflow-x-auto">
         <div>
-          <table className="text-caption sm:text-xs">
+          <table className="w-full table-fixed text-caption sm:text-xs">
             <thead>
               <tr className="border-b border-[#B2DEDA]">
-                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Method</th>
-                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Date</th>
-                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap">Time</th>
-                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">RE</th>
-                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-16">LE</th>
-                {editable && <th className="py-1.5 px-2 w-7" />}
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Method</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[22%]">Date</th>
+                <th className="py-1.5 px-3 text-left font-semibold text-[var(--color-ink-400)] uppercase tracking-wide whitespace-nowrap w-[18%]">Time</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">RE</th>
+                <th className="py-1.5 px-3 text-center font-semibold text-[#0F766E] uppercase tracking-wide w-[19%]">LE</th>
+                {editable && <th className="py-1.5 px-2 w-10" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D5EFED]">
@@ -1244,8 +1258,8 @@ function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: str
                 </tr>
               ))}
 
-              {/* Previous readings section */}
-              {priorIOPRows.length > 0 && (
+              {/* Previous readings section — shown only when History is open */}
+              {iopHistoryOpen && priorIOPRows.length > 0 && (
                 <>
                   <tr className="bg-[#E0F2F0]">
                     <td colSpan={editable ? 6 : 5} className="px-3 py-1 text-micro sm:text-caption font-bold text-[#0F766E] uppercase tracking-widest">
