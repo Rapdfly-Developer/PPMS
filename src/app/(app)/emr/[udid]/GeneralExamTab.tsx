@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
-import { convertNotesToCC } from "@/lib/appointment-cc";
+import { convertNotesToCC, parseComplaintItems } from "@/lib/appointment-cc";
 import { ChevronDown, AlertTriangle, Plus, X, Tag } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
@@ -267,10 +267,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
   const [hpiEditing, setHpiEditing] = useState(false);
   const [confirmHpiReplace, setConfirmHpiReplace] = useState(false);
-  const generateHpi = () => {
-    setHpi(buildHpiText(hpiFields, patient ?? {}, chiefComplaintFull));
-    setHpiEditing(false);
-  };
   const [pmh, setPmh] = useState<PmhEntry[]>(() => {
     // Every saved visit contains a cumulative snapshot. Seed from the newest
     // prior snapshot so deleted entries do not reappear from older visits.
@@ -360,6 +356,29 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
     setPmh((current) => current.filter((_, i) => i !== index));
 
   const chiefComplaintFull = serializeComplaints(complaints);
+  // Duration defaults to the first chief complaint's "since" until the doctor picks one.
+  const ccDuration = (() => {
+    const since = parseComplaintItems(chiefComplaintFull).find((c) => c.since)?.since;
+    const m = since?.match(/^(\d+)\s+(\w+)$/);
+    if (!m) return null;
+    return { num: m[1], unit: m[2].endsWith("s") ? m[2] : `${m[2]}s` };
+  })();
+  const hpiFieldsView: HpiFields = !hpiFields.durationNum && ccDuration
+    ? { ...hpiFields, durationNum: ccDuration.num, durationUnit: ccDuration.unit }
+    : hpiFields;
+  const setHpiFieldsFromBuilder = (next: HpiFields) => {
+    // Keep following the chief complaint while the duration is still the untouched default.
+    if (!hpiFields.durationNum && ccDuration && next.durationNum === ccDuration.num && next.durationUnit === ccDuration.unit) {
+      const { durationNum: _n, durationUnit: _u, ...rest } = next;
+      setHpiFields(rest);
+    } else {
+      setHpiFields(next);
+    }
+  };
+  const generateHpi = () => {
+    setHpi(buildHpiText(hpiFieldsView, patient ?? {}, chiefComplaintFull));
+    setHpiEditing(false);
+  };
   const data = { bp, pulse, temperature, weight, chiefComplaint: chiefComplaintFull, hpi, hpiFields: JSON.stringify(hpiFields), pastMedicalHistory: JSON.stringify(cumulativePmh), pmhOtherText: pmhOther, familyHistory, medications, allergies, nkda };
 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
@@ -534,8 +553,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
             <div className="flex flex-col gap-2.5">
               {!readOnly && (
                 <HpiBuilder
-                  fields={hpiFields}
-                  onChange={setHpiFields}
+                  fields={hpiFieldsView}
+                  onChange={setHpiFieldsFromBuilder}
                   disabled={readOnly}
                   onGenerate={() => { if (hpi.trim()) setConfirmHpiReplace(true); else generateHpi(); }}
                 />
