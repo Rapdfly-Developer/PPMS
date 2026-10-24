@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ICD10_OPHTHALMOLOGY, DIAGNOSIS_STATUSES, LATERALITY } from "@/lib/constants";
+import { useProtocolPrompts } from "./protocol-prompts-store";
+import { ProtocolPromptCard } from "./PlanTab";
 import { addDiagnosis, updateDiagnosisStatus, updateDiagnosisLaterality, removeDiagnosis, removeMedication, saveAdviseNotes } from "./actions";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { X, History, ChevronDown, Search, Plus, Check, Ban, Stethoscope, FileText, Lock, AlertTriangle } from "lucide-react";
@@ -410,6 +412,7 @@ export function AssessmentTab({
 }) {
   const router = useRouter();
   const overview = useEmrOverview();
+  const protocolPrompts = useProtocolPrompts();
   // Split diagnoses by provisional flag
   const provisionalDiagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => d.provisional);
   const diagnoses: any[] = (visit.diagnoses ?? []).filter((d: any) => !d.provisional);
@@ -970,6 +973,20 @@ export function AssessmentTab({
         )}
       </Card>
       </div>
+
+      {/* Same protocol prompts as the Plan tab — Confirm / No act on both */}
+      {!readOnly && (protocolPrompts?.prompts.length ?? 0) > 0 && (
+        <div data-overview-hide className="flex flex-col gap-2">
+          {protocolPrompts!.prompts.map((p, i) => (
+            <ProtocolPromptCard
+              key={`${p.diagnosisDesc}-${p.laterality ?? "none"}-${i}`}
+              diagnosisDesc={p.laterality ? `${p.diagnosisDesc} (${p.laterality})` : p.diagnosisDesc}
+              onConfirm={() => protocolPrompts!.confirm(p)}
+              onDismiss={() => protocolPrompts!.dismiss(p.diagnosisDesc, p.matches)}
+            />
+          ))}
+        </div>
+      )}
     </div>
 
 

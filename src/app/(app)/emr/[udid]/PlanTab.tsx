@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef, useMemo, Fragment } from "react";
+import { createPortal } from "react-dom";
+import { publishProtocolPrompts } from "./protocol-prompts-store";
 import { Card } from "@/components/ui/Card";
 import { History } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
@@ -1239,7 +1241,7 @@ const removeDismissedDiagDesc = (visitId: string, desc: string) => {
 
 /* ── Protocol prompt card ────────────────────────────────────────────────── */
 
-function ProtocolPromptCard({
+export function ProtocolPromptCard({
   diagnosisDesc,
   onConfirm,
   onDismiss,
@@ -1249,27 +1251,25 @@ function ProtocolPromptCard({
   onDismiss: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-200">
-      <div className="w-7 h-7 rounded-xl bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
-        <Stethoscope size={13} className="text-white" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-semibold text-[var(--color-primary-800)]">
-          Do you wish to apply <span className="font-bold">{diagnosisDesc}</span> protocol?
-        </p>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
+    <div className="rounded-xl border border-[var(--color-primary-100)] bg-[var(--color-primary-50)]/70 pl-2 pr-1.5 py-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+      <span className="w-5 h-5 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
+        <Stethoscope size={10} className="text-white" />
+      </span>
+      <p className="flex-1 min-w-0 truncate text-xs text-[var(--color-primary-800)]">
+        Do you wish to apply <span className="font-semibold">{diagnosisDesc}</span> protocol?
+      </p>
+      <div className="flex items-center gap-1 shrink-0">
         <button
           type="button"
           onClick={onDismiss}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] transition-colors"
+          className="text-caption font-medium px-2.5 py-0.5 rounded-full text-[var(--color-ink-500)] hover:bg-white transition-colors"
         >
           No
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
+          className="text-caption font-semibold px-2.5 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
         >
           Confirm
         </button>
@@ -1456,6 +1456,21 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
       );
     });
   };
+
+  // Share the pending prompts with the Assessment tab; its Confirm / No run these same handlers.
+  const promptHandlers = useRef({
+    confirm: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => setActiveDialogDiag({ ...diag, isChanging: false }),
+    dismiss: handleDismissPrompt,
+  });
+  promptHandlers.current.dismiss = handleDismissPrompt;
+  useEffect(() => {
+    publishProtocolPrompts({
+      prompts: readOnly ? [] : pendingDiagPrompts,
+      confirm: (p) => promptHandlers.current.confirm(p),
+      dismiss: (desc, matches) => promptHandlers.current.dismiss(desc, matches),
+    });
+  }, [pendingDiagPrompts, readOnly]);
+  useEffect(() => () => publishProtocolPrompts(null), []);
 
   // Group applied presets by diagnosis for per-diagnosis badges
   const appliedByDiag = useMemo(() => {
@@ -2062,16 +2077,18 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       ))}
 
       {/* Protocol selection dialog */}
-      {activeDialogDiag && (
+      {/* Portalled to <body>: the Plan tab is display:none while Confirm is clicked from the Assessment tab */}
+      {activeDialogDiag && typeof document !== "undefined" && createPortal(
         <PresetSelectDialog
           matches={activeDialogDiag.matches}
           onApply={(selected) => onApplyProtocol(selected, activeDialogDiag.diagnosisDesc, activeDialogDiag.isChanging)}
           onClose={() => setActiveDialogDiag(null)}
           applying={applying}
-        />
+        />,
+        document.body,
       )}
 
-      <div className={`flex items-center mb-3 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-4" : ""}`}>
+      <div className={`flex items-center mb-2 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-3" : ""}`}>
         <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Prescription / Medications</p>
         {!readOnly && (
           <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
@@ -2100,20 +2117,24 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
 
       {/* Per-diagnosis protocol prompt cards */}
-      {!readOnly && pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
-        <ProtocolPromptCard
-          key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
-          diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
-          onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
-          onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
-        />
-      ))}
+      {!readOnly && pendingDiagPrompts.length > 0 && (
+        <div className="flex flex-col gap-1 mb-2">
+          {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
+            <ProtocolPromptCard
+              key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
+              diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
+              onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
+              onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
+            />
+          ))}
+        </div>
+      )}
 
       {showPresets && <PresetPanel onApply={applyPreset} onClose={() => setShowPresets(false)} />}
 
       {/* Add medication — route first, then the whole row on one line (like Current Medications) */}
       {!readOnly && (
-        <div data-overview-hide className="mb-4 flex flex-col gap-1.5">
+        <div data-overview-hide className="mb-2 flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5 flex-wrap md:flex-nowrap">
             <select
               value={route}
@@ -2269,12 +2290,10 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       )}
 
       {medications.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-8 text-center">
-          <div className="w-10 h-10 rounded-xl bg-[var(--color-surface-sunken)] flex items-center justify-center">
-            <Pill size={20} className="text-[var(--color-ink-300)]" />
-          </div>
-          <p className="text-label sm:text-sm text-[var(--color-ink-400)]">Choose a route above to add a medication to the prescription.</p>
-        </div>
+        <p className="flex items-center gap-1.5 py-1.5 text-caption text-[var(--color-ink-300)]">
+          <Pill size={11} className="shrink-0" />
+          No medications yet. Choose a route to add one.
+        </p>
       ) : (
         // The columns are fixed-width and total ~470px, so on a phone the table
         // scrolls inside its own card rather than pushing the page sideways.
@@ -2560,29 +2579,29 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         </div>
       )}
       {/* ── Advise Notes ─────────────────────────────────────────────── */}
-      <div className="mt-5 pt-4 border-t border-[var(--color-border)]">
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-xs font-semibold text-[var(--color-ink-700)]">Advise Notes</label>
+      <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)]">Advise Notes</label>
           {!readOnly && (
             <div data-overview-hide className="flex items-center gap-1.5">
               <button
                 onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-medium transition-colors
                   ${showHistory
                     ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
                     : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
               >
-                <History size={12} />
+                <History size={11} />
                 History
               </button>
               <button
                 onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption font-medium transition-colors
                   ${showKeywords
                     ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
                     : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
               >
-                <Plus size={12} />
+                <Plus size={11} />
                 Keyword
               </button>
             </div>
@@ -2593,9 +2612,9 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           value={adviseNotes}
           onChange={(e) => { if (!readOnly) onAdviseChange(e.target.value); }}
           readOnly={readOnly}
-          rows={Math.max(3, Math.min(8, adviseNotes.replace(/\r/g, "").split("\n").length))}
+          rows={Math.max(2, Math.min(8, adviseNotes.replace(/\r/g, "").split("\n").length))}
           placeholder="Type advise notes or use keywords below…"
-          className={`w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed${readOnly ? " cursor-default" : ""}`}
+          className={`w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-xs text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-none leading-relaxed${readOnly ? " cursor-default" : ""}`}
         />
 
         {/* History panel — below textarea */}
