@@ -12,6 +12,8 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { saveGeneralExam } from "./actions";
 import { HpiBuilder } from "./HpiBuilder";
+import { createPortal } from "react-dom";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
 import { buildHpiText, type HpiFields } from "@/lib/hpi-builder";
 import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
@@ -264,6 +266,11 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   // Structured HPI selections (dropdowns) and whether the box shows raw text for editing.
   const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
   const [hpiEditing, setHpiEditing] = useState(false);
+  const [confirmHpiReplace, setConfirmHpiReplace] = useState(false);
+  const generateHpi = () => {
+    setHpi(buildHpiText(hpiFields, patient ?? {}, chiefComplaintFull));
+    setHpiEditing(false);
+  };
   const [pmh, setPmh] = useState<PmhEntry[]>(() => {
     // Every saved visit contains a cumulative snapshot. Seed from the newest
     // prior snapshot so deleted entries do not reappear from older visits.
@@ -530,12 +537,18 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   fields={hpiFields}
                   onChange={setHpiFields}
                   disabled={readOnly}
-                  onGenerate={() => {
-                    if (hpi.trim() && !window.confirm("Replace the current HPI text with the generated one?")) return;
-                    setHpi(buildHpiText(hpiFields, patient ?? {}, chiefComplaintFull));
-                    setHpiEditing(false);
-                  }}
+                  onGenerate={() => { if (hpi.trim()) setConfirmHpiReplace(true); else generateHpi(); }}
                 />
+              )}
+              {confirmHpiReplace && createPortal(
+                <ConfirmDialog
+                  title="Replace HPI?"
+                  message="The current HPI text will be replaced with the newly generated one."
+                  confirmLabel="Replace"
+                  onConfirm={() => { setConfirmHpiReplace(false); generateHpi(); }}
+                  onCancel={() => setConfirmHpiReplace(false)}
+                />,
+                document.body,
               )}
               {hpi.trim() && !hpiEditing ? (
                 <div className="relative rounded-xl border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50/60 px-3.5 py-2.5">
@@ -551,9 +564,9 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   )}
                   <HpiFormatted text={hpi} />
                 </div>
-              ) : (
+              ) : hpiEditing && (
                 <div className="flex flex-col gap-1">
-                  <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors... or use the fields above and Generate HPI" />
+                  <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
                   {hpiEditing && (
                     <button type="button" onClick={() => setHpiEditing(false)} className="self-end text-caption font-medium text-[var(--color-primary-700)] hover:underline">
                       Done
