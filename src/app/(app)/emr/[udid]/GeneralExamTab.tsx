@@ -112,9 +112,11 @@ function serializeComplaints(list: Complaint[]): string {
    Records written by the earlier chip UI are a plain string[] ("HTN"), so the
    parser accepts both and upgrades the old shape in place. Nothing is migrated
    in the database; an old record simply reads back with no since value. */
-export type PmhEntry = { name: string; sinceNum: string; sinceUnit: string };
+/** `lat` is RE / LE / OU, or "" when not recorded (the default). */
+export type PmhEntry = { name: string; sinceNum: string; sinceUnit: string; lat?: string };
 
-const emptyPmh = (name = ""): PmhEntry => ({ name, sinceNum: "", sinceUnit: "days" });
+const emptyPmh = (name = ""): PmhEntry => ({ name, sinceNum: "", sinceUnit: "days", lat: "" });
+const PMH_LATERALITY = ["RE", "LE", "OU"] as const;
 
 function parsePmh(raw: string | null | undefined): PmhEntry[] {
   const parsed = parseJSON<unknown>(raw, []);
@@ -134,6 +136,7 @@ function parsePmh(raw: string | null | undefined): PmhEntry[] {
         name,
         sinceNum:  typeof o.sinceNum  === "string" ? o.sinceNum  : "",
         sinceUnit: typeof o.sinceUnit === "string" && o.sinceUnit ? o.sinceUnit : "days",
+        lat:       typeof o.lat === "string" && (PMH_LATERALITY as readonly string[]).includes(o.lat) ? o.lat : "",
       });
     }
   }
@@ -151,7 +154,8 @@ function mergePmh(...lists: PmhEntry[][]): PmhEntry[] {
       const existing = byName.get(key);
       // Don't let a blank duration overwrite one already recorded.
       if (existing && !e.sinceNum && existing.sinceNum) continue;
-      byName.set(key, e);
+      // Nor a blank laterality.
+      byName.set(key, existing && !e.lat && existing.lat ? { ...e, lat: existing.lat } : e);
     }
   }
   return [...byName.values()];
@@ -680,14 +684,26 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
             >
               <span className="w-6 pt-2 text-caption font-semibold tabular-nums text-[var(--color-ink-400)]">{index + 1}.</span>
               <div className="grid min-w-0 flex-1 grid-cols-[auto_4.5rem_minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(12rem,1fr)_auto_4.5rem_6.5rem_auto]">
-                <input
-                  value={entry.name}
-                  onChange={(event) => patchPmh(index, { name: event.target.value })}
-                  disabled={readOnly}
-                  aria-label={`Past history condition ${index + 1}`}
-                  placeholder="Enter condition or past procedure"
-                  className="col-span-4 min-w-0 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)] sm:col-span-1"
-                />
+                <div className="col-span-4 flex min-w-0 items-center gap-2 sm:col-span-1">
+                  <select
+                    value={entry.lat ?? ""}
+                    onChange={(event) => patchPmh(index, { lat: event.target.value })}
+                    disabled={readOnly}
+                    aria-label={`Past history laterality ${index + 1}`}
+                    className="w-[4.5rem] shrink-0 rounded-lg border border-[var(--color-border)] bg-white px-2 py-2 text-sm text-[var(--color-ink-700)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                  >
+                    <option value="">—</option>
+                    {PMH_LATERALITY.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                  <input
+                    value={entry.name}
+                    onChange={(event) => patchPmh(index, { name: event.target.value })}
+                    disabled={readOnly}
+                    aria-label={`Past history condition ${index + 1}`}
+                    placeholder="Enter condition or past procedure"
+                    className="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                  />
+                </div>
                 <span className="text-caption font-semibold text-[var(--color-ink-400)]">Since</span>
                 <select
                   value={entry.sinceNum}
