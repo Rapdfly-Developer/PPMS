@@ -97,6 +97,13 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       ? Math.max(0, Math.round((refractionPassedOverAt.getTime() - refractionStartedAt.getTime()) / 60000))
       : null;
     const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+    // Finalize & Sign stamps the consultation's completion and the visit's end together, so one
+    // "Consultation End" row carries both the consultation length and the whole visit's duration.
+    const endAt = finalizedAt ?? consultationCompletedAt;
+    const endNote = [
+      consultationMins !== null ? fmtDur(consultationMins) : null,
+      totalMins !== null ? `Duration: ${fmtDur(totalMins)}` : null,
+    ].filter(Boolean).join(" · ") || null;
 
     return (
       <div className="mt-3">
@@ -107,16 +114,18 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
             </p>
             <div className="px-3 pb-3 space-y-1">
               {[
-                !d.isWalkIn && d.bookedAt    && { icon: <Clock size={10} />,        label: "Appointment Booked",    time: timeOnly(new Date(d.bookedAt)),    color: "text-[var(--color-ink-500)]",  bg: "" },
-                !d.isWalkIn && d.scheduledAt && { icon: <Calendar size={10} />,     label: "Appointment Time",       time: timeOnly(new Date(d.scheduledAt)), color: "text-[var(--color-ink-500)]",  bg: "" },
-                arrivedAt      && { icon: <LogIn size={10} />,        label: d.isWalkIn ? "Walk-in Time" : "Arrived at Clinic", time: timeOnly(arrivedAt), color: "text-[var(--color-primary-600)]", bg: "" },
-                seenAt         && { icon: <Stethoscope size={10} />,  label: "Consultation Start",     time: timeOnly(seenAt),                 color: "text-[var(--color-primary-600)]", bg: "", note: waitMins !== null ? `${fmtDur(waitMins)} wait` : null, noteColor: "text-amber-500" },
-                refractionStartedAt && { icon: <Clock size={10} />,   label: "Refraction Started",    time: timeOnly(refractionStartedAt),    color: "text-cyan-600", bg: "" },
-                refractionPassedOverAt && { icon: <CheckCircle2 size={10} />, label: "Passed to Doctor", time: timeOnly(refractionPassedOverAt), color: "text-cyan-700", bg: "", note: refractionMins !== null ? fmtDur(refractionMins) : null, noteColor: "text-[var(--color-ink-400)]" },
-                consultationCompletedAt && { icon: <Stethoscope size={10} />, label: "Consultation Done", time: timeOnly(consultationCompletedAt), color: "text-[var(--color-primary-600)]", bg: "", note: consultationMins !== null ? fmtDur(consultationMins) : null, noteColor: "text-[var(--color-ink-400)]" },
-                d.partialDispenseAt && { icon: <AlertCircle size={10} />, label: "Partial Dispense",  time: timeOnly(new Date(d.partialDispenseAt)), color: "text-amber-600", bg: "bg-amber-50/60" },
-                finalizedAt    && { icon: <CheckCircle2 size={10} />, label: "Consultation End",       time: timeOnly(finalizedAt),            color: "text-emerald-600", bg: "bg-emerald-50/50", note: totalMins !== null ? `Duration: ${fmtDur(totalMins)}` : null, noteColor: "text-[var(--color-ink-400)]" },
-              ].filter(Boolean).map((row: any, i: number) => (
+                !d.isWalkIn && d.bookedAt    && { at: new Date(d.bookedAt), icon: <Clock size={10} />,        label: "Appointment Booked",    time: timeOnly(new Date(d.bookedAt)),    color: "text-[var(--color-ink-500)]",  bg: "" },
+                !d.isWalkIn && d.scheduledAt && { at: new Date(d.scheduledAt), icon: <Calendar size={10} />,     label: "Appointment Time",       time: timeOnly(new Date(d.scheduledAt)), color: "text-[var(--color-ink-500)]",  bg: "" },
+                arrivedAt      && { at: arrivedAt, icon: <LogIn size={10} />,        label: d.isWalkIn ? "Walk-in Time" : "Arrived at Clinic", time: timeOnly(arrivedAt), color: "text-[var(--color-primary-600)]", bg: "" },
+                seenAt         && { at: seenAt, icon: <Stethoscope size={10} />,  label: "Consultation Start",     time: timeOnly(seenAt),                 color: "text-[var(--color-primary-600)]", bg: "", note: waitMins !== null ? `${fmtDur(waitMins)} wait` : null, noteColor: "text-amber-500" },
+                refractionStartedAt && { at: refractionStartedAt, icon: <Clock size={10} />,   label: "Refraction Started",    time: timeOnly(refractionStartedAt),    color: "text-cyan-600", bg: "" },
+                refractionPassedOverAt && { at: refractionPassedOverAt, icon: <CheckCircle2 size={10} />, label: "Passed to Doctor", time: timeOnly(refractionPassedOverAt), color: "text-cyan-700", bg: "", note: refractionMins !== null ? fmtDur(refractionMins) : null, noteColor: "text-[var(--color-ink-400)]" },
+                d.partialDispenseAt && { at: new Date(d.partialDispenseAt), icon: <AlertCircle size={10} />, label: "Partial Dispense",  time: timeOnly(new Date(d.partialDispenseAt)), color: "text-amber-600", bg: "bg-amber-50/60" },
+                endAt          && { at: endAt, icon: <CheckCircle2 size={10} />, label: "Consultation End",       time: timeOnly(endAt),                  color: "text-emerald-600", bg: "bg-emerald-50/50", note: endNote, noteColor: "text-[var(--color-ink-400)]" },
+              ].filter(Boolean)
+                // In time order, like Previous Visits; ties keep the order listed above
+                .sort((a: any, b: any) => a.at.getTime() - b.at.getTime())
+                .map((row: any, i: number) => (
                 <div key={i} className={`flex items-center justify-between rounded-xl px-3 py-2 ${row.bg || "bg-white/70"}`}>
                   <span className={`flex items-center gap-1.5 text-[11px] font-medium ${row.color}`}>
                     {row.icon} {row.label}
