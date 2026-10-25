@@ -78,7 +78,6 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
   const [followUpDate, setFollowUpDate] = useState(toInputDate(visit.followUpDate));
   const [inViewOf, setInViewOf]               = useState(visit.inViewOf ?? "");
   const [showHistory, setShowHistory]         = useState(false);
-  const [showKeywords, setShowKeywords]       = useState(false);
   const [pending, startTransition]            = useTransition();
   const [saved, setSaved]                     = useState(false);
   const inViewOfRef = useRef<HTMLTextAreaElement>(null);
@@ -152,7 +151,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       {/* In View Of */}
       <div>
         <div className="flex items-start gap-3">
-          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase shrink-0 pt-2.5">In View Of</p>
+          <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase shrink-0 pt-2.5 w-24">In View Of</p>
           <textarea
             ref={inViewOfRef}
             value={inViewOf}
@@ -163,22 +162,25 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           />
           <div data-overview-hide className="flex items-center gap-1.5 shrink-0 pt-1">
             <button
-              onClick={() => { setShowHistory((v) => !v); setShowKeywords(false); }}
+              onClick={() => setShowHistory((v) => !v)}
               className={`${btnCls} ${showHistory
                 ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
                 : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
             >
               <History size={12} /> History
             </button>
-            <button
-              onClick={() => { setShowKeywords((v) => !v); setShowHistory(false); }}
-              className={`${btnCls} ${showKeywords
-                ? "bg-[var(--color-primary-50)] border-[var(--color-primary-300)] text-[var(--color-primary-700)]"
-                : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}
-            >
-              <Plus size={12} /> Keyword
-            </button>
           </div>
+        </div>
+
+        {/* Keywords — always shown under the box, like Referral's "In View Of" */}
+        <div data-overview-hide className="mt-2 pl-[6.75rem]">
+          <KeywordChipsRow
+            fieldKey="plan_in_view_of"
+            builtIns={ALL_IN_VIEW_OF_KEYWORDS}
+            getValue={() => inViewOf}
+            onAppend={appendKeyword}
+            onRemoveFromText={(kw) => { setInViewOf((prev: string) => removeKeywordFromText(prev, kw)); setSaved(false); }}
+          />
         </div>
 
         {/* History panel */}
@@ -211,24 +213,6 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           </div>
         )}
 
-        {/* Keyword panel */}
-        {showKeywords && (
-          <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden">
-            <div className="px-3 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-              <span className="text-caption font-bold text-[var(--color-ink-400)] uppercase tracking-widest">Add Keyword</span>
-              <button onClick={() => setShowKeywords(false)} className="text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]"><X size={12} /></button>
-            </div>
-            <div className="p-3">
-              <KeywordChipsRow
-                fieldKey="plan_in_view_of"
-                builtIns={ALL_IN_VIEW_OF_KEYWORDS}
-                getValue={() => inViewOf}
-                onAppend={appendKeyword}
-                onRemoveFromText={(kw) => { setInViewOf((prev: string) => removeKeywordFromText(prev, kw)); setSaved(false); }}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       <div data-overview-hide className="flex items-center gap-3">
@@ -283,8 +267,8 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
     if (!referralEnabled) return null;
     return (
       <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-1">
-        <p className={labelCls}>Referral · {referralType === "EXTERNAL" ? "External" : "Internal"}</p>
-        {referralNote.trim() && <p className="text-label sm:text-sm text-[var(--color-ink-700)]">Referred by: {referralNote.trim()}</p>}
+        <p className={labelCls}>Referral</p>
+        {referralNote.trim() && <p className="text-label sm:text-sm text-[var(--color-ink-700)]">Referred to: {referralNote.trim()}</p>}
         {inViewOf.trim() && <p className="text-label sm:text-sm text-[var(--color-ink-500)]">In view of: {inViewOf.trim()}</p>}
       </div>
     );
@@ -292,33 +276,9 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-          <p className={labelCls}>Referral</p>
-
-          {/* Internal / External flip */}
-          <div role="radiogroup" aria-label="Referral type" className="relative inline-grid grid-cols-2 rounded-full bg-[var(--color-surface-sunken)] p-0.5 text-xs font-medium">
-            <span
-              aria-hidden
-              className={`absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-white shadow-sm ring-1 ring-[var(--color-border)] transition-transform duration-200 ${referralType === "EXTERNAL" ? "translate-x-full" : ""}`}
-            />
-            {(["INTERNAL", "EXTERNAL"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="radio"
-                aria-checked={referralType === t}
-                onClick={() => { setReferralType(t); setSaved(false); }}
-                className={`relative z-10 px-4 py-1.5 rounded-full transition-colors ${referralType === t ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}
-              >
-                {t === "INTERNAL" ? "Internal" : "External"}
-              </button>
-            ))}
-          </div>
-      </div>
-
           {/* Stored in referralNote, as the referral details were. */}
           <div className="flex items-start gap-3">
-            <p className={`${labelCls} shrink-0 pt-2.5`}>Referred By</p>
+            <p className={`${labelCls} shrink-0 pt-2.5`}>Referred To</p>
             <div className="flex-1 min-w-0">
               <KeywordInput
                 fieldKey="referral_referred_by"
