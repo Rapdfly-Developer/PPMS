@@ -429,7 +429,7 @@ export function AssessmentTab({
   const setProvLaterality = (v: string) => { if (typeof window !== "undefined") sessionStorage.setItem(`prov-lat-${visit.id}`, v); setProvLateralityState(v); };
   // The blank "new diagnosis" row (like Current Medications' "+ Add medication").
   const [provDraftOpen, setProvDraftOpen] = useState(false);
-  const [provStatus, setProvStatus] = useState<string>("ACTIVE");
+  const [provStatus, setProvStatus] = useState<string>("BLANK");
   const [showProvSuggestions, setShowProvSuggestions] = useState(false);
   const [provSuggestionIndex, setProvSuggestionIndex] = useState(-1);
   const provBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -681,7 +681,7 @@ export function AssessmentTab({
     run(async () => {
       await addDiagnosis(visit.id, udid, { icd10Code: code, description, laterality: provLaterality, provisional: true, status: provStatus });
       setProvQuery("");
-      setProvStatus("ACTIVE");
+      setProvStatus("BLANK");
       setProvDraftOpen(false);
     });
   };
@@ -950,7 +950,7 @@ export function AssessmentTab({
               {provisionalDiagnoses.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => { setProvDraftOpen(false); setProvQuery(""); setProvStatus("ACTIVE"); }}
+                  onClick={() => { setProvDraftOpen(false); setProvQuery(""); setProvStatus("BLANK"); }}
                   className="shrink-0 text-[var(--color-ink-300)] hover:text-red-500 p-0.5 transition-colors"
                   aria-label="Cancel new diagnosis"
                 >
