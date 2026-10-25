@@ -486,6 +486,17 @@ export async function deleteInvestigationOrder(id: string, udid: string) {
  * the schema and accepted by addInvestigationOrder but never written from the
  * UI, so this needs no migration.
  */
+export async function updateInvestigationDoctorNotes(id: string, udid: string, doctorNotes: string) {
+  const user = await requireRole("DOCTOR");
+  const order = await prisma.investigationOrder.findUnique({ where: { id }, select: { visitId: true } });
+  if (!order) throw new Error("Investigation order not found");
+  await assertVisitOwner(order.visitId);
+
+  await prisma.investigationOrder.update({ where: { id }, data: { doctorNotes: doctorNotes || null } });
+  await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_DOCTOR_NOTES", { doctorNotes });
+  revalidateAfter(udid);
+}
+
 export async function updateInvestigationNotes(id: string, udid: string, notes: string) {
   const user = await requireRole("DOCTOR");
   const order = await prisma.investigationOrder.findUnique({ where: { id }, select: { visitId: true } });

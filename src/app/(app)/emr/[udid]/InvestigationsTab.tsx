@@ -7,9 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationNotes } from "./actions";
+import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
 import { KeywordInput } from "@/components/emr/KeywordField";
-import { INV_IN_VIEW_OF_DEFAULTS } from "@/lib/investigation-keywords";
+import { INV_IN_VIEW_OF_DEFAULTS, INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { useAutoSave } from "@/lib/useAutoSave";
 import { format } from "date-fns";
 import {
@@ -191,14 +191,13 @@ function InvestigationCard({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, startDelete]           = useTransition();
 
-  // "In view of" — the indication for this test. Persisted to the order's
-  // existing `notes` column. Autosaved like every other clinical field so a
-  // doctor never has to hunt for a save button.
-  const [inViewOf, setInViewOf] = useState<string>(order.notes ?? "");
+  // "In view of" is set when the test is ordered and shown read-only here.
+  // The doctor's notes on the result are written here, with keywords for this test.
+  const [doctorNotes, setDoctorNotes] = useState<string>(order.doctorNotes ?? "");
   const { savePaused } = useEMRSaveContext();
-  useAutoSave(inViewOf, async (v) => {
+  useAutoSave(doctorNotes, async (v) => {
     if (readOnly) return;
-    await updateInvestigationNotes(order.id, udid, v);
+    await updateInvestigationDoctorNotes(order.id, udid, v);
   }, undefined, { flushOnUnmount: true, paused: savePaused });
 
   const handleDelete = () => {
@@ -208,28 +207,27 @@ function InvestigationCard({
 
   return (
     <Card className="px-3 py-2.5">
-      {/* Row 1: test name | in view of + input | actions */}
-      <div className="flex items-start gap-2">
-        <p className="text-label font-semibold text-[var(--color-ink-900)] leading-snug shrink-0 pt-2">
-          {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
-          {order.testName}
-        </p>
+      {/* Row 1: test name + in view of (read-only) | doctor's notes | actions */}
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 max-w-[45%] pt-2">
+          <p className="text-label font-semibold text-[var(--color-ink-900)] leading-snug">
+            {order.laterality && <span className="text-[var(--color-primary-700)] mr-1.5">{order.laterality}</span>}
+            {order.testName}
+            {order.notes && <span className="block mt-0.5 text-caption font-normal text-[var(--color-ink-500)] italic">in view of: {order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ")}</span>}
+          </p>
+        </div>
 
-        <div className="flex-1 min-w-0 flex items-start gap-1.5">
+        <div className="flex-1 min-w-0">
           {!readOnly ? (
-            <>
-              <span className="text-caption text-[var(--color-ink-400)] shrink-0 pt-2">in view of</span>
-              <div className="flex-1 min-w-0">
-                <KeywordInput
-                  fieldKey="inv_in_view_of"
-                  value={inViewOf}
-                  onChange={setInViewOf}
-                  placeholder="Indication for this test…"
-                />
-              </div>
-            </>
-          ) : order.notes ? (
-            <span className="text-caption text-[var(--color-ink-500)] italic pt-2">in view of: {order.notes}</span>
+            <KeywordInput
+              fieldKey={`inv_doctor_notes:${order.testName}`}
+              value={doctorNotes}
+              onChange={setDoctorNotes}
+              builtIns={INV_DOCTOR_NOTE_DEFAULTS[order.testName]}
+              placeholder="Doctor's notes"
+            />
+          ) : order.doctorNotes ? (
+            <p className="pt-2 text-caption text-[var(--color-ink-700)] whitespace-pre-wrap"><span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{order.doctorNotes}</p>
           ) : null}
         </div>
 

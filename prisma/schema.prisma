@@ -759,7 +759,8 @@ model InvestigationOrder {
   testName   String
   priority   String        @default("ROUTINE")
   laterality String?       // RE | LE | OU
-  notes      String?
+  notes      String?       // "In view of" — the indication, set when ordered
+  doctorNotes String?      // Doctor's notes on the result, added later
   status     String        @default("ORDERED")
   resultRef  String?
   createdAt  DateTime      @default(now())
