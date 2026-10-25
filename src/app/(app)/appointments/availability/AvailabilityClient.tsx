@@ -63,6 +63,10 @@ function hospCode(name: string) { return name.split(/\s+/).map(w => w[0]).join("
 function padDate(y: number, m: number, d: number) {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
+/** Today's date as "YYYY-MM-DD" in IST (not UTC, which is yesterday before 5:30 AM). */
+function istTodayKey() {
+  return new Date(Date.now() + 330 * 60_000).toISOString().slice(0, 10);
+}
 function fmtFullDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
@@ -776,7 +780,7 @@ function ExtraOPModal({ date, hospitals, onClose }: { date: string; hospitals: H
 function LeaveModal({ preSelectedDates, hospitals, onClose }: {
   preSelectedDates: string[]; hospitals: Hospital[]; onClose: () => void;
 }) {
-  const today     = new Date().toISOString().split("T")[0];
+  const today     = istTodayKey();
   const [allHosp, setAllHosp]   = useState(true);
   const [hospId,  setHospId]    = useState(hospitals[0]?.id ?? "");
   const [halfDay, setHalfDay]   = useState(false);
@@ -1161,7 +1165,7 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
   onDateClick: (date: string) => void;
   onDateSelect: (date: string) => void;
 }) {
-  const today          = new Date().toISOString().split("T")[0];
+  const today          = istTodayKey();
   const firstDay       = new Date(year, month - 1, 1).getDay();
   const daysInMonth    = new Date(year, month, 0).getDate();
   const totalCells     = Math.ceil((firstDay + daysInMonth) / 7) * 7;
@@ -1482,8 +1486,11 @@ export function AvailabilityClient({
   const activeSlots  = weekly.filter(s => s.status === "ACTIVE").length;
   const hospCount    = new Set(weekly.map(s => s.hospitalId)).size;
   const today        = new Date().getDay();
-  const todaySlots   = weekly.filter(s => s.weekday === today && s.status === "ACTIVE").length;
   const generatedNow = initialCalendarData.isGenerated;
+  // Same source the walk-in and booking use: the generated calendar, else the template
+  const todaySlots   = generatedNow
+    ? (initialCalendarData.days[istTodayKey()]?.slots.length ?? 0)
+    : weekly.filter(s => s.weekday === today && s.status === "ACTIVE").length;
 
   const stats = [
     { label: "Today's Sessions", value: todaySlots, sub: WEEKDAYS_FULL[today], teal: true },

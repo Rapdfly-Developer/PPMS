@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { istDayRange, istTodayStr, istHHMM } from "@/lib/ist";
+import { istDayRange, istTodayStr, istHHMM, istMonthWindow } from "@/lib/ist";
 
 /**
  * A doctor's working session at one hospital on one date (IST wall-clock times).
@@ -35,9 +35,8 @@ export async function getDoctorSessions(doctorId: string, dateStr: string, hospi
   const day      = dateOnlyWindow(dateStr);
   const weekday  = new Date(`${dateStr}T00:00:00.000Z`).getUTCDay();
   const [y, m]   = dateStr.split("-").map(Number);
-  const monthStart = istDayRange(`${y}-${String(m).padStart(2, "0")}-01`).dayStart;
-  const nextMonth  = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
-  const monthEnd   = new Date(`${nextMonth}T00:00:00.000Z`);
+  // IST month: holds both stored forms of every date in it, and none of the next month's
+  const { gte: monthStart, lt: monthEnd } = istMonthWindow(y, m);
   const hosp = hospitalId ? { hospitalId } : {};
 
   const [excLeave, docLeave, monthGenerated, generated, extraOps, indiv, monthly, weekly] = await Promise.all([

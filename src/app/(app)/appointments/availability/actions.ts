@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import {
+  scheduleDate, scheduleDateKey, istWeekdayOf, daysInMonth, ymd, istMonthWindow, istDayWindow, istTodayStr,
+} from "@/lib/ist";
 
 async function getDoctorId() {
   const user = await requireRole("DOCTOR");
@@ -180,17 +183,16 @@ export type CalendarData = {
 /* ── getCalendarData ─────────────────────────────────────────────────────────── */
 export async function getCalendarData(year: number, month: number): Promise<CalendarData> {
   const doctorId = await getDoctorId();
-  const start    = new Date(year, month - 1, 1);
-  const end      = new Date(year, month, 0, 23, 59, 59, 999);
+  const month_   = istMonthWindow(year, month);
 
   const [generated, exceptions] = await Promise.all([
     prisma.generatedSchedule.findMany({
-      where: { doctorId, date: { gte: start, lte: end } },
+      where: { doctorId, date: month_ },
       include: { hospital: { select: { id: true, name: true } } },
       orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
     prisma.scheduleException.findMany({
-      where: { doctorId, status: "ACTIVE", date: { gte: start, lte: end } },
+      where: { doctorId, status: "ACTIVE", date: month_ },
       include: { hospital: { select: { id: true, name: true } } },
       orderBy: { date: "asc" },
     }),
@@ -199,7 +201,7 @@ export async function getCalendarData(year: number, month: number): Promise<Cale
   const days: Record<string, CalendarDay> = {};
 
   for (const row of generated) {
-    const key = row.date.toISOString().split("T")[0];
+    const key = scheduleDateKey(row.date);
     days[key] ??= { date: key, slots: [], leave: null };
     days[key].slots.push({
       id: row.id,
@@ -215,7 +217,7 @@ export async function getCalendarData(year: number, month: number): Promise<Cale
   }
 
   for (const exc of exceptions) {
-    const key = exc.date.toISOString().split("T")[0];
+    const key = scheduleDateKey(exc.date);
     days[key] ??= { date: key, slots: [], leave: null };
     const day = days[key];
     if (exc.type === "LEAVE" || exc.type === "HOLIDAY") {
@@ -252,19 +254,17 @@ export async function generateMonthlySchedule(year: number, month: number) {
   if (template.length === 0)
     throw new Error("No weekly template found. Set up your template first.");
 
-  const end = new Date(year, month, 0);
-  await prisma.generatedSchedule.deleteMany({
-    where: { doctorId, date: { gte: new Date(year, month - 1, 1), lte: new Date(year, month, 0, 23, 59, 59) } },
-  });
+  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istMonthWindow(year, month) } });
 
   const rows: {
     doctorId: string; date: Date; hospitalId: string;
     startTime: string; endTime: string; slotMins: number; maxPatients: number; isModified: boolean;
   }[] = [];
 
-  for (let d = 1; d <= end.getDate(); d++) {
-    const date    = new Date(year, month - 1, d);
-    const weekday = date.getDay();
+  for (let d = 1; d <= daysInMonth(year, month); d++) {
+    const dateStr = ymd(year, month, d);
+    const date    = scheduleDate(dateStr);
+    const weekday = istWeekdayOf(dateStr);
     for (const slot of template.filter((t) => t.weekday === weekday)) {
       rows.push({ doctorId, date, hospitalId: slot.hospitalId, startTime: slot.startTime, endTime: slot.endTime, slotMins: slot.slotMins, maxPatients: slot.maxPatients, isModified: false });
     }
@@ -277,21 +277,15 @@ export async function generateMonthlySchedule(year: number, month: number) {
 /* ── copyPreviousMonth ──────────────────────────────────────────────────────── */
 export async function copyPreviousMonth(year: number, month: number) {
   const doctorId  = await getDoctorId();
-  const prevDate  = new Date(year, month - 2, 1);
-  const prevYear  = prevDate.getFullYear();
-  const prevMonth = prevDate.getMonth() + 1;
+  const prevYear  = month === 1 ? year - 1 : year;
+  const prevMonth = month === 1 ? 12 : month - 1;
 
   const prevRows = await prisma.generatedSchedule.findMany({
-    where: {
-      doctorId,
-      date: { gte: new Date(prevYear, prevMonth - 1, 1), lte: new Date(prevYear, prevMonth, 0, 23, 59, 59) },
-    },
+    where: { doctorId, date: istMonthWindow(prevYear, prevMonth) },
   });
   if (prevRows.length === 0) throw new Error("Previous month has no generated schedule to copy.");
 
-  await prisma.generatedSchedule.deleteMany({
-    where: { doctorId, date: { gte: new Date(year, month - 1, 1), lte: new Date(year, month, 0, 23, 59, 59) } },
-  });
+  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istMonthWindow(year, month) } });
 
   const rows: {
     doctorId: string; date: Date; hospitalId: string;
@@ -299,9 +293,9 @@ export async function copyPreviousMonth(year: number, month: number) {
   }[] = [];
 
   for (const row of prevRows) {
-    const day     = row.date.getDate();
-    const newDate = new Date(year, month - 1, day);
-    if (newDate.getMonth() !== month - 1) continue;
+    const day     = Number(scheduleDateKey(row.date).slice(8, 10));
+    if (day > daysInMonth(year, month)) continue;
+    const newDate = scheduleDate(ymd(year, month, day));
     rows.push({ doctorId, date: newDate, hospitalId: row.hospitalId, startTime: row.startTime, endTime: row.endTime, slotMins: row.slotMins, maxPatients: row.maxPatients, isModified: false });
   }
 
@@ -337,11 +331,9 @@ export async function bulkAssignDays(data: {
 }) {
   const doctorId = await getDoctorId();
   for (const dateStr of data.dates) {
-    await prisma.generatedSchedule.deleteMany({
-      where: { doctorId, date: { gte: new Date(dateStr + "T00:00:00"), lt: new Date(dateStr + "T23:59:59") } },
-    });
+    await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istDayWindow(dateStr) } });
     await prisma.generatedSchedule.create({
-      data: { doctorId, date: new Date(dateStr), hospitalId: data.hospitalId, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, isModified: true },
+      data: { doctorId, date: scheduleDate(dateStr), hospitalId: data.hospitalId, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, isModified: true },
     });
   }
   revalidate();
@@ -358,7 +350,7 @@ export async function addLeave(data: {
   await prisma.scheduleException.createMany({
     data: data.dates.map((dateStr) => ({
       doctorId,
-      date: new Date(dateStr),
+      date: scheduleDate(dateStr),
       type: "LEAVE",
       hospitalId: data.hospitalId ?? null,
       reason: data.reason ?? null,
@@ -381,7 +373,7 @@ export async function addExtraOP(data: {
 }) {
   const doctorId = await getDoctorId();
   await prisma.scheduleException.create({
-    data: { doctorId, date: new Date(data.date), type: "EXTRA_OP", hospitalId: data.hospitalId, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, isRecurring: false, status: "ACTIVE" },
+    data: { doctorId, date: scheduleDate(data.date), type: "EXTRA_OP", hospitalId: data.hospitalId, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, isRecurring: false, status: "ACTIVE" },
   });
   revalidate();
 }
@@ -402,11 +394,9 @@ export async function addRecurringLeave(data: {
   reason?: string;
 }) {
   const doctorId = await getDoctorId();
-  const until    = new Date(data.untilDate);
-  const today    = new Date();
-  today.setHours(0, 0, 0, 0);
-  const cur = new Date(today);
-  while (cur.getDay() !== data.weekday) cur.setDate(cur.getDate() + 1);
+  const until = scheduleDate(data.untilDate);
+  const cur   = scheduleDate(istTodayStr());
+  while (cur.getUTCDay() !== data.weekday) cur.setUTCDate(cur.getUTCDate() + 1);
 
   const groupId = `recurring-${Date.now()}`;
   const rows: {
@@ -416,7 +406,7 @@ export async function addRecurringLeave(data: {
   }[] = [];
   while (cur <= until) {
     rows.push({ doctorId, date: new Date(cur), type: "LEAVE", hospitalId: data.hospitalId ?? null, halfPeriod: data.halfPeriod ?? null, reason: data.reason ?? "Recurring leave", isRecurring: true, recurringGroupId: groupId, status: "ACTIVE" });
-    cur.setDate(cur.getDate() + 7);
+    cur.setUTCDate(cur.getUTCDate() + 7);
   }
   await prisma.scheduleException.createMany({ data: rows });
   revalidate();
@@ -428,10 +418,9 @@ export async function resolveAvailabilityForDate(
   hospitalId: string,
   dateStr: string,
 ): Promise<{ startTime: string; endTime: string; slotMins: number; maxPatients: number } | null> {
-  const date      = new Date(dateStr + "T00:00:00.000Z");
-  const dayOfWeek = date.getUTCDay();
-  const dayStart  = new Date(dateStr + "T00:00:00.000Z");
-  const dayEnd    = new Date(dateStr + "T23:59:59.999Z");
+  const date      = scheduleDate(dateStr);
+  const dayOfWeek = istWeekdayOf(dateStr);
+  const { gte: dayStart, lte: dayEnd } = istDayWindow(dateStr);
 
   // Fire all 6 queries in parallel; apply priority logic on results
   const [excLeave, gen, leave, indiv, monthly, weekly] = await Promise.all([
