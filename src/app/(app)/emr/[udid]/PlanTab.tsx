@@ -337,6 +337,11 @@ function DrugNameInput({
     setIdx(-1);
   };
 
+  // A typed name that is not in the list can be saved as a custom drug, as in
+  // Current Medications; it then shows in both dropdowns from then on.
+  const typed = value.trim();
+  const canAddCustom = !!typed && !suggestions.some((med) => med.name.toLowerCase() === typed.toLowerCase());
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!open || !suggestions.length) return;
     if (e.key === "ArrowDown") { e.preventDefault(); setIdx((i) => Math.min(i + 1, suggestions.length - 1)); }
@@ -357,7 +362,7 @@ function DrugNameInput({
         className={className}
         autoComplete="off"
       />
-      {open && suggestions.length > 0 && (
+      {open && (suggestions.length > 0 || canAddCustom) && (
         <div
           className="absolute z-50 left-0 top-full mt-0.5 min-w-full w-max max-w-[min(460px,90vw)] bg-white rounded-xl shadow-xl border border-[var(--color-border)] overflow-auto"
           style={{ maxHeight: 220 }}
@@ -366,6 +371,15 @@ function DrugNameInput({
             if (blurRef.current) clearTimeout(blurRef.current);
           }}
         >
+          {canAddCustom && (
+            <button
+              type="button"
+              onClick={() => { saveCustomMedication({ name: typed }); onChange(typed); setOpen(false); setIdx(-1); }}
+              className="w-full text-left px-3 py-2 text-xs border-b border-[var(--color-border)] last:border-0 text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors break-words"
+            >
+              + Add &ldquo;<span className="font-semibold">{typed}</span>&rdquo; as custom drug
+            </button>
+          )}
           {suggestions.map((med, i) => (
             <button
               key={med.id}
