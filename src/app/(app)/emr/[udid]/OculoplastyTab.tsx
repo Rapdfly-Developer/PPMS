@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { History, X } from "lucide-react";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/Card";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Toast } from "@/components/ui/Toast";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
@@ -11,7 +13,7 @@ import { parseJSON } from "@/lib/json";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { saveOculoplasty } from "./actions";
 import {
-  EOM_VALUES, EOM_MUSCLE_LABEL, eomDisplay, hasFindings, hasOculoplastyData,
+  EOM_VALUES, EOM_MUSCLE_LABEL, EOM_ORDER, eomDisplay, hasFindings, hasEom, hasOculoplastyData,
   type EomMuscle, type EomEye, type EyeFindings, type OculoplastyData,
 } from "@/lib/oculoplasty";
 
@@ -463,6 +465,44 @@ export function OculoplastyTab({ visit, udid, editable, priorVisits = [] }: { vi
   const setEom = (side: "re" | "le", m: EomMuscle, v: string) =>
     setData((d) => ({ ...d, eom: { ...d.eom, [side]: { ...(d.eom?.[side] ?? {}), [m]: v } } }));
 
+  /* ── EOM Normal / Import previous values ─────────────────────────────────
+     Same behaviour as the segment cards: both boxes are derived from the
+     form, so ticking one unticks the other. When the previous visit was itself
+     all-normal, the box last clicked is the one shown ticked. */
+  const [pickedImport, setPickedImport] = useState(false);
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [importToast, setImportToast] = useState(false);
+
+  const fill = (v: string): EomEye => Object.fromEntries(EOM_ORDER.map((m) => [m, v]));
+  const sameEye = (a: EomEye | undefined, b: EomEye | undefined) => EOM_ORDER.every((m) => (a?.[m] ?? "") === (b?.[m] ?? ""));
+
+  const eomIsNormal = EOM_ORDER.every((m) => data.eom?.re?.[m] === "Normal" && data.eom?.le?.[m] === "Normal");
+  const priorEom = (() => {
+    for (const v of priorVisits) {
+      if (v.id === visit.id) continue;
+      const o = parseJSON<OculoplastyData>(v.oculoplasty, {});
+      if (hasEom(o)) return { eom: o.eom!, date: v.date ?? v.createdAt };
+    }
+    return null;
+  })();
+  const eomIsImported = !!priorEom && sameEye(data.eom?.re, priorEom.eom.re) && sameEye(data.eom?.le, priorEom.eom.le);
+
+  const applyEomNormal = (checked: boolean) => {
+    setPickedImport(false);
+    setData((d) => ({ ...d, eom: { re: fill(checked ? "Normal" : ""), le: fill(checked ? "Normal" : "") } }));
+  };
+  const applyEomImport = () => {
+    if (!priorEom) return;
+    setData((d) => ({ ...d, eom: { re: { ...fill(""), ...priorEom.eom.re }, le: { ...fill(""), ...priorEom.eom.le } } }));
+    setPickedImport(true);
+    setImportToast(true);
+  };
+  const toggleEomImport = (checked: boolean) => {
+    if (!checked) { setData((d) => ({ ...d, eom: { re: fill(""), le: fill("") } })); return; }
+    if (hasEom(data)) setConfirmImport(true);
+    else applyEomImport();
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <FindingsCard
@@ -476,7 +516,31 @@ export function OculoplastyTab({ visit, udid, editable, priorVisits = [] }: { vi
 
       <Card>
         <CardTitle extra={<SaveIndicator state={state} />}>
-          EOM <span className="text-caption font-normal text-[var(--color-ink-400)]">(Extra-ocular movements)</span>
+          <span className="flex items-center gap-3 flex-wrap">
+            <span>EOM <span className="text-caption font-normal text-[var(--color-ink-400)]">(Extra-ocular movements)</span></span>
+            {editable && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={eomIsNormal && !(pickedImport && eomIsImported)}
+                  onChange={(e) => applyEomNormal(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+                />
+                <span className="text-caption sm:text-xs font-medium text-[var(--color-ink-600)]">Normal</span>
+              </label>
+            )}
+            {editable && priorEom && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none" title={`Copy the values recorded on ${format(new Date(priorEom.date), "d MMM yyyy")}`}>
+                <input
+                  type="checkbox"
+                  checked={eomIsImported && (pickedImport || !eomIsNormal)}
+                  onChange={(e) => toggleEomImport(e.target.checked)}
+                  className="w-3.5 h-3.5 accent-[var(--color-primary-600)] cursor-pointer"
+                />
+                <span className="text-caption sm:text-xs font-medium text-[var(--color-ink-600)]">Import previous values</span>
+              </label>
+            )}
+          </span>
         </CardTitle>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-4 py-2">
           <EomEyeDiagram side="re" values={data.eom?.re ?? {}} onChange={(m, v) => setEom("re", m, v)} disabled={!editable} />
@@ -490,6 +554,15 @@ export function OculoplastyTab({ visit, udid, editable, priorVisits = [] }: { vi
             </span>
           ))}
         </div>
+        {confirmImport && (
+          <ConfirmDialog
+            title="Import Previous Values?"
+            message="This will replace the EOM values currently entered for both eyes. Do you want to continue?"
+            onConfirm={() => { applyEomImport(); setConfirmImport(false); }}
+            onCancel={() => setConfirmImport(false)}
+          />
+        )}
+        {importToast && <Toast message="Previous values imported." onDone={() => setImportToast(false)} />}
       </Card>
 
       <FindingsCard
