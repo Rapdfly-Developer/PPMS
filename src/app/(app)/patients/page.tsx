@@ -188,9 +188,20 @@ export default async function PatientsPage({
   if (sortBy === "lastvisit") {
     const allSlim = await prisma.patient.findMany({
       where:  listWhere,
-      select: { id: true, visits: { where: { appointment: { is: { status: "DISPENSED" } } }, orderBy: { date: "desc" }, take: 1, select: { date: true } } },
+      // Same visits as the "last visit" date each card shows, so the order matches it
+      select: { id: true, visits: { where: { appointment: { is: { status: "DISPENSED", consultationStatus: "FINALIZED" } } }, orderBy: { date: "desc" }, take: 1, select: { date: true } } },
     });
-    allSlim.sort((a, b) => (b.visits[0]?.date?.getTime() ?? 0) - (a.visits[0]?.date?.getTime() ?? 0));
+    if (opStatusFilter === "noshowreg") {
+      // No Show Registry cards show each patient's most recent no-show, so order by that
+      const latestNoShow = new Map<string, number>();
+      for (const r of noShowRecords) {
+        const t = new Date(r.arrivedAt ?? r.dateTime).getTime();
+        if (t > (latestNoShow.get(r.patientId) ?? 0)) latestNoShow.set(r.patientId, t);
+      }
+      allSlim.sort((a, b) => (latestNoShow.get(b.id) ?? 0) - (latestNoShow.get(a.id) ?? 0));
+    } else {
+      allSlim.sort((a, b) => (b.visits[0]?.date?.getTime() ?? 0) - (a.visits[0]?.date?.getTime() ?? 0));
+    }
     total = allSlim.length;
     const pageIds = allSlim.slice((page - 1) * pageSize, page * pageSize).map(p => p.id);
     const pageRows = await prisma.patient.findMany({ where: { id: { in: pageIds } }, include: patientInclude });
