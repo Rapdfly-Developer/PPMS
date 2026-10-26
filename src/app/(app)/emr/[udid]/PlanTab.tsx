@@ -645,7 +645,7 @@ function PresetSelectDialog({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: "var(--color-surface)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -810,9 +810,10 @@ function PresetSelectDialog({
                 <div className="flex flex-col gap-1.5">
                   {formMeds.map((med, i) => (
                     <div key={i} className="flex flex-col gap-1">
-                      {/* Main drug row — scrolls horizontally on narrow screens */}
-                      <div className="overflow-x-auto">
-                      <div className="grid gap-1 items-center min-w-[380px]" style={{ gridTemplateColumns: "1fr 70px 130px 70px 20px" }}>
+                      {/* Main drug row — every field wide enough to read in full; wraps on phones */}
+                      <div>
+                      <div className="grid gap-1 items-center grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,1fr)_20px] sm:grid-cols-[minmax(0,1fr)_80px_190px_120px_20px]">
+                        <div className="col-span-4 sm:col-span-1 min-w-0">
                         <DrugNameInput
                           value={med.drugName}
                           onChange={(name, defaultDose) => {
@@ -822,6 +823,7 @@ function PresetSelectDialog({
                           }}
                           className={inp}
                         />
+                        </div>
                         <OptionsInput
                           value={med.dosage}
                           onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], dosage: v }; setFormMeds(n); }}
@@ -829,14 +831,13 @@ function PresetSelectDialog({
                           placeholder="Dose"
                           className={inp}
                         />
-                        <select
+                        <OptionsInput
                           value={med.frequency}
-                          onChange={(e) => { const n = [...formMeds]; n[i] = { ...n[i], frequency: e.target.value }; setFormMeds(n); }}
+                          onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], frequency: v }; setFormMeds(n); }}
+                          options={FREQUENCY_OPTIONS}
+                          placeholder="Frequency"
                           className={inp}
-                        >
-                          <option value="">Frequency</option>
-                          {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
-                        </select>
+                        />
                         <OptionsInput
                           value={med.duration}
                           onChange={(v) => { const n = [...formMeds]; n[i] = { ...n[i], duration: v }; setFormMeds(n); }}
@@ -852,7 +853,7 @@ function PresetSelectDialog({
                           <X size={12} />
                         </button>
                       </div>
-                      </div>{/* /overflow-x-auto drug row */}
+                      </div>{/* /drug row */}
 
                       {/* Tapering toggle */}
                       <div className="pl-1">
