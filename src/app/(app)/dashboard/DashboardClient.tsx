@@ -305,9 +305,8 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
         {/* Second line: who did the refraction, then the timer — keeps the badges above on one even row */}
         <div className="flex items-center gap-2">
           {appt.refractionDone && appt.refractionByName && (
-            <span className="inline-flex items-center gap-1 max-w-[8rem] text-caption font-medium text-emerald-700" title={`Refraction by ${appt.refractionByName}`}>
-              <CheckCheck size={11} className="shrink-0" />
-              <span className="truncate">{appt.refractionByName}</span>
+            <span className="max-w-[8rem] truncate text-caption font-medium text-emerald-700" title={`Refraction by ${appt.refractionByName}`}>
+              {appt.refractionByName}
             </span>
           )}
           <LiveTimer since={timerSince} />

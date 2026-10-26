@@ -593,25 +593,25 @@ function SpectacleDrawer({
           >
             {/* Header row with checkbox */}
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                <span className="text-caption font-bold text-[var(--color-ink-800)]">
+              <div className="flex items-center gap-2 min-w-0 flex-nowrap whitespace-nowrap">
+                <span className="shrink-0 text-caption font-bold text-[var(--color-ink-800)]">
                   {format(new Date(v.date), "EEE, dd MMM yyyy")}
                 </span>
                 {v.finalizedAt && (
-                  <span className="text-micro text-[var(--color-ink-400)] font-medium">
+                  <span className="shrink-0 text-micro text-[var(--color-ink-400)] font-medium">
                     {format(new Date(v.finalizedAt), "h:mm a")}
                   </span>
                 )}
                 {v.hospitalName && (
-                  <span className="text-caption text-[var(--color-ink-400)] truncate">{v.hospitalName}</span>
+                  <span className="min-w-0 text-caption text-[var(--color-ink-400)] truncate" title={v.hospitalName}>{v.hospitalName}</span>
                 )}
                 {re.method && (
-                  <span className="text-micro bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
+                  <span className="shrink-0 text-micro bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
                     {re.method}
                   </span>
                 )}
                 {v.refractionByName && (
-                  <span className="text-micro text-emerald-700 font-medium">· Refraction by {v.refractionByName}</span>
+                  <span className="min-w-0 truncate text-micro text-emerald-700 font-medium" title={`Refraction by ${v.refractionByName}`}>· Refraction by {v.refractionByName}</span>
                 )}
               </div>
             </div>

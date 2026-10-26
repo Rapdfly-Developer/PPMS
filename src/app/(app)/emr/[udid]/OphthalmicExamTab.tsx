@@ -585,6 +585,16 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     return { ...corr, methods: { ...corr.methods, [corr.activeMethod]: patch(prev) } };
   };
 
+  // Method dropdown: a method other than the selected one that still holds values
+  // is marked "· saved", since only the selected method's values show here.
+  const methodHasValues = (e?: MethodEntry) =>
+    !!e && [e.re, e.le].some((eye) => Object.values(eye ?? {}).some(Boolean));
+  const methodOptions = (corr: CorrV2) =>
+    REFRACTION_METHODS.map((m) => ({
+      value: m,
+      label: m !== corr.activeMethod && methodHasValues(corr.methods[m]) ? `${m} · saved` : m,
+    }));
+
   const setExtra = (idx: number, fn: (prev: CorrV2) => CorrV2) =>
     setExtras((prev) => prev.map((item, i) => i === idx ? fn(item) : item));
 
@@ -761,7 +771,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             <TealSelect
               value={c1.activeMethod}
               onChange={editable ? (v) => setC1((prev) => ({ ...prev, activeMethod: v })) : () => {}}
-              options={REFRACTION_METHODS.map((m) => ({ value: m, label: m }))}
+              options={methodOptions(c1)}
               className="min-w-[148px]"
             />
           </div>
@@ -817,7 +827,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 <TealSelect
                   value={ex.activeMethod}
                   onChange={editable ? (v) => setExtra(idx, (prev) => ({ ...prev, activeMethod: v })) : () => {}}
-                  options={REFRACTION_METHODS.map((m) => ({ value: m, label: m }))}
+                  options={methodOptions(ex)}
                   className="min-w-[148px]"
                 />
               </div>
