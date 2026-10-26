@@ -605,11 +605,6 @@ function SpectacleDrawer({
                 {v.hospitalName && (
                   <span className="min-w-0 text-caption text-[var(--color-ink-400)] truncate" title={v.hospitalName}>{v.hospitalName}</span>
                 )}
-                {re.method && (
-                  <span className="shrink-0 text-micro bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] px-1.5 py-0.5 rounded-full border border-[var(--color-border)]">
-                    {re.method}
-                  </span>
-                )}
                 {v.refractionByName && (
                   <span className="min-w-0 truncate text-micro text-emerald-700 font-medium" title={`Refraction by ${v.refractionByName}`}>· Refraction by {v.refractionByName}</span>
                 )}
