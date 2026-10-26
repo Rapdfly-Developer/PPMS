@@ -64,8 +64,8 @@ export const PRINT_SECTIONS: PrintSection[] = [
   { id: "diplopia", label: "Diplopia Charting",          short: false, long: true, hasData: (v) => Object.values(obj(v.diplopiaChart?.grid)).some((c: any) => c?.status && c.status !== "NOT_TESTED") },
   { id: "hess",     label: "Hess Charting",              short: false, long: true, hasData: (v) => filled(v.hessChart?.interpretation) || Object.values(obj(v.hessChart?.grid)).some((c: any) => anyFilled(obj(c))) },
   // Assessment
-  { id: "pdx",      label: "Provisional Diagnosis",      short: true,  long: true, hasData: (v) => (v.diagnoses ?? []).some((d: any) => d.provisional) },
-  { id: "dx",       label: "Diagnosis (ICD-10)",         short: true,  long: true, hasData: (v) => (v.diagnoses ?? []).some((d: any) => !d.provisional) },
+  // The EMR has one diagnosis card; this row covers every diagnosis on the visit
+  { id: "pdx",      label: "Provisional Diagnosis",      short: true,  long: true, hasData: (v) => (v.diagnoses ?? []).length > 0 },
   // Investigations
   { id: "inv",      label: "Investigations",             short: true,  long: true, hasData: (v) => (v.investigationOrders?.length ?? 0) > 0 },
   // Plan

@@ -140,7 +140,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         le: parseJSON((ps as any).le, {} as Record<string, any>),
         notes: (ps as any).notes ?? null,
       } : null,
-      diagnoses: visit.diagnoses.filter((d: any) => on(d.provisional ? "pdx" : "dx")).map((d: any) => ({
+      diagnoses: visit.diagnoses.filter(() => on("pdx")).map((d: any) => ({
         description: d.description, icd10Code: d.icd10Code,
         status: d.status, laterality: d.laterality ?? null,
       })),
