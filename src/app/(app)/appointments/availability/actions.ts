@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import {
-  scheduleDate, scheduleDateKey, istWeekdayOf, daysInMonth, ymd, istMonthWindow, istDayWindow, istTodayStr,
+  scheduleDate, scheduleDateKey, istWeekdayOf, daysInMonth, ymd, istMonthWindow, istDayWindow, istTodayStr, istDayRange,
 } from "@/lib/ist";
 
 async function getDoctorId() {
@@ -22,6 +22,20 @@ function timesOverlap(s1: string, e1: string, s2: string, e2: string) {
 }
 function revalidate() {
   revalidatePath("/appointments/availability");
+}
+
+/* ── Past dates are frozen ─────────────────────────────────────────────────────
+   Calendar: any IST date before today cannot be changed. */
+const PAST_DATE_MSG = "Past dates are frozen and cannot be changed.";
+function isPastDate(dateStr: string) {
+  return dateStr < istTodayStr();
+}
+/** The month's window, starting no earlier than today (past days are left untouched). */
+function monthFromToday(year: number, month: number) {
+  const win = istMonthWindow(year, month);
+  const todayStart = istDayRange(istTodayStr()).dayStart;
+  if (win.lt <= todayStart) throw new Error("This month is in the past and is frozen.");
+  return { gte: win.gte > todayStart ? win.gte : todayStart, lt: win.lt };
 }
 
 /* ── Hospitals ─────────────────────────────────────────────────────────────── */
@@ -254,7 +268,7 @@ export async function generateMonthlySchedule(year: number, month: number) {
   if (template.length === 0)
     throw new Error("No weekly template found. Set up your template first.");
 
-  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istMonthWindow(year, month) } });
+  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: monthFromToday(year, month) } });
 
   const rows: {
     doctorId: string; date: Date; hospitalId: string;
@@ -263,6 +277,7 @@ export async function generateMonthlySchedule(year: number, month: number) {
 
   for (let d = 1; d <= daysInMonth(year, month); d++) {
     const dateStr = ymd(year, month, d);
+    if (isPastDate(dateStr)) continue;
     const date    = scheduleDate(dateStr);
     const weekday = istWeekdayOf(dateStr);
     for (const slot of template.filter((t) => t.weekday === weekday)) {
@@ -285,7 +300,7 @@ export async function copyPreviousMonth(year: number, month: number) {
   });
   if (prevRows.length === 0) throw new Error("Previous month has no generated schedule to copy.");
 
-  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istMonthWindow(year, month) } });
+  await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: monthFromToday(year, month) } });
 
   const rows: {
     doctorId: string; date: Date; hospitalId: string;
@@ -295,6 +310,7 @@ export async function copyPreviousMonth(year: number, month: number) {
   for (const row of prevRows) {
     const day     = Number(scheduleDateKey(row.date).slice(8, 10));
     if (day > daysInMonth(year, month)) continue;
+    if (isPastDate(ymd(year, month, day))) continue;
     const newDate = scheduleDate(ymd(year, month, day));
     rows.push({ doctorId, date: newDate, hospitalId: row.hospitalId, startTime: row.startTime, endTime: row.endTime, slotMins: row.slotMins, maxPatients: row.maxPatients, isModified: false });
   }
@@ -303,12 +319,18 @@ export async function copyPreviousMonth(year: number, month: number) {
   revalidate();
 }
 
+async function assertGeneratedNotPast(id: string, doctorId: string) {
+  const row = await prisma.generatedSchedule.findFirst({ where: { id, doctorId }, select: { date: true } });
+  if (row && isPastDate(scheduleDateKey(row.date))) throw new Error(PAST_DATE_MSG);
+}
+
 /* ── updateGeneratedDay ─────────────────────────────────────────────────────── */
 export async function updateGeneratedDay(
   id: string,
   data: { hospitalId: string; startTime: string; endTime: string; slotMins: number; maxPatients: number },
 ) {
   const doctorId = await getDoctorId();
+  await assertGeneratedNotPast(id, doctorId);
   await prisma.generatedSchedule.update({ where: { id, doctorId }, data: { ...data, isModified: true } });
   revalidate();
 }
@@ -316,6 +338,7 @@ export async function updateGeneratedDay(
 /* ── deleteGeneratedDay ─────────────────────────────────────────────────────── */
 export async function deleteGeneratedDay(id: string) {
   const doctorId = await getDoctorId();
+  await assertGeneratedNotPast(id, doctorId);
   await prisma.generatedSchedule.delete({ where: { id, doctorId } });
   revalidate();
 }
@@ -330,6 +353,7 @@ export async function bulkAssignDays(data: {
   maxPatients: number;
 }) {
   const doctorId = await getDoctorId();
+  if (data.dates.some(isPastDate)) throw new Error(PAST_DATE_MSG);
   for (const dateStr of data.dates) {
     await prisma.generatedSchedule.deleteMany({ where: { doctorId, date: istDayWindow(dateStr) } });
     await prisma.generatedSchedule.create({
@@ -347,6 +371,7 @@ export async function addLeave(data: {
   halfPeriod?: string;
 }) {
   const doctorId = await getDoctorId();
+  if (data.dates.some(isPastDate)) throw new Error(PAST_DATE_MSG);
   await prisma.scheduleException.createMany({
     data: data.dates.map((dateStr) => ({
       doctorId,
@@ -372,6 +397,7 @@ export async function addExtraOP(data: {
   maxPatients: number;
 }) {
   const doctorId = await getDoctorId();
+  if (isPastDate(data.date)) throw new Error(PAST_DATE_MSG);
   await prisma.scheduleException.create({
     data: { doctorId, date: scheduleDate(data.date), type: "EXTRA_OP", hospitalId: data.hospitalId, startTime: data.startTime, endTime: data.endTime, slotMins: data.slotMins, maxPatients: data.maxPatients, isRecurring: false, status: "ACTIVE" },
   });
@@ -381,6 +407,8 @@ export async function addExtraOP(data: {
 /* ── cancelScheduleException ─────────────────────────────────────────────────── */
 export async function cancelScheduleException(id: string) {
   const doctorId = await getDoctorId();
+  const exc = await prisma.scheduleException.findFirst({ where: { id, doctorId }, select: { date: true } });
+  if (exc && isPastDate(scheduleDateKey(exc.date))) throw new Error(PAST_DATE_MSG);
   await prisma.scheduleException.update({ where: { id, doctorId }, data: { status: "CANCELLED" } });
   revalidate();
 }

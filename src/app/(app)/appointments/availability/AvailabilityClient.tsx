@@ -6,7 +6,7 @@ import {
   Plus, Pencil, Trash2, Clock, Building2, CalendarDays, Users,
   Loader2, AlertTriangle, X, Save, ToggleLeft, ToggleRight, Power,
   ChevronLeft, ChevronRight, CalendarOff, Zap, Copy, Layers,
-  CheckSquare, Square, Info, RefreshCw, Timer,
+  CheckSquare, Square, Info, RefreshCw, Timer, Lock,
 } from "lucide-react";
 import {
   upsertWeekly, upsertWeeklyBatch, deleteWeekly, toggleWeeklyStatus,
@@ -974,7 +974,7 @@ function RecurringLeaveModal({ hospitals, onClose }: { hospitals: Hospital[]; on
         )}
       </div>
       <div><label className={LBL}>Until</label>
-        <input type="date" value={until} onChange={e => setUntil(e.target.value)} className={FLD} />
+        <input type="date" value={until} min={istTodayKey()} onChange={e => setUntil(e.target.value)} className={FLD} />
       </div>
       <div><label className={LBL}>Reason</label>
         <input type="text" value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Weekend rest, Teaching rounds" className={FLD} />
@@ -1013,6 +1013,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
 
   const slots  = dayData?.slots ?? [];
   const leave  = dayData?.leave ?? null;
+  const isPast = dateStr < istTodayKey();   // past dates are frozen: view only
 
   return (
     <>
@@ -1040,11 +1041,11 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                   </p>
                   {leave.reason && <p className="text-caption text-red-500 mt-0.5">{leave.reason}</p>}
                 </div>
-                <button disabled={pending}
+                {!isPast && <button disabled={pending}
                   onClick={() => start(async () => { await cancelScheduleException(leave.id); onRefresh(); onClose(); })}
                   className="text-caption font-semibold text-red-600 hover:text-red-800 transition-colors px-2 py-1 rounded-lg hover:bg-red-100">
                   {pending ? <Loader2 size={12} className="animate-spin" /> : "Cancel"}
-                </button>
+                </button>}
               </div>
             )}
 
@@ -1068,7 +1069,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                         </div>
                         <p className="text-caption text-[var(--color-ink-500)] tabular-nums">{fmt12(slot.startTime)} – {fmt12(slot.endTime)} · {slot.slotMins}m · {slot.maxPatients}p</p>
                       </div>
-                      <div className="flex gap-0.5 shrink-0">
+                      {!isPast && <div className="flex gap-0.5 shrink-0">
                         {slot.source === "generated" && (
                           <button onClick={() => setEditSlot(slot)}
                             className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] transition-colors">
@@ -1084,7 +1085,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
                           className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-600 hover:bg-red-50 transition-colors">
                           {pending ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
                         </button>
-                      </div>
+                      </div>}
                     </div>
                   );
                 })}
@@ -1097,6 +1098,11 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
           </div>
 
           {/* Actions */}
+          {isPast ? (
+            <div className="px-5 py-3 border-t border-[var(--color-border)] flex items-center justify-center gap-1.5 text-caption font-semibold text-[var(--color-ink-400)]">
+              <Lock size={11} /> Past date, frozen (view only)
+            </div>
+          ) : (
           <div className="px-5 py-4 border-t border-[var(--color-border)] flex flex-col gap-2">
             <div className="flex gap-2">
               <button onClick={() => { setShowExtraOP(true); }}
@@ -1111,6 +1117,7 @@ function DayPopup({ dateStr, dayData, hospitals, onClose, onRefresh }: {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -1151,6 +1158,10 @@ function Legend({ hospitals }: { hospitals: Hospital[] }) {
       <div className="flex items-center gap-1.5">
         <span className="w-3 h-3 rounded-sm bg-amber-600" />
         <span className="text-[var(--color-ink-600)] font-medium">Extra OP</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Lock size={11} className="text-[var(--color-ink-400)]" />
+        <span className="text-[var(--color-ink-600)] font-medium">Past (frozen)</span>
       </div>
     </div>
   );
@@ -1193,6 +1204,7 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
             const dateStr    = padDate(year, month, dayNum);
             const dayData    = calData.days[dateStr];
             const isToday    = dateStr === today;
+            const isPast     = dateStr < today;
             const isSelected = selectedDates.has(dateStr);
             const isLeave    = !!dayData?.leave;
             const isHalfDay  = dayData?.leave?.type === "HALF_DAY";
@@ -1200,7 +1212,7 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
             const hasSlots   = slots.length > 0;
 
             let borderClass  = "border-[var(--color-border)]";
-            let bgClass      = "bg-white";
+            let bgClass      = isPast ? "bg-[var(--color-surface-sunken)]" : "bg-white";
             if (isToday)    { borderClass = "border-[var(--color-primary-500)]"; bgClass = "bg-[var(--color-primary-50)]/50"; }
             if (isSelected) { borderClass = "border-[var(--color-primary-600)]"; bgClass = "bg-[var(--color-primary-50)]"; }
             if (isLeave && !isHalfDay) { bgClass = "bg-red-50"; borderClass = "border-red-200"; }
@@ -1208,14 +1220,21 @@ function CalendarGrid({ year, month, calData, hospitals, selectMode, selectedDat
 
             return (
               <div key={dateStr}
-                onClick={() => selectMode !== "none" ? onDateSelect(dateStr) : onDateClick(dateStr)}
-                className={`min-h-[72px] rounded-xl border p-1.5 cursor-pointer transition-all hover:shadow-sm ${bgClass} ${borderClass}`}>
+                onClick={() => selectMode !== "none" ? (!isPast && onDateSelect(dateStr)) : onDateClick(dateStr)}
+                title={isPast ? "Past date, frozen" : undefined}
+                className={`min-h-[72px] rounded-xl border p-1.5 transition-all ${
+                  isPast
+                    ? `opacity-55 ${selectMode !== "none" ? "cursor-not-allowed" : "cursor-pointer"}`
+                    : "cursor-pointer hover:shadow-sm"
+                } ${bgClass} ${borderClass}`}>
                 {/* Date number + checkbox */}
                 <div className="flex items-center justify-between mb-1">
                   <span className={`text-xs font-bold ${isToday ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
                     {dayNum}
                   </span>
-                  {selectMode !== "none" ? (
+                  {isPast ? (
+                    <Lock size={10} className="text-[var(--color-ink-400)]" />
+                  ) : selectMode !== "none" ? (
                     <span className={`text-[var(--color-primary-600)]`}>
                       {isSelected ? <CheckSquare size={12} /> : <Square size={12} className="text-[var(--color-ink-300)]" />}
                     </span>
@@ -1302,6 +1321,8 @@ function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, wee
   }
 
   const selCount = selectedDates.size;
+  // Whole month already over → frozen (Generate / Copy only ever touch today onward)
+  const monthPast = padDate(year, month, new Date(year, month, 0).getDate()) < istTodayKey();
 
   return (
     <>
@@ -1327,12 +1348,14 @@ function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, wee
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 sm:ml-auto">
-          <button onClick={() => setShowGenerate(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
+          <button onClick={() => setShowGenerate(true)} disabled={monthPast}
+            title={monthPast ? "Past month, frozen" : undefined}
+            className="disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-all shadow-sm">
             <RefreshCw size={12} /> Generate {MONTHS[month - 1].slice(0, 3)}
           </button>
-          <button onClick={() => setShowCopyPrev(true)}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)] transition-colors">
+          <button onClick={() => setShowCopyPrev(true)} disabled={monthPast}
+            title={monthPast ? "Past month, frozen" : undefined}
+            className="disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] text-[var(--color-ink-700)] transition-colors">
             <Copy size={12} /> Copy {MONTHS[(month - 2 + 12) % 12].slice(0, 3)}
           </button>
           <button onClick={() => { setSelectMode(s => s === "bulk" ? "none" : "bulk"); setSelectedDates(new Set()); }}
@@ -1423,7 +1446,7 @@ function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, wee
       {showGenerate && (
         <ConfirmModal
           title={`Generate ${MONTHS[month - 1]} ${year}`}
-          body={`PPMS will fill in your entire calendar for ${MONTHS[month - 1]} ${year} from your weekly template. Any existing generated data for this month will be replaced.`}
+          body={`PPMS will fill in your entire calendar for ${MONTHS[month - 1]} ${year} from your weekly template. Any existing generated data for this month will be replaced. Past dates are frozen and stay as they are.`}
           confirmLabel="Generate" confirmClass="bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)]"
           onConfirm={async () => { await generateMonthlySchedule(year, month); await refresh(); }}
           onClose={() => setShowGenerate(false)}
@@ -1434,7 +1457,7 @@ function CalendarTab({ hospitals, initialCalData, initialYear, initialMonth, wee
       {showCopyPrev && (
         <ConfirmModal
           title={`Copy ${MONTHS[(month - 2 + 12) % 12]} to ${MONTHS[month - 1]}`}
-          body={`This will copy the generated schedule from ${MONTHS[(month - 2 + 12) % 12]} into ${MONTHS[month - 1]} ${year}. Existing data for ${MONTHS[month - 1]} will be replaced.`}
+          body={`This will copy the generated schedule from ${MONTHS[(month - 2 + 12) % 12]} into ${MONTHS[month - 1]} ${year}. Existing data for ${MONTHS[month - 1]} will be replaced. Past dates are frozen and stay as they are.`}
           confirmLabel="Copy" confirmClass="bg-[var(--color-primary-600)] hover:bg-[var(--color-primary-700)]"
           onConfirm={async () => { await copyPreviousMonth(year, month); await refresh(); }}
           onClose={() => setShowCopyPrev(false)}
