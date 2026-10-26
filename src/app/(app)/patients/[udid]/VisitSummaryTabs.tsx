@@ -298,6 +298,7 @@ export function VisitSummaryTabBody({
   diagnoses,
   shortContent,
   aiContent,
+  emptyNote,
 }: {
   tab: Tab;
   loading: boolean;
@@ -312,6 +313,8 @@ export function VisitSummaryTabBody({
   shortContent?: React.ReactNode;
   /** When provided, replaces the default AIContent when the ai tab is active. */
   aiContent?: React.ReactNode;
+  /** Long tab: text shown when nothing is recorded. */
+  emptyNote?: string;
 }) {
   const diagList = diagnoses.filter((d) => d.description);
   // Merge shortData into emrData shape for ShortContent when emrData isn't loaded yet.
@@ -327,7 +330,7 @@ export function VisitSummaryTabBody({
   return (
     <div className="animate-fade-in">
       {tab === "short" && (shortContent ?? <ShortContent complaint={complaint} diagnoses={diagList} emrData={shortEmrData} />)}
-      {tab === "long" && <LongContentBoundary><LongContent data={emrData} complaint={complaint} diagnoses={diagList} /></LongContentBoundary>}
+      {tab === "long" && <LongContentBoundary><LongContent data={emrData} complaint={complaint} diagnoses={diagList} emptyNote={emptyNote} /></LongContentBoundary>}
       {tab === "ai" && (aiContent ?? <AIContent text={aiText} error={aiError} source={aiSource} notice={aiNotice} />)}
     </div>
   );
@@ -717,10 +720,12 @@ function LongContent({
   data,
   complaint,
   diagnoses,
+  emptyNote,
 }: {
   data: any;
   complaint: string | null;
   diagnoses: DiagItem[];
+  emptyNote?: string;
 }) {
   if (!data) return <ShortContent complaint={complaint} diagnoses={diagnoses} />;
 
@@ -856,7 +861,7 @@ function LongContent({
   const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasOcu && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
-  if (isEmpty) return <EmptyNote>No detailed clinical notes recorded for this visit.</EmptyNote>;
+  if (isEmpty) return <EmptyNote>{emptyNote ?? "No detailed clinical notes recorded for this visit."}</EmptyNote>;
 
   const vitals = [
     ["BP", g?.bp],

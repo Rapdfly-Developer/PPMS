@@ -3,7 +3,7 @@
 import { useState, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { LayoutList } from "lucide-react";
+import { Eye } from "lucide-react";
 
 export function Tabs({
   tabs,
@@ -15,6 +15,7 @@ export function Tabs({
   onOverviewToggle,
   keepMounted = false,
   contentClassName,
+  overviewContent,
 }: {
   tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean; tabBarHidden?: boolean }[];
   defaultTab?: string;
@@ -25,6 +26,8 @@ export function Tabs({
   onOverviewToggle?: () => void;
   keepMounted?: boolean;
   contentClassName?: string;
+  /** Shown in place of the tab contents while Overview is on (tabs stay mounted). */
+  overviewContent?: ReactNode;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const requestedActive = controlledActive ?? internalActive;
@@ -40,10 +43,33 @@ export function Tabs({
     ? requestedActive
     : tabBarTabs[0]?.id;
 
+  const showOverview = overviewMode && !!overviewContent;
+
   function handleTabChange(id: string) {
     if (controlledActive === undefined) setInternalActive(id);
     onTabChange?.(id);
+    // Overview stays on: it now shows the newly picked tab's summary
   }
+
+  // Overview on/off: one plain pill — outlined when off, teal when on
+  const overviewPill = (extra?: string) => (
+    <button
+      type="button"
+      aria-pressed={overviewMode}
+      onClick={onOverviewToggle}
+      title={overviewMode ? "Back to editing" : "Overview: this tab as a summary"}
+      className={clsx(
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+        overviewMode
+          ? "border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white"
+          : "border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]",
+        extra,
+      )}
+    >
+      <Eye size={13} />
+      Overview
+    </button>
+  );
 
   const activeTab = renderableTabs.find((t) => t.id === active);
   const totalRows = Math.ceil(tabBarTabs.length / 2);
@@ -231,48 +257,24 @@ export function Tabs({
         ))}
 
         {/* Overview toggle — sits at the far end of the tab bar */}
-        {onOverviewToggle && (
-          <button
-            onClick={onOverviewToggle}
-            title={overviewMode ? "Show all fields" : "Overview: show only filled fields"}
-            className={clsx(
-              "ml-auto flex items-center gap-1.5 px-3 py-1.5 mb-1 rounded-lg text-xs font-semibold transition-colors",
-              overviewMode
-                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border border-[var(--color-primary-200)]"
-                : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] border border-transparent"
-            )}
-          >
-            <LayoutList size={13} />
-            Overview
-          </button>
-        )}
+        {onOverviewToggle && overviewPill("ml-auto mb-1")}
       </div>
 
       {/* Mobile Overview toggle — sits below the grid */}
       {onOverviewToggle && (
         <div className="md:hidden flex justify-end mb-3">
-          <button
-            onClick={onOverviewToggle}
-            className={clsx(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border",
-              overviewMode
-                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]"
-                : "text-[var(--color-ink-400)] border-[var(--color-border)] hover:text-[var(--color-ink-600)]"
-            )}
-          >
-            <LayoutList size={13} />
-            Overview
-          </button>
+          {overviewPill()}
         </div>
       )}
 
       {/* ══ Shared content panel ═════════════════════════════════════════════ */}
+      {showOverview && <div className="animate-fade-in">{overviewContent}</div>}
       {keepMounted ? (
-        <div className={contentClassName || undefined}>
+        <div className={contentClassName || undefined} style={showOverview ? { display: "none" } : undefined}>
           {renderableTabs.map((tab) => (
             <div
               key={tab.id}
-              className={tab.id === active && overviewMode ? "emr-overview-active" : undefined}
+              className={tab.id === active && overviewMode && !showOverview ? "emr-overview-active" : undefined}
               style={tab.id !== active ? { display: "none" } : undefined}
             >
               {tab.content}

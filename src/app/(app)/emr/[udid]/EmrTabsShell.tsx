@@ -9,6 +9,7 @@ import { useEmrTabs } from "./EmrTabsContext";
 import { EmrOverviewProvider } from "./EmrOverviewContext";
 import { EMRSaveContext } from "./EmrSaveContext";
 import { LayoutList } from "lucide-react";
+import { EmrOverviewSummary } from "./EmrOverviewSummary";
 
 type TabDef = {
   id: string;
@@ -107,6 +108,7 @@ export function EmrTabsShell({
           onTabChange={(id) => { setActiveTab(id); }}
           overviewMode={overviewMode}
           onOverviewToggle={() => setOverviewMode((v) => !v)}
+          overviewContent={overviewMode ? <EmrOverviewSummary visitId={visit.id} tab={activeTab} /> : null}
           keepMounted
           contentClassName={showEditGate ? "pointer-events-none select-none opacity-70" : undefined}
         />
