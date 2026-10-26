@@ -72,6 +72,7 @@ const STATUS_CFG: Record<string, { label: string; color: string; dot: string }> 
    reached by deselecting whichever filter is active. */
 const VISIT_TYPE_FILTERS = [
   { key: "WALK_IN",     label: "Walk-in"     },
+  { key: "APPOINTMENT", label: "Appointments" },
   { key: "General OPD", label: "General OPD" },
   { key: "Follow-up",   label: "Follow-up"   },
   { key: "Emergency",   label: "Emergency"   },
@@ -391,7 +392,9 @@ export function DashboardClient({
         label,
         count: key === "WALK_IN"
           ? queueAppts.filter((a) => a.isWalkIn).length
-          : queueAppts.filter((a) => a.visitType === key).length,
+          : key === "APPOINTMENT"
+            ? queueAppts.filter((a) => !a.isWalkIn).length
+            : queueAppts.filter((a) => a.visitType === key).length,
       })).filter((f) => f.count > 0),
     [queueAppts],
   );
@@ -512,7 +515,9 @@ export function DashboardClient({
                 ? gAppts
                 : activeVisitType === "WALK_IN"
                   ? gAppts.filter((a) => a.isWalkIn)
-                  : gAppts.filter((a) => a.visitType === activeVisitType);
+                  : activeVisitType === "APPOINTMENT"
+                    ? gAppts.filter((a) => !a.isWalkIn)
+                    : gAppts.filter((a) => a.visitType === activeVisitType);
               return (
                 <div key={id} className="surface-card p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-2">
