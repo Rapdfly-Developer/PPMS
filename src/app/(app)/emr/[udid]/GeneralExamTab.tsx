@@ -269,11 +269,9 @@ function ComplaintKeywordButton({
 
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; patient?: { age?: number | null; sex?: string | null; occupation?: string | null } }) {
   const ge = visit.generalExam;
-  const [vitalsOpen, setVitalsOpen] = useState(false);
-  // Cards other than Chief Complaint start closed, like the
-  // Plan tab's Minor Procedure / Patient Disposition cards.
-  const [openCards, setOpenCards] = useState<Record<string, boolean>>({});
-  const toggleCard = (key: string) => setOpenCards((cur) => ({ ...cur, [key]: !cur[key] }));
+  // Vitals and the cards other than Chief Complaint start closed, like the Plan tab's
+  // Minor Procedure / Patient Disposition cards, unless they already hold values.
+  const [vitalsOpen, setVitalsOpen] = useState(() => !!(ge?.bp || ge?.pulse || ge?.temperature || ge?.weight));
   const [bp, setBp] = useState(ge?.bp ?? "");
   const [pulse, setPulse] = useState(ge?.pulse ?? "");
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
@@ -305,6 +303,16 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const [nkda, setNkda] = useState(ge?.nkda ?? false);
 
   const cumulativePmh = pmh.filter((entry) => entry.name.trim());
+
+  const [openCards, setOpenCards] = useState<Record<string, boolean>>(() => ({
+    hpi:       !!ge?.hpi?.trim() || hasHpiFields(parseJSON<HpiFields>(ge?.hpiFields, {})),
+    pmh:       cumulativePmh.length > 0,
+    meds:      medRows.some((m) => m.drugName?.trim()),
+    systemic:  !!ge?.pmhOtherText?.trim(),
+    family:    !!ge?.familyHistory?.trim(),
+    allergies: !!ge?.allergies?.trim() || !!ge?.nkda,
+  }));
+  const toggleCard = (key: string) => setOpenCards((cur) => ({ ...cur, [key]: !cur[key] }));
 
   // Past-history keywords the doctor added through "Other" — kept in this
   // browser (localStorage) and offered as chips on every visit from then on.

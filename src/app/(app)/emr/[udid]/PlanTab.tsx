@@ -1625,7 +1625,8 @@ function parseProcedureList(raw: string): string[] {
 
 function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, readOnly = false }: { visit: any; priorVisits: any[]; adviseNotes: string; onAdviseChange: (notes: string) => void; readOnly?: boolean }) {
   const overview = useEmrOverview();
-  const [open, setOpen] = useState(false);
+  // Starts closed unless this visit already has advise notes.
+  const [open, setOpen] = useState(() => !!adviseNotes.trim());
   const [showHistory, setShowHistory] = useState(false);
   const previous = priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes);
 
@@ -1705,7 +1706,8 @@ function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, read
 
 function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
-  const [open,           setOpen]           = useState(false);
+  // Starts closed unless a procedure, its notes or the anesthesia are already saved.
+  const [open,           setOpen]           = useState(() => !!(visit.procedureName?.trim() || visit.procedureNotes?.trim() || visit.anesthesiaType?.trim()));
   const [laterality,     setLaterality]     = useState<string>(visit.procedureLaterality ?? "OU");
   const [anesthesia,     setAnesthesia]     = useState<string>(visit.anesthesiaType ?? "");
   const [customAnesthesia, setCustomAnesthesia] = useState<string[]>(() => typeof window === "undefined" ? [] : getCustomAnesthesia());
@@ -2735,9 +2737,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
 function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
-  const [open, setOpen] = useState(false);
+  // Starts closed unless follow-up or referral details are saved; then it opens
+  // with the panels that hold them.
+  const [open, setOpen] = useState(() => !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf));
   const [activePanels, setActivePanels] = useState<string[]>(
     [
+      (visit.followUpDate || visit.inViewOf) && "follow",
+      visit.referralEnabled && "referral",
     ].filter(Boolean) as string[]
   );
   // One panel at a time: opening Referral closes Follow Up Dates and vice versa.
