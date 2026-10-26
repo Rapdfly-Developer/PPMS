@@ -11,7 +11,7 @@ import { istTodayRange } from "@/lib/ist";
 import { patientRecordScope } from "@/lib/patient-access";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 import { isAppointmentSessionClosed } from "@/lib/sessionClose";
-import { DEFAULT_REFRACTION_METHOD, PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
+import { PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -542,10 +542,10 @@ export async function getPatientSpectacleHistory(patientId: string) {
 /**
  * The spectacle prescription of a visit, as flat { sph, cyl, … , method } JSON per eye.
  * Current records store each refraction per method ({ _v: 2, methods: { Subjective: … } }
- * in `re`, more refractions in `extraCorrections`); the spectacle is the first refraction
- * whose selected method (the one shown in the EMR) is Subjective and has values. Values
- * kept under a method that is not selected are ignored. Older flat records are returned
- * as stored. Null when there is nothing to show.
+ * in `re`, more refractions in `extraCorrections`); the spectacle is Refraction 1's
+ * Subjective when it has values, otherwise the first other refraction's Subjective with
+ * values, whichever method each refraction currently shows. Older flat records are
+ * returned as stored. Null when there is nothing to show.
  */
 function spectacleRx(rc: { re: string | null; le: string | null; extraCorrections: string | null }): { re: string; le: string } | null {
   const parse = (s: string | null) => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
@@ -554,8 +554,7 @@ function spectacleRx(rc: { re: string | null; le: string | null; extraCorrection
   if (c1?._v !== 2) return rc.re || rc.le ? { re: rc.re ?? "", le: rc.le ?? "" } : null;
   const extras = parse(rc.extraCorrections);
   for (const corr of [c1, ...(Array.isArray(extras) ? extras : [])]) {
-    const selected = corr?.activeMethod || DEFAULT_REFRACTION_METHOD;
-    const entry = corr?._v === 2 && selected === PRESCRIBABLE_REFRACTION_METHOD ? corr.methods?.[selected] : null;
+    const entry = corr?._v === 2 ? corr.methods?.[PRESCRIBABLE_REFRACTION_METHOD] : null;
     if (entry && (has(entry.re) || has(entry.le))) {
       const method = PRESCRIBABLE_REFRACTION_METHOD;
       return { re: JSON.stringify({ ...entry.re, method }), le: JSON.stringify({ ...entry.le, method }) };
