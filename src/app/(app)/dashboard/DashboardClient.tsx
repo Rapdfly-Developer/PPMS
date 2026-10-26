@@ -265,13 +265,8 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
             </span>
           )}
           {appt.refractionDone && (
-            <span className="inline-flex flex-col items-center gap-0.5">
-              <span title={`Refraction done${appt.refractionByName ? ` by ${appt.refractionByName}` : ""} — passed over to doctor`} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600">
-                <CheckCheck size={13} />
-              </span>
-              {appt.refractionByName && (
-                <span className="max-w-[5.5rem] truncate text-micro font-medium leading-none text-emerald-700">{appt.refractionByName}</span>
-              )}
+            <span title={`Refraction done${appt.refractionByName ? ` by ${appt.refractionByName}` : ""} — passed over to doctor`} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600">
+              <CheckCheck size={13} />
             </span>
           )}
           {appt.status !== "CONFIRMED" && (
@@ -306,7 +301,16 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
             </button>
           )}
         </div>
-        <LiveTimer since={timerSince} />
+        {/* Second line: who did the refraction, then the timer — keeps the badges above on one even row */}
+        <div className="flex items-center gap-2">
+          {appt.refractionDone && appt.refractionByName && (
+            <span className="inline-flex items-center gap-1 max-w-[8rem] text-caption font-medium text-emerald-700" title={`Refraction by ${appt.refractionByName}`}>
+              <CheckCheck size={11} className="shrink-0" />
+              <span className="truncate">{appt.refractionByName}</span>
+            </span>
+          )}
+          <LiveTimer since={timerSince} />
+        </div>
       </div>
     </div>
   );
