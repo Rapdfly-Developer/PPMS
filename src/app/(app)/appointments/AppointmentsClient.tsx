@@ -472,7 +472,7 @@ export function AppointmentsClient({
 
 
       {/* ── Empty state ───────────────────────────────────────────────────── */}
-      {appointments.length === 0 && (
+      {appointments.length === 0 && !isDefaultView && (
         <div className="surface-card py-16 text-center">
           <p className="text-label sm:text-sm text-[var(--color-ink-400)]">
             {search ? `No appointments match "${search}".` : "No appointments found."}
@@ -489,7 +489,7 @@ export function AppointmentsClient({
       )}
 
       {/* ── Three-group view (default: no date selected) ─────────────────── */}
-      {appointments.length > 0 && isDefaultView && (() => {
+      {isDefaultView && (() => {
         const groups = [
           {
             key:    "today",
