@@ -532,7 +532,7 @@ function PresetSelectDialog({
 
   const openEditForm = (preset: TreatmentPreset) => {
     setFormName(preset.name);
-    setFormMeds(preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", taperLevels: [] })));
+    setFormMeds(preset.medications.length ? preset.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", taperLevels: [] })) : [blankMed()]);
     setFormAdvice(preset.advice ?? "");
     setFormInvestigations(preset.investigations ?? []);
     setFormFollowUp(preset.followUpDays ? String(preset.followUpDays) : "");
@@ -542,7 +542,7 @@ function PresetSelectDialog({
 
   const saveCustomProtocol = () => {
     const meds = formMeds.filter((m) => m.drugName.trim());
-    if (!formName.trim() || !meds.length) return;
+    if (!formName.trim()) return;
     meds.forEach((med) => saveCustomMedication({ name: med.drugName, defaultDose: med.dosage }));
     const newPreset: TreatmentPreset = {
       id: `custom-tx-${Date.now()}`,
@@ -569,7 +569,7 @@ function PresetSelectDialog({
   const updateProtocol = () => {
     if (!editingPresetId) return;
     const meds = formMeds.filter((m) => m.drugName.trim());
-    if (!formName.trim() || !meds.length) return;
+    if (!formName.trim()) return;
     meds.forEach((med) => saveCustomMedication({ name: med.drugName, defaultDose: med.dosage }));
     const all = getTreatmentPresets();
     const existing = all.find((p) => p.id === editingPresetId);
@@ -798,7 +798,7 @@ function PresetSelectDialog({
               {/* Drug rows */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Medications *</label>
+                  <label className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide">Medications</label>
                   <button
                     type="button"
                     onClick={() => setFormMeds([...formMeds, blankMed()])}
@@ -1027,7 +1027,7 @@ function PresetSelectDialog({
               <button
                 type="button"
                 onClick={editingPresetId ? updateProtocol : saveCustomProtocol}
-                disabled={!formName.trim() || !formMeds.some((m) => m.drugName.trim())}
+                disabled={!formName.trim()}
                 className="w-full py-2 rounded-xl bg-[#0F766E] text-white text-xs font-semibold hover:bg-[#0D6862] disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Check size={12} /> {editingPresetId ? "Update Protocol" : "Save & Add to List"}
