@@ -929,10 +929,12 @@ export async function passOverToDoctor(visitId: string) {
   if (visit.status !== "IN_PROGRESS") throw new Error("This consultation has already been finalized.");
 
   const now = new Date();
+  const refractionist = await prisma.refractionist.findUnique({ where: { userId: user.id }, select: { name: true } });
   const transitioned = await prisma.visit.updateMany({
     where: { id: visitId, refractionPassedOverAt: null },
     data: {
       refractionDone: true,
+      refractionByName: refractionist?.name ?? null,
       refractionStartedAt: visit.refractionStartedAt ?? now,
       refractionCompletedAt: now,
       refractionPassedOverAt: now,

@@ -86,6 +86,7 @@ export default async function PatientVisitsPage({
     doctor:      v.doctor   ?? null,
     generalExam: v.generalExam ?? null,
     diagnoses:   v.diagnoses,
+    refractionByName: (v as any).refractionByName ?? null,
     timestamps: {
       bookedAt:                v.appointment?.createdAt?.toISOString()                      ?? null,
       scheduledAt:             v.appointment?.dateTime?.toISOString()                       ?? null,

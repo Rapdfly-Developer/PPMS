@@ -31,6 +31,7 @@ interface Appt {
   visitStartedAt:   string | null;
   visitFinalizedAt: string | null;
   refractionDone?:  boolean;
+  refractionByName?: string | null;
 }
 
 export interface DashboardProps {
@@ -264,8 +265,13 @@ function ApptRow({ appt, serial, canManageQueue, canViewPatient, returnTo }: { a
             </span>
           )}
           {appt.refractionDone && (
-            <span title="Refraction done — passed over to doctor" className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600">
-              <CheckCheck size={13} />
+            <span className="inline-flex flex-col items-center gap-0.5">
+              <span title={`Refraction done${appt.refractionByName ? ` by ${appt.refractionByName}` : ""} — passed over to doctor`} className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-600">
+                <CheckCheck size={13} />
+              </span>
+              {appt.refractionByName && (
+                <span className="max-w-[5.5rem] truncate text-micro font-medium leading-none text-emerald-700">{appt.refractionByName}</span>
+              )}
             </span>
           )}
           {appt.status !== "CONFIRMED" && (

@@ -610,6 +610,9 @@ function SpectacleDrawer({
                     {re.method}
                   </span>
                 )}
+                {v.refractionByName && (
+                  <span className="text-micro text-emerald-700 font-medium">· Refraction by {v.refractionByName}</span>
+                )}
               </div>
             </div>
 

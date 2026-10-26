@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition, useMemo, useRef } from "react";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
-import { Trash2, Plus, X, Copy, Loader2, History, ImagePlus, ExternalLink } from "lucide-react";
+import { Trash2, Plus, X, Copy, Loader2, History, ImagePlus, ExternalLink, CheckCheck } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
@@ -767,6 +767,11 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 ml-auto flex-wrap">
+          {visit.refractionByName && (
+            <span className="inline-flex items-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <CheckCheck size={12} /> Refraction by {visit.refractionByName}
+            </span>
+          )}
           <ArSlipUpload
             url={activeEntry(c1).arSlipUrl}
             editable={editable}

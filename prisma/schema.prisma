@@ -521,6 +521,7 @@ model Visit {
   refractionDone          Boolean   @default(false)
   refractionStartedAt     DateTime?
   refractionCompletedAt   DateTime?
+  refractionByName        String?   // Refractionist who passed the patient to the doctor
   refractionPassedOverAt  DateTime?
 
   // AI Clinical Copilot draft — written only after the doctor explicitly confirms

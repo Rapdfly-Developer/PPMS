@@ -5,7 +5,7 @@ import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, isSameDay, addMonths, subMonths,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Building2, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Building2, Clock, CheckCheck } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "../EmrViewerModal";
 import { VisitSummaryTabs } from "../VisitSummaryTabs";
 import { NO_SHOW_KIND_LABEL, type NoShowKind } from "@/lib/noShowKinds";
@@ -39,6 +39,7 @@ export interface VisitRow {
   doctor:      { name: string } | null;
   generalExam: { chiefComplaint: string | null } | null;
   diagnoses:   { description: string; laterality: string | null }[];
+  refractionByName?: string | null;
   timestamps:  VisitTimestamps;
 }
 
@@ -407,6 +408,12 @@ export function VisitsListClient({
                 <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-500)]">
                   <Building2 size={11} className="text-[var(--color-ink-300)] shrink-0" />
                   <span className="truncate">{v.hospital.name}</span>
+                </div>
+              )}
+              {v.refractionByName && (
+                <div className="flex items-center gap-1.5 mt-1 text-xs text-[var(--color-ink-500)]">
+                  <CheckCheck size={11} className="text-emerald-600 shrink-0" />
+                  <span className="truncate">Refraction by {v.refractionByName}</span>
                 </div>
               )}
             </div>
