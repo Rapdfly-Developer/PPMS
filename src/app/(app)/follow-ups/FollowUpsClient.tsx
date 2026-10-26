@@ -711,7 +711,7 @@ export function FollowUpsClient({
     CANCELLED: visits.filter((v) => v.status === "CANCELLED").length,
   }), [visits]);
 
-  /* Filtered list */
+  /* Filtered list — latest follow-up date first */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return visits.filter((v) => {
@@ -723,7 +723,7 @@ export function FollowUpsClient({
         if (!hay.includes(q)) return false;
       }
       return true;
-    });
+    }).sort((a, b) => new Date(b.followUpDate).getTime() - new Date(a.followUpDate).getTime());
   }, [visits, search, statusFilter, doctorFilter]);
 
   function closePanel() {
@@ -772,7 +772,7 @@ export function FollowUpsClient({
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard
           label="Due Today"
           count={counts.DUE_TODAY}
@@ -804,22 +804,6 @@ export function FollowUpsClient({
           accent="text-orange-700" iconBg="bg-orange-50"
           onClick={() => setStatusFilter(statusFilter === "NO_SHOW" ? "ALL" : "NO_SHOW")}
           active={statusFilter === "NO_SHOW"}
-        />
-        <StatCard
-          label="Completed"
-          count={counts.COMPLETED}
-          icon={<CheckCircle2 size={17} className="text-emerald-600" />}
-          accent="text-emerald-700" iconBg="bg-emerald-50"
-          onClick={() => setStatusFilter(statusFilter === "COMPLETED" ? "ALL" : "COMPLETED")}
-          active={statusFilter === "COMPLETED"}
-        />
-        <StatCard
-          label="Cancelled"
-          count={counts.CANCELLED}
-          icon={<XCircle size={17} className="text-slate-500" />}
-          accent="text-slate-600" iconBg="bg-slate-100"
-          onClick={() => setStatusFilter(statusFilter === "CANCELLED" ? "ALL" : "CANCELLED")}
-          active={statusFilter === "CANCELLED"}
         />
       </div>
 
