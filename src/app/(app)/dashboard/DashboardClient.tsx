@@ -481,7 +481,7 @@ export function DashboardClient({
             </div>
             {can("appointments.view") && (
               <Link href="/appointments" className="text-caption sm:text-xs font-semibold text-[var(--color-primary-600)] hover:underline whitespace-nowrap">
-                View all →
+                View all appointments →
               </Link>
             )}
           </div>
