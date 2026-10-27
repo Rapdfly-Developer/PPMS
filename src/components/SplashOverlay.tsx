@@ -34,9 +34,10 @@ export function SplashOverlay() {
       sessionStorage.setItem("rf_splash_shown", "1");
     } catch { /* ok */ }
 
-    // Show web overlay for 3 seconds then fade out
-    const t1 = setTimeout(() => setFading(true), 2500);
-    const t2 = setTimeout(() => setShow(false), 3100);
+    // The animation runs ~4s (logo fades in at 2.8–3.6s), so hold until it
+    // finishes before fading.
+    const t1 = setTimeout(() => setFading(true), 4300);
+    const t2 = setTimeout(() => setShow(false), 4900);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
