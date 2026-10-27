@@ -6,6 +6,7 @@ import type { Browser } from "puppeteer-core";
 import { complaintLabel, parseComplaintItems } from "@/lib/appointment-cc";
 import { MONTSERRAT_600_WOFF2 } from "@/lib/pdfFonts";
 import { formatHpi } from "./hpi-builder";
+import { medicationLaterality, NO_LATERALITY_ROUTES } from "@/lib/medication-laterality";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
@@ -709,7 +710,7 @@ async function renderPrescriptionHtml(data: PrescriptionData): Promise<string> {
 
   const pdfMedBadge = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
     const r = route ?? "";
-    if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+    if (!NO_LATERALITY_ROUTES.includes(r) && (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name))) {
       const lbl = lat || "OU";
       return `<span style="display:inline-block;min-width:26px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7.5px;font-weight:700;text-align:center;margin-right:4px;">${escapeHtml(lbl)}</span>`;
     }
@@ -1140,7 +1141,7 @@ function suiMedicationRows(
       `<td style="${SUI_TD_MUTED}">${i + 1}</td>` +
       `<td style="${SUI_TD}font-weight:600;">` +
       `<div>` +
-      (m.laterality ? `<span style="font-weight:700;color:${SUI.P700};margin-right:6px;">${escapeHtml(m.laterality)}</span>` : "") +
+      (medicationLaterality(m) ? `<span style="font-weight:700;color:${SUI.P700};margin-right:6px;">${escapeHtml(medicationLaterality(m)!)}</span>` : "") +
       escapeHtml(m.drugName) +
       (m.route ? `<span style="font-weight:400;color:${SUI.INK_400};margin-left:3px;">· ${escapeHtml(m.route)}</span>` : "") +
       `</div>` +
@@ -2094,7 +2095,7 @@ export async function generateAllVisitsSummaryPdf(visits: any[]): Promise<Buffer
 
     const pdfMedBadge4 = (route: string | null | undefined, lat: string | null | undefined, name: string) => {
       const r = route ?? "";
-      if (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name)) {
+      if (!NO_LATERALITY_ROUTES.includes(r) && (r === "Topical" || /eye\s*drops?|eye\s*oint/i.test(name))) {
         const lbl = lat || "OU";
         return `<span style="display:inline-block;min-width:22px;padding:1px 4px;border-radius:3px;background:#DBEAFE;color:#1D4ED8;font-size:7px;font-weight:700;text-align:center;margin-right:3px;">${escapeHtml(lbl)}</span>`;
       }

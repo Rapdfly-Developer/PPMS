@@ -2151,7 +2151,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   const getMedBadge = (r: string | null | undefined, lat: string | null | undefined, name: string) => {
     const route = r ?? "";
     const dn = name ?? "";
-    if (route === "Topical" || /eye\s*drops?|eye\s*oint/i.test(dn)) {
+    if (routeHasLaterality(route || "Topical") && (route === "Topical" || /eye\s*drops?|eye\s*oint/i.test(dn))) {
       return { label: lat || defaultLaterality, bg: "bg-[var(--color-primary-100)]", text: "text-[var(--color-primary-700)]" };
     }
     if (/syrup|suspension/i.test(route) || /syrup|suspension/i.test(dn)) {

@@ -13,6 +13,7 @@ import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay } from "date-fns";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
+import { medicationLaterality } from "@/lib/medication-laterality";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -648,7 +649,7 @@ export async function addMedication(
 ) {
   const user = await requireRole("DOCTOR");
   await assertVisitAccess(visitId);
-  await prisma.medication.create({ data: { visitId, ...data } });
+  await prisma.medication.create({ data: { visitId, ...data, laterality: medicationLaterality(data) ?? undefined } });
   await writeAudit(user.id, "Medication", visitId, "ADD", data);
   revalidate(udid);
 }
@@ -668,7 +669,7 @@ export async function updateMedication(
 ) {
   const user = await requireRole("DOCTOR");
   await assertRowOwner("medication", id);
-  await prisma.medication.update({ where: { id }, data });
+  await prisma.medication.update({ where: { id }, data: { ...data, laterality: medicationLaterality(data) } });
   await writeAudit(user.id, "Medication", id, "UPDATE", data);
   revalidate(udid);
 }

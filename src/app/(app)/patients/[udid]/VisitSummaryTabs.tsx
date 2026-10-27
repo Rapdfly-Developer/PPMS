@@ -8,6 +8,7 @@ import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
 import { parseOculoplasty, hasFindings, findingsText, eomRows } from "@/lib/oculoplasty";
+import { medicationLaterality } from "@/lib/medication-laterality";
 
 type Tab = "short" | "long" | "ai";
 
@@ -479,8 +480,8 @@ function ShortContent({ complaint, diagnoses, emrData }: {
                 <tr key={i}>
                   <td className={TD_MUTED}>{i + 1}</td>
                   <td className={`${TD} font-semibold`}>
-                    {m.laterality && (
-                      <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>
+                    {medicationLaterality(m) && (
+                      <span className="font-bold text-[var(--color-primary-700)] mr-2">{medicationLaterality(m)}</span>
                     )}
                     {m.drugName}
                   </td>
@@ -1450,7 +1451,7 @@ function LongContent({
                   <td className={TD_MUTED}>{i + 1}</td>
                   <td className={`${TD} font-semibold`}>
                     <div>
-                      {m.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-2">{m.laterality}</span>}
+                      {medicationLaterality(m) && <span className="font-bold text-[var(--color-primary-700)] mr-2">{medicationLaterality(m)}</span>}
                       {m.drugName}
                       {m.route && <span className="font-normal text-[var(--color-ink-400)] ml-1">· {m.route}</span>}
                     </div>

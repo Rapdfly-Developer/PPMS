@@ -14,6 +14,7 @@ import {
 import { attachResult, deleteInvestigationOrder, updateInvestigationNotes, removeResult } from "@/app/(app)/emr/[udid]/actions";
 import { fileHref } from "@/lib/file-href";
 import { TimeStampButton } from "./PatientTimeline";
+import { medicationLaterality } from "@/lib/medication-laterality";
 
 /* ── Shared drawer shell ──────────────────────────────────────────────────── */
 function Drawer({
@@ -430,9 +431,9 @@ function TreatmentDrawer({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-0.5">
                         {/* Laterality badge */}
-                        {m.laterality && (
+                        {medicationLaterality(m) && (
                           <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-[var(--color-primary-600)] text-white shrink-0">
-                            {m.laterality}
+                            {medicationLaterality(m)}
                           </span>
                         )}
                         <p className="text-xs font-semibold text-[var(--color-ink-800)]">{m.drugName}</p>

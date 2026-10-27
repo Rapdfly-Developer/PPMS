@@ -9,6 +9,7 @@ import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
+import { medicationLaterality } from "@/lib/medication-laterality";
 
 function Section({ title, icon, badge, accent, children }: {
   title: string;
@@ -407,7 +408,7 @@ function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
                 <span className="text-caption text-[var(--color-ink-400)] tabular-nums w-5 shrink-0 mt-0.5">{i + 1}.</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[var(--color-ink-900)] text-sm leading-snug">
-                    {m.laterality && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{m.laterality}</span>}
+                    {medicationLaterality(m) && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{medicationLaterality(m)}</span>}
                     {m.drugName}
                   </p>
                   {(m.dosage || m.frequency || m.duration) && (
