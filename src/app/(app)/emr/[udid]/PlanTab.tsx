@@ -2431,13 +2431,25 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                               onChange={(name, defaultDose) => setEditDraft({ ...editDraft, drugName: name, ...(defaultDose && !editDraft.dosage ? { dosage: defaultDose } : {}) })}
                               className={cellCls}
                             />
-                            <select
-                              value={editDraft.route ?? "Topical"}
-                              onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
-                              className={cellCls}
-                            >
-                              {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
-                            </select>
+                            <div className="flex items-center gap-1">
+                              <select
+                                value={editDraft.route ?? "Topical"}
+                                onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
+                                className={cellCls}
+                              >
+                                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                              </select>
+                              {routeHasLaterality(editDraft.route ?? "Topical") && (
+                                <select
+                                  value={editDraft.laterality ?? defaultLaterality}
+                                  onChange={(e) => setEditDraft({ ...editDraft, laterality: e.target.value })}
+                                  aria-label="Laterality"
+                                  className={`${cellCls} !w-16 shrink-0`}
+                                >
+                                  {["RE", "LE", "OU"].map((l) => <option key={l} value={l}>{l}</option>)}
+                                </select>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="flex items-center gap-2">

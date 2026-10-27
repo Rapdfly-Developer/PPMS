@@ -650,7 +650,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     setExtras((prev) => prev.map((item, i) => i === idx ? fn(item) : item));
 
   const addCorrection = () =>
-    setExtras((prev) => [...prev, { label: `Correction ${prev.length + 2}`, activeMethod: DEFAULT_REFRACTION_METHOD, methods: {} }]);
+    setExtras((prev) => [...prev, { label: `Refraction ${prev.length + 2}`, activeMethod: DEFAULT_REFRACTION_METHOD, methods: {} }]);
 
   const removeCorrection = (idx: number) =>
     setExtras((prev) => prev.filter((_, i) => i !== idx));
@@ -828,7 +828,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       {/* ── Correction 1 (primary) ── */}
       <div className="flex items-center mb-3 gap-3 flex-wrap">
         <div className="flex items-center gap-3 flex-wrap">
-          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Correction 1</p>
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Refraction 1</p>
           <div className="flex items-center gap-2">
             <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
             <TealSelect
@@ -848,7 +848,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <ArSlipUpload
             url={activeEntry(c1).arSlipUrl}
             editable={editable}
-            label="Correction 1"
+            label="Refraction 1"
             onChange={(url) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
           />
           {priorRefractions.length > 0 && (
@@ -884,7 +884,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         <div key={idx} className="mt-5 pt-4 border-t border-[var(--color-border)]">
           <div className="flex items-center mb-3 gap-3 flex-wrap">
             <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">{ex.label}</p>
+              <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">{(ex.label || "Refraction").replace(/^Correction/i, "Refraction")}</p>
               <div className="flex items-center gap-2">
                 <span className="text-caption sm:text-xs text-[var(--color-ink-400)]">Method:</span>
                 <TealSelect
@@ -899,7 +899,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               <ArSlipUpload
                 url={activeEntry(ex).arSlipUrl}
                 editable={editable}
-                label={ex.label}
+                label={(ex.label || "Refraction").replace(/^Correction/i, "Refraction")}
                 onChange={(url) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
               />
               {editable && (
@@ -937,7 +937,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           onClick={addCorrection}
           className="mt-4 flex items-center gap-1.5 text-caption sm:text-xs font-medium text-[var(--color-primary-700)] hover:text-[var(--color-primary-900)] hover:bg-[var(--color-primary-50)] px-3 py-1.5 rounded-lg border border-[var(--color-primary-200)] transition-colors"
         >
-          <span className="text-base leading-none">+</span> Add Correction
+          <span className="text-base leading-none">+</span> Add Refraction
         </button>
       )}
 
