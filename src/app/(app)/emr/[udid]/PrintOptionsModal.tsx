@@ -5,10 +5,14 @@ import { createPortal } from "react-dom";
 import { Printer, Download, X, Loader2, Check } from "lucide-react";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
 import { readCustomPrintPref } from "@/lib/useCustomPrintPref";
-import { PRINT_SECTIONS } from "@/lib/print-sections";
+import { PRINT_SECTIONS, REFRACTION_PRINT_METHODS } from "@/lib/print-sections";
 import { getVisitEmrData } from "@/app/(app)/patients/[udid]/emr-viewer-action";
 
 type PrintMode = "short" | "long" | "custom";
+
+// Every tickable row: the sections plus the refraction methods listed under Refraction
+const ALL_ROWS = [...PRINT_SECTIONS, ...REFRACTION_PRINT_METHODS];
+const METHOD_IDS = REFRACTION_PRINT_METHODS.map((m) => m.id);
 
 const MODES: { id: PrintMode; label: string }[] = [
   { id: "short",  label: "Short Print" },
@@ -69,7 +73,7 @@ export function PrintOptionsModal({
   const [visit, setVisit] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [custom, setCustom] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(PRINT_SECTIONS.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
+    Object.fromEntries(ALL_ROWS.map((s) => [s.id, readCustomPrintPref(visitId, s.id)]))
   );
 
   useEffect(() => {
@@ -96,12 +100,16 @@ export function PrintOptionsModal({
 
   const toggle = (id: string) => {
     setMode("custom");
-    saveCustom({ ...custom, [id]: !custom[id] });
+    const next = { ...custom, [id]: !custom[id] };
+    // Refraction ticks / unticks all its methods; Refraction is on while any method is
+    if (id === "rx") for (const m of METHOD_IDS) next[m] = next.rx;
+    if (METHOD_IDS.includes(id)) next.rx = METHOD_IDS.some((m) => next[m]);
+    saveCustom(next);
   };
 
   const startFrom = (preset: "short" | "long") => {
     setMode("custom");
-    saveCustom(Object.fromEntries(PRINT_SECTIONS.map((s) => [s.id, s[preset]])));
+    saveCustom(Object.fromEntries(ALL_ROWS.map((s) => [s.id, s[preset]])));
   };
 
   const pdfBase = `/api/prescription-pdf/${visitId}`;
@@ -116,14 +124,14 @@ export function PrintOptionsModal({
       void openPdfNative(`${summaryBase}${spv ? `?spv=${spv}` : ""}`);
     } else {
       const params = new URLSearchParams();
-      for (const s of PRINT_SECTIONS) params.set(s.id, custom[s.id] ? "1" : "0");
+      for (const s of ALL_ROWS) params.set(s.id, custom[s.id] ? "1" : "0");
       void openPdfNative(`${pdfBase}?${params.toString()}`);
     }
     onClose();
   };
 
   const isChecked = (col: PrintMode, id: string) => {
-    const s = PRINT_SECTIONS.find((x) => x.id === id)!;
+    const s = ALL_ROWS.find((x) => x.id === id)!;
     return col === "custom" ? !!custom[id] : s[col];
   };
 
@@ -190,14 +198,15 @@ export function PrintOptionsModal({
           </div>
           <table className="w-full table-fixed border-separate border-spacing-0">
             <tbody>
-              {PRINT_SECTIONS.map((s) => {
+              {PRINT_SECTIONS.flatMap((s) => (s.id === "rx" ? [s, ...REFRACTION_PRINT_METHODS] : [s])).map((s) => {
                 const hasData = !loading && visit ? s.hasData(visit) : true;
                 const label = MODES.find((m) => m.id === mode)!.label;
+                const isMethod = METHOD_IDS.includes(s.id);
                 return (
                   <tr key={s.id} className="group">
-                    <td className="px-2.5 py-2 border-t border-[var(--color-border)]/70 group-hover:bg-[var(--color-primary-50)]/50 transition-colors">
+                    <td className={`${isMethod ? "pl-7 pr-2.5 py-1.5" : "px-2.5 py-2"} border-t border-[var(--color-border)]/70 group-hover:bg-[var(--color-primary-50)]/50 transition-colors`}>
                       <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-0.5">
-                        <span className={`text-caption sm:text-[13px] ${hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
+                        <span className={`${isMethod ? "text-caption" : "text-caption sm:text-[13px]"} ${hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
                         {!hasData && (
                           <span className="ml-auto shrink-0 text-micro text-[var(--color-ink-300)]">no data</span>
                         )}

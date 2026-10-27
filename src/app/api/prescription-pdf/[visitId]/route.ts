@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/rbac";
 import { printDeniedReason } from "../access";
 import { generateFullEmrPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
+import { rxMethodParam } from "@/lib/print-sections";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
   const { visitId } = await params;
@@ -186,7 +187,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
             }
           });
         }
-        const all = [...(on("rx") ? c1Corrs : []), ...extraCorrs];
+        // Custom Print can leave out single methods (a legacy refraction with no method is kept)
+        const all = [...(on("rx") ? c1Corrs : []), ...extraCorrs].filter((c) => !c.method || on(rxMethodParam(c.method)));
         return all.length > 0
           ? all.map((c) => ({ label: c.label, re: { ...c.re, method: c.method }, le: { ...c.le, method: c.method } }))
           : null;

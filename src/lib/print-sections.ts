@@ -1,4 +1,5 @@
 import { parseOculoplasty, hasFindings, hasEom } from "./oculoplasty";
+import { REFRACTION_METHODS } from "./constants";
 /**
  * Every EMR section the Print pop-up lists, in EMR tab order. `short` / `long`
  * say whether that summary prints the section (shown locked in the pop-up);
@@ -36,6 +37,24 @@ const hasRefraction = (rc: any) => {
     : anyFilled(re, (k) => k === "method") || anyFilled(obj(rc.le), (k) => k === "method");
   return c1 || arr(rc.extraCorrections).length > 0;
 };
+
+/** Query param for one refraction method in Custom Print, e.g. "rxm_auto-refraction" ("0" = leave out). */
+export const rxMethodParam = (method: string) => `rxm_${method.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+/** True when any refraction (1 or extra) has values saved under this method. */
+const hasRefractionMethod = (rc: any, method: string) => {
+  if (!rc) return false;
+  const has = (e: any) => anyFilled(obj(e?.re), (k) => k === "method") || anyFilled(obj(e?.le), (k) => k === "method");
+  const re = obj(rc.re);
+  if (re._v === 2) return [re, ...arr(rc.extraCorrections)].some((c: any) => has(obj(c?.methods)[method]));
+  // Older flat refractions keep the method on each eye
+  return (re.method === method && has(rc)) || arr(rc.extraCorrections).some((ex: any) => obj(ex?.re).method === method && has(ex));
+};
+
+/** The refraction methods listed under Refraction in the Print pop-up (Short prints Subjective only). */
+export const REFRACTION_PRINT_METHODS: PrintSection[] = REFRACTION_METHODS.map((m) => ({
+  id: rxMethodParam(m), label: m, short: m === "Subjective", long: true, hasData: (v: any) => hasRefractionMethod(v.refraction, m),
+}));
 
 export const PRINT_SECTIONS: PrintSection[] = [
   // General
