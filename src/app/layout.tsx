@@ -30,6 +30,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`h-full antialiased ${inter.variable}`}>
+      <head>
+        {/* The launch splash is server-rendered so the app shows it on first
+            paint. Capacitor's bridge exists before any page script, so a plain
+            browser can hide it here, before paint, instead of flashing it until
+            hydration removes it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <SplashOverlay />
         <Providers>{children}</Providers>

@@ -46,6 +46,7 @@ export function SplashOverlay() {
   return (
     <div
       aria-hidden
+      className="rf-splash"
       style={{
         position: "fixed",
         inset: 0,
