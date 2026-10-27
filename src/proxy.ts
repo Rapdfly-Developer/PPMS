@@ -108,6 +108,7 @@ export const config = {
   // Exclude upload routes — they authenticate themselves via requireRole(),
   // and running edge middleware on file uploads causes a 413 body-size error.
   // `v2` is the standalone marketing site served statically from public/v2 —
-  // it must stay publicly reachable, like the landing/ assets.
-  matcher: ["/((?!api/auth|api/upload|api/uploads|_next/static|_next/image|favicon.ico|landing/|v2).*)"],
+  // it must stay publicly reachable, like the landing/ assets. `splash/` is the
+  // app-launch animation, shown before anyone has signed in.
+  matcher: ["/((?!api/auth|api/upload|api/uploads|_next/static|_next/image|favicon.ico|landing/|splash/|v2).*)"],
 };
