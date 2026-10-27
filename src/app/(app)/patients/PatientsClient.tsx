@@ -38,6 +38,8 @@ export interface PatientRow {
   dispensedApptId?: string | null;
   /** The doctor closed this patient's session ("Mark as incomplete"): no revert to the queue. */
   undoLocked?: boolean;
+  /** The patient's session has ended: no revert to the queue, button not shown. */
+  undoHidden?: boolean;
   diagnoses: { description: string; laterality?: string | null; status?: string | null }[];
 }
 export interface TrendPoint { label: string; count: number; isToday: boolean; }
@@ -980,7 +982,7 @@ export function PatientsClient({
                             </>
                           )}
                         </div>
-                        {opStatusFilter === "dispensed" && p.dispensedApptId && (
+                        {opStatusFilter === "dispensed" && p.dispensedApptId && !p.undoHidden && (
                           <button
                             disabled={!!p.undoLocked}
                             onClick={(e) => {

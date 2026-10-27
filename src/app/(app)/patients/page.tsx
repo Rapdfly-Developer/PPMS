@@ -1,4 +1,4 @@
-import { closeEndedSessions, isAppointmentSessionClosed, type SessionCache } from "@/lib/sessionClose";
+import { closeEndedSessions, isAppointmentSessionClosed, isAppointmentSessionOver, type SessionCache } from "@/lib/sessionClose";
 import { istTodayRange } from "@/lib/ist";
 import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
@@ -278,13 +278,17 @@ export default async function PatientsPage({
   // This ensures Undo targets the exact appointment tied to the finalized visit,
   // not an unrelated appointment that also happens to be DISPENSED today.
 
-  // Patients whose session the doctor closed ("Mark as incomplete") cannot be reverted to the queue.
+  // Patients whose session the doctor closed ("Mark as incomplete") cannot be reverted to the queue
+  // (button disabled). Once the session's end time has passed, the button is hidden.
   const sessionCache: SessionCache = new Map();
   const undoLockedIds = new Set<string>();
+  const undoHiddenIds = new Set<string>();
   if (opStatusFilter === "dispensed") {
     for (const p of patients) {
       const a = p.visits[0]?.appointment;
-      if (a && a.status === "DISPENSED" && (await isAppointmentSessionClosed(a, sessionCache))) undoLockedIds.add(p.id);
+      if (!a || a.status !== "DISPENSED") continue;
+      if (await isAppointmentSessionOver(a, sessionCache)) undoHiddenIds.add(p.id);
+      else if (await isAppointmentSessionClosed(a, sessionCache)) undoLockedIds.add(p.id);
     }
   }
 
@@ -310,6 +314,7 @@ export default async function PatientsPage({
       p.visits[0]?.finalizedAt != null
     ) ? (p.visits[0].appointment?.id ?? null) : null,
     undoLocked: undoLockedIds.has(p.id),
+    undoHidden: undoHiddenIds.has(p.id),
     diagnoses: (p.visits[0] as any)?.diagnoses?.map((d: any) => ({ description: d.description, laterality: d.laterality ?? null, status: d.status ?? null })) ?? [],
   }));
 

@@ -63,6 +63,12 @@ export async function isAppointmentSessionClosed(appt: OpenAppt, cache: SessionC
   return !!closed;
 }
 
+/** True once the end time of the appointment's session (including any extension) has passed. */
+export async function isAppointmentSessionOver(appt: OpenAppt, cache: SessionCache = new Map()): Promise<boolean> {
+  const r = await sessionForAppointment(appt, cache);
+  return !!r && istDateTime(r.dateStr, r.session.endTime).getTime() <= Date.now();
+}
+
 export async function sessionForAppointment(appt: OpenAppt, cache: SessionCache = new Map()): Promise<{ dateStr: string; session: DoctorSession } | null> {
   if (!appt.doctorId) return null;
   const dateStr = istTodayStr(appt.dateTime);

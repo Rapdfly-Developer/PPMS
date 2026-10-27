@@ -10,7 +10,7 @@ import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { istTodayRange } from "@/lib/ist";
 import { patientRecordScope } from "@/lib/patient-access";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
-import { isAppointmentSessionClosed } from "@/lib/sessionClose";
+import { isAppointmentSessionClosed, isAppointmentSessionOver } from "@/lib/sessionClose";
 import { PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
@@ -50,6 +50,9 @@ export async function undoDispense(appointmentId: string): Promise<UndoDispenseR
   // The doctor marked this session's remaining patients incomplete: nobody goes back to its queue
   if (await isAppointmentSessionClosed(appt)) {
     return { ok: false, error: "This session was closed (marked incomplete), so the patient can no longer be returned to the queue." };
+  }
+  if (await isAppointmentSessionOver(appt)) {
+    return { ok: false, error: "This session has ended, so the patient can no longer be returned to the queue." };
   }
   const visit = appt.visit;
   if (!visit) return { ok: false, error: "No linked visit found for this appointment." };
