@@ -172,6 +172,34 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
 // the mobile breakpoint, instead of collapsing to stacked whenever the fields
 // inside happen to be wide. min-w-0 lets each cell shrink so its own content
 // wraps within the column rather than forcing the pair apart.
+/* Distance VA can carry a "P" (partial: only part of the line was read), saved as e.g. "6/9P".
+   P only applies to Snellen line values (6/6 … 5/60), not CF / HM / PL. */
+const isVaLine = (v: string) => /^\d+\/\d+$/.test(v);
+function splitVa(v?: string | null) {
+  const s = v ?? "";
+  return s.endsWith("P") && isVaLine(s.slice(0, -1)) ? { base: s.slice(0, -1), partial: true } : { base: s, partial: false };
+}
+const joinVa = (base: string, partial: boolean) => (partial && isVaLine(base) ? `${base}P` : base);
+
+function PartialToggle({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled: boolean }) {
+  const { base, partial } = splitVa(value);
+  const usable = isVaLine(base);
+  return (
+    <button
+      type="button"
+      disabled={disabled || !usable}
+      onClick={() => onChange(joinVa(base, !partial))}
+      title={partial ? "Partial (P): remove" : "Mark as partial (P): only part of the line was read"}
+      aria-pressed={partial}
+      className={`shrink-0 w-6 h-6 rounded border text-caption font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+        partial ? "border-[#0F766E] bg-[#0F766E] text-white" : "border-[var(--color-border)] bg-white text-[var(--color-ink-400)] hover:border-[#0F766E] hover:text-[#0F766E]"
+      }`}
+    >
+      P
+    </button>
+  );
+}
+
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (
     // Padding is split evenly across the two cells (pr-8 / pl-8) with no column
@@ -291,12 +319,13 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
       <div className="inline-flex items-center gap-0.5 justify-center">
         <select
           disabled={!editable}
-          value={eye[key] ?? "-"}
-          onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+          value={splitVa(eye[key]).base || "-"}
+          onChange={(e) => setEye({ ...eye, [key]: joinVa(e.target.value, splitVa(eye[key]).partial) })}
           className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
         >
           {VA_SNELLEN_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
+        <PartialToggle value={eye[key] ?? ""} onChange={(v) => setEye({ ...eye, [key]: v })} disabled={!editable} />
         {histBtn("dist", eyeKey, key)}
       </div>
       {vaInlineHist("dist", eyeKey, key, setEye)}
@@ -655,14 +684,26 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     </div>
   );
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
-    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
-        {options.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-    </div>
-  );
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => {
+    const dist = options === VA_SNELLEN_VALUES;
+    const { base, partial } = splitVa(value);
+    return (
+      <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+        <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
+        <div className="flex items-center gap-1 min-w-0">
+          <select
+            disabled={!editable}
+            value={(dist ? base : value) || "-"}
+            onChange={(e) => onChange(dist ? joinVa(e.target.value, partial) : e.target.value)}
+            className={`w-full min-w-0 ${SEL}`}
+          >
+            {options.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+          {dist && <PartialToggle value={value ?? ""} onChange={onChange} disabled={!editable} />}
+        </div>
+      </div>
+    );
+  };
 
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
@@ -2538,14 +2579,26 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
     </div>
   );
 
-  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => (
-    <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
-      <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select disabled={!editable} value={value || "-"} onChange={(e) => onChange(e.target.value)} className={`w-full min-w-0 ${SEL}`}>
-        {options.map((v) => <option key={v} value={v}>{v}</option>)}
-      </select>
-    </div>
-  );
+  const vaSelect = (label: string, value: string, onChange: (v: string) => void, options: readonly string[] = VA_SNELLEN_VALUES, className = "") => {
+    const dist = options === VA_SNELLEN_VALUES;
+    const { base, partial } = splitVa(value);
+    return (
+      <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+        <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
+        <div className="flex items-center gap-1 min-w-0">
+          <select
+            disabled={!editable}
+            value={(dist ? base : value) || "-"}
+            onChange={(e) => onChange(dist ? joinVa(e.target.value, partial) : e.target.value)}
+            className={`w-full min-w-0 ${SEL}`}
+          >
+            {options.map((v) => <option key={v} value={v}>{v}</option>)}
+          </select>
+          {dist && <PartialToggle value={value ?? ""} onChange={onChange} disabled={!editable} />}
+        </div>
+      </div>
+    );
+  };
 
   const SECTION_LABEL = "col-span-2 sm:col-span-5 text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest";
 
