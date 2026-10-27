@@ -701,13 +701,12 @@ export function PremiumLanding() {
 
       {/* ── Social proof numbers ─────────────────────────────────────────── */}
       <Section className="lp-tight-top pt-8 md:pt-10 lg:pt-12">
-        <RevealGroup className="flex flex-wrap items-center justify-center gap-x-10 gap-y-5 sm:gap-x-14" stagger={0.1}>
+        <RevealGroup className="mx-auto grid max-w-xl grid-cols-2 items-start" stagger={0.1}>
             {[
               { num: "1 login", label: "For every hospital you visit" },
               { num: "1 record", label: "Per patient, across hospitals" },
-              { num: "7-day", label: "Free trial, no card" },
             ].map((s, i) => (
-              <RevealItem key={s.label} y={18} className={`text-center ${i < 2 ? "sm:border-r sm:border-emerald-950/[0.07] sm:pr-10" : ""}`}>
+              <RevealItem key={s.label} y={18} className={`px-3 text-center sm:px-8 ${i === 0 ? "border-r border-emerald-950/[0.07]" : ""}`}>
                 <p className="font-display text-[clamp(1.6rem,3vw,2.25rem)] font-bold leading-none tracking-[-0.03em] text-emerald-950">
                   {s.num}
                 </p>
