@@ -51,6 +51,8 @@ const REVEAL_FROM: Record<RevealVariant, (y: number) => TargetAndTransition> = {
   // outside the box so the frame's drop shadow is never cut off.
   image: (y) => ({ y: Math.round(y * 0.5), clipPath: "inset(100% -20% 0% -20%)" }),
 };
+const IMAGE_VIEWPORT = { once: true, margin: "0px 0px 15% 0px" } as const;
+
 const REVEAL_TO: Record<RevealVariant, TargetAndTransition> = {
   fade: { opacity: 1, y: 0 },
   heading: { opacity: 1, y: 0, filter: "blur(0px)" },
@@ -63,6 +65,33 @@ const REVEAL_TO: Record<RevealVariant, TargetAndTransition> = {
  */
 export function Reveal({ children, delay = 0, y = 28, className, variant = "fade" }: RevealProps) {
   const reduce = useReducedMotion();
+  const transition = {
+    duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : variant === "image" ? 1.1 : DURATION.slow,
+    delay: reduce ? 0 : delay,
+    ease: variant === "image" ? EASE.expo : EASE.smooth,
+  };
+
+  // The image curtain starts fully closed (clip-path inset 100%). Browsers
+  // count an element's own clip-path when deciding whether it is in view, so a
+  // closed curtain on the observed element reads as zero height and never
+  // triggers, leaving an empty gap (seen on phones). The outer element watches
+  // the viewport unclipped; the inner one carries the curtain.
+  if (variant === "image") {
+    return (
+      // Photos start opening just before they scroll in (not 90px after), so
+      // a quick scroll on a phone never lands on an empty plate.
+      <motion.div className={className} initial="hidden" whileInView="shown" viewport={IMAGE_VIEWPORT}>
+        <motion.div
+          variants={{
+            hidden: reduce ? { opacity: 0 } : REVEAL_FROM.image(y),
+            shown: { ...(reduce ? { opacity: 1 } : REVEAL_TO.image), transition },
+          }}
+        >
+          {children}
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -70,11 +99,7 @@ export function Reveal({ children, delay = 0, y = 28, className, variant = "fade
       initial={reduce ? { opacity: 0 } : REVEAL_FROM[variant](y)}
       whileInView={reduce ? { opacity: 1 } : REVEAL_TO[variant]}
       viewport={VIEWPORT}
-      transition={{
-        duration: reduce ? 0.01 : variant === "fade" ? DURATION.normal + 0.1 : variant === "image" ? 1.1 : DURATION.slow,
-        delay: reduce ? 0 : delay,
-        ease: variant === "image" ? EASE.expo : EASE.smooth,
-      }}
+      transition={transition}
     >
       {children}
     </motion.div>
