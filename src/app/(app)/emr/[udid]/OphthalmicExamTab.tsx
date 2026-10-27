@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition, useMemo, useRef } from "react";
-import { useEmrOverview } from "./EmrOverviewContext";
+import { useEmrOverview, useOphthalmicSub } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { Trash2, Plus, X, Copy, Loader2, History, ImagePlus, ExternalLink, CheckCheck } from "lucide-react";
 import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
@@ -144,11 +144,26 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   const ovSect = (isEmpty: boolean) =>
     overview && isEmpty ? { "data-overview-empty-section": "" as const } : {};
 
+  // The open sub-tab is shared with the EMR shell so Overview summarises just that sub-tab
+  const subCtx = useOphthalmicSub();
+  const subHidden: Record<string, boolean> = {
+    va: !(canViewVA ?? true), refraction: !(canViewRefraction ?? true), cv: !(canViewColour ?? true), iop: !(canViewIOP ?? true),
+    anterior: !(canViewAnterior ?? true), posterior: !(canViewPosterior ?? true), oculoplasty: !(canViewPosterior ?? true),
+    tear: !(canViewAnterior ?? true), lacrimal: !(canViewAnterior ?? true), diplopia: !(canViewPosterior ?? true), hess: !(canViewPosterior ?? true),
+  };
+  const subKey = Object.entries(subHidden).map(([k, h]) => `${k}:${h ? 0 : 1}`).join(",");
+  useEffect(() => {
+    subCtx?.setSubTabs(OPHTHALMIC_SUB_TABS.filter((t) => !subHidden[t.id]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subKey]);
+
   return (
     <AutoSaveSharedLock>
       <Tabs
         variant="sub"
         defaultTab="va"
+        activeTab={subCtx?.sub}
+        onTabChange={subCtx?.setSub}
         keepMounted
         tabs={[
           { id: "va",        label: "Visual Acuity",    hidden: !(canViewVA ?? true), content: <div {...ovSect(empty.va)}><VisualAcuityCard visit={visit} udid={udid} editable={vaCanEdit} priorVisits={priorVisits} /></div> },
@@ -199,6 +214,13 @@ function PartialToggle({ value, onChange, disabled }: { value: string; onChange:
     </button>
   );
 }
+
+const OPHTHALMIC_SUB_TABS = [
+  { id: "va", label: "Visual Acuity" }, { id: "refraction", label: "Refraction" }, { id: "cv", label: "Colour / Contrast" },
+  { id: "iop", label: "IOP / Gonio" }, { id: "anterior", label: "Anterior Segment" }, { id: "posterior", label: "Posterior Segment" },
+  { id: "oculoplasty", label: "Oculoplasty" }, { id: "tear", label: "Tear Film" }, { id: "lacrimal", label: "Lacrimal Sac" },
+  { id: "diplopia", label: "Diplopia Chart" }, { id: "hess", label: "Hess Chart" },
+];
 
 function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
   return (

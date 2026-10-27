@@ -6,7 +6,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { EmrActionBar } from "./EmrActionBar";
 import { ConsultationExitGuard } from "./ConsultationExitGuard";
 import { useEmrTabs } from "./EmrTabsContext";
-import { EmrOverviewProvider } from "./EmrOverviewContext";
+import { EmrOverviewProvider, OphthalmicSubProvider, type OphthalmicSubTab } from "./EmrOverviewContext";
 import { EMRSaveContext } from "./EmrSaveContext";
 import { LayoutList } from "lucide-react";
 import { EmrOverviewSummary } from "./EmrOverviewSummary";
@@ -73,6 +73,8 @@ export function EmrTabsShell({
   const [openPartialSignal, setOpenPartialSignal] = useState(0);
   const [editMode, setEditMode] = useState(searchParams.get("edit") === "1");
   const [overviewMode, setOverviewMode] = useState(false);
+  const [ophthalmicSub, setOphthalmicSub] = useState("va");
+  const [ophthalmicSubTabs, setOphthalmicSubTabs] = useState<OphthalmicSubTab[]>([]);
   const visibleTabs = tabs.filter((t) => !t.hidden && !t.tabBarHidden);
   const currentIndex = visibleTabs.findIndex((t) => t.id === activeTab);
 
@@ -101,6 +103,7 @@ export function EmrTabsShell({
   return (
     <EMRSaveContext.Provider value={{ savePaused, unpauseSaves }}>
     <EmrOverviewProvider value={overviewMode}>
+    <OphthalmicSubProvider value={{ sub: ophthalmicSub, setSub: setOphthalmicSub, subTabs: ophthalmicSubTabs, setSubTabs: setOphthalmicSubTabs }}>
       <div>
         <Tabs
           tabs={tabs}
@@ -108,7 +111,7 @@ export function EmrTabsShell({
           onTabChange={(id) => { setActiveTab(id); }}
           overviewMode={overviewMode}
           onOverviewToggle={() => setOverviewMode((v) => !v)}
-          overviewContent={overviewMode ? <EmrOverviewSummary visitId={visit.id} tab={activeTab} /> : null}
+          overviewContent={overviewMode ? <EmrOverviewSummary visitId={visit.id} tab={activeTab} ophthalmicSub={ophthalmicSub} ophthalmicSubTabs={ophthalmicSubTabs} onOphthalmicSubChange={setOphthalmicSub} /> : null}
           keepMounted
           contentClassName={showEditGate ? "pointer-events-none select-none opacity-70" : undefined}
         />
@@ -170,6 +173,7 @@ export function EmrTabsShell({
           </div>
         )}
       </div>
+    </OphthalmicSubProvider>
     </EmrOverviewProvider>
     </EMRSaveContext.Provider>
   );
