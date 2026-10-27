@@ -2425,30 +2425,32 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
                       {/* Drug Name */}
                       <td className="px-2 py-2">
                         {isEditing ? (
-                          <div className="flex flex-col gap-1">
-                            <DrugNameInput
-                              value={editDraft.drugName}
-                              onChange={(name, defaultDose) => setEditDraft({ ...editDraft, drugName: name, ...(defaultDose && !editDraft.dosage ? { dosage: defaultDose } : {}) })}
-                              className={cellCls}
-                            />
-                            <div className="flex items-center gap-1">
+                          /* Route, laterality, then drug name on one line — same order as the add row */
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={editDraft.route ?? "Topical"}
+                              onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
+                              aria-label="Route"
+                              className={`${cellCls} !w-28 shrink-0`}
+                            >
+                              {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                            </select>
+                            {routeHasLaterality(editDraft.route ?? "Topical") && (
                               <select
-                                value={editDraft.route ?? "Topical"}
-                                onChange={(e) => setEditDraft({ ...editDraft, route: e.target.value })}
-                                className={cellCls}
+                                value={editDraft.laterality ?? defaultLaterality}
+                                onChange={(e) => setEditDraft({ ...editDraft, laterality: e.target.value })}
+                                aria-label="Laterality"
+                                className={`${cellCls} !w-16 shrink-0`}
                               >
-                                {ROUTE_OPTIONS.map((r) => <option key={r}>{r}</option>)}
+                                {["RE", "LE", "OU"].map((l) => <option key={l} value={l}>{l}</option>)}
                               </select>
-                              {routeHasLaterality(editDraft.route ?? "Topical") && (
-                                <select
-                                  value={editDraft.laterality ?? defaultLaterality}
-                                  onChange={(e) => setEditDraft({ ...editDraft, laterality: e.target.value })}
-                                  aria-label="Laterality"
-                                  className={`${cellCls} !w-16 shrink-0`}
-                                >
-                                  {["RE", "LE", "OU"].map((l) => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                              )}
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <DrugNameInput
+                                value={editDraft.drugName}
+                                onChange={(name, defaultDose) => setEditDraft({ ...editDraft, drugName: name, ...(defaultDose && !editDraft.dosage ? { dosage: defaultDose } : {}) })}
+                                className={cellCls}
+                              />
                             </div>
                           </div>
                         ) : (
