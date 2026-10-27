@@ -85,9 +85,16 @@ const nextConfig: NextConfig = {
   // Legacy Capacitor local-asset splash URL — older APK builds navigated to
   // this path before the app switched to a remote server URL. Redirect to the
   // home page so cached WebView state doesn't show a dead page on launch.
+  // Only full-page visits are redirected: the launch animation (SplashOverlay)
+  // loads the same file in an iframe, and its logo as an image.
   async redirects() {
     return [
-      { source: "/splash/:path*", destination: "/", permanent: false },
+      {
+        source: "/splash/:path*",
+        has: [{ type: "header", key: "sec-fetch-dest", value: "document" }],
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
   async headers() {
