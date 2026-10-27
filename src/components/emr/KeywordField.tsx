@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 
 /**
  * Distinguishes single from double activation (click/touch/keyboard).
@@ -39,6 +39,15 @@ function loadKws(fieldKey: string): string[] {
 
 function saveKws(fieldKey: string, kws: string[]) {
   try { localStorage.setItem(`kw_${fieldKey}`, JSON.stringify(kws)); } catch { /* storage unavailable */ }
+}
+
+/** Default (built-in) keywords the user deleted for this field. */
+function loadHidden(fieldKey: string): string[] {
+  try { return JSON.parse(localStorage.getItem(`kw_hidden_${fieldKey}`) ?? "[]"); } catch { return []; }
+}
+
+function saveHidden(fieldKey: string, kws: string[]) {
+  try { localStorage.setItem(`kw_hidden_${fieldKey}`, JSON.stringify(kws)); } catch { /* storage unavailable */ }
 }
 
 export function keywordEntries(text: string): string[] {
@@ -115,6 +124,80 @@ function ChipBtn({
   );
 }
 
+/** How long a chip stays red asking "Delete?" before going back to normal. */
+const DELETE_CONFIRM_MS = 3000;
+
+/**
+ * A keyword chip with an × button. Clicking × turns the whole chip red with
+ * "Delete?" for a few seconds; clicking the red chip deletes the keyword,
+ * otherwise it goes back to normal on its own.
+ */
+function DeletableChip({
+  kw,
+  onSingle,
+  onDouble,
+  onDelete,
+  custom,
+}: {
+  kw: string;
+  onSingle: () => void;
+  onDouble: () => void;
+  onDelete: () => void;
+  custom: boolean;
+}) {
+  const [armed, setArmed] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (timerRef.current !== null) clearTimeout(timerRef.current); }, []);
+
+  const arm = () => {
+    setArmed(true);
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => { timerRef.current = null; setArmed(false); }, DELETE_CONFIRM_MS);
+  };
+
+  if (armed) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          if (timerRef.current !== null) clearTimeout(timerRef.current);
+          timerRef.current = null;
+          setArmed(false);
+          onDelete();
+        }}
+        title={`Click to delete the keyword "${kw}"`}
+        aria-label={`Confirm delete keyword "${kw}"`}
+        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-red-500 bg-red-500 text-caption font-semibold text-white hover:bg-red-600 transition-colors"
+      >
+        <Trash2 size={10} strokeWidth={2.5} /> Delete?
+      </button>
+    );
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 pl-2 pr-0.5 py-0.5 rounded-full border text-caption transition-colors ${
+        custom
+          ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+          : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
+      }`}
+    >
+      <ChipBtn kw={kw} onSingle={onSingle} onDouble={onDouble} className={custom ? "hover:underline" : ""}>
+        {kw}
+      </ChipBtn>
+      <button
+        type="button"
+        onClick={arm}
+        className="grid place-items-center w-4 h-4 rounded-full text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-500 transition-colors"
+        title={`Delete keyword "${kw}"`}
+        aria-label={`Delete keyword "${kw}"`}
+      >
+        <X size={9} strokeWidth={2.5} />
+      </button>
+    </span>
+  );
+}
+
 function KeywordChips({
   fieldKey,
   onAppend,
@@ -127,57 +210,58 @@ function KeywordChips({
   onAppend: (kw: string) => void;
   onRemoveFromText: (kw: string) => void;
   disabled: boolean;
-  /** Always-present suggestions. Not removable: they are not the user's to delete. */
+  /** Default suggestions. Deleting one hides it for this field in this browser. */
   builtIns?: readonly string[];
   legacyKeys?: readonly string[];
 }) {
   const [kws, setKws] = useState<string[]>([]);
+  const [hidden, setHidden] = useState<string[]>([]);
   useEffect(() => {
     if (legacyKeys?.length) migrateLegacyKws(fieldKey, legacyKeys);
     setKws(loadKws(fieldKey));
+    setHidden(loadHidden(fieldKey));
   }, [fieldKey, legacyKeys]);
 
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+
   const remove = (kw: string) => {
-    const next = kws.filter((k) => k !== kw);
+    const next = kws.filter((k) => !same(k, kw));
     setKws(next);
     saveKws(fieldKey, next);
+    if (builtIns.some((b) => same(b, kw)) && !hidden.some((h) => same(h, kw))) {
+      const nextHidden = [...hidden, kw];
+      setHidden(nextHidden);
+      saveHidden(fieldKey, nextHidden);
+    }
   };
 
+  const shownBuiltIns = builtIns.filter((b) => !hidden.some((h) => same(h, b)));
   // A built-in the user also saved would otherwise render twice.
-  const custom = kws.filter((k) => !builtIns.some((b) => b.toLowerCase() === k.toLowerCase()));
+  const custom = kws.filter((k) => !builtIns.some((b) => same(b, k)));
 
-  if (disabled || (custom.length === 0 && builtIns.length === 0)) return null;
+  if (disabled || (custom.length === 0 && shownBuiltIns.length === 0)) return null;
 
   return (
     <>
-      {builtIns.map((kw) => (
-        <ChipBtn
+      {shownBuiltIns.map((kw) => (
+        <DeletableChip
           key={`builtin-${kw}`}
           kw={kw}
+          custom={false}
           onSingle={() => onAppend(kw)}
           onDouble={() => onRemoveFromText(kw)}
-          className="inline-flex items-center px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-caption text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)] transition-colors"
-        >
-          {kw}
-        </ChipBtn>
+          onDelete={() => remove(kw)}
+        />
       ))}
       {custom.map((kw) => (
-        <span
+        <DeletableChip
           key={kw}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption text-[var(--color-primary-700)]"
-        >
-          <ChipBtn
-            kw={kw}
-            onSingle={() => onAppend(kw)}
-            onDouble={() => onRemoveFromText(kw)}
-            className="hover:underline"
-          >
-            {kw}
-          </ChipBtn>
-          <button type="button" onClick={() => remove(kw)} className="ml-0.5 text-[var(--color-ink-400)] hover:text-red-500 transition-colors" title={`Delete saved keyword "${kw}"`}>
-            <X size={9} strokeWidth={2.5} />
-          </button>
-        </span>
+          kw={kw}
+          custom
+          onSingle={() => onAppend(kw)}
+          onDouble={() => onRemoveFromText(kw)}
+          onDelete={() => remove(kw)}
+        />
       ))}
     </>
   );
@@ -196,9 +280,12 @@ function AddKeywordButton({
     const entries = keywordEntries(getValue());
     const raw = entries.at(-1)?.trim() ?? "";
     if (!raw) return;
+    // Adding a default keyword that was deleted brings it back
+    const hidden = loadHidden(fieldKey);
+    const unhidden = hidden.filter((h) => h.toLowerCase() !== raw.toLowerCase());
+    if (unhidden.length !== hidden.length) saveHidden(fieldKey, unhidden);
     const kws = loadKws(fieldKey);
-    if (kws.includes(raw)) return;
-    saveKws(fieldKey, [...kws, raw]);
+    if (!kws.includes(raw)) saveKws(fieldKey, [...kws, raw]);
     onRefresh();
   };
 
