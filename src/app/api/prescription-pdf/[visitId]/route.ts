@@ -154,6 +154,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       // Every refraction and method that has values, same as the Previous Visits long summary.
       extraCorrections: (() => {
         type FlatCorr = { label: string; re: any; le: any; method: string };
+        // Duochrome Test is recorded on Subjective only ("=" when never changed)
+        const duo = (method: string, entry: any) => (method === "Subjective" ? { duochrome: entry?.duochrome || "=" } : {});
         const c1Corrs: FlatCorr[] = [];
         const extraCorrs: FlatCorr[] = [];
         const reRaw = parseJSON(rc?.re, {} as any);
@@ -161,7 +163,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
           const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
           Object.entries(methods).forEach(([method, entry]) => {
             if (Object.values(entry.re || {}).some(Boolean)) {
-              c1Corrs.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
+              c1Corrs.push({ label: "Refraction 1", re: { ...(entry.re || {}), ...duo(method, entry) }, le: entry.le || {}, method });
             }
           });
         } else {
@@ -177,7 +179,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
               const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
               Object.entries(methods).forEach(([method, entry]) => {
                 if (Object.values(entry.re || {}).some(Boolean)) {
-                  extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method });
+                  extraCorrs.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: { ...(entry.re || {}), ...duo(method, entry) }, le: entry.le || {}, method });
                 }
               });
             } else {

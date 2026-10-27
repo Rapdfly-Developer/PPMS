@@ -80,7 +80,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   const rc = spectRc ?? visit.refraction ?? null;
 
   // Collect all checked corrections as a flat list, handling both v1 and v2 storage formats.
-  type FlatCorr = { label: string; re: Record<string, string>; le: Record<string, string>; method: string };
+  type FlatCorr = { label: string; re: Record<string, string>; le: Record<string, string>; method: string; duochrome?: string };
   const c1Corrections: FlatCorr[] = [];
   const extraCorrectionsList: FlatCorr[] = [];
 
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
     const methods = (reRaw.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
     Object.entries(methods).forEach(([method, entry]) => {
       if (Object.values(entry.re || {}).some(Boolean)) {
-        c1Corrections.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method });
+        c1Corrections.push({ label: "Refraction 1", re: entry.re || {}, le: entry.le || {}, method, duochrome: (entry as any).duochrome });
       }
     });
   } else {
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       const methods = (ex.methods || {}) as Record<string, { re: any; le: any; includedInPrint?: boolean }>;
       Object.entries(methods).forEach(([method, entry]) => {
         if (Object.values(entry.re || {}).some(Boolean)) {
-          extraCorrectionsList.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method });
+          extraCorrectionsList.push({ label: (ex.label || "Extra Correction").replace(/^Correction\b/i, "Refraction"), re: entry.re || {}, le: entry.le || {}, method, duochrome: (entry as any).duochrome });
         }
       });
     } else {
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   // Every refraction/method prints in the long EMR.
   const subjectiveCorr = allCorrections.find((c) => isPrescribableMethod(c.method));
   const opticalRx = subjectiveCorr
-    ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }
+    ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method, duochrome: subjectiveCorr.duochrome || "=" }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }
     : null;
 
   // Visual Acuity

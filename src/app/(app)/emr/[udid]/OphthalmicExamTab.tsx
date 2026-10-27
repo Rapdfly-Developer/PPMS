@@ -222,16 +222,22 @@ const OPHTHALMIC_SUB_TABS = [
   { id: "diplopia", label: "Diplopia Chart" }, { id: "hess", label: "Hess Chart" },
 ];
 
-function EyeColumns({ children }: { children: [React.ReactNode, React.ReactNode] }) {
+function EyeColumns({ children, middle }: { children: [React.ReactNode, React.ReactNode]; middle?: React.ReactNode }) {
   return (
     // Padding is split evenly across the two cells (pr-8 / pl-8) with no column
     // gap, so both content boxes end up the same width and full-width fields
     // line up between the eyes. A gap plus one-sided padding would make the
     // left column 32px narrower than the right.
     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6">
-      <div className="min-w-0 md:pr-8">
-        <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
-        {children[0]}
+      <div className="min-w-0 md:pr-8 lg:flex">
+        <div className="min-w-0">
+          <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Right Eye</p>
+          {children[0]}
+        </div>
+        {/* Optional middle item (e.g. Duochrome Test): centred in the free space between the
+            end of the right-eye fields and the start of the left-eye fields. translate-x-8 adds
+            half of the 64px padding (pr-8 here + pl-8 on the left eye) that the flex area doesn't cover. */}
+        {middle && <div className="mt-6 lg:mt-0 lg:flex-1 flex justify-center lg:translate-x-8">{middle}</div>}
       </div>
       <div className="min-w-0 md:pl-8">
         <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3">Left Eye</p>
@@ -554,7 +560,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
   // Each method within a correction card stores its own eye data, print flag, and AR slip.
-  type MethodEntry = { re: RxEye; le: RxEye; includedInPrint: boolean; arSlipUrl?: string };
+  // duochrome: Subjective only, cycles "=" → ">" → "<" (unset = "=")
+  type MethodEntry = { re: RxEye; le: RxEye; includedInPrint: boolean; arSlipUrl?: string; duochrome?: string };
 
   // A correction card holds per-method data keyed by method name.
   // Stored as { _v: 2, label, activeMethod, methods: {...} } in the DB re field.
@@ -645,6 +652,40 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       value: m,
       label: m !== corr.activeMethod && methodHasValues(corr.methods[m]) ? `${m} · saved` : m,
     }));
+
+  // Duochrome Test, shown between the eyes for the Subjective method only
+  const DUOCHROME_NEXT: Record<string, string> = { "=": ">", ">": "<", "<": "=" };
+  const duochromeCell = (corr: CorrV2, update: (fn: (prev: CorrV2) => CorrV2) => void) => {
+    if (corr.activeMethod !== "Subjective") return undefined;
+    const value = activeEntry(corr).duochrome || "=";
+    const active = value !== "=";
+    // Mirrors the eye columns (heading, "Distance" row, field label) so the button lines up with the Distance fields
+    return (
+      <div className="flex flex-col items-center">
+        <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3 whitespace-nowrap">Duochrome Test</p>
+        <div className="flex flex-col items-center gap-y-2">
+          <p aria-hidden className="invisible text-micro sm:text-caption font-semibold uppercase tracking-widest">Distance</p>
+          <div className="flex flex-col items-center gap-0.5">
+            <span aria-hidden className="invisible text-micro sm:text-caption font-medium">Sph</span>
+            <button
+              type="button"
+              disabled={!editable}
+              onClick={() => update((prev) => patchEntry(prev, (ent) => ({ ...ent, duochrome: DUOCHROME_NEXT[value] ?? "=" })))}
+              title="Duochrome Test: click to change (= → > → <)"
+              aria-label={`Duochrome Test ${value}`}
+              className={`w-10 h-[26px] rounded-md flex items-center justify-center text-sm font-bold leading-none border transition-colors disabled:opacity-40 ${
+                active
+                  ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
+                  : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
+              }`}
+            >
+              {value}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const setExtra = (idx: number, fn: (prev: CorrV2) => CorrV2) =>
     setExtras((prev) => prev.map((item, i) => i === idx ? fn(item) : item));
@@ -864,7 +905,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <SaveIndicator state={state} />
         </div>
       </div>
-      <EyeColumns>
+      <EyeColumns middle={duochromeCell(c1, setC1)}>
         {eyeFields(
           activeEntry(c1).re,
           (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
@@ -913,7 +954,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               )}
             </div>
           </div>
-          <EyeColumns>
+          <EyeColumns middle={duochromeCell(ex, (fn) => setExtra(idx, fn))}>
             {eyeFields(
               activeEntry(ex).re,
               (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
