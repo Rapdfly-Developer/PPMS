@@ -10,10 +10,15 @@ import { AutoRefresh } from "@/components/ui/AutoRefresh";
 import { LicenseGate } from "@/components/ui/LicenseGate";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { runStartup } from "@/lib/startup";
+import { isClosedByDeletion } from "@/lib/account-deletion";
+import { redirect } from "next/navigation";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   await runStartup(); // runs once per cold start; subsequent calls return instantly
   const user = await requireUser();
+  // Sessions are JWTs, so a deleted account stays signed in on other devices
+  // until it next loads a page; send it to sign out.
+  if (await isClosedByDeletion(user.id)) redirect("/account-closed");
 
   const licenseResult = await checkLicenseForUser(user);
   // In local development there is no seeded license — bypass the gate so

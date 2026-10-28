@@ -21,7 +21,12 @@ import {
   requestExportOtp,
   verifyExportOtp,
   changeOwnPassword,
+  requestAccountDeletionOtp,
+  verifyAccountDeletionOtp,
+  deleteOwnAccount,
 } from "@/app/(app)/settings/actions";
+import { DELETION_REASONS } from "@/lib/account-deletion-reasons";
+import { signOut } from "next-auth/react";
 import { createUser } from "@/app/(app)/users/actions";
 import { saveRolePermissions } from "@/app/(app)/settings/roles/actions";
 import { LicenseSection } from "./LicenseSection";
@@ -42,7 +47,7 @@ import { TealSelect } from "@/components/ui/TealSelect";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Section =
-  | "profile" | "security"
+  | "profile" | "security" | "delete-account"
   | "users" | "roles" | "departments"
   | "hospital" | "add-hospital" | "appointments" | "notifications"
   | "audit" | "export" | "logs" | "patient-appt-logs"
@@ -116,6 +121,7 @@ const SIDEBAR_GROUPS: {
     items: [
       { id: "profile",   label: "Doctor Profile",  icon: Stethoscope },
       { id: "security",  label: "Change Password",  icon: Lock        },
+      { id: "delete-account", label: "Delete Account", icon: Trash2 },
     ],
   },
   {
@@ -3374,6 +3380,218 @@ function SecuritySection() {
   );
 }
 
+// ── SECTION: DELETE ACCOUNT ───────────────────────────────────────────────────
+
+type DeleteStep = "closed" | "confirm" | "otp" | "reason";
+
+function DeleteAccountSection() {
+  const [step, setStep]         = useState<DeleteStep>("closed");
+  const [typed, setTyped]       = useState("");
+  const [otpCode, setOtpCode]   = useState("");
+  const [sentTo, setSentTo]     = useState("");
+  const [reason, setReason]     = useState("");
+  const [detail, setDetail]     = useState("");
+  const [busy, setBusy]         = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+
+  function close() {
+    setStep("closed"); setTyped(""); setOtpCode(""); setReason(""); setDetail(""); setError(null);
+  }
+
+  async function sendOtp() {
+    setBusy(true); setError(null);
+    const res = await requestAccountDeletionOtp();
+    setBusy(false);
+    if (res.error) { setError(res.error); return; }
+    setSentTo(res.email ?? "your email");
+    setOtpCode("");
+    setStep("otp");
+  }
+
+  async function verifyOtp() {
+    if (otpCode.length !== 6) return;
+    setBusy(true); setError(null);
+    const res = await verifyAccountDeletionOtp(otpCode);
+    setBusy(false);
+    if (res.error) { setError(res.error); return; }
+    setStep("reason");
+  }
+
+  async function confirmDelete() {
+    setBusy(true); setError(null);
+    const res = await deleteOwnAccount(reason, detail);
+    if (res.error) { setBusy(false); setError(res.error); return; }
+    await signOut({ callbackUrl: "/login" });
+  }
+
+  const reasonValid = !!reason && (reason !== "Other" || detail.trim().length > 0);
+
+  return (
+    <div>
+      <SectionHeader title="Delete Account" desc="Permanently close your RF Health account" />
+      <div className="max-w-xl">
+        <Card>
+          <div className="p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} className="text-red-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)]">What happens when you delete your account</p>
+                <ul className="mt-2 space-y-1.5 text-caption sm:text-xs text-[var(--color-ink-600)] list-disc pl-4">
+                  <li>You are signed out on every device and can no longer log in.</li>
+                  <li>Your upcoming appointments are cancelled.</li>
+                  <li>Staff and refractionists who work only under you lose access too.</li>
+                  <li>After 30 days your login, profile, signature and schedules are permanently deleted.</li>
+                  <li>Patient records, prescriptions, bills and audit logs are <span className="font-semibold">kept</span> by the practice, as the law requires.</li>
+                </ul>
+                <p className="mt-3 text-caption sm:text-xs text-[var(--color-ink-500)]">
+                  Want a copy of your patient records first? Use <span className="font-semibold">Data Export</span> before deleting.
+                  Deleted by mistake? Email support@ppmsai.com within 30 days to restore your account.
+                </p>
+              </div>
+            </div>
+
+            {error && step === "closed" && (
+              <p className="flex items-center gap-1.5 text-caption sm:text-xs text-red-600">
+                <AlertTriangle size={12} className="shrink-0" /> {error}
+              </p>
+            )}
+
+            <div className="pt-3 border-t border-[var(--color-border)]">
+              <button
+                onClick={() => { setError(null); setStep("confirm"); }}
+                className="flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-label sm:text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+              >
+                <Trash2 size={14} /> Delete my account
+              </button>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {step !== "closed" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                {step === "otp" ? <Shield size={18} className="text-red-600" /> : <Trash2 size={18} className="text-red-600" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-label sm:text-sm font-bold text-[var(--color-ink-900)]">
+                  {step === "confirm" ? "Delete your account?" : step === "otp" ? "Verify your identity" : "Why are you leaving?"}
+                </p>
+                <p className="text-caption sm:text-xs text-[var(--color-ink-500)] mt-0.5">
+                  {step === "confirm" && "This signs you out everywhere and cannot be undone after 30 days."}
+                  {step === "otp" && <>A 6-digit OTP was sent to <span className="font-semibold">{sentTo}</span></>}
+                  {step === "reason" && "Your answer helps us improve RF Health."}
+                </p>
+              </div>
+            </div>
+
+            {step === "confirm" && (
+              <div>
+                <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1.5">
+                  Type <span className="font-bold text-red-600">DELETE</span> to continue
+                </label>
+                <input
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  autoFocus
+                  className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-ink-900)] focus:border-red-500 focus:outline-none transition-colors"
+                />
+              </div>
+            )}
+
+            {step === "otp" && (
+              <div>
+                <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1.5">Enter OTP</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="••••••"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ""))}
+                  onKeyDown={(e) => e.key === "Enter" && verifyOtp()}
+                  autoFocus
+                  className="w-full rounded-xl border-2 border-[var(--color-border)] bg-white px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-[var(--color-ink-900)] focus:border-red-500 focus:outline-none transition-colors"
+                />
+                <div className="mt-1.5 flex items-center justify-between gap-2">
+                  <p className="text-caption sm:text-caption text-[var(--color-ink-400)]">Expires in 5 minutes.</p>
+                  <button onClick={sendOtp} disabled={busy} className="text-caption sm:text-xs font-semibold text-[var(--color-primary-600)] hover:underline disabled:opacity-50">
+                    Resend OTP
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === "reason" && (
+              <div className="space-y-3">
+                <div className="flex flex-col gap-1.5">
+                  {DELETION_REASONS.map((r) => (
+                    <label key={r} className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-label sm:text-sm cursor-pointer transition-colors ${reason === r ? "border-red-400 bg-red-50 text-[var(--color-ink-900)]" : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}>
+                      <input type="radio" name="delete-reason" value={r} checked={reason === r} onChange={() => setReason(r)} className="accent-red-600" />
+                      {r}
+                    </label>
+                  ))}
+                </div>
+                <div>
+                  <label className="block text-caption sm:text-xs font-medium text-[var(--color-ink-600)] mb-1.5">
+                    Tell us more {reason === "Other" ? <span className="text-red-600">*</span> : <span className="font-normal text-[var(--color-ink-400)]">(optional)</span>}
+                  </label>
+                  <textarea
+                    value={detail}
+                    onChange={(e) => setDetail(e.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    className="w-full rounded-lg border border-[var(--color-border)] px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
+            {error && <p className="text-caption sm:text-xs text-red-600">{error}</p>}
+
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={close}
+                disabled={busy && step === "reason"}
+                className="flex-1 rounded-xl border border-[var(--color-border)] py-2.5 text-label sm:text-sm font-semibold text-[var(--color-ink-600)] hover:bg-gray-50 transition-colors disabled:opacity-50">
+                Cancel
+              </button>
+              {step === "confirm" && (
+                <button
+                  onClick={sendOtp}
+                  disabled={typed.trim() !== "DELETE" || busy}
+                  className="flex-1 rounded-xl bg-red-600 py-2.5 text-label sm:text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                  {busy ? <><RefreshCw size={13} className="animate-spin" /> Sending OTP…</> : "Send OTP"}
+                </button>
+              )}
+              {step === "otp" && (
+                <button
+                  onClick={verifyOtp}
+                  disabled={otpCode.length !== 6 || busy}
+                  className="flex-1 rounded-xl bg-red-600 py-2.5 text-label sm:text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                  {busy ? <><RefreshCw size={13} className="animate-spin" /> Verifying…</> : "Verify"}
+                </button>
+              )}
+              {step === "reason" && (
+                <button
+                  onClick={confirmDelete}
+                  disabled={!reasonValid || busy}
+                  className="flex-1 rounded-xl bg-red-600 py-2.5 text-label sm:text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5">
+                  {busy ? <><RefreshCw size={13} className="animate-spin" /> Deleting…</> : "Delete account"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── License Management, handled by LicenseSection component ─────────────────
 
 const LICENSE_SUBTABS = ["overview", "activate", "plans", "renewal", "history"] as const;
@@ -3387,7 +3605,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
   const isLicenseTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) || urlTab === "license";
   const licInitialTab: LicSubTab = (LICENSE_SUBTABS as readonly string[]).includes(urlTab) ? urlTab as LicSubTab : "overview";
 
-  const VALID_SECTIONS: Section[] = ["profile","security","users","roles","departments","hospital","add-hospital","appointments","notifications","audit","export","logs","patient-appt-logs","licenses","integrations"];
+  const VALID_SECTIONS: Section[] = ["profile","security","delete-account","users","roles","departments","hospital","add-hospital","appointments","notifications","audit","export","logs","patient-appt-logs","licenses","integrations"];
   const [activeSection, setActiveSection] = useState<Section>(
     urlSection && VALID_SECTIONS.includes(urlSection) ? urlSection :
     isLicenseTab ? "licenses" : "profile"
@@ -3406,6 +3624,7 @@ export function DoctorSettingsClient({ users, auditLogs, hospitals, loginLogs, p
     switch (activeSection) {
       case "profile":      return <ProfileSection doctor={doctor} />;
       case "security":     return <SecuritySection />;
+      case "delete-account": return <DeleteAccountSection />;
       case "users":        return <UsersSection users={users} hospitals={hospitals} assignableRoles={assignableRoles} doctorId={doctor?.id ?? null} />;
       case "roles":        return <RolesSection />;
       case "departments":  return <DepartmentsSection />;

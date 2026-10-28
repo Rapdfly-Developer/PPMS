@@ -32,6 +32,8 @@ model User {
   loginHistory  UserLoginHistory[]
   exportOtps         ExportOtp[]
   passwordResetTokens PasswordResetToken[]
+  deletionOtps       AccountDeletionOtp[]
+  deletionRequests   AccountDeletionRequest[]
 }
 
 model Doctor {
@@ -907,6 +909,45 @@ model ExportOtp {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Doctor self-service account deletion
+// The login is disabled on request; personal data is purged once
+// scheduledFor passes (30-day grace). Clinical records are never deleted here.
+// ──────────────────────────────────────────────────────────────────────────
+
+model AccountDeletionOtp {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  code       String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  verifiedAt DateTime?
+  used       Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+// status: PENDING | COMPLETED | RESTORED
+model AccountDeletionRequest {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  doctorId        String?
+  reason          String
+  reasonDetail    String?
+  status          String    @default("PENDING")
+  // Staff/refractionist logins disabled with this request, so support can restore them
+  disabledUserIds String[]  @default([])
+  requestedAt     DateTime  @default(now())
+  scheduledFor    DateTime
+  completedAt     DateTime?
+
+  @@index([status, scheduledFor])
+  @@index([userId])
 }
 
 // Short-lived OTP record for email login

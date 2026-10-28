@@ -3,10 +3,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { startOfDay, endOfDay, subDays } from "date-fns";
 import { closeEndedSessions } from "@/lib/sessionClose";
+import { purgeDueAccountDeletions } from "@/lib/account-deletion";
 
 // Vercel Cron: runs daily at midnight (00:00 UTC).
 // 1. Closes every ended doctor session: unfinalized patients become incomplete visits.
 // 2. Cancels CONFIRMED/REQUESTED appointments from yesterday that never became a visit (no-shows).
+// 3. Purges personal data of deleted doctor accounts whose 30-day grace period has ended.
 export async function GET(req: Request) {
   if (!isCronAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,5 +62,7 @@ export async function GET(req: Request) {
     cancelledNoShows = ids.length;
   }
 
-  return NextResponse.json({ ok: true, cancelledNoShows });
+  const purgedAccounts = await purgeDueAccountDeletions();
+
+  return NextResponse.json({ ok: true, cancelledNoShows, purgedAccounts });
 }

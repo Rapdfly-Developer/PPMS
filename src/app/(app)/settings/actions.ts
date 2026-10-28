@@ -10,6 +10,8 @@ import { sendMail } from "@/lib/mailer";
 import { auth } from "@/auth";
 import { generateUniqueShortCode } from "@/lib/doctor-utils";
 import { isEmailTaken, isMobileTaken } from "@/lib/uniqueness";
+import { DELETION_GRACE_DAYS, findDependentUserIds } from "@/lib/account-deletion";
+import { DELETION_REASONS } from "@/lib/account-deletion-reasons";
 
 // ── Hospital settings (HOSPITAL role) ──────────────────────────────────────
 
@@ -903,6 +905,165 @@ export async function verifyExportOtp(code: string): Promise<{ error?: string }>
   if (otp.code !== code.trim()) return { error: "Incorrect OTP. Please try again." };
 
   await prisma.exportOtp.update({ where: { id: otp.id }, data: { used: true } });
+  return {};
+}
+
+// ── Delete own account (doctor only) ───────────────────────────────────────
+
+const DELETION_OTP_MAX_ATTEMPTS = 5;
+const DELETION_VERIFIED_WINDOW_MS = 10 * 60 * 1000;
+
+export async function requestAccountDeletionOtp(): Promise<{ error?: string; email?: string }> {
+  const user = await requireRole("DOCTOR");
+
+  const row = await prisma.user.findUnique({ where: { id: user.id }, select: { email: true } });
+  if (!row?.email) {
+    return { error: "No email address on file for your account. Contact support@ppmsai.com to delete your account." };
+  }
+
+  await prisma.accountDeletionOtp.updateMany({ where: { userId: user.id, used: false }, data: { used: true } });
+
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  await prisma.accountDeletionOtp.create({ data: { userId: user.id, code, expiresAt } });
+
+  await sendMail(
+    row.email,
+    "Your RF Health account deletion code",
+    `<div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;">
+      <div style="background:#b91c1c;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">RF Health, Account deletion</div>
+      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;">
+        <p style="margin:0 0 12px;color:#334155;font-size:14px;">Use the code below to confirm deletion of your RF Health account. It expires in <strong>5 minutes</strong>.</p>
+        <div style="text-align:center;letter-spacing:10px;font-size:36px;font-weight:800;color:#b91c1c;padding:16px 0;">${code}</div>
+        <p style="margin:12px 0 0;color:#94a3b8;font-size:12px;">If you did not request this, do not share the code and change your password.</p>
+      </div>
+    </div>`
+  );
+
+  const masked = row.email.replace(/^(.)(.*)(@.*)$/, (_, a, b, c) => a + "*".repeat(b.length) + c);
+  return { email: masked };
+}
+
+export async function verifyAccountDeletionOtp(code: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+
+  const otp = await prisma.accountDeletionOtp.findFirst({
+    where: { userId: user.id, used: false, verifiedAt: null, expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!otp) return { error: "OTP expired or not found. Request a new one." };
+  if (otp.attempts >= DELETION_OTP_MAX_ATTEMPTS) {
+    return { error: "Too many incorrect attempts. Request a new OTP." };
+  }
+  if (otp.code !== code.trim()) {
+    await prisma.accountDeletionOtp.update({ where: { id: otp.id }, data: { attempts: { increment: 1 } } });
+    return { error: "Incorrect OTP. Please try again." };
+  }
+
+  await prisma.accountDeletionOtp.update({ where: { id: otp.id }, data: { verifiedAt: new Date() } });
+  return {};
+}
+
+export async function deleteOwnAccount(reason: string, reasonDetail: string): Promise<{ error?: string }> {
+  const user = await requireRole("DOCTOR");
+  const doctorId = user.doctorId ?? null;
+
+  if (!(DELETION_REASONS as readonly string[]).includes(reason)) return { error: "Select a reason." };
+  const detail = reasonDetail.trim().slice(0, 1000);
+  if (reason === "Other" && !detail) return { error: "Tell us why you are deleting your account." };
+
+  const otp = await prisma.accountDeletionOtp.findFirst({
+    where: {
+      userId: user.id,
+      used: false,
+      verifiedAt: { gt: new Date(Date.now() - DELETION_VERIFIED_WINDOW_MS) },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!otp) return { error: "Your verification has expired. Start again." };
+
+  const now = new Date();
+  const dependentUserIds = doctorId ? await findDependentUserIds(doctorId) : [];
+  const upcoming = doctorId
+    ? await prisma.appointment.findMany({
+        where: { doctorId, dateTime: { gte: now }, status: { in: ["REQUESTED", "CONFIRMED", "RESCHEDULED"] } },
+        select: { id: true, hospitalId: true },
+      })
+    : [];
+
+  const scheduledFor = new Date(now.getTime() + DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000);
+
+  await prisma.$transaction([
+    prisma.accountDeletionOtp.update({ where: { id: otp.id }, data: { used: true } }),
+    prisma.user.update({ where: { id: user.id }, data: { active: false } }),
+    prisma.user.updateMany({ where: { id: { in: dependentUserIds } }, data: { active: false } }),
+    prisma.appointment.updateMany({
+      where: { id: { in: upcoming.map((a) => a.id) } },
+      data: { status: "CANCELLED" },
+    }),
+    prisma.accountDeletionRequest.create({
+      data: {
+        userId: user.id,
+        doctorId,
+        reason,
+        reasonDetail: detail || null,
+        disabledUserIds: dependentUserIds,
+        scheduledFor,
+      },
+    }),
+    prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        userName: user.name,
+        action: "ACCOUNT_DELETION_REQUESTED",
+        actionType: "DELETE",
+        moduleName: "Settings",
+        entityType: "User",
+        entityId: user.id,
+        newValue: JSON.stringify({
+          reason,
+          scheduledFor: scheduledFor.toISOString(),
+          cancelledAppointments: upcoming.length,
+          disabledLogins: dependentUserIds.length,
+        }),
+      },
+    }),
+  ]);
+
+  // Hospitals that keep running (other doctors) hear about the cancellations.
+  const hospitalIds = [...new Set(upcoming.map((a) => a.hospitalId))];
+  if (hospitalIds.length > 0) {
+    const staff = await prisma.hospitalStaff.findMany({
+      where: { hospitalId: { in: hospitalIds }, user: { active: true } },
+      select: { userId: true, hospitalId: true },
+    });
+    const perHospital = new Map<string, number>();
+    for (const a of upcoming) perHospital.set(a.hospitalId, (perHospital.get(a.hospitalId) ?? 0) + 1);
+    if (staff.length > 0) {
+      await prisma.notification.createMany({
+        data: staff.map((s) => ({
+          userId: s.userId,
+          type: "APPOINTMENT_CANCELLED",
+          message: `Dr. ${user.name} has closed their account. ${perHospital.get(s.hospitalId) ?? 0} upcoming appointment(s) were cancelled.`,
+        })),
+      });
+    }
+  }
+
+  const row = await prisma.user.findUnique({ where: { id: user.id }, select: { email: true } });
+  await sendMail(
+    row?.email,
+    "Your RF Health account has been deleted",
+    `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
+      <div style="background:#115E59;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0;font-size:16px;font-weight:700;">RF Health</div>
+      <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px;padding:24px;color:#334155;font-size:14px;">
+        <p style="margin:0 0 12px;">Your account has been closed and you have been signed out.</p>
+        <p style="margin:0 0 12px;">Your login and personal details will be permanently deleted on <strong>${scheduledFor.toDateString()}</strong>. Patient records are kept by the practice as required by law.</p>
+        <p style="margin:0;">Deleted by mistake? Email <a href="mailto:support@ppmsai.com">support@ppmsai.com</a> before that date and we can restore your account.</p>
+      </div>
+    </div>`
+  );
+
   return {};
 }
 
