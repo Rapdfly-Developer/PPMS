@@ -425,7 +425,11 @@ export default function PrivacyPage() {
               <SubHead>Requesting deletion</SubHead>
               <P>
                 Individual data principals may request erasure of their personal data by
-                contacting us at the address in the Grievance &amp; Contact section. We will
+                contacting us at the address in the Grievance &amp; Contact section. To delete an
+                RF Health account, follow the steps on{" "}
+                <a href="/delete-account" className="font-medium text-emerald-700 underline-offset-3 hover:underline">
+                  Delete your account
+                </a>. We will
                 process the request subject to any legal retention obligation that prevents
                 deletion, for example, retention requirements that apply to medical records
                 under Indian law.
