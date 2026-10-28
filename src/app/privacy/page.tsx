@@ -416,6 +416,36 @@ export default function PrivacyPage() {
                 period has elapsed, personal data that is no longer required will be deleted or
                 anonymised.
               </P>
+              <SubHead>Deleting a doctor account in the app</SubHead>
+              <P>
+                Doctors can delete their own account in the app under Settings → My Profile →
+                Delete Account. They confirm the request, verify it with a one-time code sent
+                to the email address registered on the account, and give a reason. When the
+                request is confirmed:
+              </P>
+              <ul className="mb-4 flex flex-col gap-2">
+                <Li>
+                  The login is disabled immediately. The doctor is signed out on the device used,
+                  and on any other signed-in device the next time it loads a page.
+                </Li>
+                <Li>Upcoming appointments are cancelled, and logins of staff and refractionists who work only under that doctor are disabled.</Li>
+                <Li>
+                  After 30 days, the username, password, email address, phone number,
+                  credentials, experience and qualifications, the signature image on the profile,
+                  account settings, schedules and leave, notifications and sign-in history are
+                  permanently removed, and the licence is deactivated.
+                  Within those 30 days the account can be restored on request to{" "}
+                  <a href="mailto:support@ppmsai.com" className="font-medium text-emerald-700 underline-offset-3 hover:underline">
+                    support@ppmsai.com
+                  </a>.
+                </Li>
+                <Li>
+                  Patient records, prescriptions, bills, insurance claims and audit logs are kept
+                  for the periods the law requires, together with the doctor&apos;s name and
+                  registration number on past records so those records stay valid. A record of
+                  the deletion request (date and reason) is kept as proof it was carried out.
+                </Li>
+              </ul>
               <SubHead>Audit logs</SubHead>
               <P>
                 Audit logs are retained for the duration of the account and for a period
@@ -425,8 +455,9 @@ export default function PrivacyPage() {
               <SubHead>Requesting deletion</SubHead>
               <P>
                 Individual data principals may request erasure of their personal data by
-                contacting us at the address in the Grievance &amp; Contact section. To delete an
-                RF Health account, follow the steps on{" "}
+                contacting us at the address in the Grievance &amp; Contact section. Doctors can
+                delete their own account in the app, as described above. Anyone else, or anyone
+                who cannot sign in, can request deletion by following the steps on{" "}
                 <a href="/delete-account" className="font-medium text-emerald-700 underline-offset-3 hover:underline">
                   Delete your account
                 </a>. We will
