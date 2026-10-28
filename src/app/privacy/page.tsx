@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const LAST_UPDATED = "24 September 2026";
+const LAST_UPDATED = "28 October 2026";
 
 function SectionCard({
   id,
