@@ -607,7 +607,7 @@ function FollowUpCard({
       </div>
 
       {/* Details grid */}
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-caption sm:text-xs">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs">
         {role === "HOSPITAL" && (
           <>
             <span className="text-[var(--color-ink-400)]">Doctor</span>
@@ -616,16 +616,16 @@ function FollowUpCard({
         )}
         <span className="text-[var(--color-ink-400)]">Complaint</span>
         {v.chiefComplaint ? (
-          <ComplaintChips value={v.chiefComplaint} />
+          <ComplaintChips value={v.chiefComplaint} wrap />
         ) : (
           <span className="italic text-[var(--color-ink-300)] text-caption sm:text-caption">—</span>
         )}
         {v.diagnoses[0] && (
           <>
             <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-            <span className="flex flex-wrap gap-1">
+            <span className="flex flex-wrap gap-1 min-w-0">
               {v.diagnoses.map((d: any, i: number) => (
-                <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-caption sm:text-caption">
+                <span key={i} className="clinical-diagnosis-chip inline-flex flex-wrap items-center gap-x-1 max-w-full px-2.5 py-0.5 rounded-lg border text-caption sm:text-caption break-words">
                   {d.status && d.status !== "BLANK" && <span className="text-[var(--color-ink-400)] font-normal shrink-0">{d.status.charAt(0) + d.status.slice(1).toLowerCase()} ·</span>}
                   {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
                   {d.description}

@@ -544,8 +544,8 @@ export function HomeDashboardClient({
                 )}
               </div>
             ) : (
-              <div className="overflow-x-hidden overflow-y-auto max-h-[280px]">
-                <table className="w-full text-left">
+              <div className="overflow-x-auto overflow-y-auto max-h-[280px]">
+                <table className="w-full min-w-[560px] lg:min-w-0 text-left">
                   <thead className="sticky top-0 z-10">
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
                       {["Time", "Patient", "Type", scope === "DOCTOR" ? "Hospital" : "Doctor", "Status", "Action"].map((h, i) => (
