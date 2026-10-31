@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requirePermission, requireUser, userCan, scopeDoctorId } from "@/lib/rbac";
+import { requireAnyPermission, requireRole, requirePermission, requireUser, userCan, scopeDoctorId } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
@@ -9,6 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { istTodayRange } from "@/lib/ist";
 import { patientRecordScope } from "@/lib/patient-access";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 import { isAppointmentSessionClosed, isAppointmentSessionOver } from "@/lib/sessionClose";
 import { PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
@@ -347,7 +348,13 @@ export async function deletePatient(patientId: string): Promise<{ error?: string
   });
   if (!patient) return { error: "Patient not found." };
 
-  if (patient.doctorId !== user.profileId) return { error: "You can only delete your own patients." };
+  if (user.role === "DOCTOR") {
+    if (patient.doctorId !== user.profileId) return { error: "You can only delete your own patients." };
+  } else {
+    // Staff may delete only patients registered at their own hospital.
+    const staffHospitalId = await getStaffHospitalId(user.id);
+    if (!staffHospitalId || patient.registeredAtId !== staffHospitalId) return { error: "You can only delete patients registered at your hospital." };
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -457,7 +464,7 @@ export async function transferPatient(patientId: string, toHospitalId: string, r
 // ── Patient History Drawers ──────────────────────────────────────────────────
 
 export async function getPatientInvestigations(patientId: string) {
-  await requireRole("DOCTOR", "HOSPITAL");
+  await requireAnyPermission("investigations.view");
   const visits = await prisma.visit.findMany({
     where: { patientId },
     orderBy: { date: "desc" },
@@ -482,7 +489,7 @@ export async function getPatientInvestigations(patientId: string) {
 }
 
 export async function getPatientTreatmentHistory(patientId: string) {
-  await requireRole("DOCTOR", "HOSPITAL");
+  await requireAnyPermission("emr.medications.view", "emr.medications.edit");
   const visits = await prisma.visit.findMany({
     where: { patientId },
     orderBy: { date: "desc" },
@@ -512,7 +519,7 @@ export async function getPatientTreatmentHistory(patientId: string) {
 }
 
 export async function getPatientSpectacleHistory(patientId: string) {
-  await requireRole("DOCTOR", "HOSPITAL");
+  await requireAnyPermission("refraction.view");
   const visits = await prisma.visit.findMany({
     where: { patientId },
     orderBy: { date: "desc" },

@@ -85,11 +85,13 @@ export async function bookAppointment(formData: FormData) {
   const notes = (formData.get("notes") as string) || null;
   const isWalkIn = formData.get("encounterType") === "walkin";
 
-  // Only the walk-in branch is permission-gated; scheduled booking keeps its
-  // existing role gate. Returns an error rather than redirecting so the form
-  // shows a message instead of silently navigating away.
+  // Each type needs its own permission. Returns an error rather than
+  // redirecting so the form shows a message instead of silently navigating away.
   if (isWalkIn && !userCan(user, "opd.walkin.create")) {
     return { error: "You do not have permission to create walk-in encounters." };
+  }
+  if (!isWalkIn && !userCan(user, "appointments.create")) {
+    return { error: "You do not have permission to book appointments." };
   }
 
   if (!doctorId || !dateStr || !timeStr) {
@@ -127,6 +129,7 @@ export async function bookAppointment(formData: FormData) {
     }
   } else {
     // Create new patient
+    if (!userCan(user, "patients.create")) return { error: "You do not have permission to register new patients." };
     const name = formData.get("name") as string;
     const age = parseInt(formData.get("age") as string, 10);
     const sex = formData.get("sex") as string;

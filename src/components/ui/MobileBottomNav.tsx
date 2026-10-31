@@ -13,7 +13,8 @@ function roleHome(role: string): string {
   return "/dashboard";
 }
 
-export function MobileBottomNav({ role = "DOCTOR" }: { role?: string }) {
+export function MobileBottomNav({ role = "DOCTOR", permissions = ["*"] }: { role?: string; permissions?: string[] }) {
+  const can = (p: string) => permissions.includes("*") || permissions.includes(p);
   const homeHref = roleHome(role);
   const pathname = usePathname();
   const [unread, setUnread] = useState(0);
@@ -68,11 +69,11 @@ export function MobileBottomNav({ role = "DOCTOR" }: { role?: string }) {
       <div className="flex items-center justify-around h-16 px-1">
         {[
           { href: homeHref,         label: "Home",         icon: LayoutGrid  },
-          { href: "/patients",      label: "Patients",     icon: Users       },
-          { href: "/appointments",  label: "Appointments", icon: CalendarDays},
+          { href: "/patients",      label: "Patients",     icon: Users,        permission: "patients.view" },
+          { href: "/appointments",  label: "Appointments", icon: CalendarDays, permission: "appointments.view" },
           { href: "/notifications", label: "Alerts",       icon: Bell        },
-          { href: "/settings",      label: "Profile",      icon: User        },
-        ].map(({ href, label, icon: Icon }) => {
+          { href: "/settings",      label: "Profile",      icon: User,         permission: "settings.view" },
+        ].filter((item) => !item.permission || can(item.permission)).map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           const showBadge = href === "/notifications" && unread > 0;
           return (

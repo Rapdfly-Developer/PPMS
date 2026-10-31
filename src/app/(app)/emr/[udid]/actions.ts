@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, requireUser, userCan } from "@/lib/rbac";
+import { requireAnyPermission, requireRole, requireUser, userCan } from "@/lib/rbac";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { patientRecordScope, visitRecordScope } from "@/lib/patient-access";
 import { revalidatePath } from "next/cache";
@@ -35,6 +35,23 @@ async function requireVisitWrite(visitId: string, ...permissions: string[]) {
     throw new Error("Forbidden");
   }
   await assertVisitAccess(visitId);
+  return user;
+}
+
+/**
+ * Visit-level write gated by permission (emr.edit always overrides). Staff are
+ * also held to visits at their own hospital, as the EMR page already is.
+ */
+async function requireVisitPerm(visitId: string, ...permissions: string[]) {
+  const user = await requireVisitWrite(visitId, ...permissions);
+  if (user.role !== "DOCTOR") await assertVisitOwner(visitId);
+  return user;
+}
+
+/** Row-level write (diagnosis / medication / investigation) gated by permission. */
+async function requireRowPerm(model: "diagnosis" | "medication" | "investigationOrder", id: string, ...permissions: string[]) {
+  const user = await requireAnyPermission("emr.edit", ...permissions);
+  await assertRowOwner(model, id);
   return user;
 }
 
@@ -77,7 +94,8 @@ async function requireRefractionWrite(visitId: string, existing: boolean) {
   if (user.role === "DOCTOR") return user;
   if (
     !userCan(user, existing ? "refraction.edit" : "refraction.create") &&
-    !userCan(user, "emr.refraction.edit")
+    !userCan(user, "emr.refraction.edit") &&
+    !userCan(user, "emr.edit")
   ) {
     throw new Error(existing ? "You do not have permission to edit refraction records." : "You do not have permission to record refraction.");
   }
@@ -206,7 +224,7 @@ export async function startVisit(patientId: string, appointmentId: string, udid:
 
 export async function saveGeneralExam(visitId: string, udid: string, data: Record<string, any>) {
   const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.general.edit")) throw new Error("Forbidden");
+  if (!userCan(user, "emr.general.edit") && !userCan(user, "emr.edit")) throw new Error("Forbidden");
   await assertVisitAccess(visitId);
   await prisma.generalExamination.upsert({
     where: { visitId },
@@ -233,7 +251,7 @@ export async function addPastExternalVisit(
     rawText?: string;
   }
 ) {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
+  const user = await requireAnyPermission("emr.edit", "emr.labReports.upload", "emr.labReports.edit");
   await assertPatientOwner(patientId);
 
   await prisma.pastExternalVisit.create({
@@ -253,7 +271,7 @@ export async function addPastExternalVisit(
 }
 
 export async function renamePastExternalVisit(id: string, udid: string, label: string): Promise<void> {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
+  const user = await requireAnyPermission("emr.edit", "emr.labReports.upload", "emr.labReports.edit");
   const past = await prisma.pastExternalVisit.findUnique({ where: { id }, select: { patientId: true } });
   if (!past) throw new Error("Record not found");
   await assertPatientOwner(past.patientId);
@@ -281,7 +299,7 @@ export async function verifyPastExternalVisit(id: string, udid: string, status: 
 // ── Ophthalmic Examination sub-modules ───────────────────────────────────
 
 export async function saveVisualAcuity(visitId: string, udid: string, data: { testMethod: string; re: string; le: string }) {
-  const user = await requireVisitWrite(visitId, "emr.va.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(visitId, "emr.va.edit");
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.visualAcuity.upsert({
     where: { visitId },
@@ -332,14 +350,14 @@ export async function saveRefraction(visitId: string, udid: string, data: { re: 
 
 export async function sendToOpticals(visitId: string, udid: string) {
   const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.refraction.edit")) throw new Error("Forbidden");
+  if (!userCan(user, "emr.refraction.edit") && !userCan(user, "emr.edit")) throw new Error("Forbidden");
   await assertVisitOwner(visitId);
   await prisma.refractiveCorrection.update({ where: { visitId }, data: { sentToOpticals: true } });
   revalidate(udid);
 }
 
 export async function saveColourVision(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireVisitWrite(visitId, "emr.colour.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(visitId, "emr.colour.edit");
   const reviewedByDoctor = user.role === "DOCTOR";
   await prisma.colourVisionContrastSensitivity.upsert({
     where: { visitId },
@@ -351,7 +369,7 @@ export async function saveColourVision(visitId: string, udid: string, data: { re
 }
 
 export async function addIOPReading(visitId: string, udid: string, data: { re?: number; le?: number; method: string }) {
-  const user = await requireVisitWrite(visitId, "emr.iop.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(visitId, "emr.iop.edit");
   await prisma.iOPReading.create({
     data: { visitId, re: data.re, le: data.le, method: data.method, source: user.role, reviewedByDoctor: user.role === "DOCTOR" },
   });
@@ -362,7 +380,7 @@ export async function addIOPReading(visitId: string, udid: string, data: { re?: 
 export async function removeIOPReading(id: string, udid: string) {
   const reading = await prisma.iOPReading.findUnique({ where: { id }, select: { visitId: true } });
   if (!reading) throw new Error("Reading not found");
-  const user = await requireVisitWrite(reading.visitId, "emr.iop.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(reading.visitId, "emr.iop.edit");
   await prisma.iOPReading.delete({ where: { id } });
   await writeAudit(user.id, "IOPReading", id, "DELETE", {});
   revalidate(udid);
@@ -380,34 +398,28 @@ export async function markOphthalmicReviewed(visitId: string) {
 }
 
 export async function saveAnteriorSegment(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.anterior.edit");
   await prisma.anteriorSegment.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "AnteriorSegment", visitId, "SAVE", data);
   revalidateAfter(udid);
 }
 
 export async function savePosteriorSegment(visitId: string, udid: string, data: { re: string; le: string; notes?: string }) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.posterior.edit");
   await prisma.posteriorSegment.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "PosteriorSegment", visitId, "SAVE", data);
   revalidateAfter(udid);
 }
 
 export async function saveDiplopia(visitId: string, udid: string, grid: string) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.posterior.edit");
   await prisma.diplopiaChart.upsert({ where: { visitId }, create: { visitId, grid }, update: { grid } });
   await writeAudit(user.id, "DiplopiaChart", visitId, "SAVE", { grid });
   revalidateAfter(udid);
 }
 
 export async function saveHess(visitId: string, udid: string, grid: string, interpretation?: string) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.posterior.edit");
   await prisma.hessChart.upsert({
     where: { visitId },
     create: { visitId, grid, interpretation },
@@ -418,7 +430,7 @@ export async function saveHess(visitId: string, udid: string, grid: string, inte
 }
 
 export async function saveRetinoscopy(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireVisitWrite(visitId, "refraction.edit", "emr.refraction.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(visitId, "refraction.create", "refraction.edit", "emr.refraction.edit");
   await prisma.retinoscopy.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "Retinoscopy", visitId, "SAVE", data);
   revalidateAfter(udid);
@@ -432,18 +444,14 @@ export async function getRefractionForVisit(visitId: string) {
 }
 
 export async function saveTearFilm(visitId: string, udid: string, data: Record<string, number | undefined>) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.anterior.edit");
   await prisma.tearFilm.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "TearFilm", visitId, "SAVE", data);
   revalidateAfter(udid);
 }
 
 export async function saveLacrimalSac(visitId: string, udid: string, data: { re: string; le: string }) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && !userCan(user, "emr.ophthalmic.edit")) throw new Error("Forbidden");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.anterior.edit");
   await prisma.lacrimalSacSyringing.upsert({ where: { visitId }, create: { visitId, ...data }, update: data });
   await writeAudit(user.id, "LacrimalSac", visitId, "SAVE", data);
   revalidateAfter(udid);
@@ -459,8 +467,7 @@ export async function addInvestigationOrder(
   udid: string,
   data: { category: string; testName: string; priority: string; laterality?: string; notes?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "investigations.create");
   // Prevent duplicate: check existing orders with normalized name match
   const existing = await prisma.investigationOrder.findMany({ where: { visitId }, select: { testName: true } });
   const norm = normalizeInvName(data.testName);
@@ -473,8 +480,7 @@ export async function addInvestigationOrder(
 }
 
 export async function deleteInvestigationOrder(id: string, udid: string) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("investigationOrder", id);
+  const user = await requireRowPerm("investigationOrder", id, "investigations.create", "investigations.edit");
   await prisma.investigationOrder.delete({ where: { id } });
   await writeAudit(user.id, "InvestigationOrder", id, "DELETE", {});
   revalidate(udid);
@@ -488,7 +494,7 @@ export async function deleteInvestigationOrder(id: string, udid: string) {
  * UI, so this needs no migration.
  */
 export async function updateInvestigationDoctorNotes(id: string, udid: string, doctorNotes: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireAnyPermission("emr.edit", "investigations.create", "investigations.edit");
   const order = await prisma.investigationOrder.findUnique({ where: { id }, select: { visitId: true } });
   if (!order) throw new Error("Investigation order not found");
   await assertVisitOwner(order.visitId);
@@ -499,10 +505,9 @@ export async function updateInvestigationDoctorNotes(id: string, udid: string, d
 }
 
 export async function updateInvestigationNotes(id: string, udid: string, notes: string) {
-  const user = await requireRole("DOCTOR");
   const order = await prisma.investigationOrder.findUnique({ where: { id }, select: { visitId: true } });
   if (!order) throw new Error("Investigation order not found");
-  await assertVisitAccess(order.visitId);
+  const user = await requireVisitPerm(order.visitId, "investigations.create", "investigations.edit");
 
   await prisma.investigationOrder.update({ where: { id }, data: { notes: notes || null } });
   await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_NOTES", { notes });
@@ -510,16 +515,14 @@ export async function updateInvestigationNotes(id: string, udid: string, notes: 
 }
 
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("investigationOrder", id);
+  const user = await requireRowPerm("investigationOrder", id, "investigations.create", "investigations.edit");
   await prisma.investigationOrder.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "InvestigationOrder", id, "STATUS", { status });
   revalidate(udid);
 }
 
 export async function attachResult(id: string, udid: string, resultRef: string): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
-  await assertRowOwner("investigationOrder", id);
+  const user = await requireRowPerm("investigationOrder", id, "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
   const order = await prisma.investigationOrder.findUnique({ where: { id }, include: { visit: { select: { doctorId: true } } } });
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
@@ -532,8 +535,7 @@ export async function attachResult(id: string, udid: string, resultRef: string):
 }
 
 export async function removeResult(id: string, udid: string): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR", "HOSPITAL");
-  await assertRowOwner("investigationOrder", id);
+  const user = await requireRowPerm("investigationOrder", id, "emr.labReports.edit", "investigations.edit");
   const order = await prisma.investigationOrder.findUnique({ where: { id } });
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
@@ -548,8 +550,7 @@ export async function removeResult(id: string, udid: string): Promise<{ error?: 
 // ── Assessment ────────────────────────────────────────────────────────────
 
 export async function saveProvisionalDiagnosis(visitId: string, udid: string, text: string) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.assessment.edit");
   await prisma.generalExamination.upsert({
     where: { visitId },
     create: { visitId, provisionalDx: text },
@@ -564,8 +565,7 @@ export async function addDiagnosis(
   udid: string,
   data: { icd10Code: string; description: string; laterality?: string; provisional?: boolean; status?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.assessment.edit");
   const { status, ...rest } = data;
   const allowed = ["ACTIVE", "RESOLVED", "CHRONIC", "QUERY", "BLANK"];
   await prisma.diagnosis.create({ data: { visitId, status: status && allowed.includes(status) ? status : "ACTIVE", ...rest } });
@@ -574,16 +574,14 @@ export async function addDiagnosis(
 }
 
 export async function updateDiagnosisStatus(id: string, udid: string, status: string) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("diagnosis", id);
+  const user = await requireRowPerm("diagnosis", id, "emr.assessment.edit");
   await prisma.diagnosis.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "Diagnosis", id, "STATUS", { status });
   revalidate(udid);
 }
 
 export async function updateDiagnosisLaterality(id: string, udid: string, laterality: string) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("diagnosis", id);
+  const user = await requireRowPerm("diagnosis", id, "emr.assessment.edit");
   if (!["RE", "LE", "OU"].includes(laterality)) throw new Error("Invalid laterality");
   await prisma.diagnosis.update({ where: { id }, data: { laterality } });
   await writeAudit(user.id, "Diagnosis", id, "LATERALITY", { laterality });
@@ -596,8 +594,7 @@ export async function confirmDiagnosis(
   udid: string,
   data: { protocolId?: string; protocolName?: string; status?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("diagnosis", id);
+  const user = await requireRowPerm("diagnosis", id, "emr.assessment.edit");
   await prisma.diagnosis.update({
     where: { id },
     data: {
@@ -617,8 +614,7 @@ export async function setDiagnosisProtocol(
   udid: string,
   data: { protocolId?: string; protocolName?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("diagnosis", id);
+  const user = await requireRowPerm("diagnosis", id, "emr.assessment.edit");
   await prisma.diagnosis.update({
     where: { id },
     data: {
@@ -631,7 +627,7 @@ export async function setDiagnosisProtocol(
 }
 
 export async function removeDiagnosis(id: string, udid: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireAnyPermission("emr.edit", "emr.assessment.edit");
   await assertRowOwner("diagnosis", id).catch((e) => { if ((e as Error).message !== "Record not found") throw e; });
   const existing = await prisma.diagnosis.findUnique({ where: { id } });
   if (!existing) { revalidate(udid); return; }
@@ -647,16 +643,15 @@ export async function addMedication(
   udid: string,
   data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string; route?: string; laterality?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.medications.edit");
   await prisma.medication.create({ data: { visitId, ...data, laterality: medicationLaterality(data) ?? undefined } });
   await writeAudit(user.id, "Medication", visitId, "ADD", data);
   revalidate(udid);
 }
 
 export async function removeMedication(id: string, udid: string) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("medication", id);
+  // Rejecting a diagnosis on the Assessment tab also removes the meds it added.
+  const user = await requireRowPerm("medication", id, "emr.medications.edit", "emr.assessment.edit");
   await prisma.medication.delete({ where: { id } });
   await writeAudit(user.id, "Medication", id, "REMOVE");
   revalidate(udid);
@@ -667,15 +662,14 @@ export async function updateMedication(
   udid: string,
   data: { drugName: string; dosage?: string; frequency?: string; duration?: string; instructions?: string; route?: string; laterality?: string }
 ) {
-  const user = await requireRole("DOCTOR");
-  await assertRowOwner("medication", id);
+  const user = await requireRowPerm("medication", id, "emr.medications.edit");
   await prisma.medication.update({ where: { id }, data: { ...data, laterality: medicationLaterality(data) } });
   await writeAudit(user.id, "Medication", id, "UPDATE", data);
   revalidate(udid);
 }
 
 export async function clearAllMedications(visitId: string, udid: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireAnyPermission("emr.edit", "emr.medications.edit");
   await assertVisitOwner(visitId);
   await prisma.medication.deleteMany({ where: { visitId } });
   await writeAudit(user.id, "Medication", visitId, "CLEAR_ALL");
@@ -683,8 +677,7 @@ export async function clearAllMedications(visitId: string, udid: string) {
 }
 
 export async function sendToPharmacy(visitId: string, udid: string) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.medications.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { sentToPharmacy: true } });
   await writeAudit(user.id, "Visit", visitId, "PHARMACY_SENT");
   revalidate(udid);
@@ -703,8 +696,7 @@ export async function touchVisit(visitId: string, udid: string) {
 // ── Disposition ───────────────────────────────────────────────────────────
 
 export async function saveDispense(visitId: string, udid: string, shortSummary: string) {
-  const user = await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  const user = await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.dispense.upsert({
     where: { visitId },
     create: { visitId, shortSummary },
@@ -717,8 +709,7 @@ export async function saveDispense(visitId: string, udid: string, shortSummary: 
 // Updates only the fields present in `data`: the Follow-up and Referral panels
 // each save their own fields without touching the other's.
 export async function saveFollowUp(visitId: string, udid: string, data: { followUpDate?: string | null; referralEnabled?: boolean; referralNote?: string | null; inViewOf?: string | null; referralType?: string | null; referralInViewOf?: string | null }) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.visit.update({
     where: { id: visitId },
     data: {
@@ -734,55 +725,51 @@ export async function saveFollowUp(visitId: string, udid: string, data: { follow
 }
 
 export async function saveGonioNotes(visitId: string, udid: string, data: { re: string; le: string; reDeg?: string; leDeg?: string; method?: string }) {
-  await requireVisitWrite(visitId, "emr.iop.edit", "emr.ophthalmic.edit");
+  await requireVisitWrite(visitId, "emr.iop.edit", "emr.anterior.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { gonioNotes: JSON.stringify(data) } });
   revalidateAfter(udid);
 }
 
 export async function saveOculoplasty(visitId: string, udid: string, data: string) {
-  const user = await requireVisitWrite(visitId, "emr.posterior.edit", "emr.ophthalmic.edit");
+  const user = await requireVisitWrite(visitId, "emr.posterior.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { oculoplasty: data } });
   await writeAudit(user.id, "Oculoplasty", visitId, "SAVE", { data });
   revalidateAfter(udid);
 }
 
 export async function saveAdviseNotes(visitId: string, udid: string, notes: string) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  // Clearing is also part of rejecting a diagnosis on the Assessment tab.
+  await requireVisitPerm(visitId, "emr.plan.edit", ...(notes === "" ? ["emr.assessment.edit"] : []));
   await prisma.visit.update({ where: { id: visitId }, data: { adviseNotes: notes } });
   revalidateAfter(udid);
 }
 
 export async function saveAnesthesiaType(visitId: string, udid: string, value: string) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { anesthesiaType: value || null } });
   revalidateAfter(udid);
 }
 
 export async function saveProcedureLaterality(visitId: string, udid: string, value: string) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { procedureLaterality: value || null } });
   revalidateAfter(udid);
 }
 
 export async function saveProcedureName(visitId: string, udid: string, value: string) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { procedureName: value || null } });
   revalidateAfter(udid);
 }
 
 export async function saveProcedureNotes(visitId: string, udid: string, value: string) {
-  await requireRole("DOCTOR");
-  await assertVisitAccess(visitId);
+  await requireVisitPerm(visitId, "emr.plan.edit");
   await prisma.visit.update({ where: { id: visitId }, data: { procedureNotes: value || null } });
   revalidateAfter(udid);
 }
 
 export async function closeVisit(visitId: string, udid: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireAnyPermission("emr.create");
   await assertVisitOwner(visitId);
 
   const visit = await prisma.visit.findUnique({
@@ -878,7 +865,7 @@ export async function closeVisit(visitId: string, udid: string) {
 }
 
 export async function markPartialDispense(visitId: string, udid: string, reason?: string) {
-  const user = await requireRole("DOCTOR");
+  const user = await requireAnyPermission("opd.partialDispense");
   await assertVisitOwner(visitId);
 
   const visit = await prisma.visit.findUnique({

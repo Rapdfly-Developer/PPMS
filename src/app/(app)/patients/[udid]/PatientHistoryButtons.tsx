@@ -113,8 +113,12 @@ type InvVisit = Awaited<ReturnType<typeof getPatientInvestigations>>[number];
 
 type InvOrder = InvVisit["orders"][number];
 
-function InvOrderRow({ o, idx, udid, onView }: {
-  o: InvOrder; idx: number; udid: string; onView: (ref: string) => void;
+/** What the signed-in role may see and change on investigation orders. */
+export type InvPerms = { view: boolean; upload: boolean; remove: boolean; notes: boolean };
+const ALL_INV_PERMS: InvPerms = { view: true, upload: true, remove: true, notes: true };
+
+function InvOrderRow({ o, idx, udid, onView, perms }: {
+  o: InvOrder; idx: number; udid: string; onView: (ref: string) => void; perms: InvPerms;
 }) {
   const [localNotes, setLocalNotes]         = useState(o.notes ?? "");
   const [localResultRef, setLocalResultRef] = useState(o.resultRef ?? null);
@@ -203,7 +207,7 @@ function InvOrderRow({ o, idx, udid, onView }: {
 
             {!hasFile ? (
               /* No file yet — show Add File only */
-              <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+              perms.upload && <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
                 className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
                 {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
                 {uploading ? "Uploading…" : "Add File"}
@@ -229,18 +233,18 @@ function InvOrderRow({ o, idx, udid, onView }: {
                   <Eye size={13} />
                 </button>
                 {/* Edit / re-upload */}
-                <button
+                {perms.upload && <button
                   onClick={() => uploading ? undefined : fileRef.current?.click()}
                   disabled={uploading}
                   title="Replace report file"
                   className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:border-[var(--color-primary-300)] disabled:opacity-50`}>
                   {uploading ? <Upload size={13} className="animate-pulse" /> : <Pencil size={13} />}
-                </button>
+                </button>}
                 {/* Delete file reference */}
-                <button onClick={() => setConfirmRemove(true)} title="Remove report"
+                {perms.remove && <button onClick={() => setConfirmRemove(true)} title="Remove report"
                   className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-red-500 hover:border-red-300`}>
                   <Trash2 size={13} />
-                </button>
+                </button>}
               </>
             )}
           </div>
@@ -266,9 +270,9 @@ function InvOrderRow({ o, idx, udid, onView }: {
           </div>
         ) : (
           <p
-            className="text-caption text-[var(--color-ink-400)] mt-0.5 cursor-pointer hover:text-[var(--color-ink-600)]"
-            title="Click to edit 'in view of' note"
-            onClick={() => { setEditNotes(localNotes); setEditing(true); }}
+            className={`text-caption text-[var(--color-ink-400)] mt-0.5 ${perms.notes ? "cursor-pointer hover:text-[var(--color-ink-600)]" : ""}`}
+            title={perms.notes ? "Click to edit 'in view of' note" : undefined}
+            onClick={() => { if (!perms.notes) return; setEditNotes(localNotes); setEditing(true); }}
           >
             {o.priority && <span>{o.priority}</span>}
             {o.priority && <span className="mx-1">·</span>}
@@ -281,9 +285,9 @@ function InvOrderRow({ o, idx, udid, onView }: {
 }
 
 function InvestigationsDrawer({
-  patientId, udid, open, onClose,
+  patientId, udid, open, onClose, perms,
 }: {
-  patientId: string; udid: string; open: boolean; onClose: () => void;
+  patientId: string; udid: string; open: boolean; onClose: () => void; perms: InvPerms;
 }) {
   const [data, setData] = useState<InvVisit[] | null>(null);
   const [isPending, start] = useTransition();
@@ -326,6 +330,7 @@ function InvestigationsDrawer({
                   idx={idx}
                   udid={udid}
                   onView={(ref) => setLightbox(ref)}
+                  perms={perms}
                 />
               ))}
             </div>
@@ -349,7 +354,7 @@ function InvestigationsDrawer({
   );
 }
 
-export function InvestigationsButton({ patientId, udid }: { patientId: string; udid: string }) {
+export function InvestigationsButton({ patientId, udid, perms = ALL_INV_PERMS }: { patientId: string; udid: string; perms?: InvPerms }) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -360,7 +365,7 @@ export function InvestigationsButton({ patientId, udid }: { patientId: string; u
         <FlaskConical size={13} />
         Investigation Orders
       </button>
-      <InvestigationsDrawer patientId={patientId} udid={udid} open={open} onClose={() => setOpen(false)} />
+      <InvestigationsDrawer patientId={patientId} udid={udid} open={open} onClose={() => setOpen(false)} perms={perms} />
     </>
   );
 }
@@ -735,6 +740,9 @@ export function PatientActionsPanel({
   lastVisitDate,
   noShowCount,
   layout = "row",
+  invPerms = ALL_INV_PERMS,
+  canViewTreatment = true,
+  canViewSpectacles = true,
 }: {
   patientId: string;
   patientName: string;
@@ -744,6 +752,10 @@ export function PatientActionsPanel({
   lastVisitDate?: string | null;
   noShowCount: number;
   layout?: "row" | "column";
+  invPerms?: InvPerms;
+  /** emr.medications.view / refraction.view — hide those history buttons when off. */
+  canViewTreatment?: boolean;
+  canViewSpectacles?: boolean;
 }) {
   const [showActions, setShowActions] = useState(true);
   const [noShowOpen, setNoShowOpen] = useState(false);
@@ -808,9 +820,9 @@ export function PatientActionsPanel({
       {showActions && (
         <div className={`grid gap-2 ${layout === "column" ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}`}>
           <TimeStampButton patientId={patientId} patientName={patientName} />
-          <InvestigationsButton patientId={patientId} udid={udid} />
-          <TreatmentHistoryButton patientId={patientId} />
-          <SpectacleHistoryButton patientId={patientId} udid={udid} />
+          {invPerms.view && <InvestigationsButton patientId={patientId} udid={udid} perms={invPerms} />}
+          {canViewTreatment && <TreatmentHistoryButton patientId={patientId} />}
+          {canViewSpectacles && <SpectacleHistoryButton patientId={patientId} udid={udid} />}
         </div>
       )}
     </>

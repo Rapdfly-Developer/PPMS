@@ -70,7 +70,7 @@ export async function requireRole(...roles: Role[]): Promise<SessionUser> {
   if (user.role === "DOCTOR" || roles.includes(user.role)) return user;
   // Custom roles are hospital-affiliated staff — pass through when HOSPITAL is an accepted role
   if (isCustomRole(user.role) && (roles as string[]).includes("HOSPITAL")) return user;
-  redirect(roleHome(user.role));
+  redirect(homeFor(user));
 }
 
 /** True if the user holds the given permission (or is super-admin with "*"). */
@@ -83,7 +83,34 @@ export function userCan(user: SessionUser, permission: string): boolean {
 export async function requirePermission(permission: string): Promise<SessionUser> {
   const user = await requireUser();
   if (userCan(user, permission)) return user;
-  redirect(roleHome(user.role));
+  redirect(homeFor(user));
+}
+
+/** Throws (instead of redirecting) unless the user holds at least one of the permissions — for server actions. */
+export async function requireAnyPermission(...permissions: string[]): Promise<SessionUser> {
+  const user = await requireUser();
+  if (permissions.some((p) => userCan(user, p))) return user;
+  throw new Error("You do not have permission to do this.");
+}
+
+/**
+ * Where to send a user who can't open the page they asked for: the first
+ * module their permissions allow. Falls back to /dashboard, which shows a
+ * no-access message instead of redirecting again, so this never loops.
+ */
+const HOME_CANDIDATES: [string, string][] = [
+  ["/dashboard",    "dashboard.view"],
+  ["/opd",          "opd.view"],
+  ["/appointments", "appointments.view"],
+  ["/follow-ups",   "followups.view"],
+  ["/patients",     "patients.view"],
+  ["/analytics",    "reports.view"],
+  ["/settings",     "settings.view"],
+];
+
+export function homeFor(user: SessionUser): string {
+  if (user.role === "REFRACTIONIST" && userCan(user, "opd.view")) return "/opd";
+  return HOME_CANDIDATES.find(([, p]) => userCan(user, p))?.[0] ?? "/dashboard";
 }
 
 export function scopeDoctorId(user: SessionUser): string {

@@ -1,7 +1,8 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { requireAnyPermission, requireRole, scopeDoctorId } from "@/lib/rbac";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { doctorManagesUser } from "@/lib/staff-scope";
 import { revalidatePath } from "next/cache";
 import { manualActivateLicense } from "@/lib/license";
@@ -19,13 +20,11 @@ export async function updateHospitalSettings(
   hospitalId: string,
   data: { contact?: string; address?: string; retentionYears?: number }
 ): Promise<{ error?: string }> {
-  const user = await requireRole("HOSPITAL");
+  const user = await requireAnyPermission("settings.manage");
+  if (user.role === "DOCTOR") return { error: "Forbidden." };
 
-  const staff = await prisma.hospitalStaff.findUnique({
-    where: { userId: user.id },
-    select: { hospitalId: true },
-  });
-  if (!staff || staff.hospitalId !== hospitalId) return { error: "Forbidden." };
+  const staffHospitalId = await getStaffHospitalId(user.id);
+  if (!staffHospitalId || staffHospitalId !== hospitalId) return { error: "Forbidden." };
 
   await prisma.hospital.update({
     where: { id: hospitalId },
@@ -189,15 +188,12 @@ export async function saveHospitalLogo(
   hospitalId: string,
   logoUrl: string
 ): Promise<{ error?: string }> {
-  const authUser = await requireRole("DOCTOR", "HOSPITAL");
+  const authUser = await requireAnyPermission("settings.manage");
 
-  if (authUser.role === "HOSPITAL") {
-    // HOSPITAL user: verify they belong to this hospital
-    const staff = await prisma.hospitalStaff.findUnique({
-      where: { userId: authUser.id },
-      select: { hospitalId: true },
-    });
-    if (!staff || staff.hospitalId !== hospitalId) return { error: "Access denied." };
+  if (authUser.role !== "DOCTOR") {
+    // Staff: verify they belong to this hospital
+    const staffHospitalId = await getStaffHospitalId(authUser.id);
+    if (!staffHospitalId || staffHospitalId !== hospitalId) return { error: "Access denied." };
   } else {
     // DOCTOR: verify the hospital is linked
     const doctor = await prisma.doctor.findUnique({ where: { userId: authUser.id }, select: { id: true } });

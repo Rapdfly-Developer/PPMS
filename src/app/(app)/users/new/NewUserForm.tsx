@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createUser, validateUserFields } from "../actions";
 import { saveRolePermissions, createRole } from "@/app/(app)/settings/roles/actions";
-import { PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
+import { VISIBLE_PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
 import { Check, AlertTriangle, RefreshCw } from "lucide-react";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -570,7 +570,7 @@ export function NewUserForm({
             </div>
 
             <div className="divide-y divide-[var(--color-border)]">
-              {PERMISSION_GROUPS.map((group) => {
+              {VISIBLE_PERMISSION_GROUPS.map((group) => {
                 const groupKeys = group.permissions.map((p) => p.key);
                 const rolePerms = getRolePerms(role);
                 const allOn = groupKeys.every((k) => rolePerms.includes(k));

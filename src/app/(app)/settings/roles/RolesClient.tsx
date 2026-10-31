@@ -6,7 +6,7 @@ import {
   ChevronRight, AlertTriangle, Loader2, CheckSquare, Square, ArrowLeft,
 } from "lucide-react";
 import { saveRolePermissions, createRole, updateRoleMeta, deleteRole } from "./actions";
-import { PERMISSION_GROUPS, type RoleWithPerms } from "./permission-groups";
+import { VISIBLE_PERMISSION_GROUPS, countVisiblePermissions, type RoleWithPerms } from "./permission-groups";
 
 const COLORS = [
   "#6366f1", "#10b981", "#f59e0b", "#3b82f6",
@@ -259,7 +259,7 @@ function PermissionPanel({ role, onSaved, onBack }: {
           <div className="min-w-0">
             <p className="font-semibold text-[var(--color-ink-900)] truncate">{role.label}</p>
             <p className="text-xs text-[var(--color-ink-400)]">
-              {isSuperAdmin ? "Super Admin, all permissions" : `${checked.size} / ${role.totalPerms} permissions`}
+              {isSuperAdmin ? "Super Admin, all permissions" : `${countVisiblePermissions(checked)} / ${role.totalPerms} permissions`}
             </p>
           </div>
         </div>
@@ -295,7 +295,7 @@ function PermissionPanel({ role, onSaved, onBack }: {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4">
-          {PERMISSION_GROUPS.map((group) => {
+          {VISIBLE_PERMISSION_GROUPS.map((group) => {
             const keys = group.permissions.map((p) => p.key);
             const checkedCount = keys.filter((k) => checked.has(k)).length;
             const allChecked = checkedCount === keys.length;
@@ -386,7 +386,7 @@ function RoleList({
 
       <div className="flex flex-col gap-2 overflow-y-auto">
         {roles.map((role) => {
-          const count = role.name === "DOCTOR" ? totalPerms : role.permissionKeys.length;
+          const count = role.name === "DOCTOR" ? totalPerms : countVisiblePermissions(role.permissionKeys);
           const pct = totalPerms > 0 ? (count / totalPerms) * 100 : 0;
           const isSelected = role.name === selectedName;
           return (
@@ -475,7 +475,7 @@ export function RolesClient({ initialRoles }: { initialRoles: RoleWithPerms[] })
   const [mobileView, setMobileView] = useState<"list" | "perms">("list");
 
   const selectedRole = roles.find((r) => r.name === selectedName) ?? roles[0];
-  const totalPerms = PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
+  const totalPerms = VISIBLE_PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
 
   const handleSelect = (name: string) => {
     setSelectedName(name);

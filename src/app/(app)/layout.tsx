@@ -1,6 +1,5 @@
 import { requireUser } from "@/lib/rbac";
 import { checkLicenseForUser } from "@/lib/license-guard";
-import { ROLE_DEFAULT_PERMISSIONS } from "@/lib/permissions";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { TopBar } from "@/components/ui/TopBar";
 import { SidebarProvider } from "@/components/ui/SidebarContext";
@@ -27,10 +26,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     process.env.NODE_ENV === "development" ||
     licenseResult?.status === "ACTIVE";
 
-  const permissions: string[] =
-    user.permissions && user.permissions.length > 0
-      ? user.permissions
-      : (ROLE_DEFAULT_PERMISSIONS[user.role] ?? []);
+  // Always the fresh set from requireUser(): an empty set means the role has
+  // nothing switched on, not "fall back to defaults".
+  const permissions: string[] = user.permissions ?? [];
 
   return (
     <SidebarProvider>
@@ -95,7 +93,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </div>
 
       {/* Fixed bottom nav — mobile only (<lg), hidden on desktop */}
-      <MobileBottomNav role={user.role} />
+      <MobileBottomNav role={user.role} permissions={permissions} />
     </SidebarProvider>
   );
 }

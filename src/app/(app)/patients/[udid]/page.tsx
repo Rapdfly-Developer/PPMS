@@ -398,7 +398,7 @@ export default async function PatientProfilePage({
                   </span>
                 </div>
               </div>
-              {(userCan(user, "patients.edit") || (user.role === "DOCTOR" && userCan(user, "patients.delete"))) && (
+              {(userCan(user, "patients.edit") || userCan(user, "patients.delete")) && (
                 <div className="flex items-center gap-1 shrink-0">
                   {userCan(user, "patients.edit") && <EditPatientButton
                     patientId={patient.id}
@@ -417,7 +417,7 @@ export default async function PatientProfilePage({
                       pincode: patient.pincode ?? null,
                     }}
                   />}
-                  {user.role === "DOCTOR" && userCan(user, "patients.delete") && <DeletePatientButton
+                  {userCan(user, "patients.delete") && <DeletePatientButton
                     patientId={patient.id}
                     patientName={patient.name}
                     patientCode={patient.udid || patient.uhid || patient.id}
@@ -527,6 +527,14 @@ export default async function PatientProfilePage({
             lastVisitDate={lastVisit && completedVisitCount > 1 ? lastVisit.date.toISOString() : null}
             noShowCount={noShowCount}
             layout="column"
+            canViewTreatment={userCan(user, "emr.medications.view") || userCan(user, "emr.medications.edit")}
+            canViewSpectacles={userCan(user, "refraction.view")}
+            invPerms={{
+              view:   userCan(user, "investigations.view"),
+              upload: userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
+              remove: userCan(user, "emr.labReports.edit") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
+              notes:  userCan(user, "investigations.create") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
+            }}
           />
         </div>
 

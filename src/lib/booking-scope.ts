@@ -8,13 +8,13 @@ export interface BookingScope {
 }
 
 export function canBookAppointments(user: SessionUser): boolean {
-  return user.role === "DOCTOR" || user.role === "HOSPITAL" || userCan(user, "appointments.create");
+  return userCan(user, "appointments.create") || userCan(user, "opd.walkin.create");
 }
 
 /**
- * Who may book and for which hospital. Doctors and hospital admins keep their
- * existing access; any other role needs `appointments.create` and is pinned to
- * the hospital its staff record belongs to. The hospital is re-read from the
+ * Who may open the booking form and for which hospital: `appointments.create`
+ * or `opd.walkin.create` (bookAppointment checks the one each type needs);
+ * non-doctors are pinned to the hospital their staff record belongs to. The hospital is re-read from the
  * database rather than trusted from the session.
  */
 export async function getBookingScope(): Promise<BookingScope | null> {
@@ -36,12 +36,12 @@ export async function getStaffHospitalId(userId: string): Promise<string | null>
 
 /**
  * Hospital-side appointment actions (confirm, reject, cancel, schedule next).
- * Hospital admins keep full access; other staff roles need the matching
- * permission. Doctors use their own actions and are excluded.
+ * Every staff role, Hospital Admin included, needs the matching permission.
+ * Doctors use their own actions and are excluded.
  */
 export function staffAppointmentPerms(user: SessionUser) {
   const staff = user.role !== "DOCTOR";
-  const has = (p: string) => staff && (user.role === "HOSPITAL" || userCan(user, p));
+  const has = (p: string) => staff && userCan(user, p);
   return {
     confirm: has("appointments.edit"),
     cancel: has("appointments.cancel"),

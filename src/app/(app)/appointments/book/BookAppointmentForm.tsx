@@ -72,12 +72,20 @@ export function BookAppointmentForm({
   hospitalId,
   availabilityByDoctor = {},
   hospitalsByDoctor = {},
+  canRegisterPatients = true,
+  canWalkIn = true,
+  canSchedule = true,
 }: {
   doctors: Doctor[];
   patients: Patient[];
   hospitalId: string | null;
   availabilityByDoctor?: Record<string, AvailSlot[]>;
   hospitalsByDoctor?: Record<string, Hospital[]>;
+  /** patients.create — hides the "New patient" option when off. */
+  canRegisterPatients?: boolean;
+  /** opd.walkin.create / appointments.create — each hides its appointment type when off. */
+  canWalkIn?: boolean;
+  canSchedule?: boolean;
 }) {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") ?? "/appointments";
@@ -85,7 +93,7 @@ export function BookAppointmentForm({
   const [error, setError] = useState("");
 
   /* ── Step 0: encounter type ── */
-  const [encounterType, setEncounterType] = useState<"walkin" | "appointment">("appointment");
+  const [encounterType, setEncounterType] = useState<"walkin" | "appointment">(canSchedule ? "appointment" : "walkin");
 
   /* ── Step 1: patient ── */
   const [patientMode, setPatientMode] = useState<"existing" | "new">("existing");
@@ -400,7 +408,7 @@ export function BookAppointmentForm({
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Walk-in */}
-            <button
+            {canWalkIn && <button
               type="button"
               onClick={() => setEncounterType("walkin")}
               className="relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all"
@@ -431,10 +439,10 @@ export function BookAppointmentForm({
               {encounterType === "walkin" && (
                 <CheckCircle2 size={16} className="absolute top-3 right-3" style={{ color: "var(--color-primary-600)" }} />
               )}
-            </button>
+            </button>}
 
             {/* Appointment */}
-            <button
+            {canSchedule && <button
               type="button"
               onClick={() => setEncounterType("appointment")}
               className="relative flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all"
@@ -465,7 +473,7 @@ export function BookAppointmentForm({
               {encounterType === "appointment" && (
                 <CheckCircle2 size={16} className="absolute top-3 right-3" style={{ color: "var(--color-primary-600)" }} />
               )}
-            </button>
+            </button>}
           </div>
         </section>
 
@@ -489,7 +497,7 @@ export function BookAppointmentForm({
               >
                 <Search size={12} /> Existing
               </button>
-              <button
+              {canRegisterPatients && <button
                 type="button"
                 onClick={() => { setPatientMode("new"); setSelectedPatient(null); }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -499,7 +507,7 @@ export function BookAppointmentForm({
                 }`}
               >
                 <UserPlus size={12} /> New
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -553,13 +561,13 @@ export function BookAppointmentForm({
                 {filtered.length === 0 ? (
                   <div className="py-8 text-center border border-dashed border-[var(--color-border)] rounded-2xl">
                     <p className="text-sm text-[var(--color-ink-400)]">No patients found.</p>
-                    <button
+                    {canRegisterPatients && <button
                       type="button"
                       onClick={() => setPatientMode("new")}
                       className="mt-2 text-sm text-[var(--color-primary-600)] hover:underline font-medium"
                     >
                       Register as new patient →
-                    </button>
+                    </button>}
                   </div>
                 ) : (
                   <ul className="divide-y divide-[var(--color-border)] rounded-2xl border border-[var(--color-border)] overflow-hidden max-h-56 overflow-y-auto scrollbar-thin">

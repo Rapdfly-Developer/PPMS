@@ -1,4 +1,5 @@
-import { requireRole, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId, userCan } from "@/lib/rbac";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { prisma } from "@/lib/prisma";
 import { HospitalSettingsClient } from "./HospitalSettingsClient";
 import { DoctorSettingsClient } from "./DoctorSettingsClient";
@@ -7,16 +8,14 @@ import { doctorActivityScope } from "@/lib/staff-scope";
 import { getSavedPermsForForms } from "@/lib/role-permissions";
 
 export default async function SettingsPage() {
-  const user = await requireRole("HOSPITAL", "DOCTOR");
+  const user = await requirePermission("settings.view");
 
-  // ── Hospital role ────────────────────────────────────────────────────────
-  if (user.role === "HOSPITAL") {
-    const staff = await prisma.hospitalStaff.findUnique({
-      where: { userId: user.id },
-      include: { hospital: true },
-    });
-    if (!staff) redirect("/dashboard");
-    return <HospitalSettingsClient hospital={staff.hospital} />;
+  // ── Hospital / staff roles ───────────────────────────────────────────────
+  if (user.role !== "DOCTOR") {
+    const hospitalId = await getStaffHospitalId(user.id);
+    const hospital = hospitalId ? await prisma.hospital.findUnique({ where: { id: hospitalId } }) : null;
+    if (!hospital) redirect("/dashboard");
+    return <HospitalSettingsClient hospital={hospital} canManage={userCan(user, "settings.manage")} />;
   }
 
   // ── Doctor role ──────────────────────────────────────────────────────────

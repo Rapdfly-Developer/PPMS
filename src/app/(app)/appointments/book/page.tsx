@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getBookingScope } from "@/lib/booking-scope";
+import { userCan } from "@/lib/rbac";
 import { BookAppointmentForm } from "./BookAppointmentForm";
 
 export default async function BookAppointmentPage() {
@@ -68,6 +69,9 @@ export default async function BookAppointmentPage() {
       hospitalId={hospitalId}
       availabilityByDoctor={availabilityByDoctor}
       hospitalsByDoctor={hospitalsByDoctor}
+      canRegisterPatients={userCan(user, "patients.create")}
+      canWalkIn={userCan(user, "opd.walkin.create")}
+      canSchedule={userCan(user, "appointments.create")}
     />
   );
 }

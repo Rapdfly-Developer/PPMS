@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Building2 } from "lucide-react";
-import { requireUser, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { closeEndedSessions } from "@/lib/sessionClose";
 import { DoctorDashboard } from "@/app/(app)/dashboard/DoctorDashboard";
@@ -11,7 +11,7 @@ export default async function OpdPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requirePermission("opd.view");
   const { tab } = await searchParams;
 
   if (user.role === "DOCTOR") {

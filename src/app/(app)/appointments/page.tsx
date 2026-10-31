@@ -1,9 +1,9 @@
-import { requirePermission, scopeDoctorId } from "@/lib/rbac";
+import { requirePermission, scopeDoctorId, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { istDayRange, istTodayStr } from "@/lib/ist";
 import { closeEndedSessions } from "@/lib/sessionClose";
 import { AppointmentsClient } from "./AppointmentsClient";
-import { canBookAppointments, staffAppointmentPerms } from "@/lib/booking-scope";
+import { staffAppointmentPerms } from "@/lib/booking-scope";
 
 async function expireStaleRequested() {
   await prisma.appointment.updateMany({
@@ -189,7 +189,7 @@ export default async function AppointmentsPage({
         pageSize={pageSize}
         view={view}
         role={user.role}
-        canBook={canBookAppointments(user)}
+        canBook={userCan(user, "appointments.create")}
         apptPerms={staffAppointmentPerms(user)}
         isDefaultView={isDefaultView}
         dateParam={dateParam}

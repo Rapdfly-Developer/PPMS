@@ -1305,7 +1305,7 @@ export function ProtocolPromptCard({
 
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
-export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
+export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false, canViewMedications = true, medicationsReadOnly = readOnly }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean; canViewMedications?: boolean; medicationsReadOnly?: boolean }) {
   const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
@@ -1508,7 +1508,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
 
   return (
     <div className="flex flex-col gap-5">
-      <PrescriptionCard
+      {canViewMedications && <PrescriptionCard
         visit={visit} udid={udid} priorVisits={priorVisits}
         defaultLaterality={diagLaterality}
         toastNames={toastNames} onCloseToast={() => setToastNames([])}
@@ -1525,8 +1525,8 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
         onApplyProtocol={(selected, diagnosisDesc, isChanging) =>
           isChanging ? handleChangeProtocolForDiag(selected, diagnosisDesc) : handleInitialApply(selected, diagnosisDesc)
         }
-        readOnly={readOnly}
-      />
+        readOnly={medicationsReadOnly}
+      />}
       <AdviseNotesCard visit={visit} priorVisits={priorVisits} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} readOnly={readOnly} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
       <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} />

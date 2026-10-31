@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole, scopeDoctorId } from "@/lib/rbac";
 import { getRolePermissionsForDoctor } from "@/lib/role-permissions";
 import { revalidatePath } from "next/cache";
-import { PERMISSION_GROUPS, type RoleWithPerms } from "./permission-groups";
+import { PERMISSION_GROUPS, VISIBLE_PERMISSION_GROUPS, type RoleWithPerms } from "./permission-groups";
 
 // ── Default permissions for each system role ──────────────────────────────
 const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -160,7 +160,7 @@ export async function loadRolesPageData(doctorId: string) {
   }
   for (const own of ownPerms) permsByRole[own.role] = own.permissions;
 
-  const totalPerms = PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
+  const totalPerms = VISIBLE_PERMISSION_GROUPS.reduce((a, g) => a + g.permissions.length, 0);
 
   return dbRoles.map((r) => ({
     ...r,

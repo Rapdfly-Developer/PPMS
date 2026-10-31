@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireUser, roleHome, userCan } from "@/lib/rbac";
+import { requirePermission, roleHome } from "@/lib/rbac";
 import { istTodayStr } from "@/lib/ist";
 import { TABS, type TabId } from "@/lib/analytics/definitions";
 import { parseFilters, filterParams } from "@/lib/analytics/filters";
@@ -13,8 +13,7 @@ export default async function AnalyticsReportPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const user = await requireUser();
-  if (user.role !== "DOCTOR" && user.role !== "HOSPITAL" && !userCan(user, "reports.view")) redirect(roleHome(user.role));
+  const user = await requirePermission("reports.view");
   const scope = await resolveScope(user);
   if (!scope) redirect(roleHome(user.role));
   if (!scope.canExport) redirect("/analytics");

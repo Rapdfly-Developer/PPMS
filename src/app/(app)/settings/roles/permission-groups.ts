@@ -224,3 +224,33 @@ export const PERMISSION_GROUPS: {
     ],
   },
 ];
+
+/**
+ * Permissions whose pages stay Doctor-only (they run on the doctor's own
+ * account), so they are not offered as toggles for other roles. They remain in
+ * PERMISSION_GROUPS so seeding and stored role sets are unaffected.
+ */
+export const DOCTOR_ONLY_PERMISSIONS = new Set([
+  "hospital.manage",
+  "availability.view", "availability.manage",
+  "users.manage", "roles.manage",
+  "plugins.view", "plugins.manage",
+]);
+
+/** The permission groups shown as toggles in the role editors. */
+export const VISIBLE_PERMISSION_GROUPS = PERMISSION_GROUPS
+  .map((g) => ({ ...g, permissions: g.permissions.filter((p) => !DOCTOR_ONLY_PERMISSIONS.has(p.key)) }))
+  .filter((g) => g.permissions.length > 0);
+
+const VISIBLE_KEYS = new Set(VISIBLE_PERMISSION_GROUPS.flatMap((g) => g.permissions.map((p) => p.key)));
+
+/**
+ * How many of these keys are visible toggles. Stored sets can also hold keys
+ * with no toggle (Doctor-only ones, or retired ones such as billing.*), which
+ * would otherwise inflate the "x / y" count.
+ */
+export function countVisiblePermissions(keys: Iterable<string>): number {
+  let n = 0;
+  for (const k of keys) if (VISIBLE_KEYS.has(k)) n++;
+  return n;
+}

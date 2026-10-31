@@ -1,22 +1,30 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/rbac";
+import { requireAnyPermission, type SessionUser } from "@/lib/rbac";
+import { getStaffHospitalId } from "@/lib/booking-scope";
 import { revalidatePath } from "next/cache";
 import { writeAudit } from "@/lib/audit";
 import { createNotification } from "@/lib/notify";
 
-async function assertFollowUpAccess(visitId: string, doctorId: string) {
-  const v = await prisma.visit.findUnique({ where: { id: visitId }, select: { doctorId: true } });
-  if (!v || v.doctorId !== doctorId) throw new Error("Access denied");
+/** Doctors act on their own visits; staff with followups.edit on their own hospital's. */
+async function assertFollowUpAccess(visitId: string, user: SessionUser) {
+  const v = await prisma.visit.findUnique({ where: { id: visitId }, select: { doctorId: true, hospitalId: true } });
+  if (!v) throw new Error("Access denied");
+  if (user.role === "DOCTOR") {
+    if (v.doctorId !== user.profileId) throw new Error("Access denied");
+    return;
+  }
+  const hospitalId = await getStaffHospitalId(user.id);
+  if (!hospitalId || v.hospitalId !== hospitalId) throw new Error("Access denied");
 }
 
 export async function rescheduleFollowUp(
   visitId: string,
   newDate: string,
 ): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR");
-  try { await assertFollowUpAccess(visitId, user.profileId); } catch { return { error: "Access denied." }; }
+  const user = await requireAnyPermission("followups.edit");
+  try { await assertFollowUpAccess(visitId, user); } catch { return { error: "Access denied." }; }
 
   await prisma.visit.update({
     where: { id: visitId },
@@ -32,8 +40,8 @@ export async function cancelFollowUp(
   visitId: string,
   reason?: string,
 ): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR");
-  try { await assertFollowUpAccess(visitId, user.profileId); } catch { return { error: "Access denied." }; }
+  const user = await requireAnyPermission("followups.edit");
+  try { await assertFollowUpAccess(visitId, user); } catch { return { error: "Access denied." }; }
 
   await prisma.visit.update({
     where: { id: visitId },
@@ -59,8 +67,8 @@ export type CompleteFollowUpInput = {
 export async function completeFollowUp(
   input: CompleteFollowUpInput,
 ): Promise<{ error?: string }> {
-  const user = await requireRole("DOCTOR");
-  try { await assertFollowUpAccess(input.visitId, user.profileId); } catch { return { error: "Access denied." }; }
+  const user = await requireAnyPermission("followups.edit");
+  try { await assertFollowUpAccess(input.visitId, user); } catch { return { error: "Access denied." }; }
 
   const scheduleNext = input.outcome === "SCHEDULE_NEXT" && !!input.nextDate;
 

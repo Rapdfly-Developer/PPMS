@@ -248,6 +248,8 @@ export default async function PatientDetailedEMR({
   const finalizedToday = viewOnlySource ? false : finalizedTodayRaw;
   const visitLocked = activeVisit?.status === "CLOSED" && !finalizedToday;
   const isRefractionist = user.role === "REFRACTIONIST";
+  // "Edit EMR (Full)" unlocks every section, as its toggle describes.
+  const fullEdit = userCan(user, "emr.edit");
   const canEditSomething =
     userCan(user, "emr.edit") ||
     userCan(user, "emr.general.edit") ||
@@ -260,41 +262,48 @@ export default async function PatientDetailedEMR({
     userCan(user, "emr.plan.edit") ||
     userCan(user, "emr.medications.edit") ||
     userCan(user, "emr.refraction.edit") ||
-    userCan(user, "emr.ophthalmic.edit") ||
+    userCan(user, "refraction.create") ||
+    userCan(user, "refraction.edit") ||
+    userCan(user, "investigations.create") ||
+    userCan(user, "investigations.edit") ||
+    userCan(user, "emr.labReports.upload") ||
     userCan(user, "emr.labReports.edit");
   const readOnly = viewOnlySource || !canEditSomething || visitLocked;
   const canViewGeneral = userCan(user, "emr.general.view");
-  const generalReadOnly = viewOnlySource || !userCan(user, "emr.general.edit") || visitLocked;
+  const generalReadOnly = viewOnlySource || !(fullEdit || userCan(user, "emr.general.edit")) || visitLocked;
   // Refraction-workflow sections split into per-section flags so each can be
   // granted or revoked independently. DOCTOR has * so all resolve true.
-  const canEditVA         = !viewOnlySource && !visitLocked && userCan(user, "emr.va.edit");
+  const canEditVA         = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.va.edit"));
   const canEditRefraction = !viewOnlySource && !visitLocked && (
-    userCan(user, "emr.refraction.edit") || userCan(user, "refraction.edit") || userCan(user, "refraction.create")
+    fullEdit || userCan(user, "emr.refraction.edit") || userCan(user, "refraction.edit") || userCan(user, "refraction.create")
   );
-  const canEditColour     = !viewOnlySource && !visitLocked && userCan(user, "emr.colour.edit");
-  const canEditIOP        = !viewOnlySource && !visitLocked && userCan(user, "emr.iop.edit");
+  const canEditColour     = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.colour.edit"));
+  const canEditIOP        = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.iop.edit"));
 
   // Granular EMR sub-section permissions — fall back to DOCTOR role if the specific
   // permission is not granted, so existing roles keep working unchanged.
   const isDoctor = user.role === "DOCTOR";
   const canViewAssessment = isDoctor || userCan(user, "emr.assessment.view");
-  const canEditAssessment = !viewOnlySource && !visitLocked && (isDoctor || userCan(user, "emr.assessment.edit"));
+  const canEditAssessment = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.assessment.edit"));
   const canViewPlan = isDoctor || userCan(user, "emr.plan.view");
-  const canViewInvestigationsTab = !isRefractionist || userCan(user, "investigations.view");
+  const canViewInvestigationsTab = userCan(user, "investigations.view");
+  const canOrderInvestigations = userCan(user, "investigations.create");
   const canEditInvestigationsTab = !viewOnlySource && !visitLocked && (
-    isDoctor || userCan(user, "investigations.create") || userCan(user, "investigations.edit")
+    fullEdit || userCan(user, "investigations.create") || userCan(user, "investigations.edit")
   );
   const canEditAnterior = !viewOnlySource && !visitLocked && (
-    isDoctor || userCan(user, "emr.anterior.edit") || userCan(user, "emr.ophthalmic.edit")
+    fullEdit || userCan(user, "emr.anterior.edit")
   );
   // Gonioscopy is on the IOP/Gonio tab — Refractionists have emr.iop.edit so include it here
   const canEditGonioscopy = !viewOnlySource && !visitLocked && (
-    isDoctor || userCan(user, "emr.iop.edit") || userCan(user, "emr.anterior.edit") || userCan(user, "emr.ophthalmic.edit")
+    fullEdit || userCan(user, "emr.iop.edit") || userCan(user, "emr.anterior.edit")
   );
   const canEditPosterior = !viewOnlySource && !visitLocked && (
-    isDoctor || userCan(user, "emr.posterior.edit") || userCan(user, "emr.ophthalmic.edit")
+    fullEdit || userCan(user, "emr.posterior.edit")
   );
-  const canEditPlan = !viewOnlySource && !visitLocked && userCan(user, "emr.plan.edit");
+  const canEditPlan = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.plan.edit"));
+  const canViewMedications = userCan(user, "emr.medications.view") || userCan(user, "emr.medications.edit");
+  const canEditMedications = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.medications.edit"));
   const canPrint = userCan(user, "emr.print");
   const canPartialDispense = userCan(user, "opd.partialDispense");
   // Ophthalmic sub-tab visibility
@@ -578,7 +587,9 @@ export default async function PatientDetailedEMR({
             visit={activeVisit}
             udid={udid}
             patientName={patient.name}
-            showActionBar={source !== "total-dispensed" && (userCan(user, "emr.create") || isRefractionist)}
+            // The bar holds Print, Partial Dispense and Finalize & Sign: show it when any of them is allowed.
+            showActionBar={source !== "total-dispensed" && (userCan(user, "emr.create") || isRefractionist || canPrint || canPartialDispense)}
+            canFinalize={userCan(user, "emr.create")}
             isRefractionist={isRefractionist}
             finalizedToday={finalizedToday}
             canPrint={canPrint}
@@ -630,8 +641,8 @@ export default async function PatientDetailedEMR({
                       patientId={patient.id}
                       udid={udid}
                       entries={patient.pastExternalVisits}
-                      canEdit={userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
-                      canUpload={userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
+                      canEdit={fullEdit || userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
+                      canUpload={fullEdit || userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit")}
                     />
                   </div>
                 ),
@@ -669,7 +680,7 @@ export default async function PatientDetailedEMR({
                 id: "assess",
                 label: "Assessment",
                 icon: <Activity size={14} />,
-                hidden: isRefractionist || !canViewAssessment,
+                hidden: !canViewAssessment,
                 content: canViewAssessment ? (
                   <div className="flex flex-col gap-4">
                     <AssessmentTab visit={activeVisit} udid={udid} priorVisits={priorVisits} readOnly={!canEditAssessment} />
@@ -686,7 +697,7 @@ export default async function PatientDetailedEMR({
                   : undefined,
                 content: canViewInvestigationsTab ? (
                   <div className="flex flex-col gap-4">
-                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={!canEditInvestigationsTab} />
+                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={!canEditInvestigationsTab} canOrder={canOrderInvestigations} />
                   </div>
                 ) : null,
               },
@@ -706,10 +717,10 @@ export default async function PatientDetailedEMR({
                 id: "plan",
                 label: "Plan",
                 icon: <Link2 size={14} />,
-                hidden: isRefractionist || !canViewPlan,
+                hidden: !canViewPlan,
                 content: canViewPlan ? (
                   <div className="flex flex-col gap-4">
-                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} readOnly={!canEditPlan} />
+                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} readOnly={!canEditPlan} canViewMedications={canViewMedications} medicationsReadOnly={!canEditMedications} />
                   </div>
                 ) : null,
               },

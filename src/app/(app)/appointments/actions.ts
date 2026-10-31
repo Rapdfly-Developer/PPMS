@@ -574,6 +574,7 @@ export async function undoConfirmAppointment(appointmentId: string): Promise<voi
   if (user.role === "DOCTOR") {
     if (appt.doctorId !== scopeDoctorId(user)) throw new Error("Forbidden");
   } else {
+    if (!staffAppointmentPerms(user).confirm) throw new Error("Forbidden");
     const hospitalId = await getStaffHospitalId(user.id);
     if (appt.hospitalId !== hospitalId) throw new Error("Forbidden");
   }

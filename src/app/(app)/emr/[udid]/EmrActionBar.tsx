@@ -262,7 +262,7 @@ function SuccessModal({ udid, onClose }: { udid: string; onClose: () => void }) 
 export function EmrActionBar({
   visit, udid, patientName, currentTabIndex = 0, totalTabs = 1, onNextSection,
   editMode, onEnterEditMode, openPartialSignal = 0, isRefractionist = false,
-  canPrint = false, canPartialDispense = false, finalizedToday: finalizedTodayProp,
+  canPrint = false, canPartialDispense = false, canFinalize = true, finalizedToday: finalizedTodayProp,
 }: {
   visit: any; udid: string; patientName?: string;
   currentTabIndex?: number; totalTabs?: number; onNextSection?: () => void;
@@ -276,6 +276,8 @@ export function EmrActionBar({
   isRefractionist?: boolean;
   canPrint?: boolean;
   canPartialDispense?: boolean;
+  /** emr.create — Finalize & Sign (and the finalized-today Edit) only show when granted. */
+  canFinalize?: boolean;
   /** When provided, overrides the internal isSameDay(finalizedAt) check — use to suppress edit for view-only sources. */
   finalizedToday?: boolean;
 }) {
@@ -391,7 +393,7 @@ export function EmrActionBar({
           >
             <CheckCheck size={13} /> {passOverPending ? "Saving…" : passOverDone ? "Passed over" : "Pass Over to Doctor"}
           </button>
-        ) : closed ? (
+        ) : !canFinalize ? null : closed ? (
           autoClosed ? (
             <span className="flex-1 md:flex-none flex items-center justify-center gap-1 text-caption sm:text-sm font-medium px-2.5 py-2.5 md:px-4 md:py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 whitespace-nowrap">
               <Lock size={13} /> {sessionIncomplete ? "Incomplete" : <><span className="hidden sm:inline">Auto-closed at </span>EOD</>}

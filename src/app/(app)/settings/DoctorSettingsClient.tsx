@@ -30,7 +30,7 @@ import { signOut } from "next-auth/react";
 import { createUser } from "@/app/(app)/users/actions";
 import { saveRolePermissions } from "@/app/(app)/settings/roles/actions";
 import { LicenseSection } from "./LicenseSection";
-import { PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
+import { VISIBLE_PERMISSION_GROUPS } from "@/app/(app)/settings/roles/permission-groups";
 import {
   Users, Shield, Building2, Calendar, Bell,
   Activity, Download, Terminal,
@@ -3233,7 +3233,7 @@ function HospitalSetupWizard({ returnTo = "", savedPerms = {} }: { returnTo?: st
                   </div>
                 </div>
                 <div className="divide-y divide-[var(--color-border)]">
-                  {PERMISSION_GROUPS.map((group) => {
+                  {VISIBLE_PERMISSION_GROUPS.map((group) => {
                     const groupKeys = group.permissions.map((p) => p.key);
                     const allOn = groupKeys.every((k) => rolePerms.includes(k));
                     return (

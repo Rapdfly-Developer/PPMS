@@ -868,7 +868,7 @@ function ChangePasswordSection() {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
+export function HospitalSettingsClient({ hospital, canManage = true }: { hospital: Hospital; canManage?: boolean }) {
   const [section,    setSection]    = useState<Section>("hospital");
   const [savedToast, setSavedToast] = useState(false);
 
@@ -879,12 +879,13 @@ export function HospitalSettingsClient({ hospital }: { hospital: Hospital }) {
 
   function renderSection() {
     switch (section) {
-      case "hospital":      return <HospitalInfoSection hospital={hospital} onSaved={handleSaved} />;
+      // Without settings.manage the hospital sections are shown read-only.
+      case "hospital":      return <fieldset disabled={!canManage} className="contents"><HospitalInfoSection hospital={hospital} onSaved={handleSaved} /></fieldset>;
       case "departments":   return <DepartmentsSection />;
       case "users":         return <UsersRolesSection />;
       case "appointments":  return <AppointmentsSection />;
       case "notifications": return <NotificationsSection />;
-      case "backup":           return <DataBackupSection hospital={hospital} onSaved={handleSaved} />;
+      case "backup":           return <fieldset disabled={!canManage} className="contents"><DataBackupSection hospital={hospital} onSaved={handleSaved} /></fieldset>;
       case "audit":            return <AuditLogsSection />;
       case "change-password":  return <ChangePasswordSection />;
     }

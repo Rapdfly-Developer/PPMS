@@ -30,11 +30,14 @@ export function InvestigationsTab({
   priorVisits,
   udid,
   readOnly,
+  canOrder = true,
 }: {
   visit: any;
   priorVisits: any[];
   udid: string;
   readOnly: boolean;
+  /** investigations.create — hides the order form when off. */
+  canOrder?: boolean;
 }) {
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
@@ -94,7 +97,7 @@ export function InvestigationsTab({
       {/* Render NewInvestigations in overview even on read-only visits so today's
           orders are visible; the order-entry form is hidden by data-overview-hide */}
       {(overview || activeTab === "new") && (!readOnly || overview) && (
-        <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} />
+        <NewInvestigations visit={visit} udid={udid} todayOrders={todayOrders} onOrdered={() => {}} canOrder={canOrder} />
       )}
       {activeTab === "new" && readOnly && !overview && (
         <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-8">This visit is closed, no new orders can be placed.</p>
@@ -491,9 +494,9 @@ function AddCustomTestModal({
 // ── New Investigations (order form + today's orders) ─────────────────────
 
 function NewInvestigations({
-  visit, udid, todayOrders, onOrdered,
+  visit, udid, todayOrders, onOrdered, canOrder = true,
 }: {
-  visit: any; udid: string; todayOrders: any[]; onOrdered: () => void;
+  visit: any; udid: string; todayOrders: any[]; onOrdered: () => void; canOrder?: boolean;
 }) {
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
@@ -589,7 +592,7 @@ function NewInvestigations({
   return (
     <div className="flex flex-col gap-4">
       {/* Order form — hidden in overview mode; today's orders below remain visible */}
-      <div data-overview-hide>
+      {canOrder && <div data-overview-hide>
       <Card className="p-0 overflow-hidden">
         {/* Priority + Laterality + Add Test */}
         <div className="px-5 pt-5 pb-4 flex items-start justify-between gap-4 border-b border-[var(--color-border)]">
@@ -697,7 +700,7 @@ function NewInvestigations({
           </div>
         </div>
       </Card>
-      </div>
+      </div>}
 
       {/* Today's placed orders */}
       {todayOrders.length > 0 && (

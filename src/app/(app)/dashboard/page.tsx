@@ -1,12 +1,23 @@
 import { redirect } from "next/navigation";
-import { requirePermission, scopeDoctorId } from "@/lib/rbac";
+import { requireUser, userCan, homeFor, scopeDoctorId } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { format } from "date-fns";
 import { istTodayRange, istParts, toISTWall } from "@/lib/ist";
 import { HomeDashboardClient } from "@/app/(app)/home/HomeDashboardClient";
 
 export default async function DashboardPage() {
-  const user = await requirePermission("dashboard.view");
+  const user = await requireUser();
+  if (!userCan(user, "dashboard.view")) {
+    // Send the user to the first module they can open; with none, show a
+    // message rather than redirecting back here in a loop.
+    const home = homeFor(user);
+    if (home !== "/dashboard") redirect(home);
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] bg-white p-10 text-center text-sm text-[var(--color-ink-500)]">
+        Your role does not have access to any module yet. Ask your doctor to update your permissions.
+      </div>
+    );
+  }
 
   if (user.role === "DOCTOR") {
     const doctorId = scopeDoctorId(user);
@@ -120,7 +131,7 @@ export default async function DashboardPage() {
   }
 
   // Refractionist's home is OPD — the dashboard duplicates the queue.
-  if (user.role === "REFRACTIONIST") redirect("/opd");
+  if (user.role === "REFRACTIONIST" && userCan(user, "opd.view")) redirect("/opd");
 
   // ── Hospital / staff roles ─────────────────────────────────────────────
   const hospitalId = user.hospitalId;
