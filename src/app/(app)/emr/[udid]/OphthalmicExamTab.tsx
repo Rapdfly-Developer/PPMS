@@ -13,6 +13,7 @@ import { useAutoSave, SaveIndicator, AutoSaveSharedLock } from "@/lib/useAutoSav
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
 import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
+import { chipMatcher, CHIP_MATCH_CLASS } from "@/lib/chip-match";
 import {
   VA_TEST_METHODS,
   VA_SNELLEN_VALUES,
@@ -1529,6 +1530,7 @@ function GonioFindingsInput({
   useEffect(() => { setSavedKws(loadKws(fieldKey)); }, [fieldKey, tick]);
 
   const historyChips = recentHistory?.filter((h) => h && h !== value).slice(0, 4) ?? [];
+  const kwMatch = chipMatcher(value.split(/\s+/).pop() ?? "", savedKws);
 
   return (
     <div className="flex flex-col gap-1 relative flex-1 min-w-0">
@@ -1581,7 +1583,7 @@ function GonioFindingsInput({
                 <Plus size={11} strokeWidth={2.5} /> Keyword
               </button>
               {savedKws.map((kw) => (
-                <span key={kw} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption sm:text-caption text-[var(--color-primary-700)]">
+                <span key={kw} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption sm:text-caption ${(() => { const m = kwMatch(kw); return m ? CHIP_MATCH_CLASS[m] : "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"; })()}`}>
                   <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
                   <button
                     data-overview-hide
@@ -3008,7 +3010,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_re_findings" value={reFindings} onChange={setReFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "re" && <HistoryPanel eye="re" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(reFindings)} onChange={editable ? (next) => setReFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(reFindings)} onChange={editable ? (next) => setReFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" matchOf={chipMatcher(reFindings, LACRIMAL_SAC_CHIPS.filter((c) => !selectedChips(reFindings).includes(c)))} />
         </div>
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -3017,7 +3019,7 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
           </div>
           <KeywordInput fieldKey="lacrimal_le_findings" value={leFindings} onChange={setLeFindings} disabled={!editable} placeholder="Enter findings..." />
           {openHistory === "le" && <HistoryPanel eye="le" />}
-          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(leFindings)} onChange={editable ? (next) => setLeFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" />
+          <ChipGroup options={LACRIMAL_SAC_CHIPS} value={selectedChips(leFindings)} onChange={editable ? (next) => setLeFindings((t) => toggleChip(t, next)) : () => {}} chipClassName="chip-kw" matchOf={chipMatcher(leFindings, LACRIMAL_SAC_CHIPS.filter((c) => !selectedChips(leFindings).includes(c)))} />
         </div>
       </div>
     </Card>

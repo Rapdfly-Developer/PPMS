@@ -10,6 +10,7 @@ import { appendComplaintKeyword, OPHTHALMIC_COMPLAINTS } from "@/components/ui/C
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { chipMatcher } from "@/lib/chip-match";
 import { saveGeneralExam } from "./actions";
 import { HpiBuilder } from "./HpiBuilder";
 import { createPortal } from "react-dom";
@@ -295,6 +296,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
     return initial.length > 0 ? initial : [emptyPmh()];
   });
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
+  // The past history condition being typed, for highlighting matching keyword chips
+  const [pmhTyped, setPmhTyped] = useState("");
   const [familyHistory, setFamilyHistory] = useState(ge?.familyHistory ?? "");
 
   const [medRows, setMedRows] = useState<CurrentMed[]>(() => parseMeds(ge?.medications ?? ""));
@@ -426,6 +429,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const visiblePmhOptions = overview
     ? displayPmhOptions.filter((option) => cumulativePmh.some((entry) => entry.name.toLowerCase() === option.toLowerCase()))
     : displayPmhOptions;
+  const pmhMatch = chipMatcher(pmhTyped, visiblePmhOptions.filter((option) => !cumulativePmh.some((entry) => entry.name.trim().toLowerCase() === option.toLowerCase())));
 
   const histFor = (field: (g: any) => string | undefined) =>
     priorVisits
@@ -705,7 +709,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   </select>
                   <input
                     value={entry.name}
-                    onChange={(event) => patchPmh(index, { name: event.target.value })}
+                    onChange={(event) => { patchPmh(index, { name: event.target.value }); setPmhTyped(event.target.value); }}
+                    onBlur={() => setPmhTyped("")}
                     disabled={readOnly}
                     aria-label={`Past history condition ${index + 1}`}
                     placeholder="Enter condition or past procedure"
@@ -769,6 +774,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   type="button"
                   className="chip-kw"
                   data-active={active}
+                  data-match={pmhMatch(option) ?? undefined}
                   title={active ? "Double-tap to remove" : undefined}
                   onClick={() => (active ? tapSelectedPmh(option) : addPmhRow(option))}
                 >

@@ -437,6 +437,9 @@ h1, h2, h3, h4 { text-wrap: balance; }
 }
 .chip-kw:hover { border-color: var(--color-primary-400); color: var(--color-primary-700); }
 .chip-kw[data-active="true"] { background: var(--color-primary-600); color: #fff; border-color: var(--color-primary-600); }
+/* Matches what is being typed into the chip's field (lib/chip-match); selected chips keep their colour */
+.chip-kw[data-match="match"]:not([data-active="true"]) { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+.chip-kw[data-match="best"]:not([data-active="true"]) { background: #fef3c7; border-color: #f59e0b; color: #78350f; box-shadow: 0 0 0 2px #fcd34d; }
 .chip-sm[data-active="true"] { background: var(--color-primary-600); color: white; border-color: var(--color-primary-600); }
 
 .scrollbar-thin::-webkit-scrollbar { height: 6px; width: 6px; }

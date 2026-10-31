@@ -10,6 +10,7 @@ export function ChipGroup({
   otherValue,
   onOtherChange,
   chipClassName = "chip",
+  matchOf,
 }: {
   options: readonly string[] | string[];
   value: string[];
@@ -18,6 +19,8 @@ export function ChipGroup({
   otherValue?: string;
   onOtherChange?: (v: string) => void;
   chipClassName?: string;
+  /** Highlights chips matching text being typed elsewhere (see lib/chip-match). */
+  matchOf?: (opt: string) => string | null;
 }) {
   const toggle = (opt: string) => {
     if (value.includes(opt)) onChange(value.filter((v) => v !== opt));
@@ -35,6 +38,7 @@ export function ChipGroup({
             key={opt}
             className={chipClassName}
             data-active={value.includes(opt)}
+            data-match={matchOf?.(opt) ?? undefined}
             onClick={() => toggle(opt)}
           >
             {opt}

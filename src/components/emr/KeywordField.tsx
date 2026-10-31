@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Trash2, X } from "lucide-react";
+import { chipMatcher, CHIP_MATCH_CLASS, type ChipMatch } from "@/lib/chip-match";
 
 /**
  * Distinguishes single from double activation (click/touch/keyboard).
@@ -138,12 +139,15 @@ function DeletableChip({
   onDouble,
   onDelete,
   custom,
+  match = null,
 }: {
   kw: string;
   onSingle: () => void;
   onDouble: () => void;
   onDelete: () => void;
   custom: boolean;
+  /** Highlight while the field's typed text matches this keyword. */
+  match?: ChipMatch;
 }) {
   const [armed, setArmed] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -177,7 +181,9 @@ function DeletableChip({
   return (
     <span
       className={`inline-flex items-center gap-0.5 pl-2 pr-0.5 py-0.5 rounded-full border text-caption transition-colors ${
-        custom
+        match
+          ? CHIP_MATCH_CLASS[match]
+          : custom
           ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
           : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
       }`}
@@ -205,11 +211,14 @@ function KeywordChips({
   disabled,
   builtIns = [],
   legacyKeys,
+  typed = "",
 }: {
   fieldKey: string;
   onAppend: (kw: string) => void;
   onRemoveFromText: (kw: string) => void;
   disabled: boolean;
+  /** The field's current text; chips matching what is being typed are highlighted. */
+  typed?: string;
   /** Default suggestions. Deleting one hides it for this field in this browser. */
   builtIns?: readonly string[];
   legacyKeys?: readonly string[];
@@ -238,6 +247,7 @@ function KeywordChips({
   const shownBuiltIns = builtIns.filter((b) => !hidden.some((h) => same(h, b)));
   // A built-in the user also saved would otherwise render twice.
   const custom = kws.filter((k) => !builtIns.some((b) => same(b, k)));
+  const matchOf = chipMatcher(typed, [...shownBuiltIns, ...custom]);
 
   if (disabled || (custom.length === 0 && shownBuiltIns.length === 0)) return null;
 
@@ -248,6 +258,7 @@ function KeywordChips({
           key={`builtin-${kw}`}
           kw={kw}
           custom={false}
+          match={matchOf(kw)}
           onSingle={() => onAppend(kw)}
           onDouble={() => onRemoveFromText(kw)}
           onDelete={() => remove(kw)}
@@ -258,6 +269,7 @@ function KeywordChips({
           key={kw}
           kw={kw}
           custom
+          match={matchOf(kw)}
           onSingle={() => onAppend(kw)}
           onDouble={() => onRemoveFromText(kw)}
           onDelete={() => remove(kw)}
@@ -367,6 +379,7 @@ export function KeywordChipsRow({
         fieldKey={fieldKey}
         builtIns={builtIns}
         legacyKeys={legacyKeys}
+        typed={getValue()}
         onAppend={onAppend}
         onRemoveFromText={onRemoveFromText}
         disabled={false}
@@ -418,7 +431,7 @@ export function KeywordInput({
       {!disabled && (
         <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
-          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
+          <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} typed={value} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
         </div>
       )}
     </div>
@@ -510,7 +523,7 @@ function KeywordTextareaControls({
   return (
     <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
       <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={onRefresh} />
-      <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
+      <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} typed={value} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
       {afterButtons}
     </div>
   );

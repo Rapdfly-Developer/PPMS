@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, KeyboardEvent, ReactNode } from "react";
 import { Plus, X } from "lucide-react";
 import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
 import { appendKeywordAsBullet, keywordEntries, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { chipMatcher, CHIP_MATCH_CLASS, type ChipMatch } from "@/lib/chip-match";
 
 export const OPHTHALMIC_COMPLAINTS = [
   "Blurred Vision",
@@ -69,11 +70,12 @@ interface Props {
 
 export const appendComplaintKeyword = appendKeywordAsBullet;
 
-function StandardChip({ keyword, active, onSelect, onRemove }: {
+function StandardChip({ keyword, active, onSelect, onRemove, match = null }: {
   keyword: string;
   active: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  match?: ChipMatch;
 }) {
   return (
     <button
@@ -84,6 +86,8 @@ function StandardChip({ keyword, active, onSelect, onRemove }: {
       className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
         active
           ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+          : match
+          ? CHIP_MATCH_CLASS[match]
           : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"
       }`}
     >
@@ -92,18 +96,21 @@ function StandardChip({ keyword, active, onSelect, onRemove }: {
   );
 }
 
-function CustomChip({ keyword, active, onSelect, onRemoveFromText, onDelete }: {
+function CustomChip({ keyword, active, onSelect, onRemoveFromText, onDelete, match = null }: {
   keyword: string;
   active: boolean;
   onSelect: () => void;
   onRemoveFromText: () => void;
   onDelete: () => void;
+  match?: ChipMatch;
 }) {
   return (
     <span
       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
         active
           ? "bg-[var(--color-primary-700)] border-[var(--color-primary-700)] text-white"
+          : match
+          ? CHIP_MATCH_CLASS[match]
           : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-700)]"
       }`}
     >
@@ -173,6 +180,9 @@ export function ComplaintCombobox({
   const isSelected = (keyword: string) => keywordMode === "bullet"
     ? selectedBulletKeywords.has(keyword.toLowerCase())
     : selectedChip === keyword;
+
+  // Chips matching what is being typed are highlighted (selected ones keep their own colour)
+  const matchOf = chipMatcher(value, [...allStandard, ...customKeywords].filter((k) => !isSelected(k)));
 
   // Clicking a chip fills the input; clicking the active chip clears it
   function selectChip(keyword: string) {
@@ -255,6 +265,7 @@ export function ComplaintCombobox({
             key={keyword}
             keyword={keyword}
             active={isSelected(keyword)}
+            match={matchOf(keyword)}
             onSelect={() => selectChip(keyword)}
             onRemove={() => onChange(keywordMode === "bullet" ? removeKeywordFromText(value, keyword) : (value.toLowerCase() === keyword.toLowerCase() ? "" : value))}
           />
@@ -269,6 +280,7 @@ export function ComplaintCombobox({
               key={keyword}
               keyword={keyword}
               active={isSelected(keyword)}
+              match={matchOf(keyword)}
               onSelect={() => selectChip(keyword)}
               onRemoveFromText={() => onChange(keywordMode === "bullet" ? removeKeywordFromText(value, keyword) : (value.toLowerCase() === keyword.toLowerCase() ? "" : value))}
               onDelete={() => removeCustom(keyword)}
