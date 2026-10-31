@@ -889,10 +889,10 @@ export type ShortSummaryData = {
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   investigations: { testName: string; category: string; priority: string; laterality?: string | null; status: string; notes?: string | null }[];
   opticalRx?: {
-    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duochrome?: string };
-    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string };
+    re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string };
+    le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string };
   } | null;
-  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duochrome?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string } }[] | null;
   visualAcuity?: { reDistance?: { unaided?: string; ph?: string; bcva?: string } | null; leDistance?: { unaided?: string; ph?: string; bcva?: string } | null; reNear?: string | null; leNear?: string | null } | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null } | null;
@@ -1010,17 +1010,16 @@ function suiEyeRow(labelHtml: string, re: string, le: string, opts: { stripe?: b
     `</tr>`;
 }
 
-/** Duochrome Test (Subjective refraction), laid out like IOP: one row per refraction, "RE > LE". */
-function suiDuochrome(rows: { label: string; value?: string }[]): string {
-  const list = rows.filter((r) => r.value);
-  if (!list.length) return "";
-  const bb = `border-bottom:1px solid ${SUI.BORDER};`;
+/** Duochrome Test (Subjective refraction), laid out like IOP: Red / Green rows under RE / LE ("=" when never changed). */
+type DuoEye = { duoRed?: string; duoGreen?: string } | null | undefined;
+function suiDuochrome(rows: { label: string; re: DuoEye; le: DuoEye }[]): string {
+  if (!rows.length) return "";
+  const prefix = (label: string) => (label ? `${escapeHtml(label)} · ` : "");
   return `<div class="no-break" style="margin-bottom:12px;">` +
-    suiTable(["38%", "62%"],
-      `<thead><tr><th style="${SUI_TH}${bb}">${suiInlineHead("Duochrome Test")}</th><th style="${SUI_TH}${bb}"></th></tr></thead>`,
-      list.map((r) =>
-        `<tr><td style="${SUI_TD_MUTED}">${suiBullet}${escapeHtml(r.label)}</td>` +
-        `<td style="${SUI_TD}font-weight:500;"><strong style="color:${SUI.P700};">RE</strong> ${escapeHtml(r.value!)} <strong style="color:${SUI.P700};">LE</strong></td></tr>`,
+    suiTable(COLS_EYE_PDF, suiEyeHead("Duochrome Test", true),
+      rows.map((r) =>
+        suiEyeRow(suiBullet + prefix(r.label) + "Red", escapeHtml(r.re?.duoRed || "="), escapeHtml(r.le?.duoRed || "="), { strong: true }) +
+        suiEyeRow(suiBullet + prefix(r.label) + "Green", escapeHtml(r.re?.duoGreen || "="), escapeHtml(r.le?.duoGreen || "="), { strong: true }),
       ).join(""),
       { indent: true, divided: true }) +
     `</div>`;
@@ -1388,7 +1387,7 @@ ${d.medications.length
 
 <!-- 6 · SPECTACLE RX — the Subjective prescription only (matches the screen) -->
 ${hasRx ? suiBlock("Spectacle Rx", suiRxTable(d.opticalRx!.re, d.opticalRx!.le)) : ""}
-${hasRx ? suiDuochrome([{ label: "Spectacle Rx · Subjective", value: d.opticalRx!.re.duochrome }]) : ""}
+${hasRx && d.opticalRx!.re.method === "Subjective" ? suiDuochrome([{ label: "", re: d.opticalRx!.re, le: d.opticalRx!.le }]) : ""}
 
 <!-- 7 · INVESTIGATIONS -->
 ${d.investigations.length ? suiBlock("Investigations", suiInvestigationList(d.investigations)) : ""}
@@ -1502,7 +1501,7 @@ export type FullEmrData = {
     re: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
     le: { sph?: string; cyl?: string; axis?: string; va?: string; nearSph?: string; nearVa?: string; nearCyl?: string; nearAxis?: string; method?: string };
   } | null;
-  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duochrome?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string } }[] | null;
+  extraCorrections?: { label: string; re: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string }; le: { sph?: string; cyl?: string; axis?: string; nearSph?: string; va?: string; nearVa?: string; method?: string; duoRed?: string; duoGreen?: string } }[] | null;
   retinoscopy?: { re?: { sph?: string; cyl?: string; axis?: string } | null; le?: { sph?: string; cyl?: string; axis?: string } | null } | null;
   investigations: { testName: string; priority: string; status: string; laterality?: string | null; result?: string | null; notes?: string | null }[];
 };
@@ -1756,7 +1755,7 @@ ${(() => {
     push(`${ec.label}${method ? " · " + method : ""}`, ec.re, ec.le, method);
   });
   if (d.retinoscopy && (d.retinoscopy.re || d.retinoscopy.le)) push("Retinoscopy", d.retinoscopy.re, d.retinoscopy.le);
-  blocks.push(suiDuochrome((d.extraCorrections ?? []).map((ec) => ({ label: `${ec.label} · ${ec.re?.method || ""}`, value: ec.re?.duochrome }))));
+  blocks.push(suiDuochrome((d.extraCorrections ?? []).filter((ec) => ec.re?.method === "Subjective").map((ec) => ({ label: ec.label, re: ec.re, le: ec.le }))));
   return blocks.join("");
 })()}
 

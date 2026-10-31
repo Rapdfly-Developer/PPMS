@@ -560,7 +560,8 @@ function ArSlipUpload({
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
   // ── Types ──────────────────────────────────────────────────────────────────
-  type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; k1?: string; k2?: string };
+  // duoRed / duoGreen: Duochrome Test (Subjective only), cycles "=" → ">" → "<" (unset = "=")
+  type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; k1?: string; k2?: string; duoRed?: string; duoGreen?: string };
   const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
   // Each method within a correction card stores its own eye data, print flag, and AR slip.
@@ -657,35 +658,39 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       label: m !== corr.activeMethod && methodHasValues(corr.methods[m]) ? `${m} · saved` : m,
     }));
 
-  // Duochrome Test, shown between the eyes for the Subjective method only
+  // Duochrome Test, shown under each eye for the Subjective method only
   const DUOCHROME_NEXT: Record<string, string> = { "=": ">", ">": "<", "<": "=" };
-  const duochromeCell = (corr: CorrV2, update: (fn: (prev: CorrV2) => CorrV2) => void) => {
-    if (corr.activeMethod !== "Subjective") return undefined;
-    const value = activeEntry(corr).duochrome || "=";
+  const duochromeButton = (label: string, value: string, onChange: (v: string) => void) => {
     const active = value !== "=";
-    // Mirrors the eye columns (heading, "Distance" row, field label) so the button lines up with the Distance fields
     return (
-      <div className="flex flex-col items-center">
-        <p className="text-caption sm:text-xs font-semibold text-[var(--color-primary-700)] uppercase tracking-wide mb-3 whitespace-nowrap">Duochrome Test</p>
-        <div className="flex flex-col items-center gap-y-2">
-          <p aria-hidden className="invisible text-micro sm:text-caption font-semibold uppercase tracking-widest">Distance</p>
-          <div className="flex flex-col items-center gap-0.5">
-            <span aria-hidden className="invisible text-micro sm:text-caption font-medium">Sph</span>
-            <button
-              type="button"
-              disabled={!editable}
-              onClick={() => update((prev) => patchEntry(prev, (ent) => ({ ...ent, duochrome: DUOCHROME_NEXT[value] ?? "=" })))}
-              title="Duochrome Test: click to change (= → > → <)"
-              aria-label={`Duochrome Test ${value}`}
-              className={`w-10 h-[26px] rounded-md flex items-center justify-center text-sm font-bold leading-none border transition-colors disabled:opacity-40 ${
-                active
-                  ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
-                  : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
-              }`}
-            >
-              {value}
-            </button>
-          </div>
+      <div className="flex items-center gap-2">
+        <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</span>
+        <button
+          type="button"
+          disabled={!editable}
+          // "=" is stored as "" so an untouched test doesn't count as entered data
+          onClick={() => { const next = DUOCHROME_NEXT[value] ?? "="; onChange(next === "=" ? "" : next); }}
+          title={`Duochrome Test ${label}: click to change (= → > → <)`}
+          aria-label={`Duochrome Test ${label} ${value}`}
+          className={`w-10 h-[26px] rounded-md flex items-center justify-center text-sm font-bold leading-none border transition-colors disabled:opacity-40 ${
+            active
+              ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
+              : "bg-white border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)]"
+          }`}
+        >
+          {value}
+        </button>
+      </div>
+    );
+  };
+  const duochromeRow = (method: string, val: RxEye, setVal: (v: RxEye) => void) => {
+    if (method !== "Subjective") return null;
+    return (
+      <div className="mt-4">
+        <p className="text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-2">Duochrome Test</p>
+        <div className="flex items-center gap-6">
+          {duochromeButton("Red", val.duoRed || "=", (v) => setVal({ ...val, duoRed: v }))}
+          {duochromeButton("Green", val.duoGreen || "=", (v) => setVal({ ...val, duoGreen: v }))}
         </div>
       </div>
     );
@@ -909,19 +914,25 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           <SaveIndicator state={state} />
         </div>
       </div>
-      <EyeColumns middle={duochromeCell(c1, setC1)}>
-        {eyeFields(
-          activeEntry(c1).re,
-          (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
-          methodHasNear(c1.activeMethod),
-          c1.activeMethod === "Auto-Refraction"
-        )}
-        {eyeFields(
-          activeEntry(c1).le,
-          (le) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
-          methodHasNear(c1.activeMethod),
-          c1.activeMethod === "Auto-Refraction"
-        )}
+      <EyeColumns>
+        <>
+          {eyeFields(
+            activeEntry(c1).re,
+            (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
+            methodHasNear(c1.activeMethod),
+            c1.activeMethod === "Auto-Refraction"
+          )}
+          {duochromeRow(c1.activeMethod, activeEntry(c1).re, (re) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, re }))))}
+        </>
+        <>
+          {eyeFields(
+            activeEntry(c1).le,
+            (le) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
+            methodHasNear(c1.activeMethod),
+            c1.activeMethod === "Auto-Refraction"
+          )}
+          {duochromeRow(c1.activeMethod, activeEntry(c1).le, (le) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, le }))))}
+        </>
       </EyeColumns>
 
       {/* ── Extra corrections ── */}
@@ -958,19 +969,25 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               )}
             </div>
           </div>
-          <EyeColumns middle={duochromeCell(ex, (fn) => setExtra(idx, fn))}>
-            {eyeFields(
-              activeEntry(ex).re,
-              (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
-              methodHasNear(ex.activeMethod),
-              ex.activeMethod === "Auto-Refraction"
-            )}
-            {eyeFields(
-              activeEntry(ex).le,
-              (le) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
-              methodHasNear(ex.activeMethod),
-              ex.activeMethod === "Auto-Refraction"
-            )}
+          <EyeColumns>
+            <>
+              {eyeFields(
+                activeEntry(ex).re,
+                (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))),
+                methodHasNear(ex.activeMethod),
+                ex.activeMethod === "Auto-Refraction"
+              )}
+              {duochromeRow(ex.activeMethod, activeEntry(ex).re, (re) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, re }))))}
+            </>
+            <>
+              {eyeFields(
+                activeEntry(ex).le,
+                (le) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, le }))),
+                methodHasNear(ex.activeMethod),
+                ex.activeMethod === "Auto-Refraction"
+              )}
+              {duochromeRow(ex.activeMethod, activeEntry(ex).le, (le) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, le }))))}
+            </>
           </EyeColumns>
         </div>
       ))}

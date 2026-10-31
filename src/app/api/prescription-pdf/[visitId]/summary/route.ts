@@ -129,7 +129,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
   // Every refraction/method prints in the long EMR.
   const subjectiveCorr = allCorrections.find((c) => isPrescribableMethod(c.method));
   const opticalRx = subjectiveCorr
-    ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method, duochrome: subjectiveCorr.duochrome || "=" }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }
+    ? { re: { ...subjectiveCorr.re, method: subjectiveCorr.method }, le: { ...subjectiveCorr.le, method: subjectiveCorr.method } }
     : null;
 
   // Visual Acuity
