@@ -12,6 +12,7 @@ import { TealSelect } from "@/components/ui/TealSelect";
 import { useAutoSave, SaveIndicator, AutoSaveSharedLock } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
+import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
 import {
   VA_TEST_METHODS,
   VA_SNELLEN_VALUES,
@@ -152,7 +153,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   const subHidden: Record<string, boolean> = {
     va: !(canViewVA ?? true), refraction: !(canViewRefraction ?? true), cv: !(canViewColour ?? true), iop: !(canViewIOP ?? true),
     anterior: !(canViewAnterior ?? true), posterior: !(canViewPosterior ?? true), oculoplasty: !(canViewOculoplasty ?? true),
-    tear: !(canViewAnterior ?? true), lacrimal: !(canViewAnterior ?? true), diplopia: !(canViewPosterior ?? true), hess: !(canViewPosterior ?? true),
+    tear: !(canViewAnterior ?? true), lacrimal: !(canViewAnterior ?? true), diplopia: HIDE_DIPLOPIA_HESS || !(canViewPosterior ?? true), hess: HIDE_DIPLOPIA_HESS || !(canViewPosterior ?? true),
   };
   const subKey = Object.entries(subHidden).map(([k, h]) => `${k}:${h ? 0 : 1}`).join(",");
   useEffect(() => {
@@ -178,8 +179,8 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
           { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewOculoplasty ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={oculoplastyCanEdit} priorVisits={priorVisits} /></div> },
           { id: "tear",      label: "Tear Film",         hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "lacrimal",  label: "Lacrimal Sac",      hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "diplopia",  label: "Diplopia Chart",    hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
-          { id: "hess",      label: "Hess Chart",        hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.hess)}><HessCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
+          { id: "diplopia",  label: "Diplopia Chart",    hidden: HIDE_DIPLOPIA_HESS || !(canViewPosterior ?? true), content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
+          { id: "hess",      label: "Hess Chart",        hidden: HIDE_DIPLOPIA_HESS || !(canViewPosterior ?? true), content: <div {...ovSect(empty.hess)}><HessCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },
         ]}
       />
     </AutoSaveSharedLock>

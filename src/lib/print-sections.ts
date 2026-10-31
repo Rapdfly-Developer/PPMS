@@ -1,5 +1,5 @@
 import { parseOculoplasty, hasFindings, hasEom } from "./oculoplasty";
-import { REFRACTION_METHODS } from "./constants";
+import { HIDE_DIPLOPIA_HESS, REFRACTION_METHODS } from "./constants";
 /**
  * Every EMR section the Print pop-up lists, in EMR tab order. `short` / `long`
  * say whether that summary prints the section (shown locked in the pop-up);
@@ -56,7 +56,7 @@ export const REFRACTION_PRINT_METHODS: PrintSection[] = REFRACTION_METHODS.map((
   id: rxMethodParam(m), label: m, short: m === "Subjective", long: true, hasData: (v: any) => hasRefractionMethod(v.refraction, m),
 }));
 
-export const PRINT_SECTIONS: PrintSection[] = [
+export const PRINT_SECTIONS: PrintSection[] = ([
   // General
   { id: "cc",       label: "Chief Complaint",            short: true,  long: true, hasData: (v) => filled(v.generalExam?.chiefComplaint) },
   { id: "hpi",      label: "History of Present Illness", short: false, long: true, hasData: (v) => filled(v.generalExam?.hpi) },
@@ -93,4 +93,4 @@ export const PRINT_SECTIONS: PrintSection[] = [
   { id: "proc",     label: "Minor Procedure",            short: true,  long: true, hasData: (v) => { const p = v.procedureName; const a = arr(p); return a.length ? a.some(filled) : filled(p) && p.trim() !== "[]"; } },
   { id: "followup", label: "Follow-up",                  short: true,  long: true, hasData: (v) => !!v.followUpDate },
   { id: "referral", label: "Referral",                   short: true,  long: true, hasData: (v) => !!v.referralEnabled },
-];
+] satisfies PrintSection[]).filter((s) => !(HIDE_DIPLOPIA_HESS && (s.id === "diplopia" || s.id === "hess")));

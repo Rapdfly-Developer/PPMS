@@ -1,5 +1,6 @@
 import { format as formatBase } from "date-fns";
 import { parseOculoplasty, hasFindings, hasEom, findingsText, eomRows, type EyeFindings, type OculoplastyData } from "./oculoplasty";
+import { HIDE_DIPLOPIA_HESS } from "./constants";
 import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
@@ -1761,6 +1762,7 @@ ${(() => {
 
 <!-- 9 · EOM / DEVIATION (Diplopia & Hess Charts) -->
 ${(() => {
+  if (HIDE_DIPLOPIA_HESS) return "";
   const dp = d.diplopiaChart;
   const hc = d.hessChart;
   const POSITIONS = ["TL","T","TR","L","C","R","BL","B","BR"];

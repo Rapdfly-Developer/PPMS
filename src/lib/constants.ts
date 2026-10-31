@@ -153,6 +153,13 @@ export const LACRIMAL_SAC_CHIPS = [
   "Regurgitation - opposite punctum",
 ];
 
+/**
+ * Diplopia and Hess charts are hidden everywhere in the app (EMR, prints,
+ * visit summaries). The data, actions and components are kept; set to false
+ * to show them again.
+ */
+export const HIDE_DIPLOPIA_HESS = true;
+
 export const DIPLOPIA_POSITIONS = [
   "Up-Right", "Up", "Up-Left",
   "Right", "Primary", "Left",

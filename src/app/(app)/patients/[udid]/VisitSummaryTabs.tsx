@@ -8,6 +8,7 @@ import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { HpiFormatted } from "@/components/emr/HpiFormatted";
 import { parseOculoplasty, hasFindings, findingsText, eomRows } from "@/lib/oculoplasty";
+import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
 import { medicationLaterality } from "@/lib/medication-laterality";
 
 type Tab = "short" | "long" | "ai";
@@ -854,7 +855,7 @@ function LongContent({
     return { pos, label: DP_LABELS[pos] ?? pos, status, notes: cell.notes ?? null };
   }).filter(Boolean) as { pos: string; label: string; status: string; notes: string | null }[] : [];
   const hessInterp = data.hessChart?.interpretation ?? null;
-  const hasEOM = dpRows.length > 0 || !!hessInterp;
+  const hasEOM = !HIDE_DIPLOPIA_HESS && (dpRows.length > 0 || !!hessInterp);
   const ocu = parseOculoplasty(data.oculoplasty);
   const ocuEomRows = eomRows(ocu);
   const hasOcu = hasFindings(ocu.deviation) || ocuEomRows.length > 0 || hasFindings(ocu.exo);
