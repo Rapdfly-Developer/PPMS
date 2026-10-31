@@ -61,6 +61,10 @@ export const P = {
   EMR_POSTERIOR_VIEW:      "emr.posterior.view",
   EMR_POSTERIOR_EDIT:      "emr.posterior.edit",
 
+  // EMR — Ophthalmic: Oculoplasty
+  EMR_OCULOPLASTY_VIEW:    "emr.oculoplasty.view",
+  EMR_OCULOPLASTY_EDIT:    "emr.oculoplasty.edit",
+
   // EMR — Assessment & Diagnoses
   EMR_ASSESSMENT_VIEW:     "emr.assessment.view",
   EMR_ASSESSMENT_EDIT:     "emr.assessment.edit",
@@ -142,6 +146,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.EMR_COLOUR_VIEW,
     P.EMR_ANTERIOR_VIEW,
     P.EMR_POSTERIOR_VIEW,
+    P.EMR_OCULOPLASTY_VIEW,
     P.REFRACTION_VIEW,
     P.INVESTIGATIONS_VIEW,
     P.INVESTIGATIONS_CREATE,
@@ -172,6 +177,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.EMR_COLOUR_EDIT,
     P.EMR_ANTERIOR_VIEW,
     P.EMR_POSTERIOR_VIEW,
+    P.EMR_OCULOPLASTY_VIEW,
     P.REFRACTION_VIEW,
     P.REFRACTION_CREATE,
     P.REFRACTION_EDIT,

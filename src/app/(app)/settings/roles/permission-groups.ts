@@ -137,6 +137,15 @@ export const PERMISSION_GROUPS: {
     ],
   },
 
+  // ── EMR — Ophthalmic: Oculoplasty ────────────────────────────────────────
+  {
+    category: "EMR — Ophthalmic: Oculoplasty",
+    permissions: [
+      { key: "emr.oculoplasty.view", label: "View Oculoplasty",   description: "Read deviation, EOM and exophthalmometry findings" },
+      { key: "emr.oculoplasty.edit", label: "Record Oculoplasty", description: "Enter deviation, EOM and exophthalmometry findings" },
+    ],
+  },
+
   // ── EMR — Assessment & Diagnoses ─────────────────────────────────────────
   {
     category: "EMR — Assessment & Diagnoses",

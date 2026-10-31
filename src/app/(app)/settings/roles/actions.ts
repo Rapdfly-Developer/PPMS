@@ -14,7 +14,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "patients.view", "patients.create", "patients.edit",
     "opd.view", "opd.walkin.create", "opd.queue.manage", "opd.dispense", "opd.partialDispense",
     "emr.view", "emr.general.view",
-    "emr.va.view", "emr.iop.view", "emr.colour.view", "emr.anterior.view", "emr.posterior.view",
+    "emr.va.view", "emr.iop.view", "emr.colour.view", "emr.anterior.view", "emr.posterior.view", "emr.oculoplasty.view",
     "refraction.view",
     "investigations.view", "investigations.create", "investigations.edit",
     "billing.view", "billing.create", "billing.edit", "billing.print",
@@ -43,6 +43,7 @@ const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
     "emr.colour.view",
     "emr.anterior.view",
     "emr.posterior.view",
+    "emr.oculoplasty.view",
     "followups.view",
     "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
   ],
@@ -54,6 +55,7 @@ const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
     "emr.colour.view", "emr.colour.edit",
     "emr.anterior.view",
     "emr.posterior.view",
+    "emr.oculoplasty.view",
   ],
 };
 

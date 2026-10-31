@@ -258,6 +258,7 @@ export default async function PatientDetailedEMR({
     userCan(user, "emr.colour.edit") ||
     userCan(user, "emr.anterior.edit") ||
     userCan(user, "emr.posterior.edit") ||
+    userCan(user, "emr.oculoplasty.edit") ||
     userCan(user, "emr.assessment.edit") ||
     userCan(user, "emr.plan.edit") ||
     userCan(user, "emr.medications.edit") ||
@@ -301,6 +302,9 @@ export default async function PatientDetailedEMR({
   const canEditPosterior = !viewOnlySource && !visitLocked && (
     fullEdit || userCan(user, "emr.posterior.edit")
   );
+  const canEditOculoplasty = !viewOnlySource && !visitLocked && (
+    fullEdit || userCan(user, "emr.oculoplasty.edit")
+  );
   const canEditPlan = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.plan.edit"));
   const canViewMedications = userCan(user, "emr.medications.view") || userCan(user, "emr.medications.edit");
   const canEditMedications = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.medications.edit"));
@@ -313,7 +317,8 @@ export default async function PatientDetailedEMR({
   const canViewIOP = userCan(user, "emr.iop.view");
   const canViewAnterior = userCan(user, "emr.anterior.view");
   const canViewPosterior = userCan(user, "emr.posterior.view");
-  const canViewOphthalmic = canViewVA || canViewRefraction || canViewColour || canViewIOP || canViewAnterior || canViewPosterior;
+  const canViewOculoplasty = userCan(user, "emr.oculoplasty.view");
+  const canViewOphthalmic = canViewVA || canViewRefraction || canViewColour || canViewIOP || canViewAnterior || canViewPosterior || canViewOculoplasty;
   const canUseCopilot = userCan(user, "emr.copilot.view");
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
@@ -666,12 +671,14 @@ export default async function PatientDetailedEMR({
                       canEditAnterior={canEditAnterior}
                       canEditGonioscopy={canEditGonioscopy}
                       canEditPosterior={canEditPosterior}
+                      canEditOculoplasty={canEditOculoplasty}
                       canViewVA={canViewVA}
                       canViewRefraction={canViewRefraction}
                       canViewColour={canViewColour}
                       canViewIOP={canViewIOP}
                       canViewAnterior={canViewAnterior}
                       canViewPosterior={canViewPosterior}
+                      canViewOculoplasty={canViewOculoplasty}
                     />
                   </div>
                 ) : null,

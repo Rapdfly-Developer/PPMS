@@ -50,7 +50,7 @@ import { fileHref } from "@/lib/file-href";
 import { OculoplastyTab, hasOculoplastyData } from "./OculoplastyTab";
 
 
-export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, canEditRefraction, canEditColour, canEditIOP, canEditAnterior, canEditGonioscopy, canEditPosterior, canViewVA, canViewRefraction, canViewColour, canViewIOP, canViewAnterior, canViewPosterior }: {
+export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, canEditRefraction, canEditColour, canEditIOP, canEditAnterior, canEditGonioscopy, canEditPosterior, canEditOculoplasty, canViewVA, canViewRefraction, canViewColour, canViewIOP, canViewAnterior, canViewPosterior, canViewOculoplasty }: {
   visit: any; priorVisits: any[]; udid: string; role: string;
   canEditVA?: boolean;
   canEditRefraction?: boolean;
@@ -59,12 +59,14 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   canEditAnterior?: boolean;
   canEditGonioscopy?: boolean;
   canEditPosterior?: boolean;
+  canEditOculoplasty?: boolean;
   canViewVA?: boolean;
   canViewRefraction?: boolean;
   canViewColour?: boolean;
   canViewIOP?: boolean;
   canViewAnterior?: boolean;
   canViewPosterior?: boolean;
+  canViewOculoplasty?: boolean;
 }) {
   const visitLocked = visit?.status === "CLOSED" && !(visit?.finalizedAt && isSameDay(new Date(visit.finalizedAt), new Date()));
   const doctorOnly = role === "DOCTOR" && !visitLocked;
@@ -76,6 +78,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   const anteriorCanEdit = canEditAnterior ?? doctorOnly;
   const gonioCanEdit = canEditGonioscopy ?? anteriorCanEdit;
   const posteriorCanEdit = canEditPosterior ?? doctorOnly;
+  const oculoplastyCanEdit = canEditOculoplasty ?? doctorOnly;
   const overview = useEmrOverview();
 
   useEffect(() => {
@@ -148,7 +151,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   const subCtx = useOphthalmicSub();
   const subHidden: Record<string, boolean> = {
     va: !(canViewVA ?? true), refraction: !(canViewRefraction ?? true), cv: !(canViewColour ?? true), iop: !(canViewIOP ?? true),
-    anterior: !(canViewAnterior ?? true), posterior: !(canViewPosterior ?? true), oculoplasty: !(canViewPosterior ?? true),
+    anterior: !(canViewAnterior ?? true), posterior: !(canViewPosterior ?? true), oculoplasty: !(canViewOculoplasty ?? true),
     tear: !(canViewAnterior ?? true), lacrimal: !(canViewAnterior ?? true), diplopia: !(canViewPosterior ?? true), hess: !(canViewPosterior ?? true),
   };
   const subKey = Object.entries(subHidden).map(([k, h]) => `${k}:${h ? 0 : 1}`).join(",");
@@ -172,7 +175,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
           { id: "iop",       label: "IOP / Gonio",       hidden: !(canViewIOP ?? true), content: <div className="flex flex-col gap-4"><div {...ovSect(empty.iop)}><IOPCard visit={visit} udid={udid} editable={iopCanEdit} priorVisits={priorVisits} /></div><div {...ovSect(empty.gonio)}><GonioscopyCard visit={visit} udid={udid} editable={gonioCanEdit} priorVisits={priorVisits} /></div></div> },
           { id: "anterior",  label: "Anterior Segment",  hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.ant)}><AnteriorSegmentCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "posterior", label: "Posterior Segment", hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.post)}><PosteriorSegmentCard visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
-          { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={posteriorCanEdit} priorVisits={priorVisits} /></div> },
+          { id: "oculoplasty", label: "Oculoplasty",     hidden: !(canViewOculoplasty ?? true), content: <div {...ovSect(empty.oculoplasty)}><OculoplastyTab visit={visit} udid={udid} editable={oculoplastyCanEdit} priorVisits={priorVisits} /></div> },
           { id: "tear",      label: "Tear Film",         hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.tear)}><TearFilmCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "lacrimal",  label: "Lacrimal Sac",      hidden: !(canViewAnterior ?? true), content: <div {...ovSect(empty.lacrimal)}><LacrimalSacCard visit={visit} udid={udid} editable={anteriorCanEdit} priorVisits={priorVisits} /></div> },
           { id: "diplopia",  label: "Diplopia Chart",    hidden: !(canViewPosterior ?? true), content: <div {...ovSect(empty.diplopia)}><DiplopiaCard visit={visit} udid={udid} editable={posteriorCanEdit} /></div> },

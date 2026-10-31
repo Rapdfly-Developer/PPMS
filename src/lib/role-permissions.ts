@@ -33,6 +33,7 @@ const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
   "emr.colour.edit": ["emr.colour.view", "emr.view"],
   "emr.anterior.edit": ["emr.anterior.view", "emr.view"],
   "emr.posterior.edit": ["emr.posterior.view", "emr.view"],
+  "emr.oculoplasty.edit": ["emr.oculoplasty.view", "emr.view"],
   "emr.assessment.edit": ["emr.assessment.view", "emr.view"],
   "emr.plan.edit": ["emr.plan.view", "emr.view"],
   "emr.medications.view": ["emr.plan.view", "emr.view"],
