@@ -66,6 +66,11 @@ export function isExpired(r: { status: CounsellingStatus; reportsValidUntil: str
   return r.status === "PARTIAL" && !!r.reportsValidUntil && new Date(r.reportsValidUntil) < new Date();
 }
 
+/** Status used by the cards and Status filter: expired reports must be redone, so they count as Pending. */
+function listStatus(r: CounsellingRow): CounsellingStatus {
+  return isExpired(r) ? "PENDING" : r.status;
+}
+
 function StatCard({
   label, count, icon, accent, iconBg, onClick, active,
 }: {
@@ -189,19 +194,20 @@ export function CounsellingClient({
   const dated = useMemo(() => rows.filter(inDateRange), [rows, dateFrom, dateTo]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const counts = useMemo(() => ({
-    PENDING:   dated.filter((r) => r.status === "PENDING" || r.status === "POSTPONED").length,
-    PARTIAL:   dated.filter((r) => r.status === "PARTIAL").length,
-    COMPLETED: dated.filter((r) => r.status === "COMPLETED").length,
+    PENDING:   dated.filter((r) => listStatus(r) === "PENDING" || listStatus(r) === "POSTPONED").length,
+    PARTIAL:   dated.filter((r) => listStatus(r) === "PARTIAL").length,
+    COMPLETED: dated.filter((r) => listStatus(r) === "COMPLETED").length,
     ALL:       dated.length,
   }), [dated]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return dated.filter((r) => {
-      if (card === "PENDING" && r.status !== "PENDING" && r.status !== "POSTPONED") return false;
-      if (card === "PARTIAL" && r.status !== "PARTIAL") return false;
-      if (card === "COMPLETED" && r.status !== "COMPLETED") return false;
-      if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
+      const s = listStatus(r);
+      if (card === "PENDING" && s !== "PENDING" && s !== "POSTPONED") return false;
+      if (card === "PARTIAL" && s !== "PARTIAL") return false;
+      if (card === "COMPLETED" && s !== "COMPLETED") return false;
+      if (statusFilter !== "ALL" && s !== statusFilter) return false;
       if (q) {
         const hay = [r.patient.name, r.patient.udid, r.patient.uhid ?? "", r.surgery, r.doctor.name].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
