@@ -675,7 +675,7 @@ export function CounsellingDetail({
 
         {/* Chief complaint · diagnosis · notes (same style as the visit summaries) */}
         {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
-          <div className="mt-3 space-y-1.5 rounded-xl border border-[var(--color-border)] bg-white/70 px-3 py-2.5">
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-xl border border-[var(--color-border)] bg-white/70 px-3 py-2">
             {data.chiefComplaint && (
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="flex items-center gap-1.5 shrink-0">
@@ -703,8 +703,8 @@ export function CounsellingDetail({
               </div>
             )}
             {data.surgeryNotes && (
-              <div className="flex items-start gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 shrink-0 pt-px">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="flex items-center gap-1.5 shrink-0">
                   <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
                   <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Notes</span>
                   <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
