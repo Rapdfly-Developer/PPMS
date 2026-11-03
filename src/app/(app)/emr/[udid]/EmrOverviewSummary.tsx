@@ -16,7 +16,8 @@ const TAB_FIELDS: Record<string, string[]> = {
   assess:     ["diagnoses"],
   inv:        ["investigationOrders"],
   plan:       ["medications", "adviseNotes", "procedureName", "procedureNotes", "procedureLaterality", "anesthesiaType",
-               "followUpDate", "inViewOf", "referralEnabled", "referralNote", "referralType", "referralInViewOf"],
+               "followUpDate", "inViewOf", "referralEnabled", "referralNote", "referralType", "referralInViewOf",
+               "surgeryAdvised", "advisedSurgeryName", "advisedSurgeryEye", "advisedSurgeryAnaesthesia", "advisedSurgeryDate", "advisedSurgeryNotes"],
 };
 const ALL_FIELDS = Object.values(TAB_FIELDS).flat();
 

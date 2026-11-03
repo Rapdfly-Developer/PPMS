@@ -93,4 +93,5 @@ export const PRINT_SECTIONS: PrintSection[] = ([
   { id: "proc",     label: "Minor Procedure",            short: true,  long: true, hasData: (v) => { const p = v.procedureName; const a = arr(p); return a.length ? a.some(filled) : filled(p) && p.trim() !== "[]"; } },
   { id: "followup", label: "Follow-up",                  short: true,  long: true, hasData: (v) => !!v.followUpDate },
   { id: "referral", label: "Referral",                   short: true,  long: true, hasData: (v) => !!v.referralEnabled },
+  { id: "surgical", label: "Surgical Counselling",       short: false, long: true, hasData: (v) => !!v.surgeryAdvised && filled(v.advisedSurgeryName) },
 ] satisfies PrintSection[]).filter((s) => !(HIDE_DIPLOPIA_HESS && (s.id === "diplopia" || s.id === "hess")));

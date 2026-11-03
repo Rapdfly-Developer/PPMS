@@ -861,8 +861,9 @@ function LongContent({
   const hasOcu = hasFindings(ocu.deviation) || ocuEomRows.length > 0 || hasFindings(ocu.exo);
   const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost || hasEOM || hasOcu;
   const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
+  const hasSurgical = !!(data.surgeryAdvised && data.advisedSurgeryName);
 
-  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasOcu && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc;
+  const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasOcu && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc && !hasSurgical;
   if (isEmpty) return <EmptyNote>{emptyNote ?? "No detailed clinical notes recorded for this visit."}</EmptyNote>;
 
   const vitals = [
@@ -1526,6 +1527,30 @@ function LongContent({
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <span className="text-caption text-[var(--color-ink-700)] font-semibold">{data.referralNote || "Referred"}</span>
+        </div>
+      )}
+
+      {/* ── 9. Surgical Counselling ───────────────────────────────────── */}
+      {hasSurgical && (
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <Stethoscope size={11} className="text-[var(--color-ink-400)]" />
+            <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Surgical Counselling</span>
+            <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+          </span>
+          <div className="flex-1 min-w-0">
+            <span className="text-caption font-semibold text-[var(--color-ink-800)]">
+              {data.advisedSurgeryEye && <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{data.advisedSurgeryEye}</span>}
+              {data.advisedSurgeryName}
+              {data.advisedSurgeryAnaesthesia && <span className="font-normal text-[var(--color-ink-500)]"> · Under {data.advisedSurgeryAnaesthesia}</span>}
+              {data.advisedSurgeryDate && (
+                <span className="font-normal text-[var(--color-ink-500)]"> · Tentative date: {new Date(data.advisedSurgeryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+              )}
+            </span>
+            {data.advisedSurgeryNotes && (
+              <div className="mt-1.5 px-3 py-2 rounded-md border border-[var(--color-border)] border-l-2 border-l-[var(--color-primary-300)] bg-[var(--color-surface-sunken)] text-caption leading-relaxed text-[var(--color-ink-600)] whitespace-pre-wrap">{data.advisedSurgeryNotes}</div>
+            )}
+          </div>
         </div>
       )}
 

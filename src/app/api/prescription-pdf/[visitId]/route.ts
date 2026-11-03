@@ -250,6 +250,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         procedureNotes: (visit as any).procedureNotes ?? null,
       } : null,
       adviseNotes: on("advice") ? (visit as any).adviseNotes ?? null : null,
+      surgicalCounselling: on("surgical") && (visit as any).surgeryAdvised && (visit as any).advisedSurgeryName ? {
+        name: (visit as any).advisedSurgeryName,
+        eye: (visit as any).advisedSurgeryEye ?? null,
+        anaesthesia: (visit as any).advisedSurgeryAnaesthesia ?? null,
+        date: (visit as any).advisedSurgeryDate ?? null,
+        notes: (visit as any).advisedSurgeryNotes ?? null,
+      } : null,
       investigations: on("inv") ? visit.investigationOrders.map((i: any) => ({
         testName: i.testName, priority: i.priority, status: i.status,
         laterality: i.laterality ?? null,

@@ -390,9 +390,10 @@ function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
           )}
           {visit.surgeryAdvised && (
             <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-              <p className="text-caption font-bold uppercase tracking-widest text-amber-700 mb-1">Surgery Advised</p>
+              <p className="text-caption font-bold uppercase tracking-widest text-amber-700 mb-1">Surgical Counselling</p>
               {visit.advisedSurgeryName && <Row label="Procedure" value={`${visit.advisedSurgeryEye ? `[${visit.advisedSurgeryEye}] ` : ""}${visit.advisedSurgeryName}`} />}
-              {visit.advisedSurgeryDate && <Row label="Target Date" value={format(new Date(visit.advisedSurgeryDate), "dd MMM yyyy")} />}
+              {visit.advisedSurgeryAnaesthesia && <Row label="Anaesthesia" value={visit.advisedSurgeryAnaesthesia} />}
+              {visit.advisedSurgeryDate && <Row label="Tentative Date" value={format(new Date(visit.advisedSurgeryDate), "dd MMM yyyy")} />}
               {visit.advisedSurgeryNotes && <Row label="Notes" value={visit.advisedSurgeryNotes} />}
             </div>
           )}
