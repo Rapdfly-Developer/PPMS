@@ -461,10 +461,10 @@ function SectionCard({
 }
 
 /** Label on the left, field on the right, on one line (stacks on phones). */
-function InlineField({ label, children }: { label: string; children: React.ReactNode }) {
+function InlineField({ label, tight, children }: { label: string; tight?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center gap-x-3 gap-y-1 min-w-0">
-      <label className="text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap sm:min-w-[8.5rem]">{label}</label>
+      <label className={`text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap ${tight ? "" : "sm:min-w-[8.5rem]"}`}>{label}</label>
       {children}
     </div>
   );
@@ -1008,7 +1008,7 @@ export function CounsellingDetail({
                 </Field>
                 {cashless && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    <InlineField label={cashless.nameLabel}>
+                    <InlineField label={cashless.nameLabel} tight>
                       <SuggestInput
                         key={cashless.value}
                         value={schemeName}
@@ -1019,7 +1019,7 @@ export function CounsellingDetail({
                         placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
                       />
                     </InlineField>
-                    <InlineField label={cashless.idLabel}>
+                    <InlineField label={cashless.idLabel} tight>
                       <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />
                     </InlineField>
                   </div>
