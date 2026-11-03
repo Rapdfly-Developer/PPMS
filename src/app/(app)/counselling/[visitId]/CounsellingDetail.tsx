@@ -7,9 +7,9 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
   User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
-  Paperclip, Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
+  Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ArrowRight,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { BackButton } from "@/components/ui/BackButton";
@@ -155,13 +155,28 @@ function SummaryRow({ label, value, strong }: { label: string; value: React.Reac
 }
 
 /* ── Investigations history ─────────────────────────────────────────────── */
+const isImage = (ref: string) => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(ref);
+
+/** Report thumbnail: the image itself, or a file tile for PDFs / documents. */
+function ReportThumb({ resultRef }: { resultRef: string }) {
+  const href = fileHref(resultRef)!;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="w-12 h-12 shrink-0 rounded-lg border border-[var(--color-border)] bg-white overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-[var(--color-primary-300)] transition-shadow" title="Open report">
+      {isImage(resultRef)
+        ? <img src={href} alt="Report" className="w-full h-full object-cover" />
+        : <span className="flex flex-col items-center text-[var(--color-ink-500)]"><FileText size={18} /><span className="text-[8px] font-bold uppercase mt-0.5">{resultRef.split(".").pop()?.split("?")[0]?.slice(0, 4) ?? "file"}</span></span>}
+    </a>
+  );
+}
+
+/** Drop a file on it, or click to browse. */
 function UploadResult({ orderId, udid, onDone }: { orderId: string; udid: string; onDone: () => void }) {
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const upload = async (file: File | undefined) => {
     if (!file) return;
     setUploading(true);
     setError("");
@@ -183,16 +198,23 @@ function UploadResult({ orderId, udid, onDone }: { orderId: string; udid: string
   };
 
   return (
-    <div className="flex flex-col items-end gap-0.5">
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
+    <div className="shrink-0 flex flex-col items-end gap-0.5">
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
       <button
         type="button"
         disabled={uploading}
         onClick={() => fileRef.current?.click()}
-        className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files?.[0]); }}
+        className={`w-40 h-12 flex flex-col items-center justify-center rounded-lg border-2 border-dashed text-caption font-semibold transition-colors disabled:opacity-60 ${
+          dragOver
+            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+            : "border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"
+        }`}
       >
-        <Upload size={12} className={uploading ? "animate-pulse" : ""} />
-        {uploading ? "Uploading…" : "Upload report"}
+        <span className="inline-flex items-center gap-1"><Upload size={13} className={uploading ? "animate-pulse" : ""} /> {uploading ? "Uploading…" : dragOver ? "Drop to upload" : "Upload report"}</span>
+        {!uploading && !dragOver && <span className="text-micro font-normal text-[var(--color-ink-400)]">or drag a file here</span>}
       </button>
       {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
@@ -208,36 +230,45 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
     }
     return [...map.entries()];
   }, [data.orders]);
+  const current = data.orders.filter((o) => o.current);
+  const done = current.filter((o) => o.resultRef).length;
 
   return (
     <Modal title="Investigations History" onClose={onClose} wide>
+      {current.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2">
+          <span className="text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap">For this surgery: {done}/{current.length} uploaded</span>
+          <span className="flex-1 h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
+            <span className={`block h-full rounded-full ${done === current.length ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(done / current.length) * 100}%` }} />
+          </span>
+        </div>
+      )}
       {groups.length === 0 ? (
         <p className="text-sm text-[var(--color-ink-400)] py-8 text-center">No investigations ordered for this patient.</p>
       ) : (
         <div className="space-y-4">
           {groups.map(([day, orders]) => (
             <div key={day}>
-              <p className="text-caption font-bold uppercase tracking-wide text-[var(--color-ink-400)] mb-1.5">{format(new Date(day), "d MMM yyyy")}</p>
+              <p className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">{format(new Date(day), "d MMM yyyy")}</p>
               <div className="space-y-1.5">
                 {orders.map((o) => (
-                  <div key={o.id} className={`flex items-start justify-between gap-3 rounded-xl border px-3 py-2 ${o.current ? "border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/40" : "border-[var(--color-border)]"}`}>
-                    <div className="min-w-0">
+                  <div key={o.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${o.current ? "border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/40" : "border-[var(--color-border)]"}`}>
+                    {o.resultRef
+                      ? <ReportThumb resultRef={o.resultRef} />
+                      : <span className="w-12 h-12 shrink-0 rounded-lg border border-dashed border-[var(--color-border)] flex items-center justify-center text-[var(--color-ink-300)]"><FlaskConical size={18} /></span>}
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-semibold text-[var(--color-ink-800)]">
                         {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}
                         {o.testName}
                         {o.current && <span className="ml-2 text-micro font-bold uppercase text-[var(--color-primary-600)]">For this surgery</span>}
                       </p>
-                      <p className="text-caption text-[var(--color-ink-400)]">
+                      <p className="text-caption text-[var(--color-ink-400)] truncate">
                         {o.category}{o.notes ? ` · In view of: ${o.notes}` : ""}
                       </p>
-                      {o.resultRef && (
-                        <a href={fileHref(o.resultRef)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-1 text-caption font-medium text-[var(--color-primary-700)] hover:underline">
-                          <Paperclip size={11} /> View report · uploaded {fmtDate(o.resultAt)}
-                        </a>
-                      )}
+                      {o.resultRef && <p className="text-caption text-emerald-700 font-medium mt-0.5">Uploaded {fmtDate(o.resultAt)}</p>}
                     </div>
                     {o.resultRef ? (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-caption font-semibold text-emerald-700"><CheckCircle2 size={12} /> Complete</span>
+                      <span className="shrink-0 inline-flex items-center gap-1 text-caption font-semibold text-emerald-700"><CheckCircle2 size={13} /> Complete</span>
                     ) : o.current && canUpload ? (
                       <UploadResult orderId={o.id} udid={data.patient.udid} onDone={onChanged} />
                     ) : (
@@ -254,6 +285,68 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
   );
 }
 
+/* ── Activity timeline ─────────────────────────────────────────────────── */
+type ActivityEvent = { at: string; title: string; detail?: string; tone: "primary" | "amber" | "emerald" | "orange" | "slate" };
+
+function buildActivity(data: CounsellingDetailData): ActivityEvent[] {
+  const { rec } = data;
+  const ev: ActivityEvent[] = [];
+  ev.push({ at: rec.enteredAt ?? data.visitDate, title: "Entered counselling", detail: data.surgery, tone: "slate" });
+  for (const o of data.orders.filter((x) => x.current)) {
+    ev.push({ at: o.createdAt, title: `Investigation ordered: ${o.testName}`, detail: o.notes ? `In view of: ${o.notes}` : undefined, tone: "primary" });
+    if (o.resultAt) ev.push({ at: o.resultAt, title: `Report uploaded: ${o.testName}`, tone: "primary" });
+  }
+  if (rec.fitAt) ev.push({ at: rec.fitAt, title: "Marked fit for surgery", detail: rec.fitByName ?? undefined, tone: "amber" });
+  if (rec.surgeryDeferred && rec.postponedAt) {
+    ev.push({ at: rec.postponedAt, title: "Surgery date not confirmed", detail: [rec.postponedIndefinitely ? "Not decided yet" : `Expected ${fmtDate(rec.postponedUntil)}`, rec.postponeReason].filter(Boolean).join(" · "), tone: "orange" });
+  }
+  if (rec.eligibleAt) {
+    ev.push({ at: rec.eligibleAt, title: "Eligible for surgery", detail: rec.eligibleByName ?? undefined, tone: "emerald" });
+    if (data.preOp) ev.push({ at: rec.eligibleAt, title: "Pre-op appointment booked", detail: fmtDateTime(data.preOp.dateTime) ?? undefined, tone: "emerald" });
+  }
+  return ev.sort((a, b) => b.at.localeCompare(a.at));
+}
+
+const TONE_DOT: Record<ActivityEvent["tone"], string> = {
+  primary: "bg-[var(--color-primary-500)]",
+  amber: "bg-amber-500",
+  emerald: "bg-emerald-500",
+  orange: "bg-orange-500",
+  slate: "bg-slate-400",
+};
+
+function ActivityDrawer({ data, onClose }: { data: CounsellingDetailData; onClose: () => void }) {
+  const events = buildActivity(data);
+  return (
+    <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+      <motion.aside
+        initial={{ x: 40, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="relative h-full w-full max-w-sm bg-white shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-14 px-5 flex items-center justify-between border-b border-[var(--color-border)]">
+          <p className="text-sm font-bold text-[var(--color-ink-900)] inline-flex items-center gap-2"><History size={16} /> Activity</p>
+          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]" aria-label="Close"><X size={16} /></button>
+        </div>
+        <ol className="flex-1 overflow-y-auto px-5 py-4">
+          {events.map((e, i) => (
+            <li key={i} className="relative pl-6 pb-5 last:pb-0">
+              {i < events.length - 1 && <span className="absolute left-[5px] top-3 bottom-0 w-px bg-[var(--color-border)]" />}
+              <span className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full ring-2 ring-white ${TONE_DOT[e.tone]}`} />
+              <p className="text-sm font-semibold text-[var(--color-ink-800)]">{e.title}</p>
+              {e.detail && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">{e.detail}</p>}
+              <p className="text-micro text-[var(--color-ink-400)] mt-0.5 tabular-nums">{fmtDateTime(e.at)}</p>
+            </li>
+          ))}
+        </ol>
+      </motion.aside>
+    </div>
+  );
+}
+
 /* ── Layout pieces ───────────────────────────────────────────────────────── */
 const CASHLESS_ICON: Record<string, React.ReactNode> = {
   INSURANCE:   <ShieldCheck size={13} />,
@@ -264,13 +357,13 @@ const CASHLESS_ICON: Record<string, React.ReactNode> = {
 };
 
 function SectionCard({
-  step, icon, title, right, locked, lockedText, children,
+  id, step, icon, title, right, locked, lockedText, children,
 }: {
-  step: number; icon: React.ReactNode; title: string;
+  id?: string; step: number; icon: React.ReactNode; title: string;
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-2xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
+    <section id={id} className={`scroll-mt-4 rounded-2xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
       <header className={`h-11 flex items-center gap-2.5 px-4 sm:px-5 ${locked ? "" : "border-b border-[var(--color-border)]"}`}>
         <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>
           {icon}
@@ -376,6 +469,7 @@ export function CounsellingDetail({
   const [advanceReceived, setAdvanceReceived] = useState(rec.advanceReceived);
 
   const [modal, setModal] = useState<null | "investigations" | "fit" | "addInv" | "postpone" | "eligible">(null);
+  const [showActivity, setShowActivity] = useState(false);
   const [error, setError] = useState("");
 
   const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
@@ -437,6 +531,38 @@ export function CounsellingDetail({
   const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
 
+  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const nextStep: { title: string; hint?: string; icon: React.ReactNode; iconCls: string; action: React.ReactNode } | null =
+    rec.eligibleForSurgery ? null
+    : rec.surgeryDeferred ? {
+        title: "Surgery date not confirmed", hint: rec.postponedIndefinitely ? "Not decided yet" : `Expected ${fmtDate(rec.postponedUntil)}`,
+        icon: <PauseCircle size={17} />, iconCls: "bg-orange-50 text-orange-600",
+        action: canFit ? <button className={btnOutline} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={14} /> Resume</button> : null,
+      }
+    : expired ? {
+        title: "Reports expired — redo the reports", hint: `Expired on ${fmtDate(rec.reportsValidUntil)}`,
+        icon: <AlertTriangle size={17} />, iconCls: "bg-red-50 text-red-600",
+        action: canFit ? <button className={btnOutline} disabled={pending} onClick={() => run(() => reopenCounselling(data.visitId))}><RotateCcw size={14} /> Reopen</button> : null,
+      }
+    : !rec.fitForSurgery ? {
+        title: "Doctor review — Fit for Surgery",
+        hint: invPending.length > 0 ? `Waiting for ${invPending.length} report${invPending.length > 1 ? "s" : ""}` : !dateOfSurgery ? "Set the tentative date first" : canFit ? "Reports are ready for review" : "Awaiting the doctor",
+        icon: <ShieldCheck size={17} />, iconCls: "bg-amber-50 text-amber-600",
+        action: invPending.length > 0
+          ? <button className={btnOutline} onClick={() => setModal("investigations")}><Upload size={14} /> Upload reports</button>
+          : canFit ? <button className={btnPrimary} disabled={pending || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}><ShieldCheck size={15} /> Fit for Surgery</button> : null,
+      }
+    : !advanceDone ? {
+        title: "Record the advance payment", hint: rec.estimateAmount != null ? `Estimate ${rupees(rec.estimateAmount)}` : undefined,
+        icon: <IndianRupee size={17} />, iconCls: "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
+        action: canEdit ? <button className={btnPrimary} onClick={() => scrollTo("advance-section")}>Go to Advance <ArrowRight size={14} /></button> : null,
+      }
+    : {
+        title: "Confirm Eligible for Surgery", hint: "Verify twice and book the pre-op",
+        icon: <CheckCircle2 size={17} />, iconCls: "bg-emerald-50 text-emerald-600",
+        action: canEligible ? <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending} onClick={() => { setError(""); setModal("eligible"); }}><CheckCircle2 size={15} /> Eligible for Surgery</button> : null,
+      };
+
   return (
     <div className="fade-in pb-24 max-w-6xl">
       <BackButton href="/counselling" label="Counselling" className="mb-3" />
@@ -461,6 +587,9 @@ export function CounsellingDetail({
                 {data.patient.mobile && <> · {data.patient.mobile}</>}
               </p>
             </div>
+            <button type="button" onClick={() => setShowActivity(true)} className={`${btnOutline} shrink-0 !h-8 !px-3 !py-0 text-xs`}>
+              <History size={14} /> <span className="hidden sm:inline">Activity</span>
+            </button>
             {canViewProfile && (
               <Link
                 href={`/patients/${data.patient.udid}?returnTo=/counselling&source=counselling`}
@@ -718,7 +847,7 @@ export function CounsellingDetail({
 
           {/* ── G ─────────────────────────────────────────────────────── */}
           <SectionCard
-            step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
+            id="advance-section" step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
             locked={!rec.fitForSurgery} lockedText="Unlocks after Fit for Surgery"
             right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
           >
@@ -792,6 +921,21 @@ export function CounsellingDetail({
               <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
             )}
           </SectionCard>
+
+          {/* ── Next step ─────────────────────────────────────────────── */}
+          {nextStep && (
+            <div className="sticky bottom-3 z-20">
+              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white/95 backdrop-blur px-4 py-3 shadow-lg">
+                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${nextStep.iconCls}`}>{nextStep.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Next step</p>
+                  <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{nextStep.title}</p>
+                  {nextStep.hint && <p className="text-caption text-[var(--color-ink-500)] truncate">{nextStep.hint}</p>}
+                </div>
+                {nextStep.action}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Summary ───────────────────────────────────────────────────── */}
@@ -813,6 +957,8 @@ export function CounsellingDetail({
           </dl>
         </aside>
       </div>
+
+      {showActivity && <ActivityDrawer data={data} onClose={() => setShowActivity(false)} />}
 
       {/* Modals */}
       {modal === "investigations" && (
@@ -1048,6 +1194,33 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
 }
 
 /* ── H. Eligible — two-step verification, then book pre-op ──────────────── */
+type VerifyKey = "date" | "implant" | "surgery";
+
+/** A ticket for one item to verify; tap to mark it checked with the patient. */
+function VerifyTicket({ label, value, icon, checked, onToggle }: { label: string; value: string; icon: React.ReactNode; checked: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`group w-full flex items-stretch text-left rounded-xl border-2 overflow-hidden transition-colors ${
+        checked ? "border-emerald-400 bg-emerald-50" : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-300)]"
+      }`}
+    >
+      <span className="flex-1 min-w-0 px-4 py-3">
+        <span className={`flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest ${checked ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>{icon} {label}</span>
+        <span className="block mt-1 text-base font-bold text-[var(--color-ink-900)] break-words leading-snug">{value}</span>
+      </span>
+      {/* perforated stub */}
+      <span className={`relative w-24 shrink-0 flex flex-col items-center justify-center gap-1 border-l-2 border-dashed ${checked ? "border-emerald-300 text-emerald-700" : "border-[var(--color-border)] text-[var(--color-ink-400)] group-hover:text-[var(--color-primary-600)]"}`}>
+        <span className="absolute -top-2 -left-[9px] w-4 h-4 rounded-full bg-white border-2 border-inherit" />
+        <span className="absolute -bottom-2 -left-[9px] w-4 h-4 rounded-full bg-white border-2 border-inherit" />
+        {checked ? <CheckCircle2 size={22} /> : <Circle size={22} />}
+        <span className="text-micro font-bold uppercase tracking-wider">{checked ? "Verified" : "Tap to verify"}</span>
+      </span>
+    </button>
+  );
+}
+
 function EligibleModal({
   pending, error, onClose, onSubmit, surgery, implant, date, payment, estimate, advance, patient,
 }: {
@@ -1055,79 +1228,79 @@ function EligibleModal({
   surgery: string; implant: string; date: string; payment: string; estimate: string; advance: string; patient: string;
 }) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [checks, setChecks] = useState({ date: false, implant: false, surgery: false });
-  const [checks2, setChecks2] = useState({ date: false, implant: false, surgery: false });
+  const [checks, setChecks] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
+  const [checks2, setChecks2] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
 
-  const verifyRow = (key: "date" | "implant" | "surgery", label: string, value: string, state: typeof checks, set: (s: typeof checks) => void) => (
-    <label key={key} className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${state[key] ? "border-emerald-300 bg-emerald-50" : "border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)]"}`}>
-      <input type="checkbox" checked={state[key]} onChange={(e) => set({ ...state, [key]: e.target.checked })} className="w-4 h-4 mt-0.5 accent-emerald-600" />
-      <span className="min-w-0">
-        <span className="block text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">{label}</span>
-        <span className="block text-sm font-bold text-[var(--color-ink-900)] break-words">{value}</span>
-      </span>
-    </label>
-  );
-
-  const all1 = checks.date && checks.implant && checks.surgery;
-  const all2 = checks2.date && checks2.implant && checks2.surgery;
+  const items: { key: VerifyKey; label: string; value: string; icon: React.ReactNode }[] = [
+    { key: "date", label: "Date of surgery", value: date, icon: <CalendarDays size={12} /> },
+    { key: "implant", label: "Implant", value: implant, icon: <Package size={12} /> },
+    { key: "surgery", label: "Full name of surgery", value: surgery, icon: <Scissors size={12} /> },
+  ];
+  const state = step === 1 ? checks : checks2;
+  const setState = step === 1 ? setChecks : setChecks2;
+  const allChecked = items.every((i) => state[i.key]);
+  const count = items.filter((i) => state[i.key]).length;
 
   return (
-    <Modal title={step === 1 ? "Eligible for Surgery — Review (1 of 2)" : "Eligible for Surgery — Verify again (2 of 2)"} onClose={onClose} wide>
+    <Modal title="Eligible for Surgery" onClose={onClose} wide>
+      {/* Step indicator */}
+      <div className="flex items-center gap-2 mb-4">
+        {[1, 2].map((n) => (
+          <span key={n} className={`flex-1 h-1.5 rounded-full ${n <= step ? "bg-emerald-500" : "bg-[var(--color-border)]"}`} />
+        ))}
+        <span className="text-caption font-semibold text-[var(--color-ink-500)] whitespace-nowrap ml-1">{step === 1 ? "First check" : "Second check"} · {count}/3</span>
+      </div>
+
       {step === 1 ? (
-        <>
-          <div className="mb-4">
-            <SummaryRow label="Patient" value={patient} strong />
-            <SummaryRow label="Surgery" value={surgery} strong />
-            <SummaryRow label="Implant" value={implant} />
-            <SummaryRow label="Date of surgery" value={date} strong />
-            <SummaryRow label="Payment" value={payment} />
-            <SummaryRow label="Estimate" value={estimate} />
-            <SummaryRow label="Advance" value={advance} />
-          </div>
-          <p className="text-caption sm:text-xs font-semibold text-[var(--color-ink-600)] mb-2">Tick each item after checking it with the patient:</p>
-          <div className="space-y-2">
-            {verifyRow("date", "Date of surgery", date, checks, setChecks)}
-            {verifyRow("implant", "Implant", implant, checks, setChecks)}
-            {verifyRow("surgery", "Full name of surgery", surgery, checks, setChecks)}
-          </div>
-          <div className="flex justify-end gap-2 mt-5">
-            <button className={btnOutline} onClick={onClose}>Cancel</button>
-            <button className={btnPrimary} disabled={!all1} onClick={() => setStep(2)}>Next</button>
-          </div>
-        </>
+        <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+          <SummaryRow label="Patient" value={patient} strong />
+          <SummaryRow label="Payment" value={payment} />
+          <SummaryRow label="Estimate" value={estimate} />
+          <SummaryRow label="Advance" value={advance} />
+        </div>
       ) : (
-        <>
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-caption sm:text-xs text-amber-800 mb-3">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>Second check — verify the date, implant and surgery once more before booking.</span>
-          </div>
-          <div className="space-y-2">
-            {verifyRow("date", "Date of surgery", date, checks2, setChecks2)}
-            {verifyRow("implant", "Implant", implant, checks2, setChecks2)}
-            {verifyRow("surgery", "Full name of surgery", surgery, checks2, setChecks2)}
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-[10rem_minmax(0,1fr)] gap-3 mt-4">
-            <div>
-              <label className={labelCls}>Pre-op time</label>
-              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Notes (optional)</label>
-              <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="e.g. Report fasting, bring reports" />
-            </div>
-          </div>
-          <p className="text-caption text-[var(--color-ink-400)] mt-2">A Pre-op appointment will be booked on {date} at this time.</p>
-          {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
-          <div className="flex justify-end gap-2 mt-5">
-            <button className={btnOutline} onClick={() => setStep(1)}>Back</button>
-            <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || !all2 || !time} onClick={() => onSubmit(time, notes)}>
-              <CheckCircle2 size={15} /> Confirm &amp; Book Pre-op
-            </button>
-          </div>
-        </>
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-caption sm:text-xs text-amber-800 mb-4">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+          <span>Verify the date, implant and surgery once more with the patient before booking.</span>
+        </div>
       )}
+
+      <div className="space-y-2.5">
+        {items.map((i) => (
+          <VerifyTicket key={`${step}-${i.key}`} label={i.label} value={i.value} icon={i.icon}
+            checked={state[i.key]} onToggle={() => setState({ ...state, [i.key]: !state[i.key] })} />
+        ))}
+      </div>
+
+      {step === 2 && (
+        <div className="grid grid-cols-1 sm:grid-cols-[10rem_minmax(0,1fr)] gap-3 mt-4">
+          <div>
+            <label className={labelCls}>Pre-op time</label>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Notes (optional)</label>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="e.g. Report fasting, bring reports" />
+          </div>
+        </div>
+      )}
+      {step === 2 && <p className="text-caption text-[var(--color-ink-400)] mt-2">A Pre-op appointment will be booked on {date} at this time.</p>}
+      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+
+      <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-[var(--color-border)]">
+        {step === 1
+          ? <button className={btnOutline} onClick={onClose}>Cancel</button>
+          : <button className={btnOutline} onClick={() => setStep(1)}>Back</button>}
+        {step === 1 ? (
+          <button className={btnPrimary} disabled={!allChecked} onClick={() => setStep(2)}>Next: verify again</button>
+        ) : (
+          <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || !allChecked || !time} onClick={() => onSubmit(time, notes)}>
+            <CheckCircle2 size={15} /> Confirm &amp; Book Pre-op
+          </button>
+        )}
+      </div>
     </Modal>
   );
 }
