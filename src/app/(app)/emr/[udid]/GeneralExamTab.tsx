@@ -298,6 +298,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const [pmhOther, setPmhOther] = useState(ge?.pmhOtherText ?? "");
   // The past history condition being typed, for highlighting matching keyword chips
   const [pmhTyped, setPmhTyped] = useState("");
+  // Row last typed into: a chip that matches its partly typed name fills that row
+  const pmhTypedRowRef = useRef<number | null>(null);
   const [familyHistory, setFamilyHistory] = useState(ge?.familyHistory ?? "");
 
   const [medRows, setMedRows] = useState<CurrentMed[]>(() => parseMeds(ge?.medications ?? ""));
@@ -370,6 +372,13 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
     const normalized = name.trim().toLowerCase();
     setPmh((current) => {
       if (normalized && current.some((entry) => entry.name.trim().toLowerCase() === normalized)) return current;
+      // Replace a partly typed name the chip matches instead of adding a new row
+      const typedIdx = pmhTypedRowRef.current;
+      pmhTypedRowRef.current = null;
+      const typed = typedIdx !== null ? current[typedIdx]?.name.trim().toLowerCase() : "";
+      if (normalized && typed && normalized.includes(typed)) {
+        return current.map((entry, i) => i === typedIdx ? { ...entry, name: name.trim() } : entry);
+      }
       // If adding a named entry and there's already an empty row, fill it rather than appending.
       if (normalized) {
         const emptyIdx = current.findIndex((entry) => !entry.name.trim());
@@ -709,7 +718,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   </select>
                   <input
                     value={entry.name}
-                    onChange={(event) => { patchPmh(index, { name: event.target.value }); setPmhTyped(event.target.value); }}
+                    onChange={(event) => { patchPmh(index, { name: event.target.value }); setPmhTyped(event.target.value); pmhTypedRowRef.current = index; }}
                     onBlur={() => setPmhTyped("")}
                     disabled={readOnly}
                     aria-label={`Past history condition ${index + 1}`}

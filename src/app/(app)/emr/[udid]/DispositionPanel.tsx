@@ -143,7 +143,19 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
           <button data-overview-hide className={chipCls} onClick={() => addMonths(3)}>3m</button>
           <button data-overview-hide className={chipCls} onClick={() => addMonths(6)}>6m</button>
           {followUpDate && (
-            <span className="text-label sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
+            <>
+              <span className="text-label sm:text-sm text-[var(--color-ink-500)]">{formatDate(followUpDate)}</span>
+              <button
+                type="button"
+                data-overview-hide
+                onClick={() => { setFollowUpDate(""); setSaved(false); }}
+                title="Clear follow-up date"
+                aria-label="Clear follow-up date"
+                className="p-1 rounded-full text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+              >
+                <X size={13} />
+              </button>
+            </>
           )}
         </div>
       </div>

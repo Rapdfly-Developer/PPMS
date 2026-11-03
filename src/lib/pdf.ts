@@ -1,6 +1,7 @@
 import { format as formatBase } from "date-fns";
 import { parseOculoplasty, hasFindings, hasEom, findingsText, eomRows, type EyeFindings, type OculoplastyData } from "./oculoplasty";
 import { HIDE_DIPLOPIA_HESS } from "./constants";
+import { duochromeValue } from "./duochrome";
 import { toISTWall } from "@/lib/ist";
 import QRCode from "qrcode";
 import type { Browser } from "puppeteer-core";
@@ -1010,7 +1011,7 @@ function suiEyeRow(labelHtml: string, re: string, le: string, opts: { stripe?: b
     `</tr>`;
 }
 
-/** Duochrome Test (Subjective refraction), laid out like IOP: Red / Green rows under RE / LE ("=" when never changed). */
+/** Duochrome Test (Subjective refraction), laid out like IOP: one "Red = Green" row under RE / LE ("=" when never changed). */
 type DuoEye = { duoRed?: string; duoGreen?: string } | null | undefined;
 function suiDuochrome(rows: { label: string; re: DuoEye; le: DuoEye }[]): string {
   if (!rows.length) return "";
@@ -1018,8 +1019,7 @@ function suiDuochrome(rows: { label: string; re: DuoEye; le: DuoEye }[]): string
   return `<div class="no-break" style="margin-bottom:12px;">` +
     suiTable(COLS_EYE_PDF, suiEyeHead("Duochrome Test", true),
       rows.map((r) =>
-        suiEyeRow(suiBullet + prefix(r.label) + "Red", escapeHtml(r.re?.duoRed || "="), escapeHtml(r.le?.duoRed || "="), { strong: true }) +
-        suiEyeRow(suiBullet + prefix(r.label) + "Green", escapeHtml(r.re?.duoGreen || "="), escapeHtml(r.le?.duoGreen || "="), { strong: true }),
+        suiEyeRow(suiBullet + prefix(r.label) + "Result", `Red ${escapeHtml(duochromeValue(r.re))} Green`, `Red ${escapeHtml(duochromeValue(r.le))} Green`, { strong: true }),
       ).join(""),
       { indent: true, divided: true }) +
     `</div>`;

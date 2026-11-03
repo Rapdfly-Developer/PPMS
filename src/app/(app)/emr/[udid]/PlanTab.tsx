@@ -1627,6 +1627,9 @@ function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, read
   const overview = useEmrOverview();
   // Starts closed unless this visit already has advise notes.
   const [open, setOpen] = useState(() => !!adviseNotes.trim());
+  // Opens when notes arrive later (e.g. picked from History or applied by a protocol)
+  const hasAdvise = !!adviseNotes.trim();
+  useEffect(() => { if (hasAdvise) setOpen(true); }, [hasAdvise]);
   const [showHistory, setShowHistory] = useState(false);
   const previous = priorVisits.filter((v) => v.id !== visit.id && v.adviseNotes);
 
@@ -1742,6 +1745,8 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
   }`;
 
   const procIsEmpty = !procInput.trim() && !anesthesia.trim() && !procNotes.trim();
+  // Opens when a value arrives later (e.g. picked from History)
+  useEffect(() => { if (!procIsEmpty) setOpen(true); }, [procIsEmpty]);
 
   return (
     <div {...(overview && procIsEmpty ? { "data-overview-empty-section": "" } : {})}>
@@ -2765,6 +2770,12 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
     setActivePanels((cur) => (cur.includes(id) ? [] : [id]));
 
   const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf);
+  // Opens when details arrive later (e.g. a treatment preset sets the follow-up date)
+  useEffect(() => {
+    if (!hasFollowUpData) return;
+    setOpen(true);
+    setActivePanels((cur) => cur.length ? cur : [visit.followUpDate || visit.inViewOf ? "follow" : "referral"]);
+  }, [hasFollowUpData]); // eslint-disable-line react-hooks/exhaustive-deps
   // In overview with data, auto-open the panels that hold it so the values are visible
   const displayPanels = overview && hasFollowUpData
     ? [...new Set([
