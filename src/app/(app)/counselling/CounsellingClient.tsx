@@ -138,13 +138,6 @@ function ProgressDots({ r }: { r: CounsellingRow }) {
   const next = STAGES[done.findIndex((d) => !d)];
   return (
     <span className="inline-flex items-center gap-2" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
-      <span className="flex w-20 gap-0.5">
-        {done.map((d, i) => (
-          <span key={i} className={`h-1.5 flex-1 first:rounded-l-full last:rounded-r-full ${
-            d ? "bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-400)]" : "bg-[var(--color-border)]"
-          }`} />
-        ))}
-      </span>
       <span className="text-micro font-semibold text-[var(--color-ink-500)] whitespace-nowrap">
         {next ? <>Next: <span className="text-[var(--color-ink-700)]">{next}</span></> : <span className="text-emerald-700">All done</span>}
       </span>
