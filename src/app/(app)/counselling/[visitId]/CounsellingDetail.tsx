@@ -485,12 +485,22 @@ function ReadyItem({ ok, children }: { ok: boolean; children: React.ReactNode })
   );
 }
 
-function SideRow({ label, value }: { label: string; value: string }) {
+function SumItem({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <>
-      <dt className="text-[var(--color-ink-400)]">{label}</dt>
-      <dd className={`text-right break-words ${value ? "font-semibold text-[var(--color-ink-800)]" : "text-[var(--color-ink-300)]"}`}>{value || "—"}</dd>
-    </>
+    <div className="min-w-0">
+      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
+      <p className={`text-sm mt-0.5 break-words leading-snug ${value ? "font-semibold text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "Not set"}</p>
+      {sub && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function SumStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-[var(--color-surface-sunken)] px-2 py-1.5 min-w-0">
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
+      <p className={`text-xs font-bold tabular-nums truncate ${value === "—" ? "text-[var(--color-ink-300)]" : "text-[var(--color-ink-900)]"}`}>{value}</p>
+    </div>
   );
 }
 
@@ -759,8 +769,8 @@ export function CounsellingDetail({
       )}
       {error && !modal && <Banner tone="red" icon={<AlertTriangle size={15} />}>{error}</Banner>}
 
-      <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_272px] gap-3 items-start">
-        <div className="flex flex-col gap-3">
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_288px] gap-4 items-start">
+        <div className="flex flex-col gap-3.5">
           {/* ── A & B ─────────────────────────────────────────────────── */}
           <SectionCard
             step={1} icon={<Package size={15} />} title="Surgery Details"
@@ -995,22 +1005,54 @@ export function CounsellingDetail({
         </div>
 
         {/* ── Summary ───────────────────────────────────────────────────── */}
-        <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-          <div className="h-10 px-4 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
-            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
-            {frozen && <LockedTag />}
+        <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--color-primary-50)] to-white">
+            <span className="w-7 h-7 rounded-lg bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-700)] flex items-center justify-center shrink-0"><ClipboardList size={14} /></span>
+            <p className="flex-1 text-sm font-bold text-[var(--color-ink-900)]">Summary</p>
+            {frozen ? <LockedTag /> : <span className="rounded-full bg-white border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]">{currentStep >= 0 ? steps[currentStep].label : "Complete"}</span>}
           </div>
-          <dl className="px-4 py-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs">
-            <SideRow label="Implant" value={implant} />
-            <SideRow label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""} />
-            <SideRow label="Payment" value={paymentMode ? paymentText : ""} />
-            <SideRow label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
-            <SideRow label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
-            {rec.advancePaid != null && rec.estimateAmount != null && <SideRow label="Pending" value={rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0))} />}
-            <SideRow label="Reports" value={currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"} />
-            {validUntil && <SideRow label="Valid till" value={fmtDate(validUntil)} />}
-            {data.preOp && <SideRow label="Pre-op" value={fmtDateTime(data.preOp.dateTime) ?? ""} />}
-          </dl>
+
+          {/* Surgery */}
+          <div className="px-4 py-3 space-y-2.5 border-b border-[var(--color-border)]">
+            <SumItem label="Implant" value={implant} />
+            <SumItem label="Tentative date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""}
+              sub={validUntil ? `Reports valid till ${fmtDate(validUntil)}` : undefined} />
+          </div>
+
+          {/* Payment */}
+          <div className="px-4 py-3 space-y-2.5 border-b border-[var(--color-border)]">
+            <SumItem label="Payment" value={paymentMode ? paymentText : ""} />
+            <div className="grid grid-cols-3 gap-1.5">
+              <SumStat label="Estimate" value={estimateNum != null ? rupees(estimateNum) : "—"} />
+              <SumStat label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "—"} />
+              <SumStat label="Pending" value={rec.advancePaid != null && rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0)) : "—"} />
+            </div>
+          </div>
+
+          {/* Reports */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Reports</p>
+              <p className={`text-xs font-semibold tabular-nums ${invAllDone ? "text-emerald-700" : "text-[var(--color-ink-800)]"}`}>
+                {currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"}
+              </p>
+            </div>
+            {currentOrders.length > 0 && (
+              <div className="h-1.5 rounded-full bg-[var(--color-border)] mt-1.5 overflow-hidden">
+                <div className={`h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
+              </div>
+            )}
+          </div>
+
+          {data.preOp && (
+            <div className="mx-3 mb-3 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <CalendarCheck size={15} className="text-emerald-600 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-micro font-semibold uppercase tracking-wider text-emerald-700">Pre-op booked</p>
+                <p className="text-xs font-semibold text-emerald-900">{fmtDateTime(data.preOp.dateTime)}</p>
+              </div>
+            </div>
+          )}
         </aside>
       </div>
 
