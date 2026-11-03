@@ -36,6 +36,11 @@ function dayFromStr(s: string | null | undefined): Date | null {
   return istDayRange(s).dayStart;
 }
 
+/** True when the date falls before today (IST). */
+function isPastDay(d: Date): boolean {
+  return istTodayStr(d) < istTodayStr();
+}
+
 /** Oldest uploaded report on the visit, or null when none are uploaded yet. */
 function oldestReportAt(orders: { resultRef: string | null; resultAt: Date | null; updatedAt: Date }[]): Date | null {
   const times = orders.filter((o) => o.resultRef).map((o) => (o.resultAt ?? o.updatedAt).getTime());
@@ -53,8 +58,15 @@ export async function saveCounsellingDetails(visitId: string, data: {
   policyNumber?: string;
   estimateAmount?: number | null;
 }): Promise<Result> {
-  const { user, rec } = await loadVisit(visitId, "counselling.edit");
+  const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
   if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Details are frozen after Fit for surgery." };
+  // A past date can't be set; an unchanged earlier date doesn't block saving the other fields.
+  if (data.dateOfSurgery) {
+    const next = dayFromStr(data.dateOfSurgery)!;
+    const current = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
+    const changed = !current || istTodayStr(current) !== istTodayStr(next);
+    if (changed && isPastDay(next)) return { error: "The surgery date can't be in the past." };
+  }
 
   const patch: Record<string, unknown> = {};
   if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
@@ -85,6 +97,7 @@ export async function markFitForSurgery(visitId: string): Promise<Result & { val
   if (rec?.fitForSurgery) return { error: "Already marked fit for surgery." };
   const dateOfSurgery = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   if (!rec || !dateOfSurgery) return { error: "Set the tentative date of surgery first." };
+  if (isPastDay(dateOfSurgery)) return { error: "The surgery date is in the past. Set a new tentative date first." };
 
   const pending = visit.investigationOrders.filter((o) => !o.resultRef);
   if (pending.length > 0) {
@@ -165,7 +178,10 @@ export async function addCounsellingInvestigations(visitId: string, tests: strin
 export async function postponeSurgery(visitId: string, data: { until: string | null; indefinitely: boolean; reason: string }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.eligibleForSurgery) return { error: "Counselling is already complete." };
+  // Per the requirements this is the doctor's option before Fit; after Fit the details are frozen.
+  if (rec?.fitForSurgery) return { error: "Details are frozen after Fit for surgery." };
   if (!data.indefinitely && !data.until) return { error: "Pick an expected date or choose Not decided yet." };
+  if (!data.indefinitely && data.until && isPastDay(dayFromStr(data.until)!)) return { error: "The expected date can't be in the past." };
   if (!data.reason.trim()) return { error: "Enter the reason the date is not confirmed." };
 
   const patch = {

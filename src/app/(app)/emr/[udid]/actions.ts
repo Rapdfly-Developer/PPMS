@@ -780,6 +780,13 @@ export async function saveSurgicalCounselling(
   const name = data.name.trim();
   if (!name) return { error: "Enter the name of the surgery." };
   if (data.date && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { error: "Invalid tentative date." };
+  if (data.date && data.date < istTodayStr()) {
+    // An unchanged earlier date stays saveable; only a newly picked past date is refused.
+    const prev = await prisma.visit.findUnique({ where: { id: visitId }, select: { advisedSurgeryDate: true } });
+    if (!prev?.advisedSurgeryDate || istTodayStr(prev.advisedSurgeryDate) !== data.date) {
+      return { error: "The tentative date can't be in the past." };
+    }
+  }
 
   const patch = {
     surgeryAdvised: true,
