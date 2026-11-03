@@ -135,7 +135,6 @@ const STAGES = ["Counselling", "Fit for Surgery", "Advance", "Eligible"];
 
 function ProgressDots({ r }: { r: CounsellingRow }) {
   const done = [true, r.fit, r.advanceDone, r.eligible];
-  const count = done.filter(Boolean).length;
   const next = STAGES[done.findIndex((d) => !d)];
   return (
     <span className="inline-flex items-center gap-2" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
