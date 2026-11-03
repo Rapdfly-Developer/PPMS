@@ -3,13 +3,13 @@
 import { Fragment, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
+import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import { motion } from "framer-motion";
 import {
   UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList, ChevronLeft,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import type { ActivityEvent, ActivityTone } from "@/lib/counselling-activity";
@@ -322,43 +322,159 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
   );
 }
 
-/* ── Activity timeline ─────────────────────────────────────────────────── */
-const TONE_DOT: Record<ActivityTone, string> = {
-  primary: "bg-[var(--color-primary-500)]",
-  amber: "bg-amber-500",
-  emerald: "bg-emerald-500",
-  orange: "bg-orange-500",
-  slate: "bg-slate-400",
-  red: "bg-red-500",
+/* ── Activity timeline (calendar, same layout as the patient Time Stamp) ── */
+const TONE_CFG: Record<ActivityTone, { label: string; hex: string; dot: string; border: string; badge: string; card: string }> = {
+  slate:   { label: "EMR",          hex: "#94A3B8", dot: "bg-slate-400",                     border: "border-l-slate-300",                    badge: "bg-slate-100 text-slate-600",                                        card: "bg-slate-50/50" },
+  primary: { label: "Counselling",  hex: "#14B8A6", dot: "bg-[var(--color-primary-500)]",     border: "border-l-[var(--color-primary-400)]",   badge: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]",     card: "bg-[var(--color-primary-50)]/40" },
+  amber:   { label: "Doctor Review", hex: "#F59E0B", dot: "bg-amber-500",                    border: "border-l-amber-400",                    badge: "bg-amber-100 text-amber-700",                                        card: "bg-amber-50/40" },
+  orange:  { label: "Date",         hex: "#F97316", dot: "bg-orange-500",                     border: "border-l-orange-400",                   badge: "bg-orange-100 text-orange-700",                                      card: "bg-orange-50/40" },
+  emerald: { label: "Confirmation", hex: "#10B981", dot: "bg-emerald-500",                    border: "border-l-emerald-400",                  badge: "bg-emerald-100 text-emerald-700",                                    card: "bg-emerald-50/40" },
+  red:     { label: "Reverted",     hex: "#EF4444", dot: "bg-red-500",                        border: "border-l-red-400",                      badge: "bg-red-100 text-red-700",                                            card: "bg-red-50/40" },
 };
+const ACT_DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const dayKey = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
 
 function ActivityDrawer({ data, onClose }: { data: CounsellingDetailData; onClose: () => void }) {
   const events = data.activity;
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const latestKey = events.length ? dayKey(events[0].at) : todayKey;
+  const [selectedKey, setSelectedKey] = useState(latestKey);
+  const [month, setMonth] = useState(() => startOfMonth(new Date(latestKey)));
+
+  const byDay = useMemo(() => {
+    const map: Record<string, ActivityEvent[]> = {};
+    for (const e of events) (map[dayKey(e.at)] ??= []).push(e);
+    for (const k in map) map[k].sort((a, b) => a.at.localeCompare(b.at));
+    return map;
+  }, [events]);
+
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const legend = [...new Set(events.map((e) => e.tone))];
+  const dayEvents = byDay[selectedKey] ?? [];
+
+  const select = (key: string) => {
+    setSelectedKey(key);
+    const d = new Date(key);
+    if (d.getMonth() !== month.getMonth() || d.getFullYear() !== month.getFullYear()) setMonth(startOfMonth(d));
+  };
+
   return (
-    <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
+    <div className="fixed inset-0 z-[200]" style={{ background: "rgba(0,0,0,0.45)" }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <motion.aside
         initial={{ x: 40, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative h-full w-full max-w-sm bg-white shadow-2xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="absolute inset-y-0 right-0 w-full max-w-[520px] bg-[var(--color-surface)] flex flex-col shadow-2xl"
       >
-        <div className="h-14 px-5 flex items-center justify-between border-b border-[var(--color-border)]">
-          <p className="text-sm font-bold text-[var(--color-ink-900)] inline-flex items-center gap-2"><History size={16} /> Activity</p>
-          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]" aria-label="Close"><X size={16} /></button>
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 text-white shrink-0" style={{ background: "linear-gradient(135deg, var(--color-primary-800) 0%, var(--color-primary-600) 100%)" }}>
+          <History size={16} className="opacity-80" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-white/60 font-medium uppercase tracking-widest">Counselling Activity</p>
+            <h2 className="text-sm font-bold leading-tight truncate">{data.patient.name}</h2>
+          </div>
+          <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-full font-semibold">{events.length} event{events.length === 1 ? "" : "s"}</span>
+          <button onClick={onClose} className="size-7 flex items-center justify-center rounded-full hover:bg-white/15 transition-colors" aria-label="Close"><X size={14} /></button>
         </div>
-        <ol className="flex-1 overflow-y-auto px-5 py-4">
-          {events.map((e, i) => (
-            <li key={i} className="relative pl-6 pb-5 last:pb-0">
-              {i < events.length - 1 && <span className="absolute left-[5px] top-3 bottom-0 w-px bg-[var(--color-border)]" />}
-              <span className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full ring-2 ring-white ${TONE_DOT[e.tone]}`} />
-              <p className="text-sm font-semibold text-[var(--color-ink-800)]">{e.title}</p>
-              {e.detail && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">{e.detail}</p>}
-              <p className="text-micro text-[var(--color-ink-400)] mt-0.5 tabular-nums">{fmtDateTime(e.at)}{e.by && <> · {e.by}</>}</p>
-            </li>
-          ))}
-        </ol>
+
+        {/* Calendar */}
+        <div className="shrink-0 px-8 pt-2 pb-1.5 border-b border-[var(--color-border)]" style={{ background: "linear-gradient(160deg, var(--color-primary-50) 0%, #fff 60%)" }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <button onClick={() => setMonth((m) => subMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Previous month">
+              <ChevronLeft size={13} />
+            </button>
+            <h3 className="text-[13px] font-bold tracking-tight text-[var(--color-ink-800)]">{format(month, "MMMM yyyy")}</h3>
+            <button onClick={() => setMonth((m) => addMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Next month">
+              <ChevronRight size={13} />
+            </button>
+          </div>
+          <div className="grid grid-cols-7 mb-1">
+            {ACT_DAY_LABELS.map((d) => <span key={d} className="text-center text-[9px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">{d}</span>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: getDay(days[0]) }).map((_, i) => <div key={`b-${i}`} />)}
+            {days.map((day) => {
+              const key = format(day, "yyyy-MM-dd");
+              const list = byDay[key] ?? [];
+              const has = list.length > 0;
+              const isSel = key === selectedKey;
+              const isToday = isSameDay(day, new Date());
+              const tones = [...new Set(list.map((e) => e.tone))];
+              return (
+                <button key={key} disabled={!has} onClick={() => select(key)}
+                  className={[
+                    "relative flex flex-col items-center justify-center w-full h-9 rounded-xl transition-all duration-150",
+                    isSel ? "bg-[var(--color-primary-600)] text-white shadow-sm"
+                      : has ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] cursor-pointer"
+                      : "text-[var(--color-ink-300)] cursor-default",
+                    isToday && !isSel ? "ring-2 ring-[var(--color-primary-400)] ring-offset-1" : "",
+                  ].join(" ")}>
+                  <span className="text-[11px] font-bold leading-none">{format(day, "d")}</span>
+                  {has && (
+                    <div className="flex gap-[3px] mt-[3px]">
+                      {tones.slice(0, 3).map((t) => (
+                        <span key={t} className="w-[4px] h-[4px] rounded-full shrink-0" style={{ background: isSel ? "rgba(255,255,255,0.8)" : TONE_CFG[t].hex }} />
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-border)]/60">
+            <button onClick={() => select(todayKey)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] shadow-sm transition-all">
+              Today
+            </button>
+            <div className="flex flex-wrap gap-x-2 gap-y-1 justify-end">
+              {legend.map((t) => (
+                <span key={t} className="flex items-center gap-1 text-[9px] font-medium text-[var(--color-ink-400)]">
+                  <span className="size-1.5 rounded-full inline-block shrink-0" style={{ background: TONE_CFG[t].hex }} />
+                  {TONE_CFG[t].label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Day events */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="sticky top-0 z-10 px-5 py-2.5 bg-white/90 backdrop-blur-sm border-b border-[var(--color-border)]">
+            <p className="text-xs font-semibold text-[var(--color-ink-600)]">{format(new Date(selectedKey), "EEEE, d MMMM yyyy")}</p>
+          </div>
+          <div className="px-4 py-4">
+            {dayEvents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-2">
+                <CalendarDays size={28} className="text-[var(--color-ink-300)]" />
+                <p className="text-xs text-[var(--color-ink-400)]">No activity on this date</p>
+              </div>
+            ) : (
+              <div className="pl-1">
+                {dayEvents.map((e, i) => {
+                  const cfg = TONE_CFG[e.tone];
+                  return (
+                    <div key={i} className="relative flex gap-3">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot} ring-2 ring-white shadow-sm mt-1.5 shrink-0`} />
+                        {i < dayEvents.length - 1 && <div className="w-px flex-1 bg-[var(--color-border)] mt-1" />}
+                      </div>
+                      <div className={`flex-1 mb-3 rounded-xl border border-[var(--color-border)] border-l-4 ${cfg.border} ${cfg.card} px-3 py-2.5`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-micro sm:text-caption font-bold uppercase tracking-wide mb-0.5 ${cfg.badge}`}>{cfg.label}</span>
+                            <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{e.title}</p>
+                          </div>
+                          <span className="text-caption font-medium text-[var(--color-ink-400)] shrink-0 tabular-nums">{format(new Date(e.at), "h:mm a")}</span>
+                        </div>
+                        {e.detail && <p className="mt-1 text-caption text-[var(--color-ink-600)] break-words">{e.detail}</p>}
+                        {e.by && <p className="mt-1 text-caption text-[var(--color-ink-400)]">{e.by}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
       </motion.aside>
     </div>
   );
