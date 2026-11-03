@@ -615,7 +615,7 @@ export function CounsellingDetail({
 
 
   return (
-    <div className="fade-in pb-24 max-w-6xl">
+    <div className="fade-in pb-24">
       <BackButton href="/counselling" label="Counselling" className="mb-3" />
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
@@ -779,7 +779,7 @@ export function CounsellingDetail({
       )}
       {error && !modal && <Banner tone="red" icon={<AlertTriangle size={15} />}>{error}</Banner>}
 
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_288px] gap-4 items-start">
+      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
         <div className="flex flex-col gap-3.5">
           {/* ── A & B ─────────────────────────────────────────────────── */}
           <SectionCard
@@ -1015,22 +1015,22 @@ export function CounsellingDetail({
         </div>
 
         {/* ── Summary ───────────────────────────────────────────────────── */}
-        <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--color-primary-50)] to-white">
-            <span className="w-7 h-7 rounded-lg bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-700)] flex items-center justify-center shrink-0"><ClipboardList size={14} /></span>
-            <p className="flex-1 text-sm font-bold text-[var(--color-ink-900)]">Summary</p>
+        <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+          <div className="h-11 flex items-center gap-2.5 px-4 sm:px-5 border-b border-[var(--color-border)]">
+            <span className="w-6 h-6 rounded-md bg-[var(--color-primary-50)] text-[var(--color-primary-700)] flex items-center justify-center shrink-0"><ClipboardList size={15} /></span>
+            <p className="flex-1 text-sm font-semibold text-[var(--color-ink-900)]">Summary</p>
             {frozen ? <LockedTag /> : <span className="rounded-full bg-white border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]">{currentStep >= 0 ? steps[currentStep].label : "Complete"}</span>}
           </div>
 
           {/* Surgery */}
-          <div className="px-4 py-3 space-y-2.5 border-b border-[var(--color-border)]">
+          <div className="px-4 sm:px-5 py-3.5 space-y-2.5 border-b border-[var(--color-border)]">
             <SumItem label="Implant" value={implant} />
             <SumItem label="Tentative date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""}
               sub={validUntil ? `Reports valid till ${fmtDate(validUntil)}` : undefined} />
           </div>
 
           {/* Payment */}
-          <div className="px-4 py-3 space-y-2.5 border-b border-[var(--color-border)]">
+          <div className="px-4 sm:px-5 py-3.5 space-y-2.5 border-b border-[var(--color-border)]">
             <SumItem label="Payment" value={paymentMode ? paymentText : ""} />
             <div className="grid grid-cols-3 gap-1.5">
               <SumStat label="Estimate" value={estimateNum != null ? rupees(estimateNum) : "—"} />
@@ -1040,7 +1040,7 @@ export function CounsellingDetail({
           </div>
 
           {/* Reports */}
-          <div className="px-4 py-3">
+          <div className="px-4 sm:px-5 py-3.5">
             <div className="flex items-center justify-between">
               <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Reports</p>
               <p className={`text-xs font-semibold tabular-nums ${invAllDone ? "text-emerald-700" : "text-[var(--color-ink-800)]"}`}>
