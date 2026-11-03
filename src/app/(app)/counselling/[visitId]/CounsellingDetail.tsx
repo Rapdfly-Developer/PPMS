@@ -953,7 +953,7 @@ export function CounsellingDetail({
                 ? <AdvanceMeter estimate={rec.estimateAmount} paid={rec.advancePaid} />
                 : <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle2 size={16} /> Advance received</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Mode */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs text-[var(--color-ink-500)]">How do you want to record the advance?</p>
@@ -982,30 +982,30 @@ export function CounsellingDetail({
                     </span>
                   </button>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3.5 py-2.5">
+                  <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
+                    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5">
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Estimate</p>
-                      <p className="text-base font-bold tabular-nums text-[var(--color-ink-700)] mt-0.5">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "—"}</p>
+                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-700)]">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "—"}</p>
                     </div>
-                    <div className="rounded-xl border-2 border-[var(--color-primary-300)] bg-white px-3.5 py-2 focus-within:border-[var(--color-primary-500)] transition-colors">
+                    <div className="rounded-lg border-2 border-[var(--color-primary-300)] bg-white px-3 py-1 focus-within:border-[var(--color-primary-500)] transition-colors">
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-700)]">Advance received</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-base font-bold text-[var(--color-ink-400)]">₹</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-sm font-bold text-[var(--color-ink-400)]">₹</span>
                         <input type="number" min={0} inputMode="numeric" value={advance} disabled={!canEdit} onChange={(e) => setAdvance(e.target.value)} placeholder="0"
-                          className="w-full bg-transparent text-base font-bold tabular-nums text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
+                          className="w-full bg-transparent text-sm font-bold tabular-nums text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
                       </div>
                     </div>
-                    <div className={`rounded-xl border px-3.5 py-2.5 ${rec.estimateAmount != null && (advanceNum ?? 0) >= rec.estimateAmount ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                    <div className={`rounded-lg border px-3 py-1.5 ${rec.estimateAmount != null && (advanceNum ?? 0) >= rec.estimateAmount ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">Pending</p>
-                      <p className="text-base font-bold tabular-nums text-[var(--color-ink-900)] mt-0.5">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "—"}</p>
+                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-900)]">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "—"}</p>
                     </div>
                     {rec.estimateAmount != null && rec.estimateAmount > 0 && (
-                      <div className="sm:col-span-3">
-                        <div className="h-2 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+                      <div className="col-span-3">
+                        <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
                           <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-emerald-400 transition-all duration-500"
                             style={{ width: `${Math.min(100, ((advanceNum ?? 0) / rec.estimateAmount) * 100)}%` }} />
                         </div>
-                        <p className="text-caption text-[var(--color-ink-500)] mt-1 tabular-nums">
+                        <p className="text-micro text-[var(--color-ink-500)] mt-1 tabular-nums">
                           {Math.min(100, Math.round(((advanceNum ?? 0) / rec.estimateAmount) * 100))}% of the estimate paid as advance
                         </p>
                       </div>
