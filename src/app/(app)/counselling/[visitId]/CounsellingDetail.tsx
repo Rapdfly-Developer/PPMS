@@ -345,7 +345,7 @@ export function CounsellingDetail({
   const timeline = [
     { label: "Entered counselling", at: rec.enteredAt ?? data.visitDate },
     { label: `Fit for surgery${rec.fitByName ? ` · ${rec.fitByName}` : ""}`, at: rec.fitAt },
-    { label: "Postponed", at: rec.surgeryDeferred ? rec.postponedAt : null },
+    { label: "Date not confirmed", at: rec.surgeryDeferred ? rec.postponedAt : null },
     { label: `Eligible for surgery${rec.eligibleByName ? ` · ${rec.eligibleByName}` : ""}`, at: rec.eligibleAt },
   ].filter((t) => t.at);
 
@@ -443,7 +443,7 @@ export function CounsellingDetail({
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
           <PauseCircle size={16} className="shrink-0" />
           <span className="flex-1 min-w-0">
-            Surgery postponed {rec.postponedIndefinitely ? "indefinitely" : `until ${fmtDate(rec.postponedUntil)}`}
+            Surgery date not confirmed{rec.postponedIndefinitely ? "" : ` · expected ${fmtDate(rec.postponedUntil)}`}
             {rec.postponeReason && <> · <i>{rec.postponeReason}</i></>}
           </span>
           {canFit && <button className={btnOutline} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={14} /> Resume</button>}
@@ -582,7 +582,7 @@ export function CounsellingDetail({
                 </button>
                 {!rec.surgeryDeferred && (
                   <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
-                    <PauseCircle size={15} /> Postpone
+                    <PauseCircle size={15} /> Date Not Confirmed
                   </button>
                 )}
               </div>
@@ -743,20 +743,20 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   const [indefinitely, setIndefinitely] = useState(false);
   const [reason, setReason] = useState("");
   return (
-    <Modal title="Postpone Surgery" onClose={onClose}>
-      <label className={labelCls}>Postpone until</label>
+    <Modal title="Surgery Date Not Confirmed" onClose={onClose}>
+      <label className={labelCls}>Expected date</label>
       <input type="date" value={until} min={istTodayStr()} disabled={indefinitely} onChange={(e) => setUntil(e.target.value)} className={inputCls} />
       <label className="inline-flex items-center gap-2 text-sm text-[var(--color-ink-700)] mt-2">
         <input type="checkbox" checked={indefinitely} onChange={(e) => { setIndefinitely(e.target.checked); if (e.target.checked) setUntil(""); }} className="w-4 h-4 accent-[var(--color-primary-600)]" />
-        Indefinitely
+        Not decided yet
       </label>
       <label className={`${labelCls} mt-3`}>Reason</label>
-      <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} placeholder="Why is the surgery postponed?" />
+      <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} placeholder="Why is the surgery date not confirmed?" />
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end gap-2 mt-4">
         <button className={btnOutline} onClick={onClose}>Cancel</button>
         <button className={btnPrimary} disabled={pending || (!indefinitely && !until) || !reason.trim()} onClick={() => onSubmit({ until: until || null, indefinitely, reason })}>
-          <PauseCircle size={15} /> Postpone
+          <PauseCircle size={15} /> Save
         </button>
       </div>
     </Modal>

@@ -39,7 +39,7 @@ export const STATUS_META: Record<CounsellingStatus, { label: string; pill: strin
   PENDING:   { label: "Pending",                    pill: "bg-slate-100 text-slate-600 border border-slate-200",       dot: "bg-slate-400" },
   PARTIAL:   { label: "Fit for Surgery",            pill: "bg-amber-50 text-amber-700 border border-amber-300",        dot: "bg-amber-500" },
   COMPLETED: { label: "Eligible for Surgery",       pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
-  POSTPONED: { label: "Postponed",                  pill: "bg-orange-50 text-orange-700 border border-orange-200",     dot: "bg-orange-500" },
+  POSTPONED: { label: "Date Not Confirmed",         pill: "bg-orange-50 text-orange-700 border border-orange-200",     dot: "bg-orange-500" },
 };
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
@@ -152,7 +152,7 @@ function PatientCard({ r, showDoctor }: { r: CounsellingRow; showDoctor: boolean
           {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy") : <span className="italic text-[var(--color-ink-300)]">Not set</span>}
           {r.status === "POSTPONED" && (
             <span className="ml-1.5 text-orange-700">
-              · Postponed {r.postponedIndefinitely ? "indefinitely" : r.postponedUntil ? `to ${format(new Date(r.postponedUntil), "d MMM yyyy")}` : ""}
+              · Date not confirmed{r.postponedIndefinitely ? "" : r.postponedUntil ? ` (expected ${format(new Date(r.postponedUntil), "d MMM yyyy")})` : ""}
             </span>
           )}
         </span>
@@ -217,7 +217,7 @@ export function CounsellingClient({
   }, [dated, card, search, statusFilter]);
 
   const filtersActive = !!(search || statusFilter !== "ALL" || dateFrom || dateTo);
-  const toggleCard = (c: CardFilter) => setCard(card === c ? "ALL" : c);
+  const toggleCard = (c: CardFilter) => { setCard(card === c ? "ALL" : c); setStatusFilter("ALL"); };
   const dateInputCls = "px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
 
   return (
@@ -272,7 +272,7 @@ export function CounsellingClient({
           label={dateFrom || dateTo ? "Overall · selected dates" : "Overall"} count={counts.ALL}
           icon={<Layers size={17} className="text-[var(--color-primary-600)]" />}
           accent="text-[var(--color-primary-700)]" iconBg="bg-[var(--color-primary-50)]"
-          onClick={() => { setCard("ALL"); setShowFilters(true); }} active={card === "ALL"}
+          onClick={() => { setCard("ALL"); setStatusFilter("ALL"); setShowFilters(true); }} active={card === "ALL"}
         />
       </div>
 
@@ -295,7 +295,7 @@ export function CounsellingClient({
             options={[
               { value: "ALL", label: "All Statuses" },
               { value: "PENDING", label: "Pending" },
-              { value: "POSTPONED", label: "Postponed" },
+              { value: "POSTPONED", label: "Date Not Confirmed" },
               { value: "PARTIAL", label: "Fit for Surgery" },
               { value: "COMPLETED", label: "Eligible for Surgery" },
             ]}

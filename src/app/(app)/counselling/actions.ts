@@ -158,8 +158,8 @@ export async function addCounsellingInvestigations(visitId: string, tests: strin
 export async function postponeSurgery(visitId: string, data: { until: string | null; indefinitely: boolean; reason: string }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.eligibleForSurgery) return { error: "Counselling is already complete." };
-  if (!data.indefinitely && !data.until) return { error: "Pick a date or choose Indefinitely." };
-  if (!data.reason.trim()) return { error: "Enter the reason for postponing." };
+  if (!data.indefinitely && !data.until) return { error: "Pick an expected date or choose Not decided yet." };
+  if (!data.reason.trim()) return { error: "Enter the reason the date is not confirmed." };
 
   const patch = {
     surgeryDeferred: true,
@@ -178,7 +178,7 @@ export async function postponeSurgery(visitId: string, data: { until: string | n
 
 export async function resumeCounselling(visitId: string): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
-  if (!rec?.surgeryDeferred) return { error: "Counselling is not postponed." };
+  if (!rec?.surgeryDeferred) return { error: "The surgery date is already confirmed." };
   await prisma.counsellingRecord.update({
     where: { visitId },
     data: { surgeryDeferred: false, status: rec.fitForSurgery ? "PARTIAL" : "PENDING", doctorDecision: rec.fitForSurgery ? "FIT_FOR_SURGERY" : null },
@@ -209,7 +209,7 @@ export async function markEligibleForSurgery(visitId: string, time: string, note
   const { user, visit, rec } = await loadVisit(visitId, "counselling.eligible");
   if (!rec?.fitForSurgery) return { error: "Mark Fit for surgery first." };
   if (rec.eligibleForSurgery) return { error: "Already eligible for surgery." };
-  if (rec.surgeryDeferred) return { error: "Surgery is postponed. Resume counselling first." };
+  if (rec.surgeryDeferred) return { error: "Surgery date is not confirmed. Resume counselling first." };
   if (!rec.advanceReceived && !(Number(rec.advancePaid ?? 0) > 0)) return { error: "Record the advance payment first." };
   if (!rec.dateOfSurgery) return { error: "Date of surgery is missing." };
   if (!/^\d{2}:\d{2}$/.test(time)) return { error: "Enter the pre-op appointment time." };
