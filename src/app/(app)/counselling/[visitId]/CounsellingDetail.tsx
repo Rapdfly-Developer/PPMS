@@ -460,6 +460,16 @@ function SectionCard({
   );
 }
 
+/** Label on the left, field on the right, on one line (stacks on phones). */
+function InlineField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center gap-x-3 gap-y-1 min-w-0">
+      <label className="text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
@@ -946,7 +956,7 @@ export function CounsellingDetail({
 
           {/* ── C & D ─────────────────────────────────────────────────── */}
           <SectionCard step={2} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_200px] gap-3">
+            <div>
               <Field label="Payment Option">
                 <div className="grid grid-cols-2 gap-2">
                   {PAYMENT_MODES.map((m) => {
@@ -964,12 +974,6 @@ export function CounsellingDetail({
                       </button>
                     );
                   })}
-                </div>
-              </Field>
-              <Field label="Estimate (optional)">
-                <div className="relative">
-                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
                 </div>
               </Field>
             </div>
@@ -994,8 +998,8 @@ export function CounsellingDetail({
                   </div>
                 </Field>
                 {cashless && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <Field label={cashless.nameLabel}>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <InlineField label={cashless.nameLabel}>
                       <SuggestInput
                         key={cashless.value}
                         value={schemeName}
@@ -1005,14 +1009,23 @@ export function CounsellingDetail({
                         libraryKey={`ppms_counselling_payer_${cashless.value}`}
                         placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
                       />
-                    </Field>
-                    <Field label={cashless.idLabel}>
+                    </InlineField>
+                    <InlineField label={cashless.idLabel}>
                       <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />
-                    </Field>
+                    </InlineField>
                   </div>
                 )}
               </div>
             )}
+
+            <div className="mt-3 sm:max-w-xs">
+              <Field label="Estimate (optional)">
+                <div className="relative">
+                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
+                </div>
+              </Field>
+            </div>
           </SectionCard>
 
           {/* ── E & F ─────────────────────────────────────────────────── */}
