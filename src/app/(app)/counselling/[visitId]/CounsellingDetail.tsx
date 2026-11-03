@@ -173,11 +173,20 @@ function ConfirmCard({ icon, title, children }: { icon: React.ReactNode; title: 
   );
 }
 
-function ConfirmLine({ label, strong, children }: { label: string; strong?: boolean; children: React.ReactNode }) {
+function ConfirmLine({ label, strong, inline, children }: { label: string; strong?: boolean; inline?: boolean; children: React.ReactNode }) {
+  const value = `text-sm leading-snug break-words ${strong ? "font-bold text-[var(--color-ink-900)]" : "font-medium text-[var(--color-ink-800)]"}`;
+  if (inline) {
+    return (
+      <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 items-baseline">
+        <p className="text-caption text-[var(--color-ink-400)] break-words">{label}</p>
+        <p className={value}>{children}</p>
+      </div>
+    );
+  }
   return (
     <div className="min-w-0">
       <p className="text-micro text-[var(--color-ink-400)]">{label}</p>
-      <p className={`text-sm leading-snug break-words ${strong ? "font-bold text-[var(--color-ink-900)]" : "font-medium text-[var(--color-ink-800)]"}`}>{children}</p>
+      <p className={value}>{children}</p>
     </div>
   );
 }
@@ -1194,23 +1203,23 @@ export function CounsellingDetail({
 
       {modal === "fit" && (
         <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)} wide>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             {/* Surgery */}
             <ConfirmCard icon={<Scissors size={13} />} title="Surgery">
-              <ConfirmLine label="Surgery">
+              <ConfirmLine inline label="Surgery">
                 {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}{data.surgery}
               </ConfirmLine>
-              {data.anaesthesia && <ConfirmLine label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
-              <ConfirmLine label="Implant">{implant || "—"}</ConfirmLine>
-              <ConfirmLine label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}</ConfirmLine>
+              {data.anaesthesia && <ConfirmLine inline label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
+              <ConfirmLine inline label="Implant">{implant || "—"}</ConfirmLine>
+              <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}</ConfirmLine>
             </ConfirmCard>
 
             {/* Payment */}
             <ConfirmCard icon={<Wallet size={13} />} title="Payment">
-              <ConfirmLine label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}</ConfirmLine>
-              {paymentMode === "CASHLESS" && schemeName && <ConfirmLine label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
-              {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
-              <ConfirmLine label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
+              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}</ConfirmLine>
+              {paymentMode === "CASHLESS" && schemeName && <ConfirmLine inline label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
+              {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine inline label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
+              <ConfirmLine inline label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
             </ConfirmCard>
           </div>
 
@@ -1241,12 +1250,12 @@ export function CounsellingDetail({
               <p className="text-xs font-bold text-amber-900">Before you confirm</p>
             </div>
             <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />The implant, date, payment and estimate above will be <b>frozen</b>.</li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, date, payment and estimate above will be <b>frozen</b>.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
                 <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
               </li>
-              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />After that the reports expire and the process must be redone.</li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>After that the reports expire and the process must be redone.</span></li>
             </ul>
           </div>
 
