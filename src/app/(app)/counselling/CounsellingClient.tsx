@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import {
   ClipboardCheck, Search, Filter, X, User, Clock, CheckCircle2, ShieldCheck,
-  Layers, ChevronRight, FlaskConical, CalendarDays, Scissors,
+  Layers, ChevronRight, CalendarDays, Scissors,
 } from "lucide-react";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { TealSelect } from "@/components/ui/TealSelect";
@@ -97,20 +98,95 @@ function StatCard({
   );
 }
 
-function PatientCard({ r, showDoctor }: { r: CounsellingRow; showDoctor: boolean }) {
-  const expired = isExpired(r);
+/* ── List pieces (fields per the requirements: DP, name, age, sex, ID, C/c,
+   diagnosis, surgery, status, tentative date) ───────────────────────────── */
+function Avatar({ r, size }: { r: CounsellingRow; size: "sm" | "md" }) {
+  const box = size === "sm" ? "w-7 h-7" : "w-8 h-8";
+  return (
+    <div className={`${box} rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden`}>
+      {r.patient.photoUrl
+        ? <img src={fileHref(r.patient.photoUrl)!} alt={r.patient.name} className="w-full h-full object-cover" />
+        : <User size={size === "sm" ? 13 : 14} className="text-[var(--color-primary-700)]" />}
+    </div>
+  );
+}
+
+function Diagnoses({ r }: { r: CounsellingRow }) {
+  if (r.diagnoses.length === 0) return <span className="italic text-caption text-[var(--color-ink-300)]">—</span>;
+  return (
+    <span className="flex flex-wrap gap-1 min-w-0">
+      {r.diagnoses.map((d, i) => (
+        <span key={i} className="clinical-diagnosis-chip inline-flex flex-wrap items-center gap-x-1 max-w-full px-2.5 py-0.5 rounded-full border text-caption break-words">
+          {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
+          {d.description}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function SurgeryText({ r }: { r: CounsellingRow }) {
+  return (
+    <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] break-words">
+      {r.laterality && <span className="clinical-laterality mr-1">{r.laterality}</span>}
+      {r.surgery}
+      {r.anaesthesia && <span className="block text-caption font-normal text-[var(--color-ink-500)]">{r.anaesthesia}</span>}
+    </span>
+  );
+}
+
+function TentativeDate({ r }: { r: CounsellingRow }) {
+  return (
+    <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
+      {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
+      {r.status === "POSTPONED" && !r.postponedIndefinitely && r.postponedUntil && (
+        <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "d MMM yyyy")}</span>
+      )}
+    </span>
+  );
+}
+
+/* ── Desktop row ────────────────────────────────────────────────────────── */
+function PatientRow({ r, onOpen }: { r: CounsellingRow; onOpen: () => void }) {
+  return (
+    <tr onClick={onOpen} className="border-b border-[var(--color-border)] last:border-0 cursor-pointer transition-colors hover:bg-[var(--color-surface-sunken)]">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2.5">
+          <Avatar r={r} size="sm" />
+          <div className="min-w-0">
+            <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{r.patient.name}</p>
+            <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
+              {r.patient.uhid ?? r.patient.udid} · {r.patient.age}y/{SEX_SHORT[r.patient.sex] ?? r.patient.sex}
+            </p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        {r.chiefComplaint
+          ? <ComplaintChips value={r.chiefComplaint} className="max-w-[240px]" />
+          : <p className="text-caption text-[var(--color-ink-300)] italic">No complaint recorded</p>}
+        {r.diagnoses.length > 0 && <div className="mt-1"><Diagnoses r={r} /></div>}
+      </td>
+      <td className="px-4 py-3 max-w-[260px]"><SurgeryText r={r} /></td>
+      <td className="px-4 py-3 whitespace-nowrap"><TentativeDate r={r} /></td>
+      <td className="px-4 py-3"><StatusBadge status={r.status} expired={isExpired(r)} /></td>
+      <td className="px-4 py-3 text-right">
+        <ChevronRight size={16} className="inline text-[var(--color-ink-300)]" />
+      </td>
+    </tr>
+  );
+}
+
+/* ── Mobile card ────────────────────────────────────────────────────────── */
+function PatientCard({ r }: { r: CounsellingRow }) {
   return (
     <Link
       href={`/counselling/${r.visitId}`}
-      className="group block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 hover:border-[var(--color-primary-300)] hover:shadow-sm transition-all"
+      className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 hover:border-[var(--color-primary-300)] transition-colors"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
-            {r.patient.photoUrl
-              ? <img src={fileHref(r.patient.photoUrl)!} alt={r.patient.name} className="w-full h-full object-cover" />
-              : <User size={15} className="text-[var(--color-primary-700)]" />}
-          </div>
+          <Avatar r={r} size="md" />
           <div className="min-w-0">
             <p className="text-label sm:text-sm font-bold text-[var(--color-ink-900)] truncate">{r.patient.name}</p>
             <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
@@ -118,65 +194,27 @@ function PatientCard({ r, showDoctor }: { r: CounsellingRow; showDoctor: boolean
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <StatusBadge status={r.status} expired={expired} />
-          <ChevronRight size={15} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-500)] transition-colors" />
-        </div>
+        <StatusBadge status={r.status} expired={isExpired(r)} />
       </div>
 
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs">
-        {showDoctor && (
-          <>
-            <span className="text-[var(--color-ink-400)]">Doctor</span>
-            <span className="font-medium text-[var(--color-ink-700)]">Dr. {r.doctor.name}</span>
-          </>
-        )}
-        <span className="text-[var(--color-ink-400)]">C/c</span>
+        <span className="text-[var(--color-ink-400)]">Complaint</span>
         {r.chiefComplaint
           ? <ComplaintChips value={r.chiefComplaint} wrap />
           : <span className="italic text-[var(--color-ink-300)]">—</span>}
         <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-        {r.diagnoses.length > 0 ? (
-          <span className="flex flex-wrap gap-1 min-w-0">
-            {r.diagnoses.map((d, i) => (
-              <span key={i} className="clinical-diagnosis-chip inline-flex flex-wrap items-center gap-x-1 max-w-full px-2.5 py-0.5 rounded-lg border text-caption break-words">
-                {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
-                {d.description}
-              </span>
-            ))}
-          </span>
-        ) : <span className="italic text-[var(--color-ink-300)]">—</span>}
+        <Diagnoses r={r} />
         <span className="text-[var(--color-ink-400)]">Surgery</span>
-        <span className="font-semibold text-[var(--color-ink-800)] break-words">
-          {r.laterality && <span className="clinical-laterality mr-1">{r.laterality}</span>}
-          {r.surgery}
-          {r.anaesthesia && <span className="font-normal text-[var(--color-ink-500)]"> · {r.anaesthesia}</span>}
-        </span>
+        <SurgeryText r={r} />
         <span className="text-[var(--color-ink-400)]">Tentative Date</span>
-        <span className="font-medium text-[var(--color-ink-700)]">
-          {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy") : <span className="italic text-[var(--color-ink-300)]">Not set</span>}
-          {r.status === "POSTPONED" && (
-            <span className="ml-1.5 text-orange-700">
-              · Date not confirmed{r.postponedIndefinitely ? "" : r.postponedUntil ? ` (expected ${format(new Date(r.postponedUntil), "d MMM yyyy")})` : ""}
-            </span>
-          )}
-        </span>
-        <span className="text-[var(--color-ink-400)]">Investigations</span>
-        <span className={`inline-flex items-center gap-1 font-medium ${r.invTotal > 0 && r.invDone === r.invTotal ? "text-emerald-700" : "text-[var(--color-ink-700)]"}`}>
-          <FlaskConical size={11} className="shrink-0" />
-          {r.invTotal === 0 ? "None ordered" : `${r.invDone}/${r.invTotal} complete`}
-        </span>
+        <TentativeDate r={r} />
       </div>
     </Link>
   );
 }
 
-export function CounsellingClient({
-  rows, showDoctor,
-}: {
-  rows: CounsellingRow[];
-  showDoctor: boolean;
-}) {
+export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
+  const router = useRouter();
   const [card, setCard]                 = useState<CardFilter>("ALL");
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<CounsellingStatus | "ALL">("ALL");
@@ -341,9 +379,33 @@ export function CounsellingClient({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {filtered.map((r) => <PatientCard key={r.visitId} r={r} showDoctor={showDoctor} />)}
-        </div>
+        <>
+          {/* Desktop table */}
+          <div className="hidden lg:block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Patient</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Complaint / Diagnosis</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Surgery</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Tentative Date</th>
+                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Status</th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="lg:hidden space-y-3">
+            {filtered.map((r) => <PatientCard key={r.visitId} r={r} />)}
+          </div>
+        </>
       )}
     </div>
   );

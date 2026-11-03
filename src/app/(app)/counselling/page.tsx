@@ -62,5 +62,5 @@ export default async function CounsellingPage() {
       };
     });
 
-  return <CounsellingClient rows={rows} showDoctor={user.role !== "DOCTOR"} />;
+  return <CounsellingClient rows={rows} />;
 }
