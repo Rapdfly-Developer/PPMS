@@ -149,6 +149,23 @@ function ProgressDots({ r }: { r: CounsellingRow }) {
 const GROUP_ORDER = ["Past date", "This week", "Next week", "Later", "Date not set"] as const;
 type DateGroup = (typeof GROUP_ORDER)[number];
 
+const GROUP_META: Record<DateGroup, { glyph: React.ReactNode; hint?: string; border: string; head: string; icon: string; count: string }> = {
+  "Past date":    { glyph: <AlertTriangle size={13} />, hint: "Tentative date has passed", border: "border-red-200",    head: "bg-red-50/60 border-red-100",       icon: "bg-red-100 text-red-600",       count: "bg-red-100 text-red-700" },
+  "This week":    { glyph: <Clock size={13} />,         hint: "Surgery within this week",  border: "border-amber-200",  head: "bg-amber-50/60 border-amber-100",   icon: "bg-amber-100 text-amber-600",   count: "bg-amber-100 text-amber-700" },
+  "Next week":    { glyph: <CalendarDays size={13} />,  border: "border-[var(--color-primary-200)]", head: "bg-[var(--color-primary-50)]/60 border-[var(--color-primary-100)]", icon: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]", count: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
+  "Later":        { glyph: <Layers size={13} />,        border: "border-[var(--color-border)]", head: "bg-[var(--color-surface-sunken)]/70 border-[var(--color-border)]", icon: "bg-white text-[var(--color-ink-500)] border border-[var(--color-border)]", count: "bg-white text-[var(--color-ink-600)] border border-[var(--color-border)]" },
+  "Date not set": { glyph: <Scissors size={13} />,      hint: "Set a tentative date",      border: "border-dashed border-[var(--color-border)]", head: "bg-white border-[var(--color-border)]", icon: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)]", count: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]" },
+};
+
+/** Same column widths in the header and every group, so they line up. */
+function ListCols() {
+  return (
+    <colgroup>
+      <col className="w-[22%]" /><col className="w-[24%]" /><col className="w-[22%]" /><col className="w-[14%]" /><col className="w-[15%]" /><col className="w-[3%]" />
+    </colgroup>
+  );
+}
+
 function dateGroup(r: CounsellingRow): DateGroup {
   if (!r.tentativeDate) return "Date not set";
   const d = new Date(r.tentativeDate);
@@ -457,41 +474,50 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
         </div>
       ) : (
         <>
-          {/* Desktop table */}
-          <div className="hidden lg:block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+          {/* Desktop — one card per date group; columns line up across groups */}
+          <div className="hidden lg:flex flex-col gap-3">
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] overflow-hidden">
+              <table className="w-full table-fixed">
+                <ListCols />
                 <thead>
-                  <tr className="bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Patient</th>
-                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Complaint / Diagnosis</th>
-                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Surgery</th>
-                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Tentative Date</th>
-                    <th className="px-4 py-3 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Status</th>
-                    <th className="px-4 py-3" />
+                  <tr>
+                    {["Patient", "Complaint / Diagnosis", "Surgery", "Tentative Date", "Status", ""].map((h) => (
+                      <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
+                    ))}
                   </tr>
                 </thead>
-                {groups.map(([g, list]) => (
-                  <tbody key={g}>
-                    <tr className="bg-[var(--color-surface-sunken)]/60 border-b border-[var(--color-border)]">
-                      <td colSpan={6} className="px-4 py-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">
-                        {g} <span className="text-[var(--color-ink-300)] font-semibold">· {list.length}</span>
-                      </td>
-                    </tr>
-                    {list.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
-                  </tbody>
-                ))}
               </table>
             </div>
+            {groups.map(([g, list]) => {
+              const m = GROUP_META[g];
+              return (
+                <section key={g} className={`rounded-xl border bg-[var(--color-surface)] overflow-hidden ${m.border}`}>
+                  <header className={`flex items-center gap-2 px-4 py-2 border-b ${m.head}`}>
+                    <span className={`w-6 h-6 rounded-md flex items-center justify-center ${m.icon}`}>{m.glyph}</span>
+                    <span className="text-xs font-bold text-[var(--color-ink-800)]">{g}</span>
+                    <span className={`ml-1 rounded-full px-2 py-px text-micro font-bold ${m.count}`}>{list.length}</span>
+                    {m.hint && <span className="ml-auto text-micro font-medium text-[var(--color-ink-400)]">{m.hint}</span>}
+                  </header>
+                  <table className="w-full table-fixed">
+                    <ListCols />
+                    <tbody>
+                      {list.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
+                    </tbody>
+                  </table>
+                </section>
+              );
+            })}
           </div>
 
           {/* Mobile cards */}
           <div className="lg:hidden space-y-4">
             {groups.map(([g, list]) => (
-              <section key={g} className="space-y-2">
-                <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] px-1">
-                  {g} <span className="text-[var(--color-ink-300)] font-semibold">· {list.length}</span>
-                </p>
+              <section key={g} className={`rounded-xl border p-2 space-y-2 ${GROUP_META[g].border} ${GROUP_META[g].head}`}>
+                <header className="flex items-center gap-2 px-1.5 pt-0.5">
+                  <span className={`w-6 h-6 rounded-md flex items-center justify-center ${GROUP_META[g].icon}`}>{GROUP_META[g].glyph}</span>
+                  <span className="text-xs font-bold text-[var(--color-ink-800)]">{g}</span>
+                  <span className={`rounded-full px-2 py-px text-micro font-bold ${GROUP_META[g].count}`}>{list.length}</span>
+                </header>
                 {list.map((r) => <PatientCard key={r.visitId} r={r} />)}
               </section>
             ))}
