@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { Providers } from "./providers";
 import { SplashOverlay } from "@/components/SplashOverlay";
@@ -34,12 +35,11 @@ export default function RootLayout({
         {/* The launch splash is server-rendered so the app shows it on first
             paint. Capacitor's bridge exists before any page script, so a plain
             browser can hide it here, before paint, instead of flashing it until
-            hydration removes it. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}`,
-          }}
-        />
+            hydration removes it. beforeInteractive keeps it in the server
+            HTML; a raw <script> element makes React warn in development. */}
+        <Script id="hide-splash-in-browser" strategy="beforeInteractive">
+          {`if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}`}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col overflow-x-hidden">
         <SplashOverlay />
