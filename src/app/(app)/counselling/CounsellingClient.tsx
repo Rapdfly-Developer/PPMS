@@ -3,10 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { addWeeks, differenceInCalendarDays, endOfWeek, format, startOfDay } from "date-fns";
 import {
   ClipboardCheck, Search, Filter, X, User, Clock, CheckCircle2, ShieldCheck,
-  Layers, ChevronRight, CalendarDays, Scissors,
+  Layers, ChevronRight, CalendarDays, Scissors, AlertTriangle,
 } from "lucide-react";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { TealSelect } from "@/components/ui/TealSelect";
@@ -29,6 +29,11 @@ export interface CounsellingRow {
   tentativeDate: string | null;
   implant: string | null;
   reportsValidUntil: string | null;
+  /** When the reports expire: frozen at Fit for surgery, else 1 month after the oldest upload. */
+  reportsDue: string | null;
+  fit: boolean;
+  advanceDone: boolean;
+  eligible: boolean;
   postponedUntil: string | null;
   postponedIndefinitely: boolean;
   updatedAt: string;
@@ -98,6 +103,65 @@ function StatCard({
   );
 }
 
+
+/* ── At-a-glance tags (derived from data already on the row) ───────────── */
+const daysFromToday = (iso: string) => differenceInCalendarDays(new Date(iso), new Date());
+
+function DaysTag({ r }: { r: CounsellingRow }) {
+  if (!r.tentativeDate) return null;
+  const d = daysFromToday(r.tentativeDate);
+  const done = r.status === "COMPLETED";
+  const text = d === 0 ? "Today" : d === 1 ? "Tomorrow" : d > 0 ? `In ${d} days` : done ? `${-d} day${d === -1 ? "" : "s"} ago` : `Overdue by ${-d} day${d === -1 ? "" : "s"}`;
+  const cls = d < 0 && !done
+    ? "bg-red-50 text-red-700 border-red-200"
+    : d <= 7 && d >= 0
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-slate-50 text-slate-500 border-slate-200";
+  return <span className={`inline-flex items-center rounded-md border px-1.5 py-px text-micro font-semibold whitespace-nowrap ${cls}`}>{text}</span>;
+}
+
+function ExpiryTag({ r }: { r: CounsellingRow }) {
+  if (!r.reportsDue || r.status === "COMPLETED" || isExpired(r)) return null;
+  const d = daysFromToday(r.reportsDue);
+  if (d < 0 || d > 7) return null;
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-px text-micro font-semibold text-amber-700 whitespace-nowrap">
+      <AlertTriangle size={10} /> Reports expire {d === 0 ? "today" : d === 1 ? "tomorrow" : `in ${d} days`}
+    </span>
+  );
+}
+
+const STAGES = ["Counselling", "Fit for Surgery", "Advance", "Eligible"];
+
+function ProgressDots({ r }: { r: CounsellingRow }) {
+  const done = [true, r.fit, r.advanceDone, r.eligible];
+  return (
+    <span className="inline-flex items-center gap-1" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
+      {done.map((d, i) => (
+        <span key={i} className="inline-flex items-center gap-1">
+          {i > 0 && <span className={`w-2 h-px ${d ? "bg-[var(--color-primary-400)]" : "bg-[var(--color-border)]"}`} />}
+          <span className={`w-2 h-2 rounded-full ${d ? "bg-[var(--color-primary-500)]" : "border border-[var(--color-ink-300)] bg-white"}`} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/* ── Date groups ───────────────────────────────────────────────────────── */
+const GROUP_ORDER = ["Past date", "This week", "Next week", "Later", "Date not set"] as const;
+type DateGroup = (typeof GROUP_ORDER)[number];
+
+function dateGroup(r: CounsellingRow): DateGroup {
+  if (!r.tentativeDate) return "Date not set";
+  const d = new Date(r.tentativeDate);
+  const today = startOfDay(new Date());
+  if (d < today) return "Past date";
+  const thisWeekEnd = endOfWeek(today, { weekStartsOn: 1 });
+  if (d <= thisWeekEnd) return "This week";
+  if (d <= addWeeks(thisWeekEnd, 1)) return "Next week";
+  return "Later";
+}
+
 /* ── List pieces (fields per the requirements: DP, name, age, sex, ID, C/c,
    diagnosis, surgery, status, tentative date) ───────────────────────────── */
 function Avatar({ r, size }: { r: CounsellingRow; size: "sm" | "md" }) {
@@ -139,6 +203,7 @@ function TentativeDate({ r }: { r: CounsellingRow }) {
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
       {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
+      {r.tentativeDate && <span className="block mt-1"><DaysTag r={r} /></span>}
       {r.status === "POSTPONED" && !r.postponedIndefinitely && r.postponedUntil && (
         <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "d MMM yyyy")}</span>
       )}
@@ -169,7 +234,13 @@ function PatientRow({ r, onOpen }: { r: CounsellingRow; onOpen: () => void }) {
       </td>
       <td className="px-4 py-3 max-w-[260px]"><SurgeryText r={r} /></td>
       <td className="px-4 py-3 whitespace-nowrap"><TentativeDate r={r} /></td>
-      <td className="px-4 py-3"><StatusBadge status={r.status} expired={isExpired(r)} /></td>
+      <td className="px-4 py-3">
+        <div className="flex flex-col items-start gap-1.5">
+          <StatusBadge status={r.status} expired={isExpired(r)} />
+          <ProgressDots r={r} />
+          <ExpiryTag r={r} />
+        </div>
+      </td>
       <td className="px-4 py-3 text-right">
         <ChevronRight size={16} className="inline text-[var(--color-ink-300)]" />
       </td>
@@ -194,8 +265,12 @@ function PatientCard({ r }: { r: CounsellingRow }) {
             </p>
           </div>
         </div>
-        <StatusBadge status={r.status} expired={isExpired(r)} />
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <StatusBadge status={r.status} expired={isExpired(r)} />
+          <ProgressDots r={r} />
+        </div>
       </div>
+      <ExpiryTag r={r} />
 
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs">
         <span className="text-[var(--color-ink-400)]">Complaint</span>
@@ -259,6 +334,10 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
       return b.visitDate.localeCompare(a.visitDate);
     });
   }, [dated, card, search, statusFilter]);
+
+  const groups = useMemo(() => GROUP_ORDER
+    .map((g) => [g, filtered.filter((r) => dateGroup(r) === g)] as const)
+    .filter(([, list]) => list.length > 0), [filtered]);
 
   const filtersActive = !!(search || statusFilter !== "ALL" || dateFrom || dateTo);
   const toggleCard = (c: CardFilter) => { setCard(card === c ? "ALL" : c); setStatusFilter("ALL"); };
@@ -394,16 +473,30 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody>
-                  {filtered.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
-                </tbody>
+                {groups.map(([g, list]) => (
+                  <tbody key={g}>
+                    <tr className="bg-[var(--color-surface-sunken)]/60 border-b border-[var(--color-border)]">
+                      <td colSpan={6} className="px-4 py-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">
+                        {g} <span className="text-[var(--color-ink-300)] font-semibold">· {list.length}</span>
+                      </td>
+                    </tr>
+                    {list.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
+                  </tbody>
+                ))}
               </table>
             </div>
           </div>
 
           {/* Mobile cards */}
-          <div className="lg:hidden space-y-3">
-            {filtered.map((r) => <PatientCard key={r.visitId} r={r} />)}
+          <div className="lg:hidden space-y-4">
+            {groups.map(([g, list]) => (
+              <section key={g} className="space-y-2">
+                <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] px-1">
+                  {g} <span className="text-[var(--color-ink-300)] font-semibold">· {list.length}</span>
+                </p>
+                {list.map((r) => <PatientCard key={r.visitId} r={r} />)}
+              </section>
+            ))}
           </div>
         </>
       )}

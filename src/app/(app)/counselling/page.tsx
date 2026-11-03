@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { counsellingStatus } from "@/lib/counselling";
+import { counsellingStatus, reportsValidUntil } from "@/lib/counselling";
 import { CounsellingClient, type CounsellingRow } from "./CounsellingClient";
 
 export const metadata = { title: "Counselling" };
@@ -26,10 +26,10 @@ export default async function CounsellingPage() {
       doctor: { select: { id: true, name: true } },
       generalExam: { select: { chiefComplaint: true } },
       diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" } },
-      investigationOrders: { select: { resultRef: true } },
+      investigationOrders: { select: { resultRef: true, resultAt: true, updatedAt: true } },
       counsellingRecord: {
         select: {
-          status: true, fitForSurgery: true, eligibleForSurgery: true, surgeryDeferred: true,
+          status: true, fitForSurgery: true, eligibleForSurgery: true, surgeryDeferred: true, advancePaid: true, advanceReceived: true,
           dateOfSurgery: true, implant: true, reportsValidUntil: true, postponedUntil: true, postponedIndefinitely: true,
           createdAt: true, updatedAt: true,
         },
@@ -40,6 +40,8 @@ export default async function CounsellingPage() {
   const rows: CounsellingRow[] = visits
     .map((v) => {
       const rec = v.counsellingRecord;
+      const reportTimes = v.investigationOrders.filter((o) => o.resultRef).map((o) => (o.resultAt ?? o.updatedAt).getTime());
+      const reportsDue = rec?.reportsValidUntil ?? (reportTimes.length ? reportsValidUntil(new Date(Math.min(...reportTimes))) : null);
       return {
         visitId: v.id,
         visitDate: v.date.toISOString(),
@@ -56,6 +58,10 @@ export default async function CounsellingPage() {
         tentativeDate: (rec?.dateOfSurgery ?? v.advisedSurgeryDate)?.toISOString() ?? null,
         implant: rec?.implant ?? null,
         reportsValidUntil: rec?.reportsValidUntil?.toISOString() ?? null,
+        reportsDue: reportsDue?.toISOString() ?? null,
+        fit: rec?.fitForSurgery ?? false,
+        advanceDone: !!(rec?.advanceReceived || Number(rec?.advancePaid ?? 0) > 0),
+        eligible: rec?.eligibleForSurgery ?? false,
         postponedUntil: rec?.postponedUntil?.toISOString() ?? null,
         postponedIndefinitely: rec?.postponedIndefinitely ?? false,
         updatedAt: (rec?.updatedAt ?? v.date).toISOString(),
