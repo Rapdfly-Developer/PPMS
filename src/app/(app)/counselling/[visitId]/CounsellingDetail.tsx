@@ -833,7 +833,7 @@ export function CounsellingDetail({
                     {CASHLESS_TYPES.map((t) => {
                       const active = paymentType === t.value;
                       return (
-                        <button key={t.value} type="button" disabled={!editable} onClick={() => setPaymentType(t.value)}
+                        <button key={t.value} type="button" disabled={!editable} onClick={() => { if (t.value !== paymentType) { setPaymentType(t.value); setSchemeName(""); setPolicyNumber(""); } }}
                           className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-default ${
                             active
                               ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
