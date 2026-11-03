@@ -958,13 +958,13 @@ export function CounsellingDetail({
           <SectionCard step={2} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
             <div>
               <Field label="Payment Option">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="inline-flex gap-2">
                   {PAYMENT_MODES.map((m) => {
                     const active = paymentMode === m.value;
                     return (
                       <button key={m.value} type="button" disabled={!editable}
                         onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
-                        className={`h-9 inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors disabled:cursor-default ${
+                        className={`h-9 w-32 inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors disabled:cursor-default ${
                           active
                             ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
                             : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
