@@ -12,7 +12,6 @@ import {
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { BackButton } from "@/components/ui/BackButton";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { fileHref } from "@/lib/file-href";
@@ -634,7 +633,6 @@ export function CounsellingDetail({
 
   return (
     <div className="fade-in pb-24">
-      <BackButton href="/counselling" label="Counselling" className="mb-3" />
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
       <section className="relative rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white px-4 py-3.5">
