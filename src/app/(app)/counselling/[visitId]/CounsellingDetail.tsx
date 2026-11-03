@@ -180,15 +180,6 @@ function ConfirmLine({ label, strong, children }: { label: string; strong?: bool
   );
 }
 
-function SummaryRow({ label, value, strong }: { label: string; value: React.ReactNode; strong?: boolean }) {
-  return (
-    <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 py-1.5 border-b border-[var(--color-border)] last:border-0 text-sm">
-      <span className="text-[var(--color-ink-400)]">{label}</span>
-      <span className={`${strong ? "font-bold text-[var(--color-ink-900)]" : "text-[var(--color-ink-700)]"} break-words`}>{value}</span>
-    </div>
-  );
-}
-
 /* ── Investigations history ─────────────────────────────────────────────── */
 const isImage = (ref: string) => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(ref);
 
@@ -1404,30 +1395,16 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   );
 }
 
-/* ── H. Eligible — two-step verification, then book pre-op ──────────────── */
+/* ── H. Eligible — verify each item twice on one screen, then book pre-op ── */
 type VerifyKey = "date" | "implant" | "surgery";
 
-/** A ticket for one item to verify; tap to mark it checked with the patient. */
-function VerifyTicket({ label, value, icon, checked, onToggle }: { label: string; value: string; icon: React.ReactNode; checked: boolean; onToggle: () => void }) {
+function CheckDot({ on, disabled, onClick, label }: { on: boolean; disabled?: boolean; onClick: () => void; label: string }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      className={`group w-full flex items-stretch text-left rounded-xl border-2 overflow-hidden transition-colors ${
-        checked ? "border-emerald-400 bg-emerald-50" : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-300)]"
-      }`}
-    >
-      <span className="flex-1 min-w-0 px-4 py-3">
-        <span className={`flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest ${checked ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>{icon} {label}</span>
-        <span className="block mt-1 text-base font-bold text-[var(--color-ink-900)] break-words leading-snug">{value}</span>
-      </span>
-      {/* perforated stub */}
-      <span className={`relative w-24 shrink-0 flex flex-col items-center justify-center gap-1 border-l-2 border-dashed ${checked ? "border-emerald-300 text-emerald-700" : "border-[var(--color-border)] text-[var(--color-ink-400)] group-hover:text-[var(--color-primary-600)]"}`}>
-        <span className="absolute -top-2 -left-[9px] w-4 h-4 rounded-full bg-white border-2 border-inherit" />
-        <span className="absolute -bottom-2 -left-[9px] w-4 h-4 rounded-full bg-white border-2 border-inherit" />
-        {checked ? <CheckCircle2 size={22} /> : <Circle size={22} />}
-        <span className="text-micro font-bold uppercase tracking-wider">{checked ? "Verified" : "Tap to verify"}</span>
-      </span>
+    <button type="button" onClick={onClick} disabled={disabled} aria-label={label} aria-pressed={on} title={disabled ? "Do the 1st check first" : label}
+      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+        on ? "bg-emerald-500 border-emerald-500 text-white scale-105" : "bg-white border-[var(--color-border)] text-transparent hover:border-emerald-400"
+      }`}>
+      <Check size={15} strokeWidth={3} />
     </button>
   );
 }
@@ -1438,57 +1415,72 @@ function EligibleModal({
   pending: boolean; error: string; onClose: () => void; onSubmit: (time: string, notes: string) => void;
   surgery: string; implant: string; date: string; payment: string; estimate: string; advance: string; patient: string;
 }) {
-  const [step, setStep] = useState<1 | 2>(1);
-  const [checks, setChecks] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
-  const [checks2, setChecks2] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
+  const [first, setFirst] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
+  const [second, setSecond] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
 
   const items: { key: VerifyKey; label: string; value: string; icon: React.ReactNode }[] = [
-    { key: "date", label: "Date of surgery", value: date, icon: <CalendarDays size={12} /> },
-    { key: "implant", label: "Implant", value: implant, icon: <Package size={12} /> },
-    { key: "surgery", label: "Full name of surgery", value: surgery, icon: <Scissors size={12} /> },
+    { key: "date", label: "Date of surgery", value: date, icon: <CalendarDays size={14} /> },
+    { key: "implant", label: "Implant", value: implant, icon: <Package size={14} /> },
+    { key: "surgery", label: "Full name of surgery", value: surgery, icon: <Scissors size={14} /> },
   ];
-  const state = step === 1 ? checks : checks2;
-  const setState = step === 1 ? setChecks : setChecks2;
-  const allChecked = items.every((i) => state[i.key]);
-  const count = items.filter((i) => state[i.key]).length;
+  const checks = items.reduce((n, i) => n + (first[i.key] ? 1 : 0) + (second[i.key] ? 1 : 0), 0);
+  const allChecked = checks === items.length * 2;
+
+  const toggleFirst = (k: VerifyKey) => {
+    const on = !first[k];
+    setFirst({ ...first, [k]: on });
+    if (!on) setSecond({ ...second, [k]: false }); // un-ticking the 1st clears the 2nd
+  };
 
   return (
     <Modal title="Eligible for Surgery" onClose={onClose} wide>
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-4">
-        {[1, 2].map((n) => (
-          <span key={n} className={`flex-1 h-1.5 rounded-full ${n <= step ? "bg-emerald-500" : "bg-[var(--color-border)]"}`} />
-        ))}
-        <span className="text-caption font-semibold text-[var(--color-ink-500)] whitespace-nowrap ml-1">{step === 1 ? "First check" : "Second check"} · {count}/3</span>
+      {/* Summary */}
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+        <ConfirmLine label="Patient" strong>{patient}</ConfirmLine>
+        <ConfirmLine label="Payment">{payment}</ConfirmLine>
+        <ConfirmLine label="Estimate">{estimate}</ConfirmLine>
+        <ConfirmLine label="Advance">{advance}</ConfirmLine>
       </div>
 
-      {step === 1 ? (
-        <div className="mb-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-          <SummaryRow label="Patient" value={patient} strong />
-          <SummaryRow label="Payment" value={payment} />
-          <SummaryRow label="Estimate" value={estimate} />
-          <SummaryRow label="Advance" value={advance} />
+      {/* Verification table */}
+      <div className="mt-4 rounded-xl border border-[var(--color-border)] overflow-hidden">
+        <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
+          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Verify with the patient — twice</p>
+          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-center">1st</p>
+          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-center">2nd</p>
         </div>
-      ) : (
-        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-caption sm:text-xs text-amber-800 mb-4">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-          <span>Verify the date, implant and surgery once more with the patient before booking.</span>
-        </div>
-      )}
-
-      <div className="space-y-2.5">
-        {items.map((i) => (
-          <VerifyTicket key={`${step}-${i.key}`} label={i.label} value={i.value} icon={i.icon}
-            checked={state[i.key]} onToggle={() => setState({ ...state, [i.key]: !state[i.key] })} />
-        ))}
+        {items.map((i) => {
+          const done = first[i.key] && second[i.key];
+          return (
+            <div key={i.key} className={`grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-3 border-b last:border-0 border-[var(--color-border)] transition-colors ${done ? "bg-emerald-50/70" : ""}`}>
+              <div className="min-w-0 flex items-start gap-3">
+                <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${done ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>{i.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{i.label}</p>
+                  <p className="text-sm sm:text-base font-bold text-[var(--color-ink-900)] break-words leading-snug">{i.value}</p>
+                </div>
+              </div>
+              <div className="flex justify-center"><CheckDot on={first[i.key]} onClick={() => toggleFirst(i.key)} label={`1st check: ${i.label}`} /></div>
+              <div className="flex justify-center"><CheckDot on={second[i.key]} disabled={!first[i.key]} onClick={() => setSecond({ ...second, [i.key]: !second[i.key] })} label={`2nd check: ${i.label}`} /></div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <span className="flex-1 h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+          <span className="block h-full rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${(checks / (items.length * 2)) * 100}%` }} />
+        </span>
+        <span className={`text-caption font-semibold tabular-nums ${allChecked ? "text-emerald-700" : "text-[var(--color-ink-500)]"}`}>{checks}/{items.length * 2} checks</span>
       </div>
 
-      {step === 2 && (
-        <div className="grid grid-cols-1 sm:grid-cols-[10rem_minmax(0,1fr)] gap-3 mt-4">
+      {/* Pre-op booking */}
+      <div className="mt-4 rounded-xl border border-[var(--color-border)] px-4 py-3">
+        <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2"><CalendarCheck size={12} /> Pre-op appointment · {date}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-[10rem_minmax(0,1fr)] gap-3">
           <div>
-            <label className={labelCls}>Pre-op time</label>
+            <label className={labelCls}>Time</label>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
           </div>
           <div>
@@ -1496,21 +1488,17 @@ function EligibleModal({
             <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="e.g. Report fasting, bring reports" />
           </div>
         </div>
-      )}
-      {step === 2 && <p className="text-caption text-[var(--color-ink-400)] mt-2">A Pre-op appointment will be booked on {date} at this time.</p>}
-      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+      </div>
 
-      <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-[var(--color-border)]">
-        {step === 1
-          ? <button className={btnOutline} onClick={onClose}>Cancel</button>
-          : <button className={btnOutline} onClick={() => setStep(1)}>Back</button>}
-        {step === 1 ? (
-          <button className={btnPrimary} disabled={!allChecked} onClick={() => setStep(2)}>Next: verify again</button>
-        ) : (
+      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+      <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[var(--color-border)]">
+        <p className="text-caption text-[var(--color-ink-400)]">{allChecked ? (time ? "Ready to book." : "Pick the pre-op time to continue.") : "Tick every item twice to continue."}</p>
+        <div className="flex gap-2 shrink-0">
+          <button className={btnOutline} onClick={onClose}>Cancel</button>
           <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || !allChecked || !time} onClick={() => onSubmit(time, notes)}>
             <CheckCircle2 size={15} /> Confirm &amp; Book Pre-op
           </button>
-        )}
+        </div>
       </div>
     </Modal>
   );
