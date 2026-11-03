@@ -923,8 +923,8 @@ export function CounsellingDetail({
             step={1} icon={<Package size={15} />} title="Surgery Details"
             right={frozen ? <LockedTag /> : editable ? <SaveIndicator state={saveState} /> : null}
           >
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_200px] gap-3">
-              <Field label="Type of Implant">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
+              <InlineField label="Type of Implant">
                 <div className="relative">
                   <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
                   <input
@@ -947,10 +947,10 @@ export function CounsellingDetail({
                     </div>
                   )}
                 </div>
-              </Field>
-              <Field label="Tentative Date">
-                <input type="date" value={dateOfSurgery} min={istTodayStr()} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={inputCls} />
-              </Field>
+              </InlineField>
+              <InlineField label="Tentative Date">
+                <input type="date" value={dateOfSurgery} min={istTodayStr()} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+              </InlineField>
             </div>
           </SectionCard>
 
