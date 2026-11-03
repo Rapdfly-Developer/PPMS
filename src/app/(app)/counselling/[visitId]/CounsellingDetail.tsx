@@ -605,10 +605,10 @@ export function CounsellingDetail({
       : "—";
 
   const steps = [
-    { label: "Counselling", done: true },
-    { label: "Fit for Surgery", done: rec.fitForSurgery },
-    { label: "Advance", done: advanceDone },
-    { label: "Eligible", done: rec.eligibleForSurgery },
+    { label: "Counselling", icon: ClipboardList, done: true },
+    { label: "Fit for Surgery", icon: ShieldCheck, done: rec.fitForSurgery },
+    { label: "Advance", icon: IndianRupee, done: advanceDone },
+    { label: "Eligible", icon: CalendarCheck, done: rec.eligibleForSurgery },
   ];
   const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
@@ -725,23 +725,33 @@ export function CounsellingDetail({
           </div>
         )}
 
-        {/* Progress */}
-        <ol className="mt-3 pt-2.5 border-t border-dashed border-[var(--color-border)] flex items-center gap-1">
-          {steps.map((s, i) => {
+        {/* Progress — icon steps on a smooth track (hover for the step name) */}
+        <ol className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center px-1">
+          {steps.map((st, i) => {
             const isCurrent = i === currentStep;
+            const Icon = st.icon;
+            const segDone = i < steps.length - 1 && steps[i + 1].done;
+            const segHalf = i < steps.length - 1 && !segDone && st.done;
             return (
-              <Fragment key={s.label}>
-                <li className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro sm:text-caption font-semibold whitespace-nowrap ${
-                  s.done
-                    ? "bg-[var(--color-primary-600)] text-white"
-                    : isCurrent
-                      ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-300)]"
-                      : "text-[var(--color-ink-400)]"
-                }`}>
-                  {s.done ? <Check size={11} strokeWidth={3} /> : <span className="tabular-nums">{i + 1}</span>}
-                  <span className={isCurrent || s.done ? "" : "hidden sm:inline"}>{s.label}</span>
+              <Fragment key={st.label}>
+                <li className="relative shrink-0" title={`${st.label}${st.done ? " — done" : isCurrent ? " — current step" : ""}`}>
+                  {isCurrent && <span className="absolute inset-0 rounded-full bg-[var(--color-primary-300)] opacity-40 animate-ping" />}
+                  <span className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    st.done
+                      ? "bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-700)] text-white shadow-sm"
+                      : isCurrent
+                        ? "bg-white text-[var(--color-primary-700)] ring-2 ring-[var(--color-primary-500)] shadow-sm"
+                        : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)] ring-1 ring-[var(--color-border)]"
+                  }`}>
+                    {st.done && i > 0 ? <Check size={15} strokeWidth={3} /> : <Icon size={15} />}
+                  </span>
+                  <span className="sr-only">{st.label}</span>
                 </li>
-                {i < steps.length - 1 && <span className={`flex-1 border-t-2 border-dotted ${steps[i + 1].done ? "border-[var(--color-primary-400)]" : "border-[var(--color-border)]"}`} />}
+                {i < steps.length - 1 && (
+                  <span className="flex-1 mx-1.5 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
+                    <span className={`block h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-400)] transition-all duration-500 ${segDone ? "w-full" : segHalf ? "w-1/2" : "w-0"}`} />
+                  </span>
+                )}
               </Fragment>
             );
           })}
