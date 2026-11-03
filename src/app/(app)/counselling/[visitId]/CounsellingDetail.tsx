@@ -6,7 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  User, UserRound, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
+  User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Paperclip, Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check,
@@ -252,15 +252,6 @@ const CASHLESS_ICON: Record<string, React.ReactNode> = {
   OTHER:       <MoreHorizontal size={13} />,
 };
 
-function InfoTile({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 min-w-0">
-      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
-      <div className="mt-0.5">{children}</div>
-    </div>
-  );
-}
-
 function SectionCard({
   step, icon, title, right, locked, lockedText, children,
 }: {
@@ -470,35 +461,31 @@ export function CounsellingDetail({
           </div>
 
           {/* Line 2 — surgery, tentative date, investigations */}
-          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 mt-3.5">
-            <InfoTile label="Surgery">
-              <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate" title={surgeryFull}>
-                {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}
-                {data.surgery}
-              </p>
-              <p className="text-caption text-[var(--color-ink-500)] truncate">{data.anaesthesia || "—"}</p>
-            </InfoTile>
-            <InfoTile label="Tentative Date">
-              <p className="text-sm font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Not set"}</p>
-              <p className="text-caption text-[var(--color-ink-500)]">{validUntil ? `Reports valid till ${fmtDate(validUntil)}` : "—"}</p>
-            </InfoTile>
+          <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2">
+            <span className="inline-flex items-center gap-1.5 min-w-0 text-sm font-semibold text-[var(--color-ink-900)]" title={surgeryFull}>
+              <Scissors size={14} className="text-[var(--color-ink-400)] shrink-0" />
+              {data.laterality && <span className="clinical-laterality">{data.laterality}</span>}
+              <span className="truncate">{data.surgery}</span>
+              {data.anaesthesia && <span className="font-normal text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
+            </span>
+            <span className="hidden sm:block w-px h-4 bg-[var(--color-border)]" />
+            <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-700)]">
+              <CalendarDays size={14} className="text-[var(--color-ink-400)] shrink-0" />
+              <span className="font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Date not set"}</span>
+              {validUntil && <span className="text-caption text-[var(--color-ink-500)]">· valid till {fmtDate(validUntil)}</span>}
+            </span>
             <button
               type="button"
               onClick={() => setModal("investigations")}
-              className="group text-left rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 hover:border-[var(--color-primary-300)] transition-colors"
+              className={`sm:ml-auto inline-flex items-center gap-1.5 h-7 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
+                invAllDone
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
+              }`}
             >
-              <span className="flex items-center justify-between text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
-                Investigations
-                <ChevronRight size={13} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-500)]" />
-              </span>
-              <span className={`flex items-center gap-2 text-sm font-semibold mt-0.5 ${invAllDone ? "text-emerald-700" : "text-[var(--color-ink-900)]"}`}>
-                {currentOrders.length === 0 ? "None ordered" : `${invDone}/${currentOrders.length} complete`}
-              </span>
-              {currentOrders.length > 0 ? (
-                <span className="block h-1 rounded-full bg-[var(--color-border)] mt-1.5 overflow-hidden">
-                  <span className={`block h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
-                </span>
-              ) : <span className="block text-caption text-[var(--color-ink-500)]">Tap to view history</span>}
+              <FlaskConical size={13} />
+              {currentOrders.length === 0 ? "Investigations: none" : `Investigations ${invDone}/${currentOrders.length} complete`}
+              <ChevronRight size={13} className="opacity-60" />
             </button>
           </div>
 
