@@ -12,6 +12,7 @@ import {
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
+import type { ActivityEvent, ActivityTone } from "@/lib/counselling-activity";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { fileHref } from "@/lib/file-href";
@@ -78,6 +79,7 @@ export interface CounsellingDetailData {
     eligibleAt: string | null;
   };
   preOp: { dateTime: string; status: string } | null;
+  activity: ActivityEvent[];
 }
 
 const SEX_LABEL: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
@@ -312,37 +314,17 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
 }
 
 /* ── Activity timeline ─────────────────────────────────────────────────── */
-type ActivityEvent = { at: string; title: string; detail?: string; tone: "primary" | "amber" | "emerald" | "orange" | "slate" };
-
-function buildActivity(data: CounsellingDetailData): ActivityEvent[] {
-  const { rec } = data;
-  const ev: ActivityEvent[] = [];
-  ev.push({ at: rec.enteredAt ?? data.visitDate, title: "Entered counselling", detail: data.surgery, tone: "slate" });
-  for (const o of data.orders.filter((x) => x.current)) {
-    ev.push({ at: o.createdAt, title: `Investigation ordered: ${o.testName}`, detail: o.notes ? `In view of: ${o.notes}` : undefined, tone: "primary" });
-    if (o.resultAt) ev.push({ at: o.resultAt, title: `Report uploaded: ${o.testName}`, tone: "primary" });
-  }
-  if (rec.fitAt) ev.push({ at: rec.fitAt, title: "Marked fit for surgery", detail: rec.fitByName ?? undefined, tone: "amber" });
-  if (rec.surgeryDeferred && rec.postponedAt) {
-    ev.push({ at: rec.postponedAt, title: "Surgery date not confirmed", detail: [rec.postponedIndefinitely ? "Not decided yet" : `Expected ${fmtDate(rec.postponedUntil)}`, rec.postponeReason].filter(Boolean).join(" · "), tone: "orange" });
-  }
-  if (rec.eligibleAt) {
-    ev.push({ at: rec.eligibleAt, title: "Eligible for surgery", detail: rec.eligibleByName ?? undefined, tone: "emerald" });
-    if (data.preOp) ev.push({ at: rec.eligibleAt, title: "Pre-op appointment booked", detail: fmtDateTime(data.preOp.dateTime) ?? undefined, tone: "emerald" });
-  }
-  return ev.sort((a, b) => b.at.localeCompare(a.at));
-}
-
-const TONE_DOT: Record<ActivityEvent["tone"], string> = {
+const TONE_DOT: Record<ActivityTone, string> = {
   primary: "bg-[var(--color-primary-500)]",
   amber: "bg-amber-500",
   emerald: "bg-emerald-500",
   orange: "bg-orange-500",
   slate: "bg-slate-400",
+  red: "bg-red-500",
 };
 
 function ActivityDrawer({ data, onClose }: { data: CounsellingDetailData; onClose: () => void }) {
-  const events = buildActivity(data);
+  const events = data.activity;
   return (
     <div className="fixed inset-0 z-[200] flex justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/30 backdrop-blur-[1px]" />
@@ -364,7 +346,7 @@ function ActivityDrawer({ data, onClose }: { data: CounsellingDetailData; onClos
               <span className={`absolute left-0 top-1.5 w-[11px] h-[11px] rounded-full ring-2 ring-white ${TONE_DOT[e.tone]}`} />
               <p className="text-sm font-semibold text-[var(--color-ink-800)]">{e.title}</p>
               {e.detail && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">{e.detail}</p>}
-              <p className="text-micro text-[var(--color-ink-400)] mt-0.5 tabular-nums">{fmtDateTime(e.at)}</p>
+              <p className="text-micro text-[var(--color-ink-400)] mt-0.5 tabular-nums">{fmtDateTime(e.at)}{e.by && <> · {e.by}</>}</p>
             </li>
           ))}
         </ol>

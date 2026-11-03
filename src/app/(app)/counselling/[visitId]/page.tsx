@@ -3,6 +3,7 @@ import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
 import { counsellingStatus } from "@/lib/counselling";
+import { getCounsellingActivity } from "@/lib/counselling-activity";
 import { CounsellingDetail, type CounsellingDetailData } from "./CounsellingDetail";
 
 export const metadata = { title: "Counselling" };
@@ -22,6 +23,7 @@ export default async function CounsellingVisitPage({
     select: {
       id: true,
       date: true,
+      finalizedAt: true,
       patientId: true,
       advisedSurgeryName: true,
       advisedSurgeryEye: true,
@@ -51,6 +53,19 @@ export default async function CounsellingVisitPage({
   const preOp = rec?.preOpAppointmentId
     ? await prisma.appointment.findUnique({ where: { id: rec.preOpAppointmentId }, select: { dateTime: true, status: true } })
     : null;
+
+  const activity = await getCounsellingActivity({
+    visitId: visit.id,
+    visitDate: visit.date,
+    finalizedAt: visit.finalizedAt,
+    doctorName: visit.doctor.name,
+    surgery: [visit.advisedSurgeryEye, visit.advisedSurgeryName].filter(Boolean).join(" "),
+    orders: orders.filter((o) => o.visitId === visit.id).map((o) => ({
+      id: o.id, testName: o.testName, createdAt: o.createdAt, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null,
+    })),
+    rec,
+    preOp,
+  });
 
   const data: CounsellingDetailData = {
     visitId: visit.id,
@@ -101,6 +116,7 @@ export default async function CounsellingVisitPage({
       eligibleAt: rec?.confirmedAt?.toISOString() ?? null,
     },
     preOp: preOp ? { dateTime: preOp.dateTime.toISOString(), status: preOp.status } : null,
+    activity,
   };
 
   return (
