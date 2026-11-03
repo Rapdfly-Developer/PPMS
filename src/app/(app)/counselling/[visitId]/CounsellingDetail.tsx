@@ -6,7 +6,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
+  UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown,
@@ -401,6 +401,24 @@ function SuggestInput({
   );
 }
 
+/** Two-letter initials for the avatar fallback. */
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+
+/** Tiny progress ring for the investigations pill. */
+function MiniRing({ value, done }: { value: number; done: boolean }) {
+  const r = 6, c = 2 * Math.PI * r;
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 -rotate-90">
+      <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="2.5" />
+      <circle cx="8" cy="8" r={r} fill="none" stroke={done ? "#10b981" : "var(--color-primary-500)"} strokeWidth="2.5" strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={c * (1 - value)} />
+    </svg>
+  );
+}
+
 /* ── Layout pieces ───────────────────────────────────────────────────────── */
 const CASHLESS_ICON: Record<string, React.ReactNode> = {
   INSURANCE:   <ShieldCheck size={13} />,
@@ -591,106 +609,112 @@ export function CounsellingDetail({
       <BackButton href="/counselling" label="Counselling" className="mb-3" />
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-        <div className="px-4 sm:px-5 pt-4 pb-3.5">
-          {/* Line 1 — patient details */}
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
-              {data.patient.photoUrl
-                ? <img src={fileHref(data.patient.photoUrl)!} alt={data.patient.name} className="w-full h-full object-cover" />
-                : <User size={18} className="text-[var(--color-primary-700)]" />}
+      <section className="relative rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white px-4 py-3.5">
+        {/* Line 1 — patient details */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden ring-2 ring-white shadow-sm bg-gradient-to-br from-[var(--color-primary-400)] to-[var(--color-primary-600)] flex items-center justify-center">
+            {data.patient.photoUrl
+              ? <img src={fileHref(data.patient.photoUrl)!} alt={data.patient.name} className="w-full h-full object-cover" />
+              : <span className="text-sm font-bold text-white">{initials(data.patient.name)}</span>}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <p className="text-[15px] sm:text-base font-bold leading-tight text-[var(--color-ink-900)] truncate">{data.patient.name}</p>
+              <StatusBadge status={data.status} expired={expired} />
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p className="text-base sm:text-lg font-bold leading-tight text-[var(--color-ink-900)]">{data.patient.name}</p>
-                <StatusBadge status={data.status} expired={expired} />
-              </div>
-              <p className="text-caption sm:text-xs text-[var(--color-ink-500)] mt-0.5 tabular-nums">
-                {data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex} · {data.patient.uhid ?? data.patient.udid}
-                {data.patient.mobile && <> · {data.patient.mobile}</>}
-              </p>
-            </div>
-            <button type="button" onClick={() => setShowActivity(true)} className={`${btnOutline} shrink-0 !h-8 !px-3 !py-0 text-xs`}>
-              <History size={14} /> <span className="hidden sm:inline">Activity</span>
+            <p className="text-caption text-[var(--color-ink-500)] mt-0.5 tabular-nums truncate">
+              {data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex} · {data.patient.uhid ?? data.patient.udid}
+              {data.patient.mobile && <> · {data.patient.mobile}</>}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button type="button" onClick={() => setShowActivity(true)} title="Activity" aria-label="Activity"
+              className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-white flex items-center justify-center text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors">
+              <History size={15} />
             </button>
             {canViewProfile && (
               <Link
                 href={`/patients/${data.patient.udid}?returnTo=/counselling&source=counselling`}
-                className={`${btnOutline} shrink-0 !h-8 !px-3 !py-0 text-xs`}
+                title="Patient Profile"
+                className="h-8 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-ink-700)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
               >
-                <UserRound size={14} /> <span className="hidden sm:inline">Patient Profile</span>
+                <UserRound size={14} /> <span className="hidden sm:inline">Profile</span>
               </Link>
             )}
           </div>
-
-          {/* Line 2 — surgery, tentative date, investigations */}
-          <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2">
-            <span className="inline-flex items-center gap-1.5 min-w-0 text-sm font-semibold text-[var(--color-ink-900)]" title={surgeryFull}>
-              <Scissors size={14} className="text-[var(--color-ink-400)] shrink-0" />
-              {data.laterality && <span className="clinical-laterality">{data.laterality}</span>}
-              <span className="truncate">{data.surgery}</span>
-              {data.anaesthesia && <span className="font-normal text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
-            </span>
-            <span className="hidden sm:block w-px h-4 bg-[var(--color-border)]" />
-            <span className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-700)]">
-              <CalendarDays size={14} className="text-[var(--color-ink-400)] shrink-0" />
-              <span className="font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Date not set"}</span>
-              {validUntil && <span className="text-caption text-[var(--color-ink-500)]">· valid till {fmtDate(validUntil)}</span>}
-            </span>
-            <button
-              type="button"
-              onClick={() => setModal("investigations")}
-              className={`sm:ml-auto inline-flex items-center gap-1.5 h-7 rounded-md border px-2.5 text-xs font-semibold transition-colors ${
-                invAllDone
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
-              }`}
-            >
-              <FlaskConical size={13} />
-              {currentOrders.length === 0 ? "Investigations: none" : `Investigations ${invDone}/${currentOrders.length} complete`}
-              <ChevronRight size={13} className="opacity-60" />
-            </button>
-          </div>
-
-          {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
-            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-caption sm:text-xs mt-3">
-              {data.chiefComplaint && (<><span className="text-[var(--color-ink-400)] pt-0.5">C/c</span><ComplaintChips value={data.chiefComplaint} wrap /></>)}
-              {data.diagnoses.length > 0 && (
-                <>
-                  <span className="text-[var(--color-ink-400)] pt-0.5">Diagnosis</span>
-                  <span className="flex flex-wrap gap-1 min-w-0">
-                    {data.diagnoses.map((d, i) => (
-                      <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2 py-0.5 rounded-full border text-caption">
-                        {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
-                      </span>
-                    ))}
-                  </span>
-                </>
-              )}
-              {data.surgeryNotes && (<><span className="text-[var(--color-ink-400)]">Notes</span><span className="text-[var(--color-ink-700)] whitespace-pre-line">{data.surgeryNotes}</span></>)}
-            </div>
-          )}
         </div>
 
+        {/* Line 2 — surgery · tentative date · investigations */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
+            {data.laterality
+              ? <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{data.laterality}</span>
+              : <Scissors size={13} className="ml-1.5 text-[var(--color-primary-600)]" />}
+            <span className="font-semibold text-[var(--color-ink-900)] truncate">{data.surgery}</span>
+            {data.anaesthesia && <span className="text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs">
+            <CalendarDays size={13} className="text-[var(--color-primary-600)]" />
+            <span className="font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Date not set"}</span>
+            {validUntil && <span className="text-[var(--color-ink-400)]">· valid till {fmtDate(validUntil)}</span>}
+          </span>
+          <button
+            type="button"
+            onClick={() => setModal("investigations")}
+            className={`inline-flex items-center gap-1.5 rounded-full border pl-1.5 pr-2.5 py-1 text-xs font-semibold transition-colors ${
+              invAllDone
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
+            }`}
+          >
+            <MiniRing value={currentOrders.length ? invDone / currentOrders.length : 0} done={invAllDone} />
+            {currentOrders.length === 0 ? "No investigations" : `Investigations ${invDone}/${currentOrders.length}`}
+            <ChevronRight size={12} className="opacity-50" />
+          </button>
+        </div>
+
+        {/* C/c · diagnosis · notes */}
+        {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption">
+            {data.chiefComplaint && (
+              <span className="inline-flex items-center gap-1.5"><span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">C/c</span><ComplaintChips value={data.chiefComplaint} wrap /></span>
+            )}
+            {data.diagnoses.length > 0 && (
+              <span className="inline-flex flex-wrap items-center gap-1.5">
+                <span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Dx</span>
+                {data.diagnoses.map((d, i) => (
+                  <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2 py-0.5 rounded-full border text-caption">
+                    {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
+                  </span>
+                ))}
+              </span>
+            )}
+            {data.surgeryNotes && (
+              <span className="inline-flex items-center gap-1.5 min-w-0">
+                <span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Notes</span>
+                <span className="text-[var(--color-ink-600)] truncate">{data.surgeryNotes.replace(/•\s*/g, "").split("\n").filter(Boolean).join(" · ")}</span>
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Progress */}
-        <ol className="flex items-center border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 sm:px-5 py-2.5">
+        <ol className="mt-3 pt-2.5 border-t border-dashed border-[var(--color-border)] flex items-center gap-1">
           {steps.map((s, i) => {
             const isCurrent = i === currentStep;
             return (
               <Fragment key={s.label}>
-                <li className="flex items-center gap-1.5 shrink-0">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-micro font-bold ${
-                    s.done
-                      ? "bg-[var(--color-primary-600)] text-white"
-                      : isCurrent
-                        ? "bg-white border-2 border-[var(--color-primary-500)] text-[var(--color-primary-700)]"
-                        : "bg-white border border-[var(--color-border)] text-[var(--color-ink-300)]"
-                  }`}>
-                    {s.done ? <Check size={11} strokeWidth={3} /> : i + 1}
-                  </span>
-                  <span className={`text-caption sm:text-xs font-semibold ${isCurrent ? "inline" : "hidden sm:inline"} ${s.done || isCurrent ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
+                <li className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro sm:text-caption font-semibold whitespace-nowrap ${
+                  s.done
+                    ? "bg-[var(--color-primary-600)] text-white"
+                    : isCurrent
+                      ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-300)]"
+                      : "text-[var(--color-ink-400)]"
+                }`}>
+                  {s.done ? <Check size={11} strokeWidth={3} /> : <span className="tabular-nums">{i + 1}</span>}
+                  <span className={isCurrent || s.done ? "" : "hidden sm:inline"}>{s.label}</span>
                 </li>
-                {i < steps.length - 1 && <span className={`flex-1 h-px mx-2 sm:mx-3 ${steps[i + 1].done ? "bg-[var(--color-primary-400)]" : "bg-[var(--color-border)]"}`} />}
+                {i < steps.length - 1 && <span className={`flex-1 border-t-2 border-dotted ${steps[i + 1].done ? "border-[var(--color-primary-400)]" : "border-[var(--color-border)]"}`} />}
               </Fragment>
             );
           })}
