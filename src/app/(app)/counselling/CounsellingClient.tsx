@@ -167,16 +167,14 @@ function PatientCard({ r, showDoctor }: { r: CounsellingRow; showDoctor: boolean
 }
 
 export function CounsellingClient({
-  rows, showDoctor, doctorOptions,
+  rows, showDoctor,
 }: {
   rows: CounsellingRow[];
   showDoctor: boolean;
-  doctorOptions: { id: string; name: string }[];
 }) {
   const [card, setCard]                 = useState<CardFilter>("ALL");
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<CounsellingStatus | "ALL">("ALL");
-  const [doctorFilter, setDoctorFilter] = useState("ALL");
   const [dateFrom, setDateFrom]         = useState("");
   const [dateTo, setDateTo]             = useState("");
   const [showFilters, setShowFilters]   = useState(false);
@@ -204,7 +202,6 @@ export function CounsellingClient({
       if (card === "PARTIAL" && r.status !== "PARTIAL") return false;
       if (card === "COMPLETED" && r.status !== "COMPLETED") return false;
       if (statusFilter !== "ALL" && r.status !== statusFilter) return false;
-      if (doctorFilter !== "ALL" && r.doctor.id !== doctorFilter) return false;
       if (q) {
         const hay = [r.patient.name, r.patient.udid, r.patient.uhid ?? "", r.surgery, r.doctor.name].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
@@ -217,9 +214,9 @@ export function CounsellingClient({
       if (b.tentativeDate) return 1;
       return b.visitDate.localeCompare(a.visitDate);
     });
-  }, [dated, card, search, statusFilter, doctorFilter]);
+  }, [dated, card, search, statusFilter]);
 
-  const filtersActive = !!(search || statusFilter !== "ALL" || doctorFilter !== "ALL" || dateFrom || dateTo);
+  const filtersActive = !!(search || statusFilter !== "ALL" || dateFrom || dateTo);
   const toggleCard = (c: CardFilter) => setCard(card === c ? "ALL" : c);
   const dateInputCls = "px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
 
@@ -303,13 +300,6 @@ export function CounsellingClient({
               { value: "COMPLETED", label: "Eligible for Surgery" },
             ]}
           />
-          {showDoctor && doctorOptions.length > 1 && (
-            <TealSelect
-              value={doctorFilter}
-              onChange={setDoctorFilter}
-              options={[{ value: "ALL", label: "All Doctors" }, ...doctorOptions.map((d) => ({ value: d.id, label: `Dr. ${d.name}` }))]}
-            />
-          )}
           <div className="flex items-center gap-1.5">
             <CalendarDays size={14} className="text-[var(--color-ink-400)]" />
             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={dateInputCls} aria-label="From date" />
@@ -318,7 +308,7 @@ export function CounsellingClient({
           </div>
           {filtersActive && (
             <button
-              onClick={() => { setSearch(""); setStatusFilter("ALL"); setDoctorFilter("ALL"); setDateFrom(""); setDateTo(""); }}
+              onClick={() => { setSearch(""); setStatusFilter("ALL"); setDateFrom(""); setDateTo(""); }}
               className="inline-flex items-center gap-1 text-caption sm:text-xs font-medium px-2.5 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-500)] hover:bg-white transition-colors"
             >
               <X size={12} /> Reset

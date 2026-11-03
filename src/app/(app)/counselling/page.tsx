@@ -62,9 +62,5 @@ export default async function CounsellingPage() {
       };
     });
 
-  const doctorOptions = user.role === "DOCTOR"
-    ? []
-    : Array.from(new Map(rows.map((r) => [r.doctor.id, r.doctor.name])).entries()).map(([id, name]) => ({ id, name }));
-
-  return <CounsellingClient rows={rows} showDoctor={user.role !== "DOCTOR"} doctorOptions={doctorOptions} />;
+  return <CounsellingClient rows={rows} showDoctor={user.role !== "DOCTOR"} />;
 }
