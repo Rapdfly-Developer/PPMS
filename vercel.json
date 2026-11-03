@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "phase-2": false
+    }
+  },
   "functions": {
     "src/app/api/dispense-pdf/[visitId]/route.ts": { "maxDuration": 60 },
     "src/app/api/prescription-pdf/[visitId]/route.ts": { "maxDuration": 60 },
