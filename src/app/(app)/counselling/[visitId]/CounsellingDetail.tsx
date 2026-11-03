@@ -6,13 +6,12 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import {
-  User, Phone, FlaskConical, CalendarDays, UserRound, ShieldCheck, CheckCircle2,
-  PauseCircle, PlusCircle, Lock, Paperclip, Upload, X, AlertTriangle, IndianRupee,
-  RotateCcw, Search, CalendarCheck, ChevronRight, Scissors, Stethoscope, Package,
-  Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake, MoreHorizontal, Circle,
+  User, UserRound, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
+  Paperclip, Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
+  ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
+  MoreHorizontal, Circle, Check,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/BackButton";
-import { Card } from "@/components/ui/Card";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { fileHref } from "@/lib/file-href";
@@ -84,10 +83,10 @@ export interface CounsellingDetailData {
 const SEX_LABEL: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
 const IMPLANT_LIBRARY_KEY = "ppms_counselling_implants";
 
-const inputCls = "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-60";
-const labelCls = "text-caption font-semibold text-[var(--color-ink-500)] uppercase tracking-wide block mb-1.5";
-const btnPrimary = "inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
-const btnOutline = "inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
+const inputCls = "w-full h-9 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)] disabled:text-[var(--color-ink-600)]";
+const labelCls = "text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider block mb-1";
+const btnPrimary = "h-9 inline-flex items-center justify-center gap-1.5 px-4 text-sm font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
+const btnOutline = "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
 
 const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "—");
 const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : null);
@@ -246,67 +245,57 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
 
 /* ── Layout pieces ───────────────────────────────────────────────────────── */
 const CASHLESS_ICON: Record<string, React.ReactNode> = {
-  INSURANCE:   <ShieldCheck size={16} />,
-  GOVT_SCHEME: <Landmark size={16} />,
-  CORPORATE:   <Building2 size={16} />,
-  COMMUNITY:   <HeartHandshake size={16} />,
-  OTHER:       <MoreHorizontal size={16} />,
+  INSURANCE:   <ShieldCheck size={13} />,
+  GOVT_SCHEME: <Landmark size={13} />,
+  CORPORATE:   <Building2 size={13} />,
+  COMMUNITY:   <HeartHandshake size={13} />,
+  OTHER:       <MoreHorizontal size={13} />,
 };
 
-function MetaChip({ children }: { children: React.ReactNode }) {
+function InfoTile({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-caption text-[var(--color-ink-600)]">
-      {children}
-    </span>
-  );
-}
-
-function InfoTile({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3.5 py-3 min-w-0">
-      <p className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">{icon} {label}</p>
-      <div className="mt-1">{children}</div>
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 min-w-0">
+      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
+      <div className="mt-0.5">{children}</div>
     </div>
   );
 }
 
 function SectionCard({
-  step, icon, title, subtitle, right, locked, lockedText, children,
+  step, icon, title, right, locked, lockedText, children,
 }: {
-  step: string; icon: React.ReactNode; title: string; subtitle: string;
+  step: number; icon: React.ReactNode; title: string;
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
-    <section className={`rounded-2xl border bg-[var(--color-surface)] overflow-visible ${locked ? "border-dashed border-[var(--color-border)]" : "border-[var(--color-border)]"}`}>
-      <header className="flex items-center gap-3 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)]">
-        <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>
+    <section className={`rounded-2xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
+      <header className={`h-11 flex items-center gap-2.5 px-4 sm:px-5 ${locked ? "" : "border-b border-[var(--color-border)]"}`}>
+        <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>
           {icon}
         </span>
-        <div className="min-w-0 flex-1">
-          <p className={`text-sm font-bold ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-900)]"}`}>
-            <span className="text-[var(--color-ink-300)] font-semibold mr-1.5">{step}.</span>{title}
-          </p>
-          <p className="text-caption text-[var(--color-ink-400)] truncate">{subtitle}</p>
-        </div>
-        {locked ? <span className="inline-flex items-center gap-1 text-caption font-medium text-[var(--color-ink-400)]"><Lock size={12} /> {lockedText}</span> : right}
+        <p className={`flex-1 min-w-0 truncate text-sm font-semibold ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-900)]"}`}>
+          <span className="tabular-nums text-[var(--color-ink-300)] mr-1.5">{step}</span>{title}
+        </p>
+        {locked
+          ? <span className="inline-flex items-center gap-1 text-caption font-medium text-[var(--color-ink-400)]"><Lock size={12} /> <span className="hidden sm:inline">{lockedText}</span></span>
+          : right}
       </header>
-      {!locked && <div className="px-4 sm:px-5 py-4">{children}</div>}
+      {!locked && <div className="px-4 sm:px-5 py-3.5">{children}</div>}
     </section>
   );
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
       <label className={labelCls}>{label}</label>
       {children}
-      {hint && <p className="text-caption text-[var(--color-ink-400)] mt-1">{hint}</p>}
     </div>
   );
 }
 
 function LockedTag() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-caption font-semibold text-[var(--color-ink-500)]"><Lock size={11} /> Frozen</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Frozen</span>;
 }
 
 function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; children: React.ReactNode }) {
@@ -315,47 +304,40 @@ function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; ch
     : tone === "emerald"
       ? "bg-emerald-50 border-emerald-200 text-emerald-700"
       : "bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]";
-  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-caption font-semibold ${cls}`}><CheckCircle2 size={11} /> {children}</span>;
+  return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-semibold ${cls}`}><CheckCircle2 size={10} /> {children}</span>;
 }
 
 function ReadyItem({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
-    <li className="flex items-start gap-2 text-sm">
+    <span className="inline-flex items-center gap-1.5 text-xs">
       {ok
-        ? <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
-        : <Circle size={16} className="text-[var(--color-ink-300)] shrink-0 mt-0.5" />}
-      <span className={ok ? "text-[var(--color-ink-700)]" : "text-[var(--color-ink-500)]"}>{children}</span>
-    </li>
-  );
-}
-
-function AmountStat({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return (
-    <div className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-3.5 py-2.5">
-      <p className="text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">{label}</p>
-      <p className={`mt-0.5 tabular-nums ${strong ? "text-base font-bold text-[var(--color-ink-900)]" : "text-sm font-semibold text-[var(--color-ink-700)]"}`}>{value}</p>
-    </div>
-  );
-}
-
-function AmountRow({ estimate, advance, received }: { estimate: number | null; advance: number | null; received: boolean }) {
-  if (advance == null) {
-    return <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--color-ink-800)]"><CheckCircle2 size={16} className="text-emerald-600" /> {received ? "Advance received" : "—"}</p>;
-  }
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <AmountStat label="Advance Received" value={rupees(advance)} strong />
-      <AmountStat label="Estimate" value={rupees(estimate)} />
-      <AmountStat label="Pending" value={estimate != null ? rupees(Math.max(estimate - advance, 0)) : "—"} />
-    </div>
+        ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
+        : <Circle size={14} className="text-[var(--color-ink-300)] shrink-0" />}
+      <span className={ok ? "text-[var(--color-ink-700)] font-medium" : "text-[var(--color-ink-500)]"}>{children}</span>
+    </span>
   );
 }
 
 function SideRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="py-2.5">
-      <dt className="text-caption text-[var(--color-ink-400)]">{label}</dt>
-      <dd className="text-sm font-medium text-[var(--color-ink-800)] break-words mt-0.5">{value}</dd>
+    <>
+      <dt className="text-[var(--color-ink-400)]">{label}</dt>
+      <dd className={`text-right break-words ${value ? "font-semibold text-[var(--color-ink-800)]" : "text-[var(--color-ink-300)]"}`}>{value || "—"}</dd>
+    </>
+  );
+}
+
+function Banner({ tone, icon, action, children }: { tone: "emerald" | "orange" | "red"; icon: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
+  const cls = tone === "emerald"
+    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+    : tone === "orange"
+      ? "border-orange-200 bg-orange-50 text-orange-800"
+      : "border-red-200 bg-red-50 text-red-800";
+  return (
+    <div className={`mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border px-4 py-2 text-sm ${cls}`}>
+      <span className="shrink-0">{icon}</span>
+      <span className="flex-1 min-w-0">{children}</span>
+      {action}
     </div>
   );
 }
@@ -445,174 +427,156 @@ export function CounsellingDetail({
       : "—";
 
   const steps = [
-    { label: "Counselling", sub: fmtDateTime(rec.enteredAt ?? data.visitDate), done: true },
-    { label: "Fit for Surgery", sub: rec.fitAt ? fmtDateTime(rec.fitAt) : null, done: rec.fitForSurgery },
-    { label: "Advance", sub: advanceDone ? (rec.advancePaid != null ? rupees(rec.advancePaid) : "Received") : null, done: advanceDone },
-    { label: "Eligible", sub: rec.eligibleAt ? fmtDateTime(rec.eligibleAt) : null, done: rec.eligibleForSurgery },
+    { label: "Counselling", done: true },
+    { label: "Fit for Surgery", done: rec.fitForSurgery },
+    { label: "Advance", done: advanceDone },
+    { label: "Eligible", done: rec.eligibleForSurgery },
   ];
   const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
-  const pendingAmount = rec.estimateAmount != null ? Math.max(rec.estimateAmount - (rec.advancePaid ?? 0), 0) : null;
 
   return (
     <div className="fade-in pb-24 max-w-6xl">
-      <BackButton href="/counselling" label="Counselling" className="mb-4" />
+      <BackButton href="/counselling" label="Counselling" className="mb-3" />
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
-      <Card>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="w-14 h-14 rounded-2xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden ring-4 ring-[var(--color-primary-50)]">
+      <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+        <div className="px-4 sm:px-5 pt-4 pb-3.5">
+          {/* Line 1 — patient details */}
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
               {data.patient.photoUrl
                 ? <img src={fileHref(data.patient.photoUrl)!} alt={data.patient.name} className="w-full h-full object-cover" />
-                : <User size={22} className="text-[var(--color-primary-700)]" />}
+                : <User size={18} className="text-[var(--color-primary-700)]" />}
             </div>
-            <div className="min-w-0">
-              {/* Line 1 — patient details */}
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">{data.patient.name}</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-base sm:text-lg font-bold leading-tight text-[var(--color-ink-900)]">{data.patient.name}</p>
                 <StatusBadge status={data.status} expired={expired} />
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
-                <MetaChip>{data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex}</MetaChip>
-                <MetaChip>{data.patient.uhid ?? data.patient.udid}</MetaChip>
-                {data.patient.mobile && <MetaChip><Phone size={10} /> <span className="font-mono">{data.patient.mobile}</span></MetaChip>}
-                <MetaChip><Stethoscope size={10} /> Dr. {data.doctorName}</MetaChip>
-              </div>
+              <p className="text-caption sm:text-xs text-[var(--color-ink-500)] mt-0.5 tabular-nums">
+                {data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex} · {data.patient.uhid ?? data.patient.udid}
+                {data.patient.mobile && <> · {data.patient.mobile}</>}
+              </p>
             </div>
+            {canViewProfile && (
+              <Link
+                href={`/patients/${data.patient.udid}?returnTo=/counselling&source=counselling`}
+                className={`${btnOutline} shrink-0 !h-8 !px-3 !py-0 text-xs`}
+              >
+                <UserRound size={14} /> <span className="hidden sm:inline">Patient Profile</span>
+              </Link>
+            )}
           </div>
-          {canViewProfile && (
-            <Link
-              href={`/patients/${data.patient.udid}?returnTo=/counselling&source=counselling`}
-              className={`${btnOutline} shrink-0 !px-3 !py-1.5 text-xs`}
+
+          {/* Line 2 — surgery, tentative date, investigations */}
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 mt-3.5">
+            <InfoTile label="Surgery">
+              <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate" title={surgeryFull}>
+                {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}
+                {data.surgery}
+              </p>
+              <p className="text-caption text-[var(--color-ink-500)] truncate">{data.anaesthesia || "—"}</p>
+            </InfoTile>
+            <InfoTile label="Tentative Date">
+              <p className="text-sm font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Not set"}</p>
+              <p className="text-caption text-[var(--color-ink-500)]">{validUntil ? `Reports valid till ${fmtDate(validUntil)}` : "—"}</p>
+            </InfoTile>
+            <button
+              type="button"
+              onClick={() => setModal("investigations")}
+              className="group text-left rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 hover:border-[var(--color-primary-300)] transition-colors"
             >
-              <UserRound size={14} /> <span className="hidden sm:inline">Patient Profile</span>
-            </Link>
+              <span className="flex items-center justify-between text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">
+                Investigations
+                <ChevronRight size={13} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-500)]" />
+              </span>
+              <span className={`flex items-center gap-2 text-sm font-semibold mt-0.5 ${invAllDone ? "text-emerald-700" : "text-[var(--color-ink-900)]"}`}>
+                {currentOrders.length === 0 ? "None ordered" : `${invDone}/${currentOrders.length} complete`}
+              </span>
+              {currentOrders.length > 0 ? (
+                <span className="block h-1 rounded-full bg-[var(--color-border)] mt-1.5 overflow-hidden">
+                  <span className={`block h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
+                </span>
+              ) : <span className="block text-caption text-[var(--color-ink-500)]">Tap to view history</span>}
+            </button>
+          </div>
+
+          {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
+            <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 text-caption sm:text-xs mt-3">
+              {data.chiefComplaint && (<><span className="text-[var(--color-ink-400)] pt-0.5">C/c</span><ComplaintChips value={data.chiefComplaint} wrap /></>)}
+              {data.diagnoses.length > 0 && (
+                <>
+                  <span className="text-[var(--color-ink-400)] pt-0.5">Diagnosis</span>
+                  <span className="flex flex-wrap gap-1 min-w-0">
+                    {data.diagnoses.map((d, i) => (
+                      <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2 py-0.5 rounded-full border text-caption">
+                        {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
+                      </span>
+                    ))}
+                  </span>
+                </>
+              )}
+              {data.surgeryNotes && (<><span className="text-[var(--color-ink-400)]">Notes</span><span className="text-[var(--color-ink-700)] whitespace-pre-line">{data.surgeryNotes}</span></>)}
+            </div>
           )}
         </div>
 
-        {/* Line 2 — surgery, tentative date, investigations */}
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 mt-4">
-          <InfoTile icon={<Scissors size={14} />} label="Surgery">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)] break-words">
-              {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}
-              {data.surgery}
-            </p>
-            <p className="text-caption text-[var(--color-ink-500)] mt-0.5">
-              {[data.laterality ? LATERALITY_LABEL[data.laterality] : "", data.anaesthesia].filter(Boolean).join(" · ") || "—"}
-            </p>
-          </InfoTile>
-          <InfoTile icon={<CalendarDays size={14} />} label="Tentative Date">
-            <p className="text-sm font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Not set"}</p>
-            {validUntil && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">Reports valid till {fmtDate(validUntil)}</p>}
-          </InfoTile>
-          <button
-            type="button"
-            onClick={() => setModal("investigations")}
-            className="text-left rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3.5 py-3 hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]/50 transition-colors group"
-          >
-            <span className="flex items-center justify-between gap-2 text-caption font-semibold uppercase tracking-wide text-[var(--color-ink-400)]">
-              <span className="inline-flex items-center gap-1.5"><FlaskConical size={14} /> Investigations</span>
-              <ChevronRight size={14} className="text-[var(--color-ink-300)] group-hover:text-[var(--color-primary-500)]" />
-            </span>
-            <p className={`text-sm font-semibold mt-1 ${invAllDone ? "text-emerald-700" : "text-[var(--color-ink-900)]"}`}>
-              {currentOrders.length === 0 ? "None ordered" : `${invDone}/${currentOrders.length} complete`}
-            </p>
-            {currentOrders.length > 0 && (
-              <div className="h-1.5 rounded-full bg-[var(--color-border)] mt-1.5 overflow-hidden">
-                <div className={`h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
-              </div>
-            )}
-          </button>
-        </div>
-
-        {(data.surgeryNotes || data.chiefComplaint || data.diagnoses.length > 0) && (
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs mt-4 pt-4 border-t border-[var(--color-border)]">
-            {data.chiefComplaint && (<><span className="text-[var(--color-ink-400)]">C/c</span><ComplaintChips value={data.chiefComplaint} wrap /></>)}
-            {data.diagnoses.length > 0 && (
-              <>
-                <span className="text-[var(--color-ink-400)]">Diagnosis</span>
-                <span className="flex flex-wrap gap-1 min-w-0">
-                  {data.diagnoses.map((d, i) => (
-                    <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full border text-caption">
-                      {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
-                    </span>
-                  ))}
-                </span>
-              </>
-            )}
-            {data.surgeryNotes && (<><span className="text-[var(--color-ink-400)]">Notes</span><span className="text-[var(--color-ink-700)] whitespace-pre-line">{data.surgeryNotes}</span></>)}
-          </div>
-        )}
-      </Card>
-
-      {/* ── Progress ──────────────────────────────────────────────────── */}
-      <div className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 sm:px-6 py-4">
-        <ol className="flex items-start">
+        {/* Progress */}
+        <ol className="flex items-center border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 sm:px-5 py-2.5">
           {steps.map((s, i) => {
             const isCurrent = i === currentStep;
-            const nextReached = i < steps.length - 1 && (steps[i + 1].done || i + 1 === currentStep);
             return (
               <Fragment key={s.label}>
-              <li className="flex flex-col items-center text-center w-20 sm:w-32 shrink-0">
-                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
-                  s.done
-                    ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
-                    : isCurrent
-                      ? "bg-white border-[var(--color-primary-500)] text-[var(--color-primary-700)] ring-4 ring-[var(--color-primary-100)]"
-                      : "bg-white border-[var(--color-border)] text-[var(--color-ink-300)]"
-                }`}>
-                  {s.done ? <CheckCircle2 size={14} /> : i + 1}
-                </span>
-                <span className={`mt-1.5 text-caption sm:text-xs font-semibold ${s.done || isCurrent ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
-                {s.sub && <span className="hidden sm:block text-micro text-[var(--color-ink-400)] mt-0.5">{s.sub}</span>}
-              </li>
-              {i < steps.length - 1 && <span className={`flex-1 h-0.5 mt-3.5 rounded-full ${nextReached ? "bg-[var(--color-primary-400)]" : "bg-[var(--color-border)]"}`} />}
+                <li className="flex items-center gap-1.5 shrink-0">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-micro font-bold ${
+                    s.done
+                      ? "bg-[var(--color-primary-600)] text-white"
+                      : isCurrent
+                        ? "bg-white border-2 border-[var(--color-primary-500)] text-[var(--color-primary-700)]"
+                        : "bg-white border border-[var(--color-border)] text-[var(--color-ink-300)]"
+                  }`}>
+                    {s.done ? <Check size={11} strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className={`text-caption sm:text-xs font-semibold ${isCurrent ? "inline" : "hidden sm:inline"} ${s.done || isCurrent ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{s.label}</span>
+                </li>
+                {i < steps.length - 1 && <span className={`flex-1 h-px mx-2 sm:mx-3 ${steps[i + 1].done ? "bg-[var(--color-primary-400)]" : "bg-[var(--color-border)]"}`} />}
               </Fragment>
             );
           })}
         </ol>
-      </div>
+      </section>
 
       {/* ── Banners ───────────────────────────────────────────────────── */}
       {data.preOp && (
-        <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-          <CalendarCheck size={16} className="mt-0.5 shrink-0" />
-          <span>Counselling complete. Pre-op appointment booked for <b>{fmtDateTime(data.preOp.dateTime)}</b>.</span>
-        </div>
+        <Banner tone="emerald" icon={<CalendarCheck size={15} />}>
+          Counselling complete · Pre-op appointment on <b>{fmtDateTime(data.preOp.dateTime)}</b>
+        </Banner>
       )}
       {rec.surgeryDeferred && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-          <PauseCircle size={16} className="shrink-0" />
-          <span className="flex-1 min-w-0">
-            Surgery date not confirmed{rec.postponedIndefinitely ? "" : ` · expected ${fmtDate(rec.postponedUntil)}`}
-            {rec.postponeReason && <> · <i>{rec.postponeReason}</i></>}
-          </span>
-          {canFit && <button className={btnOutline} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={14} /> Resume</button>}
-        </div>
+        <Banner tone="orange" icon={<PauseCircle size={15} />}
+          action={canFit && <button className={`${btnOutline} !h-8 !py-0 text-xs`} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={13} /> Resume</button>}>
+          Surgery date not confirmed{rec.postponedIndefinitely ? "" : ` · expected ${fmtDate(rec.postponedUntil)}`}
+          {rec.postponeReason && <> · <i>{rec.postponeReason}</i></>}
+        </Banner>
       )}
       {expired && (
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <AlertTriangle size={16} className="shrink-0" />
-          <span className="flex-1 min-w-0">Reports expired on <b>{fmtDate(rec.reportsValidUntil)}</b> (1 month after the oldest report). Redo the reports and counselling.</span>
-          {canFit && <button className={btnOutline} disabled={pending} onClick={() => run(() => reopenCounselling(data.visitId))}><RotateCcw size={14} /> Reopen counselling</button>}
-        </div>
+        <Banner tone="red" icon={<AlertTriangle size={15} />}
+          action={canFit && <button className={`${btnOutline} !h-8 !py-0 text-xs`} disabled={pending} onClick={() => run(() => reopenCounselling(data.visitId))}><RotateCcw size={13} /> Reopen counselling</button>}>
+          Reports expired on <b>{fmtDate(rec.reportsValidUntil)}</b> (1 month after the oldest report). Redo the reports and counselling.
+        </Banner>
       )}
-      {error && !modal && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" /> {error}
-        </div>
-      )}
+      {error && !modal && <Banner tone="red" icon={<AlertTriangle size={15} />}>{error}</Banner>}
 
-      <div className="mt-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-        <div className="flex flex-col gap-4">
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_272px] gap-3 items-start">
+        <div className="flex flex-col gap-3">
           {/* ── A & B ─────────────────────────────────────────────────── */}
           <SectionCard
-            step="1" icon={<Package size={16} />} title="Surgery Details" subtitle="Implant and tentative date of surgery"
+            step={1} icon={<Package size={15} />} title="Surgery Details"
             right={frozen ? <LockedTag /> : editable ? <SaveIndicator state={saveState} /> : null}
           >
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_220px] gap-4">
-              <Field label="Type of Implant" hint="Suggested for this surgery, or type your own">
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_200px] gap-3">
+              <Field label="Type of Implant">
                 <div className="relative">
                   <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
                   <input
@@ -621,11 +585,11 @@ export function CounsellingDetail({
                     onChange={(e) => { setImplant(e.target.value); setImplantOpen(true); }}
                     onFocus={() => setImplantOpen(true)}
                     onBlur={() => { setCustomImplants(rememberImplant(implant)); setTimeout(() => setImplantOpen(false), 150); }}
-                    placeholder="Search implants…"
+                    placeholder="Search or type an implant…"
                     className={`${inputCls} pl-8`}
                   />
                   {implantOpen && editable && implants.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1">
+                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
                       {implants.map((s) => (
                         <button key={s} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
                           className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
@@ -636,53 +600,56 @@ export function CounsellingDetail({
                   )}
                 </div>
               </Field>
-              <Field label="Tentative Date" hint={validUntil ? `Must be on or before ${fmtDate(validUntil)}` : "Change if required"}>
+              <Field label="Tentative Date">
                 <input type="date" value={dateOfSurgery} min={istTodayStr()} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={inputCls} />
               </Field>
             </div>
           </SectionCard>
 
           {/* ── C & D ─────────────────────────────────────────────────── */}
-          <SectionCard
-            step="2" icon={<Wallet size={16} />} title="Payment" subtitle="How the surgery will be paid for, and the approximate cost"
-            right={frozen ? <LockedTag /> : null}
-          >
-            <Field label="Payment Option">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {PAYMENT_MODES.map((m) => {
-                  const active = paymentMode === m.value;
-                  return (
-                    <button key={m.value} type="button" disabled={!editable}
-                      onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
-                      className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 text-left transition-colors disabled:cursor-default ${
-                        active ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]" : "border-[var(--color-border)] bg-white hover:border-[var(--color-primary-200)]"
-                      }`}>
-                      <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${active ? "bg-[var(--color-primary-600)] text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>
-                        {m.value === "CASH" ? <Banknote size={17} /> : <CreditCard size={17} />}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold text-[var(--color-ink-900)]">{m.label}</span>
-                        <span className="block text-caption text-[var(--color-ink-500)]">{m.value === "CASH" ? "Patient pays directly" : "Insurance, scheme, corporate…"}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
+          <SectionCard step={2} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_200px] gap-3">
+              <Field label="Payment Option">
+                <div className="grid grid-cols-2 gap-2">
+                  {PAYMENT_MODES.map((m) => {
+                    const active = paymentMode === m.value;
+                    return (
+                      <button key={m.value} type="button" disabled={!editable}
+                        onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
+                        className={`h-9 inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors disabled:cursor-default ${
+                          active
+                            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                            : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
+                        }`}>
+                        {m.value === "CASH" ? <Banknote size={15} /> : <CreditCard size={15} />}
+                        {m.value === "CASH" ? "Cash" : "Cashless"}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+              <Field label="Estimate (optional)">
+                <div className="relative">
+                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
+                </div>
+              </Field>
+            </div>
 
             {paymentMode === "CASHLESS" && (
-              <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3.5 space-y-3.5">
+              <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3 space-y-3">
                 <Field label="Covered By">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {CASHLESS_TYPES.map((t) => {
                       const active = paymentType === t.value;
                       return (
                         <button key={t.value} type="button" disabled={!editable} onClick={() => setPaymentType(t.value)}
-                          className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-center transition-colors disabled:cursor-default ${
-                            active ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] shadow-sm" : "border-[var(--color-border)] bg-white/60 text-[var(--color-ink-500)] hover:bg-white"
+                          className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-default ${
+                            active
+                              ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                              : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
                           }`}>
-                          {CASHLESS_ICON[t.value]}
-                          <span className="text-caption font-semibold leading-tight">{t.label}</span>
+                          {CASHLESS_ICON[t.value]}{t.label}
                         </button>
                       );
                     })}
@@ -702,61 +669,47 @@ export function CounsellingDetail({
                 )}
               </div>
             )}
-
-            <div className="mt-4 sm:max-w-xs">
-              <Field label="Approximate Estimate" hint="Optional">
-                <div className="relative">
-                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8`} />
-                </div>
-              </Field>
-            </div>
           </SectionCard>
 
           {/* ── E & F ─────────────────────────────────────────────────── */}
           <SectionCard
-            step="3" icon={<ShieldCheck size={16} />} title="Doctor Review" subtitle="Review the reports and confirm fitness for surgery"
+            step={3} icon={<ShieldCheck size={15} />} title="Doctor Review"
             right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
           >
             {rec.fitForSurgery ? (
-              <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <ShieldCheck size={20} className="text-amber-600 shrink-0" />
-                <div className="text-sm text-amber-900">
-                  <p className="font-semibold">Marked fit for surgery</p>
-                  <p className="text-caption text-amber-800">{[rec.fitByName, fmtDateTime(rec.fitAt)].filter(Boolean).join(" · ")}{validUntil ? ` · Reports valid till ${fmtDate(validUntil)}` : ""}</p>
-                </div>
-              </div>
+              <p className="text-sm text-[var(--color-ink-700)]">
+                Marked fit by <b>{rec.fitByName ?? "—"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+                {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
+              </p>
             ) : (
-              <div className="space-y-4">
-                <ul className="space-y-1.5">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                   <ReadyItem ok={invPending.length === 0}>
                     {currentOrders.length === 0
                       ? "No investigations ordered"
                       : invPending.length === 0
                         ? `All ${currentOrders.length} reports uploaded`
-                        : `Waiting for ${invPending.length} report${invPending.length > 1 ? "s" : ""}: ${invPending.map((o) => o.testName).join(", ")}`}
+                        : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
                   </ReadyItem>
-                  <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? `Tentative date set — ${fmtDate(new Date(dateOfSurgery).toISOString())}` : "Set the tentative date in Surgery Details"}</ReadyItem>
-                  {rec.investigationDetails && <ReadyItem ok={invPending.length === 0}>Additional investigations in view of: <i>{rec.investigationDetails}</i></ReadyItem>}
-                </ul>
+                  <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
+                </div>
+                {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
+                {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
 
                 {canFit ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
-                    <button className={`${btnPrimary} !py-2.5 !px-5`} disabled={pending || rec.surgeryDeferred || invPending.length > 0 || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}>
-                      <ShieldCheck size={16} /> Fit for Surgery
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <button className={btnPrimary} disabled={pending || rec.surgeryDeferred || invPending.length > 0 || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}>
+                      <ShieldCheck size={15} /> Fit for Surgery
                     </button>
-                    <span className="hidden sm:block w-px h-8 bg-[var(--color-border)]" />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-caption text-[var(--color-ink-400)]">Not satisfied?</span>
-                      <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
-                        <PlusCircle size={15} /> Add Investigations
+                    <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />
+                    <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
+                      <PlusCircle size={14} /> Add Investigations
+                    </button>
+                    {!rec.surgeryDeferred && (
+                      <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
+                        <PauseCircle size={14} /> Date Not Confirmed
                       </button>
-                      {!rec.surgeryDeferred && (
-                        <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
-                          <PauseCircle size={15} /> Date Not Confirmed
-                        </button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 ) : (
                   <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
@@ -767,70 +720,75 @@ export function CounsellingDetail({
 
           {/* ── G ─────────────────────────────────────────────────────── */}
           <SectionCard
-            step="4" icon={<IndianRupee size={16} />} title="Advance Payment" subtitle="Partial advance received from the patient"
+            step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
             locked={!rec.fitForSurgery} lockedText="Unlocks after Fit for Surgery"
             right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
           >
             {rec.eligibleForSurgery ? (
-              <AmountRow estimate={rec.estimateAmount} advance={rec.advancePaid} received={rec.advanceReceived} />
+              <p className="text-sm text-[var(--color-ink-700)]">
+                {rec.advancePaid != null
+                  ? <>Advance <b className="tabular-nums">{rupees(rec.advancePaid)}</b>{rec.estimateAmount != null && <span className="text-[var(--color-ink-500)]"> · Pending {rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0))} of {rupees(rec.estimateAmount)}</span>}</>
+                  : "Advance received"}
+              </p>
             ) : (
-              <div className="space-y-4">
-                <div className="inline-flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-1">
+              <div className="space-y-3">
+                <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-0.5">
                   {[{ v: false, l: "Record amount" }, { v: true, l: "Only mark as received" }].map((o) => (
                     <button key={o.l} type="button" disabled={!canEdit}
                       onClick={() => { setTickOnly(o.v); setAdvance(""); }}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tickOnly === o.v ? "bg-white text-[var(--color-ink-900)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}>
+                      className={`h-7 px-3 rounded-md text-xs font-semibold transition-colors ${tickOnly === o.v ? "bg-white text-[var(--color-ink-900)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}>
                       {o.l}
                     </button>
                   ))}
                 </div>
-                {tickOnly ? (
-                  <label className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 cursor-pointer transition-colors ${advanceReceived ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)]" : "border-[var(--color-border)]"}`}>
-                    <input type="checkbox" checked={advanceReceived} disabled={!canEdit} onChange={(e) => setAdvanceReceived(e.target.checked)} className="w-4 h-4 accent-[var(--color-primary-600)]" />
-                    <span className="text-sm font-semibold text-[var(--color-ink-800)]">Advance amount received</span>
-                  </label>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <Field label="Advance Received">
-                      <div className="relative">
-                        <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                        <input type="number" min={0} inputMode="numeric" value={advance} disabled={!canEdit} onChange={(e) => setAdvance(e.target.value)} placeholder="0" className={`${inputCls} pl-8`} />
-                      </div>
-                    </Field>
-                    <AmountStat label="Estimate" value={rupees(rec.estimateAmount)} />
-                    <AmountStat label="Pending" value={rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "—"} strong />
-                  </div>
-                )}
-                {canEdit && (
-                  <button className={btnPrimary} disabled={pending}
-                    onClick={() => run(() => saveAdvance(data.visitId, tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 }))}>
-                    Save Advance
-                  </button>
-                )}
+                <div className="flex flex-wrap items-end gap-3">
+                  {tickOnly ? (
+                    <label className="h-9 inline-flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-3 text-sm font-semibold text-[var(--color-ink-800)] cursor-pointer">
+                      <input type="checkbox" checked={advanceReceived} disabled={!canEdit} onChange={(e) => setAdvanceReceived(e.target.checked)} className="w-4 h-4 accent-[var(--color-primary-600)]" />
+                      Advance amount received
+                    </label>
+                  ) : (
+                    <>
+                      <Field label="Advance Received">
+                        <div className="relative w-44">
+                          <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                          <input type="number" min={0} inputMode="numeric" value={advance} disabled={!canEdit} onChange={(e) => setAdvance(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
+                        </div>
+                      </Field>
+                      {rec.estimateAmount != null && (
+                        <p className="h-9 inline-flex items-center text-sm text-[var(--color-ink-500)]">
+                          Pending&nbsp;<b className="text-[var(--color-ink-900)] tabular-nums">{rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0))}</b>&nbsp;of {rupees(rec.estimateAmount)}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {canEdit && (
+                    <button className={`${btnPrimary} ml-auto`} disabled={pending}
+                      onClick={() => run(() => saveAdvance(data.visitId, tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 }))}>
+                      Save Advance
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </SectionCard>
 
           {/* ── H ─────────────────────────────────────────────────────── */}
           <SectionCard
-            step="5" icon={<CalendarCheck size={16} />} title="Eligible for Surgery" subtitle="Final verification and pre-op appointment booking"
+            step={5} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
             locked={!(rec.fitForSurgery && advanceDone)} lockedText="Unlocks after the advance is recorded"
             right={rec.eligibleForSurgery ? <DoneTag tone="emerald">Eligible</DoneTag> : null}
           >
             {rec.eligibleForSurgery ? (
-              <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <CheckCircle2 size={20} className="text-emerald-600 shrink-0" />
-                <div className="text-sm text-emerald-900">
-                  <p className="font-semibold">Eligible for surgery — counselling complete</p>
-                  <p className="text-caption text-emerald-800">{[rec.eligibleByName, fmtDateTime(rec.eligibleAt)].filter(Boolean).join(" · ")}</p>
-                </div>
-              </div>
+              <p className="text-sm text-[var(--color-ink-700)]">
+                Confirmed by <b>{rec.eligibleByName ?? "—"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
+              </p>
             ) : canEligible ? (
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                <button className={`${btnPrimary} !py-2.5 !px-5 !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || expired || rec.surgeryDeferred} onClick={() => { setError(""); setModal("eligible"); }}>
-                  <CheckCircle2 size={16} /> Eligible for Surgery
+              <div className="flex flex-wrap items-center gap-3">
+                <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || expired || rec.surgeryDeferred} onClick={() => { setError(""); setModal("eligible"); }}>
+                  <CheckCircle2 size={15} /> Eligible for Surgery
                 </button>
-                <p className="text-caption text-[var(--color-ink-500)]">You&apos;ll verify the date, implant and surgery twice, then pick the pre-op time.</p>
+                <p className="text-caption text-[var(--color-ink-500)]">Verify date, implant and surgery twice, then book the pre-op.</p>
               </div>
             ) : (
               <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
@@ -840,21 +798,20 @@ export function CounsellingDetail({
 
         {/* ── Summary ───────────────────────────────────────────────────── */}
         <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-          <div className="px-4 py-3 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)] flex items-center justify-between">
-            <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
+          <div className="h-10 px-4 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]">
+            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
             {frozen && <LockedTag />}
           </div>
-          <dl className="px-4 py-2 divide-y divide-[var(--color-border)]">
-            <SideRow label="Surgery" value={surgeryFull} />
-            <SideRow label="Implant" value={implant || "—"} />
-            <SideRow label="Tentative date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"} />
-            <SideRow label="Payment" value={paymentText} />
-            <SideRow label="Estimate" value={rupees(estimateNum)} />
-            <SideRow label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "—"} />
-            {pendingAmount != null && rec.advancePaid != null && <SideRow label="Pending" value={rupees(pendingAmount)} />}
+          <dl className="px-4 py-3 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 text-xs">
+            <SideRow label="Implant" value={implant} />
+            <SideRow label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""} />
+            <SideRow label="Payment" value={paymentMode ? paymentText : ""} />
+            <SideRow label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
+            <SideRow label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
+            {rec.advancePaid != null && rec.estimateAmount != null && <SideRow label="Pending" value={rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0))} />}
             <SideRow label="Reports" value={currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"} />
             {validUntil && <SideRow label="Valid till" value={fmtDate(validUntil)} />}
-            {data.preOp && <SideRow label="Pre-op" value={fmtDateTime(data.preOp.dateTime) ?? "—"} />}
+            {data.preOp && <SideRow label="Pre-op" value={fmtDateTime(data.preOp.dateTime) ?? ""} />}
           </dl>
         </aside>
       </div>
@@ -924,7 +881,7 @@ function AddInvestigationsModal({ pending, error, onClose, onSubmit }: { pending
   return (
     <Modal title="Add Investigations" onClose={onClose}>
       <label className={labelCls}>Investigations (one per line or comma separated)</label>
-      <textarea rows={4} value={tests} onChange={(e) => setTests(e.target.value)} className={inputCls} placeholder={"e.g. HbA1c\nECG"} />
+      <textarea rows={4} value={tests} onChange={(e) => setTests(e.target.value)} className={`${inputCls} !h-auto py-2`} placeholder={"e.g. HbA1c\nECG"} />
       <label className={`${labelCls} mt-3`}>In view of</label>
       <input value={inViewOf} onChange={(e) => setInViewOf(e.target.value)} className={inputCls} placeholder="Reason for the additional tests" />
       <p className="text-caption text-[var(--color-ink-400)] mt-2">The reports are uploaded against these tests, then the doctor reviews them again for Fit for Surgery.</p>
@@ -953,7 +910,7 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
         Not decided yet
       </label>
       <label className={`${labelCls} mt-3`}>Reason</label>
-      <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={inputCls} placeholder="Why is the surgery date not confirmed?" />
+      <textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} className={`${inputCls} !h-auto py-2`} placeholder="Why is the surgery date not confirmed?" />
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
       <div className="flex justify-end gap-2 mt-4">
         <button className={btnOutline} onClick={onClose}>Cancel</button>
