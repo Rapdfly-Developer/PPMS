@@ -370,11 +370,11 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
 
   const addPmhRow = (name = "") => {
     const normalized = name.trim().toLowerCase();
+    const typedIdx = pmhTypedRowRef.current;
+    pmhTypedRowRef.current = null;
     setPmh((current) => {
       if (normalized && current.some((entry) => entry.name.trim().toLowerCase() === normalized)) return current;
       // Replace a partly typed name the chip matches instead of adding a new row
-      const typedIdx = pmhTypedRowRef.current;
-      pmhTypedRowRef.current = null;
       const typed = typedIdx !== null ? current[typedIdx]?.name.trim().toLowerCase() : "";
       if (normalized && typed && normalized.includes(typed)) {
         return current.map((entry, i) => i === typedIdx ? { ...entry, name: name.trim() } : entry);
