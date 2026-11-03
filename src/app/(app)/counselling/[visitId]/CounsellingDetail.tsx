@@ -493,12 +493,33 @@ function ReadyItem({ ok, children }: { ok: boolean; children: React.ReactNode })
   );
 }
 
-function StripItem({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "emerald" }) {
+function SummaryBlock({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 px-4 py-2.5">
-      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
-      <p className={`text-sm leading-snug break-words mt-0.5 ${!value ? "text-[var(--color-ink-300)]" : tone === "emerald" ? "font-semibold text-emerald-700" : "font-semibold text-[var(--color-ink-900)]"}`}>{value || "Not set"}</p>
-      {sub && <p className="text-micro text-[var(--color-ink-500)] mt-0.5">{sub}</p>}
+    <div className="min-w-0 px-4 sm:px-5 py-3 space-y-2">
+      <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{icon} {title}</p>
+      {children}
+    </div>
+  );
+}
+
+/** "Label  value · note" on one line; the value wraps under itself, never under the label. */
+function SummaryRow2({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="grid grid-cols-[3.75rem_minmax(0,1fr)] gap-2 items-baseline">
+      <span className="text-caption text-[var(--color-ink-400)]">{label}</span>
+      <span className="min-w-0">
+        <span className={`text-sm leading-snug ${value ? "font-semibold text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "Not set"}</span>
+        {note && <span className="block text-caption text-[var(--color-ink-500)] break-words">{note}</span>}
+      </span>
+    </div>
+  );
+}
+
+function MoneyChip({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-[var(--color-surface-sunken)] px-2.5 py-1.5 min-w-0">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
+      <p className={`text-xs font-bold tabular-nums truncate ${value ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "—"}</p>
     </div>
   );
 }
@@ -784,16 +805,43 @@ export function CounsellingDetail({
           <p className="flex-1 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
           {frozen ? <LockedTag /> : <span className="rounded-full bg-white border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]">{currentStep >= 0 ? steps[currentStep].label : "Complete"}</span>}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y lg:divide-y-0 divide-[var(--color-border)]">
-          <StripItem label="Implant" value={implant} />
-          <StripItem label="Tentative date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""} sub={validUntil ? `Valid till ${fmtDate(validUntil)}` : undefined} />
-          <StripItem label="Payment" value={paymentMode ? paymentText : ""} />
-          <StripItem label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
-          <StripItem label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""}
-            sub={rec.advancePaid != null && rec.estimateAmount != null ? `Pending ${rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0))}` : undefined} />
-          <StripItem label={data.preOp ? "Pre-op" : "Reports"}
-            value={data.preOp ? (fmtDateTime(data.preOp.dateTime) ?? "") : currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"}
-            tone={data.preOp || invAllDone ? "emerald" : undefined} />
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(0,0.7fr)] divide-y lg:divide-y-0 lg:divide-x divide-[var(--color-border)]">
+          {/* Surgery */}
+          <SummaryBlock icon={<Package size={13} />} title="Surgery">
+            <SummaryRow2 label="Implant" value={implant} />
+            <SummaryRow2 label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""}
+              note={validUntil ? `valid till ${fmtDate(validUntil)}` : undefined} />
+          </SummaryBlock>
+
+          {/* Payment */}
+          <SummaryBlock icon={<Wallet size={13} />} title="Payment">
+            <SummaryRow2 label="Option"
+              value={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : ""}
+              note={paymentMode === "CASHLESS" ? [schemeName, policyNumber].filter(Boolean).join(" · ") || undefined : undefined} />
+            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
+              <MoneyChip label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
+              <MoneyChip label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
+              <MoneyChip label="Pending" value={rec.advancePaid != null && rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0)) : ""} />
+            </div>
+          </SummaryBlock>
+
+          {/* Reports / pre-op */}
+          <SummaryBlock icon={data.preOp ? <CalendarCheck size={13} /> : <FlaskConical size={13} />} title={data.preOp ? "Pre-op" : "Reports"}>
+            {data.preOp ? (
+              <p className="text-sm font-semibold text-emerald-700">{fmtDateTime(data.preOp.dateTime)}</p>
+            ) : (
+              <>
+                <p className={`text-sm font-semibold tabular-nums ${invAllDone ? "text-emerald-700" : currentOrders.length ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-400)]"}`}>
+                  {currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"}
+                </p>
+                {currentOrders.length > 0 && (
+                  <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+                    <div className={`h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
+                  </div>
+                )}
+              </>
+            )}
+          </SummaryBlock>
         </div>
       </section>
 
