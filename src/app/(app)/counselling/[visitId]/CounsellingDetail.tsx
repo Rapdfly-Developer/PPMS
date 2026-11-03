@@ -978,6 +978,15 @@ export function CounsellingDetail({
               </Field>
             </div>
 
+            <div className="mt-3 sm:max-w-xs">
+              <Field label="Estimate (optional)">
+                <div className="relative">
+                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
+                </div>
+              </Field>
+            </div>
+
             {paymentMode === "CASHLESS" && (
               <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3 space-y-3">
                 <Field label="Covered By">
@@ -1017,15 +1026,6 @@ export function CounsellingDetail({
                 )}
               </div>
             )}
-
-            <div className="mt-3 sm:max-w-xs">
-              <Field label="Estimate (optional)">
-                <div className="relative">
-                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
-                </div>
-              </Field>
-            </div>
           </SectionCard>
 
           {/* ── E & F ─────────────────────────────────────────────────── */}
