@@ -145,6 +145,24 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   );
 }
 
+function ConfirmCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 px-3.5 py-3">
+      <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">{icon} {title}</p>
+      <div className="space-y-1.5">{children}</div>
+    </div>
+  );
+}
+
+function ConfirmLine({ label, strong, children }: { label: string; strong?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="text-micro text-[var(--color-ink-400)]">{label}</p>
+      <p className={`text-sm leading-snug break-words ${strong ? "font-bold text-[var(--color-ink-900)]" : "font-medium text-[var(--color-ink-800)]"}`}>{children}</p>
+    </div>
+  );
+}
+
 function SummaryRow({ label, value, strong }: { label: string; value: React.ReactNode; strong?: boolean }) {
   return (
     <div className="grid grid-cols-[8.5rem_minmax(0,1fr)] gap-3 py-1.5 border-b border-[var(--color-border)] last:border-0 text-sm">
@@ -1074,24 +1092,65 @@ export function CounsellingDetail({
       )}
 
       {modal === "fit" && (
-        <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)}>
-          <div className="mb-4">
-            <SummaryRow label="Surgery" value={surgeryFull} strong />
-            <SummaryRow label="Implant" value={implant || "—"} />
-            <SummaryRow label="Tentative date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"} strong />
-            <SummaryRow label="Payment" value={paymentText} />
-            <SummaryRow label="Estimate" value={rupees(estimateNum)} />
-            <SummaryRow label="Reports" value={currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"} />
+        <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)} wide>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Surgery */}
+            <ConfirmCard icon={<Scissors size={13} />} title="Surgery">
+              <ConfirmLine label="Surgery">
+                {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}{data.surgery}
+              </ConfirmLine>
+              {data.anaesthesia && <ConfirmLine label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
+              <ConfirmLine label="Implant">{implant || "—"}</ConfirmLine>
+              <ConfirmLine label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}</ConfirmLine>
+            </ConfirmCard>
+
+            {/* Payment */}
+            <ConfirmCard icon={<Wallet size={13} />} title="Payment">
+              <ConfirmLine label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}</ConfirmLine>
+              {paymentMode === "CASHLESS" && schemeName && <ConfirmLine label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
+              {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
+              <ConfirmLine label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
+            </ConfirmCard>
           </div>
-          <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-caption sm:text-xs text-amber-800 mb-4">
-            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-            <span>
-              These details will be frozen. Surgery must happen within 1 month of the reports
-              {validUntil ? <> — by <b>{fmtDate(validUntil)}</b></> : ""}. After that the reports expire and the process must be redone.
-            </span>
+
+          {/* Reports */}
+          <div className="mt-3 rounded-xl border border-[var(--color-border)] px-3.5 py-3">
+            <p className="flex items-center justify-between text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">
+              <span className="inline-flex items-center gap-1.5"><FlaskConical size={12} /> Reports</span>
+              <span className={invAllDone ? "text-emerald-700" : "text-[var(--color-ink-500)]"}>{currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"}</span>
+            </p>
+            {currentOrders.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {currentOrders.map((o) => (
+                  <span key={o.id} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+                    o.resultRef ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"
+                  }`}>
+                    {o.resultRef ? <Check size={12} strokeWidth={3} /> : <Circle size={11} />}
+                    {o.laterality && <span className="font-bold">{o.laterality}</span>}{o.testName}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
-          <div className="flex justify-end gap-2">
+
+          {/* Freeze notice */}
+          <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
+            <div className="flex items-center gap-2 bg-amber-100/70 px-3.5 py-2">
+              <Lock size={13} className="text-amber-700" />
+              <p className="text-xs font-bold text-amber-900">Before you confirm</p>
+            </div>
+            <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />The implant, date, payment and estimate above will be <b>frozen</b>.</li>
+              <li className="flex gap-2">
+                <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
+                <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
+              </li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />After that the reports expire and the process must be redone.</li>
+            </ul>
+          </div>
+
+          {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+          <div className="flex justify-end gap-2 mt-4">
             <button className={btnOutline} onClick={() => setModal(null)}>Cancel</button>
             <button className={btnPrimary} disabled={pending}
               onClick={() => run(async () => {
