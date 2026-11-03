@@ -1419,11 +1419,11 @@ function EligibleModal({
   return (
     <Modal title="Eligible for Surgery" onClose={onClose} wide>
       {/* Summary */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-2.5 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-2.5 grid grid-cols-2 sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p className="text-micro text-[var(--color-ink-400)]">Patient</p>
-          <p className="text-sm font-bold leading-snug text-[var(--color-ink-900)] truncate">{patient.split(" · ")[0]}</p>
-          <p className="text-caption text-[var(--color-ink-500)] tabular-nums truncate">{patient.split(" · ").slice(1).join(" · ")}</p>
+          <p className="text-sm font-bold leading-snug text-[var(--color-ink-900)] break-words">{patient.split(" · ")[0]}</p>
+          <p className="text-caption text-[var(--color-ink-500)] tabular-nums break-words">{patient.split(" · ").slice(1).join(" · ")}</p>
         </div>
         <ConfirmLine label="Payment">{payment}</ConfirmLine>
         <ConfirmLine label="Estimate">{estimate}</ConfirmLine>
