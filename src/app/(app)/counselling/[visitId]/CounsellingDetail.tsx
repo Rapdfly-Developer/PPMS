@@ -493,6 +493,47 @@ function ReadyItem({ ok, children }: { ok: boolean; children: React.ReactNode })
   );
 }
 
+/** Full report preview: image or PDF inline, anything else via "Open". */
+function ReportViewer({ order, onClose }: { order: CounsellingOrder; onClose: () => void }) {
+  const href = fileHref(order.resultRef!)!;
+  const isPdf = /\.pdf(\?|$)/i.test(order.resultRef!);
+  return (
+    <div className="fixed inset-0 z-[210] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        className="relative w-full max-w-4xl h-[85vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="h-12 px-4 flex items-center gap-3 border-b border-[var(--color-border)]">
+          <FlaskConical size={15} className="text-[var(--color-primary-700)]" />
+          <p className="flex-1 min-w-0 truncate text-sm font-bold text-[var(--color-ink-900)]">
+            {order.laterality && <span className="clinical-laterality mr-1">{order.laterality}</span>}{order.testName}
+            <span className="ml-2 font-normal text-caption text-[var(--color-ink-500)]">Uploaded {fmtDate(order.resultAt)}</span>
+          </p>
+          <a href={href} target="_blank" rel="noreferrer" className={`${btnOutline} !h-8 !px-3 text-xs`}>Open in new tab</a>
+          <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]" aria-label="Close"><X size={16} /></button>
+        </div>
+        <div className="flex-1 min-h-0 bg-[var(--color-surface-sunken)] flex items-center justify-center">
+          {isImage(order.resultRef!)
+            ? <img src={href} alt={order.testName} className="max-w-full max-h-full object-contain" />
+            : isPdf
+              ? <iframe src={href} title={order.testName} className="w-full h-full bg-white" />
+              : (
+                <div className="text-center">
+                  <FileText size={36} className="mx-auto text-[var(--color-ink-300)]" />
+                  <p className="text-sm text-[var(--color-ink-500)] mt-2">This file can&apos;t be previewed here.</p>
+                  <a href={href} target="_blank" rel="noreferrer" className={`${btnPrimary} mt-3`}>Open file</a>
+                </div>
+              )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 function SummaryBlock({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0 px-4 sm:px-5 py-3 space-y-2">
@@ -503,13 +544,15 @@ function SummaryBlock({ icon, title, children }: { icon: React.ReactNode; title:
 }
 
 /** "Label  value · note" on one line; the value wraps under itself, never under the label. */
-function SummaryRow2({ label, value, note }: { label: string; value: string; note?: string }) {
+function SummaryRow2({ label, value, note, inline }: { label: string; value: string; note?: string; inline?: boolean }) {
   return (
     <div className="grid grid-cols-[3.75rem_minmax(0,1fr)] gap-2 items-baseline">
       <span className="text-caption text-[var(--color-ink-400)]">{label}</span>
       <span className="min-w-0">
         <span className={`text-sm leading-snug ${value ? "font-semibold text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "Not set"}</span>
-        {note && <span className="block text-caption text-[var(--color-ink-500)] break-words">{note}</span>}
+        {note && (inline
+          ? <span className="text-caption text-[var(--color-ink-500)] break-words"> · {note}</span>
+          : <span className="block text-caption text-[var(--color-ink-500)] break-words">{note}</span>)}
       </span>
     </div>
   );
@@ -572,6 +615,7 @@ export function CounsellingDetail({
 
   const [modal, setModal] = useState<null | "investigations" | "fit" | "addInv" | "postpone" | "eligible">(null);
   const [showActivity, setShowActivity] = useState(false);
+  const [preview, setPreview] = useState<CounsellingOrder | null>(null);
   const [error, setError] = useState("");
 
   const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
@@ -805,19 +849,19 @@ export function CounsellingDetail({
           <p className="flex-1 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
           {frozen ? <LockedTag /> : <span className="rounded-full bg-white border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]">{currentStep >= 0 ? steps[currentStep].label : "Complete"}</span>}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1.15fr)_minmax(0,0.7fr)] divide-y lg:divide-y-0 lg:divide-x divide-[var(--color-border)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-[var(--color-border)]">
           {/* Surgery */}
           <SummaryBlock icon={<Package size={13} />} title="Surgery">
             <SummaryRow2 label="Implant" value={implant} />
             <SummaryRow2 label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""}
-              note={validUntil ? `valid till ${fmtDate(validUntil)}` : undefined} />
+              note={validUntil ? `valid till ${fmtDate(validUntil)}` : undefined} inline />
           </SummaryBlock>
 
           {/* Payment */}
           <SummaryBlock icon={<Wallet size={13} />} title="Payment">
             <SummaryRow2 label="Option"
               value={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : ""}
-              note={paymentMode === "CASHLESS" ? [schemeName, policyNumber].filter(Boolean).join(" · ") || undefined : undefined} />
+              note={paymentMode === "CASHLESS" ? [schemeName, policyNumber].filter(Boolean).join(" · ") || undefined : undefined} inline />
             <div className="grid grid-cols-3 gap-1.5 pt-0.5">
               <MoneyChip label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
               <MoneyChip label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
@@ -827,19 +871,36 @@ export function CounsellingDetail({
 
           {/* Reports / pre-op */}
           <SummaryBlock icon={data.preOp ? <CalendarCheck size={13} /> : <FlaskConical size={13} />} title={data.preOp ? "Pre-op" : "Reports"}>
-            {data.preOp ? (
-              <p className="text-sm font-semibold text-emerald-700">{fmtDateTime(data.preOp.dateTime)}</p>
-            ) : (
-              <>
-                <p className={`text-sm font-semibold tabular-nums ${invAllDone ? "text-emerald-700" : currentOrders.length ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-400)]"}`}>
-                  {currentOrders.length ? `${invDone}/${currentOrders.length} uploaded` : "None ordered"}
-                </p>
-                {currentOrders.length > 0 && (
-                  <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-                    <div className={`h-full rounded-full ${invAllDone ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(invDone / currentOrders.length) * 100}%` }} />
-                  </div>
-                )}
-              </>
+            {data.preOp && <p className="text-sm font-semibold text-emerald-700">{fmtDateTime(data.preOp.dateTime)}</p>}
+            {!data.preOp && currentOrders.length === 0 && <p className="text-sm text-[var(--color-ink-400)]">None ordered</p>}
+            {!data.preOp && currentOrders.length > 0 && (
+              <ul className="space-y-1.5">
+                {currentOrders.map((o) => (
+                  <li key={o.id} className="flex items-center gap-2.5 min-w-0">
+                    {o.resultRef ? (
+                      <button type="button" onClick={() => setPreview(o)} title="View report"
+                        className="w-9 h-9 shrink-0 rounded-md border border-[var(--color-border)] bg-white overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-[var(--color-primary-300)] transition-shadow">
+                        {isImage(o.resultRef)
+                          ? <img src={fileHref(o.resultRef)!} alt={o.testName} className="w-full h-full object-cover" />
+                          : <FileText size={16} className="text-[var(--color-ink-500)]" />}
+                      </button>
+                    ) : (
+                      <span className="w-9 h-9 shrink-0 rounded-md border border-dashed border-[var(--color-border)] flex items-center justify-center text-[var(--color-ink-300)]"><FlaskConical size={14} /></span>
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-[var(--color-ink-900)] truncate">
+                        {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}{o.testName}
+                      </span>
+                      <span className={`block text-caption ${o.resultRef ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
+                        {o.resultRef ? `Uploaded ${fmtDate(o.resultAt)}` : "Pending"}
+                      </span>
+                    </span>
+                    {o.resultRef && (
+                      <button type="button" onClick={() => setPreview(o)} className="shrink-0 text-caption font-semibold text-[var(--color-primary-700)] hover:underline">View</button>
+                    )}
+                  </li>
+                ))}
+              </ul>
             )}
           </SummaryBlock>
         </div>
@@ -1111,6 +1172,7 @@ export function CounsellingDetail({
       </div>
 
       {showActivity && <ActivityDrawer data={data} onClose={() => setShowActivity(false)} />}
+      {preview?.resultRef && <ReportViewer order={preview} onClose={() => setPreview(null)} />}
 
       {/* Modals */}
       {modal === "investigations" && (
