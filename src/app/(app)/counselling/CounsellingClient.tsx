@@ -215,7 +215,7 @@ function PatientCard({ r }: { r: CounsellingRow }) {
 
 export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
   const router = useRouter();
-  const [card, setCard]                 = useState<CardFilter>("ALL");
+  const [card, setCard]                 = useState<CardFilter>("PENDING");
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState<CounsellingStatus | "ALL">("ALL");
   const [dateFrom, setDateFrom]         = useState("");
