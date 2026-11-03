@@ -957,7 +957,7 @@ export function CounsellingDetail({
           {/* ── C & D ─────────────────────────────────────────────────── */}
           <SectionCard step={2} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
             <div>
-              <Field label="Payment Option">
+              <InlineField label="Payment Option">
                 <div className="inline-flex gap-2">
                   {PAYMENT_MODES.map((m) => {
                     const active = paymentMode === m.value;
@@ -975,16 +975,16 @@ export function CounsellingDetail({
                     );
                   })}
                 </div>
-              </Field>
+              </InlineField>
             </div>
 
-            <div className="mt-3 sm:max-w-xs">
-              <Field label="Estimate (optional)">
-                <div className="relative">
+            <div className="mt-3">
+              <InlineField label="Estimate (optional)">
+                <div className="relative sm:w-48">
                   <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
                   <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
                 </div>
-              </Field>
+              </InlineField>
             </div>
 
             {paymentMode === "CASHLESS" && (
