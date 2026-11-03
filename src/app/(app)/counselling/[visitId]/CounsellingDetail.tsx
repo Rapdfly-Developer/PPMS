@@ -245,15 +245,32 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
 }
 
 /* ── Layout pieces ───────────────────────────────────────────────────────── */
-function FormRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FormRow({ label, hint, locked, children }: { label: string; hint?: string; locked?: boolean; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 py-3.5 items-start">
-      <div className="sm:pt-2">
-        <p className="text-xs font-semibold text-[var(--color-ink-600)]">{label}</p>
+    <div className={`grid grid-cols-1 sm:grid-cols-[9rem_minmax(0,1fr)] gap-x-4 gap-y-1.5 items-start ${locked ? "py-2.5" : "py-3.5"}`}>
+      <div className={locked ? "sm:pt-1" : "sm:pt-2"}>
+        <p className={`text-xs font-semibold ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-600)]"}`}>{label}</p>
         {hint && <p className="text-micro text-[var(--color-ink-400)]">{hint}</p>}
       </div>
       <div className="min-w-0">{children}</div>
     </div>
+  );
+}
+
+function LockedSlot({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-1.5 text-caption font-medium text-[var(--color-ink-400)]">
+      <Lock size={12} /> {children}
+    </div>
+  );
+}
+
+function SumRow({ label, value }: { label: string; value: string }) {
+  return (
+    <>
+      <dt className="text-[var(--color-ink-400)]">{label}</dt>
+      <dd className={`text-right break-words ${value ? "font-semibold text-[var(--color-ink-800)]" : "text-[var(--color-ink-300)]"}`}>{value || "—"}</dd>
+    </>
   );
 }
 
@@ -397,7 +414,7 @@ export function CounsellingDetail({
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
 
   return (
-    <div className="fade-in pb-24 max-w-4xl">
+    <div className="fade-in pb-24 max-w-5xl">
       <BackButton href="/counselling" label="Counselling" className="mb-3" />
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
@@ -514,8 +531,9 @@ export function CounsellingDetail({
       )}
       {error && !modal && <Banner tone="red" icon={<AlertTriangle size={16} />}>{error}</Banner>}
 
+      <div className="mt-3 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_250px] gap-3 items-start">
       {/* ── Checklist ─────────────────────────────────────────────────── */}
-      <Card className="mt-3">
+      <Card>
         <div className="flex items-center justify-between gap-2 mb-1">
           <p className="text-sm font-bold text-[var(--color-ink-900)]">Counselling</p>
           {frozen
@@ -632,7 +650,9 @@ export function CounsellingDetail({
           </FormRow>
 
           {/* G. Advance */}
-          {rec.fitForSurgery && (
+          {!rec.fitForSurgery ? (
+            <FormRow label="Advance" locked><LockedSlot>Unlocks after Fit for Surgery</LockedSlot></FormRow>
+          ) : (
             <FormRow label="Advance">
               {rec.eligibleForSurgery ? (
                 <p className="text-sm text-[var(--color-ink-800)]">
@@ -677,7 +697,9 @@ export function CounsellingDetail({
           )}
 
           {/* H. Eligible */}
-          {rec.fitForSurgery && advanceDone && (
+          {!(rec.fitForSurgery && advanceDone) ? (
+            <FormRow label="Confirm" locked><LockedSlot>Unlocks after the advance is recorded</LockedSlot></FormRow>
+          ) : (
             <FormRow label="Confirm">
               {rec.eligibleForSurgery ? (
                 <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-700">
@@ -695,6 +717,26 @@ export function CounsellingDetail({
           )}
         </div>
       </Card>
+
+      {/* ── Summary ───────────────────────────────────────────────────── */}
+      <aside className="lg:sticky lg:top-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Summary</p>
+          {frozen && <Lock size={12} className="text-[var(--color-ink-300)]" />}
+        </div>
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
+          <SumRow label="Implant" value={implant} />
+          <SumRow label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""} />
+          <SumRow label="Payment" value={paymentMode ? paymentText : ""} />
+          <SumRow label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
+          <SumRow label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
+          {rec.advancePaid != null && rec.estimateAmount != null && <SumRow label="Pending" value={rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0))} />}
+          <SumRow label="Reports" value={currentOrders.length ? `${invDone}/${currentOrders.length}` : "None"} />
+          {validUntil && <SumRow label="Valid till" value={fmtDate(validUntil)} />}
+          {data.preOp && <SumRow label="Pre-op" value={fmtDateTime(data.preOp.dateTime) ?? ""} />}
+        </dl>
+      </aside>
+      </div>
 
       {/* Modals */}
       {modal === "investigations" && (
