@@ -9,7 +9,7 @@ import {
   User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ArrowRight,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ArrowRight, ChevronDown,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { BackButton } from "@/components/ui/BackButton";
@@ -18,7 +18,7 @@ import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { fileHref } from "@/lib/file-href";
 import { istTodayStr } from "@/lib/ist";
 import {
-  type CounsellingStatus, CASHLESS_TYPES, GOVT_SCHEME_SUGGESTIONS, LATERALITY_LABEL, PAYMENT_MODES,
+  type CounsellingStatus, CASHLESS_TYPES, PAYER_SUGGESTIONS, LATERALITY_LABEL, PAYMENT_MODES,
   implantSuggestions, reportsValidUntil,
 } from "@/lib/counselling";
 import { attachResult } from "../../emr/[udid]/actions";
@@ -343,6 +343,60 @@ function ActivityDrawer({ data, onClose }: { data: CounsellingDetailData; onClos
           ))}
         </ol>
       </motion.aside>
+    </div>
+  );
+}
+
+/* ── Searchable dropdown with remembered custom entries ────────────────── */
+function SuggestInput({
+  value, onChange, options, libraryKey, placeholder, disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+  libraryKey: string;
+  placeholder: string;
+  disabled?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { const p = JSON.parse(localStorage.getItem(libraryKey) ?? "[]"); return Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : []; } catch { return []; }
+  });
+  const remember = () => {
+    const v = value.trim();
+    if (!v || [...options, ...custom].some((o) => o.toLowerCase() === v.toLowerCase())) return;
+    const next = [...custom, v];
+    setCustom(next);
+    try { localStorage.setItem(libraryKey, JSON.stringify(next)); } catch {}
+  };
+  const q = value.trim().toLowerCase();
+  const matches = [...new Set([...options, ...custom])].filter((o) => !q || o.toLowerCase().includes(q));
+
+  return (
+    <div className="relative">
+      <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+      <input
+        value={value}
+        disabled={disabled}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { remember(); setTimeout(() => setOpen(false), 150); }}
+        placeholder={placeholder}
+        className={`${inputCls} !bg-white pl-8 pr-8`}
+      />
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+      {open && !disabled && matches.length > 0 && (
+        <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
+          {matches.map((o) => (
+            <button key={o} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(o); setOpen(false); }}
+              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--color-primary-50)] ${o === value ? "text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"}`}>
+              {o}
+              {o === value && <Check size={14} />}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -785,9 +839,15 @@ export function CounsellingDetail({
                 {cashless && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Field label={cashless.nameLabel}>
-                      <input value={schemeName} disabled={!editable} onChange={(e) => setSchemeName(e.target.value)} className={`${inputCls} !bg-white`}
-                        list={cashless.value === "GOVT_SCHEME" ? "govt-schemes" : undefined} />
-                      <datalist id="govt-schemes">{GOVT_SCHEME_SUGGESTIONS.map((s) => <option key={s} value={s} />)}</datalist>
+                      <SuggestInput
+                        key={cashless.value}
+                        value={schemeName}
+                        onChange={setSchemeName}
+                        disabled={!editable}
+                        options={PAYER_SUGGESTIONS[cashless.value] ?? []}
+                        libraryKey={`ppms_counselling_payer_${cashless.value}`}
+                        placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
+                      />
                     </Field>
                     <Field label={cashless.idLabel}>
                       <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />

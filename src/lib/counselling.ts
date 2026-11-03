@@ -103,14 +103,61 @@ export const CASHLESS_TYPES = [
   { value: "OTHER",       label: "Other",                 nameLabel: "Details",                 idLabel: "Reference ID" },
 ] as const;
 
-export const GOVT_SCHEME_SUGGESTIONS = [
-  "Ayushman Bharat (PM-JAY)",
-  "CGHS",
-  "ECHS",
-  "ESIC",
-  "State Health Scheme",
-  "NPCBVI (Blindness Control)",
-];
+/** Starter options for the payer name, per cashless type; custom entries are remembered on top. */
+export const PAYER_SUGGESTIONS: Record<string, string[]> = {
+  INSURANCE: [
+    "Star Health Insurance",
+    "HDFC ERGO",
+    "ICICI Lombard",
+    "Niva Bupa",
+    "Care Health Insurance",
+    "Aditya Birla Health Insurance",
+    "Bajaj Allianz",
+    "Tata AIG",
+    "SBI General Insurance",
+    "ManipalCigna",
+    "New India Assurance",
+    "United India Insurance",
+    "Oriental Insurance",
+    "National Insurance",
+    "Medi Assist (TPA)",
+    "MD India (TPA)",
+    "Paramount Health (TPA)",
+    "Vidal Health (TPA)",
+    "Heritage Health (TPA)",
+    "Family Health Plan (TPA)",
+  ],
+  GOVT_SCHEME: [
+    "Ayushman Bharat (PM-JAY)",
+    "CGHS",
+    "ECHS",
+    "ESIC",
+    "Railways (RELHS)",
+    "CMCHIS (Tamil Nadu)",
+    "Dr. YSR Aarogyasri (Andhra Pradesh)",
+    "Aarogyasri (Telangana)",
+    "Karunya Arogya Suraksha (Kerala)",
+    "MJPJAY (Maharashtra)",
+    "Arogya Karnataka",
+    "NPCBVI (Blindness Control)",
+    "State Government Employees Scheme",
+  ],
+  CORPORATE: [
+    "Company tie-up (direct billing)",
+    "PSU employee scheme",
+    "Bank employee scheme",
+    "Group health insurance (employer)",
+  ],
+  COMMUNITY: [
+    "Lions Club",
+    "Rotary Club",
+    "NPCBVI eye camp",
+    "Free cataract surgery camp",
+    "NGO / Charitable trust",
+    "Religious trust",
+  ],
+  OTHER: [],
+};
 
 // ── Implants ────────────────────────────────────────────────────────────────
 /** Starter implant suggestions, matched by keyword in the surgery name. */
