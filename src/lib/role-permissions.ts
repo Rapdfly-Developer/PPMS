@@ -45,6 +45,9 @@ const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
   "emr.labReports.edit": ["investigations.view", "emr.view"],
 
   "followups.edit": ["followups.view"],
+  "counselling.edit": ["counselling.view"],
+  "counselling.fit": ["counselling.view"],
+  "counselling.eligible": ["counselling.view"],
   "reports.export": ["reports.view"],
   "availability.manage": ["availability.view"],
   "settings.manage": ["settings.view"],

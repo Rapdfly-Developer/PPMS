@@ -21,6 +21,7 @@ const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     "reports.view", "reports.export",
     "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
     "followups.view",
+    "counselling.view", "counselling.edit", "counselling.eligible",
     "settings.view", "settings.manage",
     "plugins.view",
   ],
@@ -46,6 +47,7 @@ const ADDITIVE_ROLE_PERMISSIONS: Record<string, string[]> = {
     "emr.oculoplasty.view",
     "followups.view",
     "insurance.view", "insurance.create", "insurance.edit", "insurance.manage",
+    "counselling.view", "counselling.edit", "counselling.eligible",
   ],
   // New granular permissions for REFRACTIONIST — adds explicit per-section perms.
   REFRACTIONIST: [

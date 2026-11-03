@@ -766,6 +766,7 @@ model InvestigationOrder {
   doctorNotes String?      // Doctor's notes on the result, added later
   status     String        @default("ORDERED")
   resultRef  String?
+  resultAt   DateTime?     // when the current result file was uploaded
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
@@ -1541,6 +1542,17 @@ model CounsellingRecord {
   doctorDecisionNotes String?
   doctorReviewedAt    DateTime?
   confirmedAt         DateTime?
+
+  // Phase 2 counselling workflow (status: PENDING | PARTIAL | COMPLETED | POSTPONED)
+  implant               String?
+  advanceReceived       Boolean   @default(false) // tick-only, when the amount is not recorded
+  postponedUntil        DateTime?
+  postponedIndefinitely Boolean   @default(false)
+  postponedAt           DateTime?
+  reportsValidUntil     DateTime? // oldest report upload + 1 month, set at Fit for surgery
+  fitByName             String?
+  eligibleByName        String?
+  preOpAppointmentId    String?
 }
 
 // ──────────────────────────────────────────────────────────────────────────

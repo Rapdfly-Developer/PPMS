@@ -106,6 +106,12 @@ export const P = {
   FOLLOWUPS_VIEW:          "followups.view",
   FOLLOWUPS_EDIT:          "followups.edit",
 
+  // Counselling (surgery)
+  COUNSELLING_VIEW:        "counselling.view",
+  COUNSELLING_EDIT:        "counselling.edit",
+  COUNSELLING_FIT:         "counselling.fit",
+  COUNSELLING_ELIGIBLE:    "counselling.eligible",
+
   // Settings — Plugins & Hospital
   PLUGINS_MANAGE:          "plugins.manage",
   HOSPITAL_MANAGE:         "hospital.manage",
@@ -156,6 +162,9 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.REPORTS_EXPORT,
     P.FOLLOWUPS_VIEW,
     P.FOLLOWUPS_EDIT,
+    P.COUNSELLING_VIEW,
+    P.COUNSELLING_EDIT,
+    P.COUNSELLING_ELIGIBLE,
     P.SETTINGS_VIEW,
   ],
 

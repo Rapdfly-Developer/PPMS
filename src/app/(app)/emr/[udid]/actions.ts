@@ -527,7 +527,7 @@ export async function attachResult(id: string, udid: string, resultRef: string):
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
     where: { id },
-    data: { resultRef, status: "RESULT_AVAILABLE" },
+    data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" },
   });
   await writeAudit(user.id, "InvestigationOrder", id, "RESULT_ATTACHED", { resultRef });
   revalidate(udid);
@@ -540,7 +540,7 @@ export async function removeResult(id: string, udid: string): Promise<{ error?: 
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
     where: { id },
-    data: { resultRef: null, status: "PENDING" },
+    data: { resultRef: null, resultAt: null, status: "PENDING" },
   });
   await writeAudit(user.id, "InvestigationOrder", id, "RESULT_REMOVED", {});
   revalidate(udid);

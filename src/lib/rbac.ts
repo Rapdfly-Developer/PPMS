@@ -103,6 +103,7 @@ const HOME_CANDIDATES: [string, string][] = [
   ["/opd",          "opd.view"],
   ["/appointments", "appointments.view"],
   ["/follow-ups",   "followups.view"],
+  ["/counselling",  "counselling.view"],
   ["/patients",     "patients.view"],
   ["/analytics",    "reports.view"],
   ["/settings",     "settings.view"],

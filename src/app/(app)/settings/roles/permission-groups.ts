@@ -187,6 +187,17 @@ export const PERMISSION_GROUPS: {
     ],
   },
 
+  // ── Counselling ───────────────────────────────────────────────────────────
+  {
+    category: "Counselling",
+    permissions: [
+      { key: "counselling.view",     label: "View Counselling",          description: "See patients scheduled for surgery and their counselling status" },
+      { key: "counselling.edit",     label: "Fill Counselling",          description: "Fill implant, tentative date, payment type, estimate and advance" },
+      { key: "counselling.fit",      label: "Mark Fit for Surgery",      description: "Approve reports and freeze details, or add investigations / postpone surgery" },
+      { key: "counselling.eligible", label: "Mark Eligible for Surgery", description: "Complete counselling and book the pre-op appointment" },
+    ],
+  },
+
   // ── Reports & Analytics ───────────────────────────────────────────────────
   {
     category: "Reports & Analytics",
