@@ -1473,11 +1473,22 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
 /* ── H. Eligible — verify each item twice on one screen, then book pre-op ── */
 type VerifyKey = "date" | "implant" | "surgery";
 
+function EligRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 items-baseline">
+      <p className="text-caption text-[var(--color-ink-400)]">{label}</p>
+      <p className="text-sm leading-snug break-words text-[var(--color-ink-800)]">{children}</p>
+    </div>
+  );
+}
+
 function CheckDot({ on, disabled, onClick, label }: { on: boolean; disabled?: boolean; onClick: () => void; label: string }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} aria-label={label} aria-pressed={on} title={disabled ? "Do the 1st check first" : label}
-      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-        on ? "bg-emerald-500 border-emerald-500 text-white scale-105" : "bg-white border-[var(--color-border)] text-transparent hover:border-emerald-400"
+      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all disabled:cursor-not-allowed ${
+        on ? "bg-emerald-500 border-emerald-500 text-white scale-105"
+          : disabled ? "bg-[var(--color-surface-sunken)] border-dashed border-[var(--color-ink-300)] text-transparent"
+          : "bg-white border-[var(--color-ink-300)] text-transparent hover:border-emerald-400"
       }`}>
       <Check size={15} strokeWidth={3} />
     </button>
@@ -1512,15 +1523,14 @@ function EligibleModal({
   return (
     <Modal title="Eligible for Surgery" onClose={onClose} wide>
       {/* Summary */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-2.5 grid grid-cols-2 sm:grid-cols-[minmax(0,1.6fr)_repeat(3,minmax(0,1fr))] gap-x-4 gap-y-2">
-        <div className="min-w-0">
-          <p className="text-micro text-[var(--color-ink-400)]">Patient</p>
-          <p className="text-sm font-bold leading-snug text-[var(--color-ink-900)] break-words">{patient.split(" · ")[0]}</p>
-          <p className="text-caption text-[var(--color-ink-500)] tabular-nums break-words">{patient.split(" · ").slice(1).join(" · ")}</p>
-        </div>
-        <ConfirmLine label="Payment">{payment}</ConfirmLine>
-        <ConfirmLine label="Estimate">{estimate}</ConfirmLine>
-        <ConfirmLine label="Advance">{advance}</ConfirmLine>
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-3 space-y-1.5">
+        <EligRow label="Patient">
+          <b className="text-[var(--color-ink-900)]">{patient.split(" · ")[0]}</b>
+          <span className="text-[var(--color-ink-500)]"> · {patient.split(" · ").slice(1).join(" · ")}</span>
+        </EligRow>
+        <EligRow label="Payment">{payment}</EligRow>
+        <EligRow label="Estimate"><b className="text-[var(--color-ink-900)] tabular-nums">{estimate}</b></EligRow>
+        <EligRow label="Advance"><b className="text-[var(--color-ink-900)] tabular-nums">{advance}</b></EligRow>
       </div>
 
       {/* Verification table */}
@@ -1536,7 +1546,7 @@ function EligibleModal({
             <div key={i.key} className={`grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-3 border-b last:border-0 border-[var(--color-border)] transition-colors ${done ? "bg-emerald-50/70" : ""}`}>
               <div className="min-w-0 flex items-start gap-3">
                 <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${done ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>{i.icon}</span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-[9.5rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 sm:items-baseline pt-1">
                   <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{i.label}</p>
                   <p className="text-sm sm:text-base font-bold text-[var(--color-ink-900)] break-words leading-snug">{i.value}</p>
                 </div>
@@ -1557,15 +1567,13 @@ function EligibleModal({
       {/* Pre-op booking */}
       <div className="mt-4 rounded-xl border border-[var(--color-border)] px-4 py-3">
         <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2"><CalendarCheck size={12} /> Pre-op appointment · {date}</p>
-        <div className="grid grid-cols-1 sm:grid-cols-[10rem_minmax(0,1fr)] gap-3">
-          <div>
-            <label className={labelCls}>Time</label>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputCls} />
-          </div>
-          <div>
-            <label className={labelCls}>Notes (optional)</label>
+        <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3">
+          <InlineField label="Time" tight>
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={`${inputCls} sm:w-36`} />
+          </InlineField>
+          <InlineField label="Notes (optional)" tight>
             <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="e.g. Report fasting, bring reports" />
-          </div>
+          </InlineField>
         </div>
       </div>
 
