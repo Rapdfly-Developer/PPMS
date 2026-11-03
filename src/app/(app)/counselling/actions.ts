@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { writeAudit } from "@/lib/audit";
 import { istDateTime, istDayRange, istTodayStr } from "@/lib/ist";
 import { reportsValidUntil, surgeryLine } from "@/lib/counselling";
+import { INV_CATALOG } from "@/lib/investigation-catalog";
 
 type Result = { error?: string };
 
@@ -130,6 +131,12 @@ export async function reopenCounselling(visitId: string): Promise<Result> {
 
 // ── F. Doctor not satisfied: add investigations / postpone ──────────────────
 
+/** EMR investigation category for a test, from the catalog group it belongs to (custom tests → Pre-op & Lab). */
+function emrCategory(testName: string): string {
+  const group = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name.toLowerCase() === testName.toLowerCase()))?.[0];
+  return !group || group === "Pre-op Labs" || group === "Microbiology" ? "Pre-op & Lab" : "Imaging & Functional Tests";
+}
+
 export async function addCounsellingInvestigations(visitId: string, tests: string[], inViewOf: string): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked fit for surgery." };
@@ -142,7 +149,7 @@ export async function addCounsellingInvestigations(visitId: string, tests: strin
   const note = inViewOf.trim() || null;
   await prisma.$transaction([
     prisma.investigationOrder.createMany({
-      data: names.map((testName) => ({ visitId, category: "Pre-op & Lab", testName, priority: "ROUTINE", notes: note })),
+      data: names.map((testName) => ({ visitId, category: emrCategory(testName), testName, priority: "ROUTINE", notes: note })),
     }),
     prisma.counsellingRecord.upsert({
       where: { visitId },

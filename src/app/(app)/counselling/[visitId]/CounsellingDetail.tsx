@@ -9,8 +9,9 @@ import {
   User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Paperclip, Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check,
+  MoreHorizontal, Circle, Check, Plus,
 } from "lucide-react";
+import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { BackButton } from "@/components/ui/BackButton";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
@@ -87,6 +88,16 @@ const inputCls = "w-full h-9 rounded-lg border border-[var(--color-border)] bg-w
 const labelCls = "text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider block mb-1";
 const btnPrimary = "h-9 inline-flex items-center justify-center gap-1.5 px-4 text-sm font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
 const btnOutline = "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
+
+const IN_VIEW_OF_SUGGESTIONS = [
+  "Physician fitness for surgery",
+  "Anaesthesia fitness",
+  "Cardiac evaluation",
+  "Uncontrolled blood sugar",
+  "Uncontrolled blood pressure",
+  "Abnormal previous report",
+  "Bleeding risk",
+];
 
 const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "—");
 const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : null);
@@ -840,7 +851,7 @@ export function CounsellingDetail({
         </Modal>
       )}
 
-      {modal === "addInv" && <AddInvestigationsModal pending={pending} error={error} onClose={() => setModal(null)}
+      {modal === "addInv" && <AddInvestigationsModal pending={pending} error={error} existing={currentOrders.map((o) => o.testName)} onClose={() => setModal(null)}
         onSubmit={(tests, inViewOf) => run(() => addCounsellingInvestigations(data.visitId, tests, inViewOf), () => setModal(null))} />}
 
       {modal === "postpone" && <PostponeModal pending={pending} error={error} onClose={() => setModal(null)}
@@ -861,23 +872,150 @@ export function CounsellingDetail({
 }
 
 /* ── F(a). Add investigations ───────────────────────────────────────────── */
-function AddInvestigationsModal({ pending, error, onClose, onSubmit }: { pending: boolean; error: string; onClose: () => void; onSubmit: (tests: string[], inViewOf: string) => void }) {
-  const [tests, setTests] = useState("");
+function AddInvestigationsModal({
+  pending, error, existing, onClose, onSubmit,
+}: {
+  pending: boolean;
+  error: string;
+  existing: string[];
+  onClose: () => void;
+  onSubmit: (tests: string[], inViewOf: string) => void;
+}) {
+  const [selected, setSelected] = useState<string[]>([]);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
   const [inViewOf, setInViewOf] = useState("");
-  const list = tests.split(/[\n,]/).map((t) => t.trim()).filter(Boolean);
+
+  const norm = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  const ordered = useMemo(() => new Set(existing.map(norm)), [existing]);
+  const picked = new Set(selected.map(norm));
+  const unavailable = (name: string) => ordered.has(norm(name)) || picked.has(norm(name));
+
+  const toggle = (name: string) => {
+    if (ordered.has(norm(name))) return;
+    setSelected((cur) => (cur.some((t) => norm(t) === norm(name)) ? cur.filter((t) => norm(t) !== norm(name)) : [...cur, name]));
+  };
+  const addTyped = () => {
+    const name = query.trim();
+    if (!name || unavailable(name)) return;
+    setSelected((cur) => [...cur, name]);
+    setQuery("");
+  };
+
+  const q = norm(query);
+  const groups = Object.entries(INV_CATALOG)
+    .map(([cat, items]) => [cat, items.filter((i) => !q || norm(i.name).includes(q))] as const)
+    .filter(([, items]) => items.length > 0);
+  const exact = Object.values(INV_CATALOG).flat().some((i) => norm(i.name) === q);
+
   return (
-    <Modal title="Add Investigations" onClose={onClose}>
-      <label className={labelCls}>Investigations (one per line or comma separated)</label>
-      <textarea rows={4} value={tests} onChange={(e) => setTests(e.target.value)} className={`${inputCls} !h-auto py-2`} placeholder={"e.g. HbA1c\nECG"} />
-      <label className={`${labelCls} mt-3`}>In view of</label>
+    <Modal title="Add Investigations" onClose={onClose} wide>
+      {/* Search */}
+      <label className={labelCls}>Search tests</label>
+      <div className="relative">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+        <input
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTyped(); } }}
+          placeholder="Type to search, or press Enter to add a custom test…"
+          className={`${inputCls} pl-9`}
+        />
+        {open && (groups.length > 0 || (query.trim() && !exact)) && (
+          <div className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
+            {query.trim() && !exact && (
+              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={addTyped} disabled={unavailable(query)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] disabled:opacity-50">
+                <Plus size={14} /> Add &ldquo;{query.trim()}&rdquo;
+              </button>
+            )}
+            {groups.map(([cat, items]) => (
+              <div key={cat}>
+                <p className="px-3 pt-2 pb-1 text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{cat}</p>
+                {items.map((i) => {
+                  const isOrdered = ordered.has(norm(i.name));
+                  const isPicked = picked.has(norm(i.name));
+                  return (
+                    <button key={i.name} type="button" disabled={isOrdered} onMouseDown={(e) => e.preventDefault()} onClick={() => toggle(i.name)}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm text-left text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 disabled:hover:bg-transparent">
+                      <span>{i.name}</span>
+                      {isOrdered
+                        ? <span className="text-micro font-semibold text-[var(--color-ink-400)]">Already ordered</span>
+                        : isPicked && <Check size={14} className="text-[var(--color-primary-600)]" />}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick picks */}
+      <p className={`${labelCls} mt-4`}>Common pre-op tests</p>
+      <div className="flex flex-wrap gap-1.5">
+        {INV_CATALOG["Pre-op Labs"].map((i) => {
+          const isOrdered = ordered.has(norm(i.name));
+          const isPicked = picked.has(norm(i.name));
+          return (
+            <button key={i.name} type="button" disabled={isOrdered} onClick={() => toggle(i.name)}
+              className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                isPicked
+                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
+              }`}>
+              {isPicked ? <Check size={12} /> : <Plus size={12} />}{i.name}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Selected */}
+      <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3">
+        <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-500)] mb-2">
+          Selected {selected.length > 0 && <span className="text-[var(--color-primary-700)]">· {selected.length}</span>}
+        </p>
+        {selected.length === 0 ? (
+          <p className="text-xs text-[var(--color-ink-400)]">No tests selected yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {selected.map((t) => (
+              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-white border border-[var(--color-primary-200)] pl-2.5 pr-1 py-0.5 text-xs font-semibold text-[var(--color-ink-800)]">
+                {t}
+                <button type="button" onClick={() => toggle(t)} className="p-0.5 rounded-full text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]" aria-label={`Remove ${t}`}>
+                  <X size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* In view of */}
+      <label className={`${labelCls} mt-4`}>In view of</label>
       <input value={inViewOf} onChange={(e) => setInViewOf(e.target.value)} className={inputCls} placeholder="Reason for the additional tests" />
-      <p className="text-caption text-[var(--color-ink-400)] mt-2">The reports are uploaded against these tests, then the doctor reviews them again for Fit for Surgery.</p>
+      <div className="flex flex-wrap gap-1.5 mt-2">
+        {IN_VIEW_OF_SUGGESTIONS.map((s) => (
+          <button key={s} type="button" onClick={() => setInViewOf(s)}
+            className={`rounded-full border px-2.5 py-0.5 text-caption font-medium transition-colors ${
+              inViewOf === s ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)]"
+            }`}>
+            {s}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
-      <div className="flex justify-end gap-2 mt-4">
-        <button className={btnOutline} onClick={onClose}>Cancel</button>
-        <button className={btnPrimary} disabled={pending || list.length === 0} onClick={() => onSubmit(list, inViewOf)}>
-          <PlusCircle size={15} /> Add {list.length || ""}
-        </button>
+      <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[var(--color-border)]">
+        <p className="text-caption text-[var(--color-ink-400)]">Upload the reports against these tests; the doctor then reviews again.</p>
+        <div className="flex gap-2 shrink-0">
+          <button className={btnOutline} onClick={onClose}>Cancel</button>
+          <button className={btnPrimary} disabled={pending || selected.length === 0} onClick={() => onSubmit(selected, inViewOf)}>
+            <PlusCircle size={15} /> Add {selected.length > 0 ? `${selected.length} test${selected.length > 1 ? "s" : ""}` : ""}
+          </button>
+        </div>
       </div>
     </Modal>
   );
