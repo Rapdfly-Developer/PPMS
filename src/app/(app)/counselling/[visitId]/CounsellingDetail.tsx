@@ -757,12 +757,19 @@ export function CounsellingDetail({
   const editable = canEdit && !frozen;
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
-  const details = { implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, estimateAmount: estimate === "" ? null : Number(estimate) };
+  // Stable object (auto-save treats every new reference as a change), and no
+  // save until something is actually edited, so opening the page writes nothing.
+  const details = useMemo(
+    () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, estimateAmount: estimate === "" ? null : Number(estimate) }),
+    [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, estimate],
+  );
+  const [initialDetails] = useState(() => JSON.stringify(details));
+  const edited = JSON.stringify(details) !== initialDetails;
   const saveState = useAutoSave(
     details,
     async (d) => { const r = await saveCounsellingDetails(data.visitId, d); if (r.error) throw new Error(r.error); },
     undefined,
-    { flushOnUnmount: true, paused: !editable },
+    { flushOnUnmount: true, paused: !editable || !edited },
   );
 
   const currentOrders = data.orders.filter((o) => o.current);
