@@ -135,14 +135,20 @@ const STAGES = ["Counselling", "Fit for Surgery", "Advance", "Eligible"];
 
 function ProgressDots({ r }: { r: CounsellingRow }) {
   const done = [true, r.fit, r.advanceDone, r.eligible];
+  const count = done.filter(Boolean).length;
+  const next = STAGES[done.findIndex((d) => !d)];
   return (
-    <span className="inline-flex items-center gap-1" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
-      {done.map((d, i) => (
-        <span key={i} className="inline-flex items-center gap-1">
-          {i > 0 && <span className={`w-2 h-px ${d ? "bg-[var(--color-primary-400)]" : "bg-[var(--color-border)]"}`} />}
-          <span className={`w-2 h-2 rounded-full ${d ? "bg-[var(--color-primary-500)]" : "border border-[var(--color-ink-300)] bg-white"}`} />
-        </span>
-      ))}
+    <span className="inline-flex items-center gap-2" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
+      <span className="flex w-20 gap-0.5">
+        {done.map((d, i) => (
+          <span key={i} className={`h-1.5 flex-1 first:rounded-l-full last:rounded-r-full ${
+            d ? "bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-400)]" : "bg-[var(--color-border)]"
+          }`} />
+        ))}
+      </span>
+      <span className="text-micro font-semibold text-[var(--color-ink-500)] whitespace-nowrap">
+        {next ? <>Next: <span className="text-[var(--color-ink-700)]">{next}</span></> : <span className="text-emerald-700">All done</span>}
+      </span>
     </span>
   );
 }
