@@ -464,7 +464,7 @@ function SectionCard({
 function InlineField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center gap-x-3 gap-y-1 min-w-0">
-      <label className="text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap">{label}</label>
+      <label className="text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap sm:min-w-[8.5rem]">{label}</label>
       {children}
     </div>
   );
