@@ -9,7 +9,7 @@ import {
   User, UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ArrowRight, ChevronDown,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { BackButton } from "@/components/ui/BackButton";
@@ -585,37 +585,6 @@ export function CounsellingDetail({
   const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
 
-  const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
-  const nextStep: { title: string; hint?: string; icon: React.ReactNode; iconCls: string; action: React.ReactNode } | null =
-    rec.eligibleForSurgery ? null
-    : rec.surgeryDeferred ? {
-        title: "Surgery date not confirmed", hint: rec.postponedIndefinitely ? "Not decided yet" : `Expected ${fmtDate(rec.postponedUntil)}`,
-        icon: <PauseCircle size={17} />, iconCls: "bg-orange-50 text-orange-600",
-        action: canFit ? <button className={btnOutline} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={14} /> Resume</button> : null,
-      }
-    : expired ? {
-        title: "Reports expired — redo the reports", hint: `Expired on ${fmtDate(rec.reportsValidUntil)}`,
-        icon: <AlertTriangle size={17} />, iconCls: "bg-red-50 text-red-600",
-        action: canFit ? <button className={btnOutline} disabled={pending} onClick={() => run(() => reopenCounselling(data.visitId))}><RotateCcw size={14} /> Reopen</button> : null,
-      }
-    : !rec.fitForSurgery ? {
-        title: "Doctor review — Fit for Surgery",
-        hint: invPending.length > 0 ? `Waiting for ${invPending.length} report${invPending.length > 1 ? "s" : ""}` : !dateOfSurgery ? "Set the tentative date first" : canFit ? "Reports are ready for review" : "Awaiting the doctor",
-        icon: <ShieldCheck size={17} />, iconCls: "bg-amber-50 text-amber-600",
-        action: invPending.length > 0
-          ? <button className={btnOutline} onClick={() => setModal("investigations")}><Upload size={14} /> Upload reports</button>
-          : canFit ? <button className={btnPrimary} disabled={pending || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}><ShieldCheck size={15} /> Fit for Surgery</button> : null,
-      }
-    : !advanceDone ? {
-        title: "Record the advance payment", hint: rec.estimateAmount != null ? `Estimate ${rupees(rec.estimateAmount)}` : undefined,
-        icon: <IndianRupee size={17} />, iconCls: "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]",
-        action: canEdit ? <button className={btnPrimary} onClick={() => scrollTo("advance-section")}>Go to Advance <ArrowRight size={14} /></button> : null,
-      }
-    : {
-        title: "Confirm Eligible for Surgery", hint: "Verify twice and book the pre-op",
-        icon: <CheckCircle2 size={17} />, iconCls: "bg-emerald-50 text-emerald-600",
-        action: canEligible ? <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending} onClick={() => { setError(""); setModal("eligible"); }}><CheckCircle2 size={15} /> Eligible for Surgery</button> : null,
-      };
 
   return (
     <div className="fade-in pb-24 max-w-6xl">
@@ -907,7 +876,7 @@ export function CounsellingDetail({
 
           {/* ── G ─────────────────────────────────────────────────────── */}
           <SectionCard
-            id="advance-section" step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
+            step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
             locked={!rec.fitForSurgery} lockedText="Unlocks after Fit for Surgery"
             right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
           >
@@ -982,20 +951,6 @@ export function CounsellingDetail({
             )}
           </SectionCard>
 
-          {/* ── Next step ─────────────────────────────────────────────── */}
-          {nextStep && (
-            <div className="sticky bottom-3 z-20">
-              <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-white/95 backdrop-blur px-4 py-3 shadow-lg">
-                <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${nextStep.iconCls}`}>{nextStep.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">Next step</p>
-                  <p className="text-sm font-semibold text-[var(--color-ink-900)] truncate">{nextStep.title}</p>
-                  {nextStep.hint && <p className="text-caption text-[var(--color-ink-500)] truncate">{nextStep.hint}</p>}
-                </div>
-                {nextStep.action}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── Summary ───────────────────────────────────────────────────── */}
