@@ -9,7 +9,7 @@ import {
   UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { BackButton } from "@/components/ui/BackButton";
@@ -673,49 +673,65 @@ export function CounsellingDetail({
           </button>
         </div>
 
-        {/* C/c · diagnosis · notes */}
+        {/* Chief complaint · diagnosis · notes (same style as the visit summaries) */}
         {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption">
+          <div className="mt-3 space-y-1.5 rounded-xl border border-[var(--color-border)] bg-white/70 px-3 py-2.5">
             {data.chiefComplaint && (
-              <span className="inline-flex items-center gap-1.5"><span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">C/c</span><ComplaintChips value={data.chiefComplaint} wrap /></span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <FileText size={11} className="text-[var(--color-ink-400)]" />
+                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
+                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+                </span>
+                <ComplaintChips value={data.chiefComplaint} wrap />
+              </div>
             )}
             {data.diagnoses.length > 0 && (
-              <span className="inline-flex flex-wrap items-center gap-1.5">
-                <span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Dx</span>
-                {data.diagnoses.map((d, i) => (
-                  <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2 py-0.5 rounded-full border text-caption">
-                    {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
-                  </span>
-                ))}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 shrink-0">
+                  <Stethoscope size={11} className="clinical-diagnosis-text" />
+                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Diagnosis</span>
+                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {data.diagnoses.map((d, i) => (
+                    <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full border text-caption">
+                      {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
             {data.surgeryNotes && (
-              <span className="inline-flex items-center gap-1.5 min-w-0">
-                <span className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Notes</span>
-                <span className="text-[var(--color-ink-600)] truncate">{data.surgeryNotes.replace(/•\s*/g, "").split("\n").filter(Boolean).join(" · ")}</span>
-              </span>
+              <div className="flex items-start gap-2 flex-wrap">
+                <span className="flex items-center gap-1.5 shrink-0 pt-px">
+                  <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
+                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Notes</span>
+                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
+                </span>
+                <span className="text-caption text-[var(--color-ink-700)]">{data.surgeryNotes.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(" · ")}</span>
+              </div>
             )}
           </div>
         )}
 
         {/* Progress */}
-        <ol className="mt-3 pt-2.5 border-t border-dashed border-[var(--color-border)] flex items-center gap-1">
+        <ol className="mt-3 grid grid-cols-4 gap-1 rounded-xl bg-[var(--color-surface-sunken)] p-1">
           {steps.map((s, i) => {
             const isCurrent = i === currentStep;
             return (
-              <Fragment key={s.label}>
-                <li className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro sm:text-caption font-semibold whitespace-nowrap ${
-                  s.done
-                    ? "bg-[var(--color-primary-600)] text-white"
-                    : isCurrent
-                      ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-300)]"
-                      : "text-[var(--color-ink-400)]"
-                }`}>
-                  {s.done ? <Check size={11} strokeWidth={3} /> : <span className="tabular-nums">{i + 1}</span>}
-                  <span className={isCurrent || s.done ? "" : "hidden sm:inline"}>{s.label}</span>
-                </li>
-                {i < steps.length - 1 && <span className={`flex-1 border-t-2 border-dotted ${steps[i + 1].done ? "border-[var(--color-primary-400)]" : "border-[var(--color-border)]"}`} />}
-              </Fragment>
+              <li key={s.label} className={`h-7 inline-flex items-center justify-center gap-1.5 rounded-lg text-micro sm:text-caption font-semibold transition-colors ${
+                s.done
+                  ? "bg-[var(--color-primary-600)] text-white shadow-sm"
+                  : isCurrent
+                    ? "bg-white text-[var(--color-primary-700)] shadow-sm ring-1 ring-[var(--color-primary-300)]"
+                    : "text-[var(--color-ink-400)]"
+              }`}>
+                {s.done
+                  ? <Check size={12} strokeWidth={3} />
+                  : <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold ${isCurrent ? "bg-[var(--color-primary-100)]" : "border border-[var(--color-border)]"}`}>{i + 1}</span>}
+                <span className={`truncate ${s.done || isCurrent ? "" : "hidden sm:inline"}`}>{s.label}</span>
+              </li>
             );
           })}
         </ol>
