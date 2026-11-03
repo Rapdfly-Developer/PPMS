@@ -330,7 +330,7 @@ export function CounsellingClient({
           </p>
           <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
             {rows.length === 0
-              ? "Fill a procedure in the EMR Plan tab's Minor Procedure card to see the patient here."
+              ? "Save Surgical Counselling in the EMR Patient Disposition card, then Finalize & Sign the visit."
               : "Try another card or adjust the filters."}
           </p>
         </div>

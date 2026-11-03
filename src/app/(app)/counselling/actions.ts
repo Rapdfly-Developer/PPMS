@@ -16,7 +16,7 @@ async function loadVisit(visitId: string, ...permissions: string[]) {
   const scope = await visitRecordScope(user);
   if (!scope) throw new Error("Forbidden");
   const visit = await prisma.visit.findFirst({
-    where: { id: visitId, ...scope, procedureName: { not: null } },
+    where: { id: visitId, ...scope, surgeryAdvised: true, finalizedAt: { not: null }, advisedSurgeryName: { not: null } },
     include: { counsellingRecord: true, investigationOrders: { select: { testName: true, resultRef: true, resultAt: true, updatedAt: true } } },
   });
   if (!visit) throw new Error("Counselling record not found");
@@ -82,7 +82,8 @@ export async function saveCounsellingDetails(visitId: string, data: {
 export async function markFitForSurgery(visitId: string): Promise<Result & { validUntil?: string | null }> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.fitForSurgery) return { error: "Already marked fit for surgery." };
-  if (!rec?.dateOfSurgery) return { error: "Set the tentative date of surgery first." };
+  const dateOfSurgery = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
+  if (!rec || !dateOfSurgery) return { error: "Set the tentative date of surgery first." };
 
   const pending = visit.investigationOrders.filter((o) => !o.resultRef);
   if (pending.length > 0) {
@@ -91,7 +92,7 @@ export async function markFitForSurgery(visitId: string): Promise<Result & { val
 
   const oldest = oldestReportAt(visit.investigationOrders);
   const validUntil = oldest ? reportsValidUntil(oldest) : null;
-  if (validUntil && rec.dateOfSurgery > validUntil) {
+  if (validUntil && dateOfSurgery > validUntil) {
     return { error: "Surgery date is more than 1 month after the oldest report. Reports would expire; change the date or redo the reports." };
   }
 
@@ -102,6 +103,7 @@ export async function markFitForSurgery(visitId: string): Promise<Result & { val
       fitForSurgery: true,
       status: "PARTIAL",
       doctorDecision: "FIT_FOR_SURGERY",
+      dateOfSurgery,
       doctorReviewedAt: now,
       fitByName: user.name,
       reportsValidUntil: validUntil,

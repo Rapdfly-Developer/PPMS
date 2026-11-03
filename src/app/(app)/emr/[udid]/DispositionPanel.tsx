@@ -3,10 +3,13 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
-import { saveDispense, saveFollowUp } from "./actions";
-import { AlertTriangle, History, Plus, X } from "lucide-react";
+import { saveDispense, saveFollowUp, saveSurgicalCounselling, clearSurgicalCounselling } from "./actions";
+import { AlertTriangle, History, Plus, Search, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
-import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { istTodayStr } from "@/lib/ist";
+import { ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS } from "@/lib/counselling";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -312,6 +315,230 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
         </button>
         {saved && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
       </div>
+    </div>
+  );
+}
+
+/* ── Surgical Counselling ─────────────────────────────────────────────────
+   Saved on the visit (advisedSurgery* fields). Once the visit is finalized
+   and signed, the patient appears in the Counselling module. */
+
+const SURGERY_LIBRARY_KEY = "ppms_custom_surgery_v1";
+// Shared with the Minor Procedure card so custom anaesthesia types appear in both.
+const ANAESTHESIA_LIBRARY_KEY = "ppms_custom_anesthesia_v1";
+
+function readLibrary(key: string): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? "[]");
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function rememberInLibrary(key: string, builtIns: readonly string[], value: string): string[] {
+  const v = value.trim();
+  const current = readLibrary(key);
+  const known = [...builtIns, ...current].some((s) => s.toLowerCase() === v.toLowerCase());
+  if (!v || known) return current;
+  const next = [...current, v];
+  try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+  return next;
+}
+
+function SearchCombo({
+  value, onChange, options, libraryKey, placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly string[];
+  libraryKey: string;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState<string[]>(() => (typeof window === "undefined" ? [] : readLibrary(libraryKey)));
+  const q = value.trim().toLowerCase();
+  const matches = [...new Set([...options, ...custom])].filter((s) => !q || s.toLowerCase().includes(q));
+
+  return (
+    <div className="relative">
+      <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+      <input
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => { setCustom(rememberInLibrary(libraryKey, options, value)); setTimeout(() => setOpen(false), 150); }}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+      />
+      {open && matches.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1">
+          {matches.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(s); setOpen(false); }}
+              className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: string }) {
+  const toInputDate = (d: any) => (d ? istTodayStr(new Date(d)) : "");
+  const [eye, setEye]                 = useState<string>(visit.advisedSurgeryEye ?? "");
+  const [name, setName]               = useState<string>(visit.advisedSurgeryName ?? "");
+  const [anaesthesia, setAnaesthesia] = useState<string>(visit.advisedSurgeryAnaesthesia ?? "");
+  const [date, setDate]               = useState<string>(toInputDate(visit.advisedSurgeryDate));
+  const [notes, setNotes]             = useState<string>(visit.advisedSurgeryNotes ?? "");
+  const [isSaved, setIsSaved]         = useState<boolean>(!!visit.surgeryAdvised);
+  const [savedMsg, setSavedMsg]       = useState(false);
+  const [error, setError]             = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [pending, startTransition]    = useTransition();
+  const overview = useEmrOverview();
+
+  const touch = () => { setSavedMsg(false); setError(""); };
+  const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase block mb-1.5";
+
+  const save = () =>
+    startTransition(async () => {
+      const r = await saveSurgicalCounselling(visit.id, udid, { eye, name, anaesthesia, date, notes });
+      if (r.error) { setError(r.error); return; }
+      setIsSaved(true);
+      setSavedMsg(true);
+    });
+
+  const resetFields = () => {
+    setEye(""); setName(""); setAnaesthesia(""); setDate(""); setNotes(""); touch();
+  };
+
+  // Cancel resets every field and removes what was saved for this visit.
+  const cancel = () => {
+    if (!isSaved) { resetFields(); return; }
+    setConfirmClear(true);
+  };
+
+  const doClear = () =>
+    startTransition(async () => {
+      setConfirmClear(false);
+      const r = await clearSurgicalCounselling(visit.id, udid);
+      if (r.error) { setError(r.error); return; }
+      resetFields();
+      setIsSaved(false);
+    });
+
+  if (overview) {
+    if (!visit.surgeryAdvised) return null;
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-1">
+        <p className={labelCls}>Surgical Counselling</p>
+        <p className="text-label sm:text-sm text-[var(--color-ink-700)]">
+          {[visit.advisedSurgeryEye, visit.advisedSurgeryName, visit.advisedSurgeryAnaesthesia].filter(Boolean).join(" · ")}
+        </p>
+        {visit.advisedSurgeryDate && (
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
+            Tentative date: {new Date(visit.advisedSurgeryDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+          </p>
+        )}
+        {visit.advisedSurgeryNotes && <p className="text-label sm:text-sm text-[var(--color-ink-500)] whitespace-pre-line">{visit.advisedSurgeryNotes}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
+      {/* Line 1 — laterality, surgery, anaesthesia */}
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
+        <div className="shrink-0">
+          <label className={labelCls}>Laterality</label>
+          <div className="flex gap-1">
+            {(["RE", "LE", "OU"] as const).map((lat) => (
+              <button
+                key={lat}
+                type="button"
+                onClick={() => { setEye(eye === lat ? "" : lat); touch(); }}
+                className={`w-10 py-2 rounded-lg border text-xs font-bold transition-colors ${
+                  eye === lat
+                    ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                    : "border-[var(--color-border)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
+                }`}
+              >
+                {lat}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="min-w-0">
+          <label className={labelCls}>Name of Surgery</label>
+          <SearchCombo value={name} onChange={(v) => { setName(v); touch(); }} options={SURGERY_OPTIONS} libraryKey={SURGERY_LIBRARY_KEY} placeholder="Search or type a surgery…" />
+        </div>
+        <div className="min-w-0">
+          <label className={labelCls}>Type of Anesthesia</label>
+          <SearchCombo value={anaesthesia} onChange={(v) => { setAnaesthesia(v); touch(); }} options={ANAESTHESIA_OPTIONS} libraryKey={ANAESTHESIA_LIBRARY_KEY} placeholder="Search anesthesia…" />
+        </div>
+      </div>
+
+      {/* Line 2 — tentative date, notes */}
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-start">
+        <div>
+          <label className={labelCls}>Tentative Date</label>
+          <input
+            type="date"
+            value={date}
+            min={istTodayStr()}
+            onChange={(e) => { setDate(e.target.value); touch(); }}
+            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />
+        </div>
+        <div className="min-w-0">
+          <label className={labelCls}>Notes</label>
+          <KeywordTextarea
+            fieldKey="surgical_counselling_notes"
+            builtIns={SURGICAL_NOTE_KEYWORDS}
+            value={notes}
+            onChange={(v) => { setNotes(v); touch(); }}
+            rows={1}
+            placeholder="Select a keyword below or type notes…"
+          />
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} /> {error}</p>}
+
+      <div data-overview-hide className="flex items-center gap-3">
+        <button
+          disabled={pending || !name.trim()}
+          onClick={save}
+          className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+        >
+          Save
+        </button>
+        <button
+          disabled={pending}
+          onClick={cancel}
+          className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-60 transition-colors"
+        >
+          Cancel
+        </button>
+        {savedMsg && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved · goes to Counselling after Finalize &amp; Sign</span>}
+      </div>
+
+      {confirmClear && (
+        <ConfirmDialog
+          title="Remove surgical counselling?"
+          message="This clears all fields and removes the saved surgery for this visit, so the patient will not go to Counselling."
+          confirmLabel="Remove"
+          onConfirm={doClear}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
     </div>
   );
 }

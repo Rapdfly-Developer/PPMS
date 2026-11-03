@@ -12,3 +12,6 @@ ALTER TABLE "CounsellingRecord" ADD COLUMN IF NOT EXISTS "preOpAppointmentId" TE
 -- Upload time of investigation results (report expiry is counted from the oldest one)
 ALTER TABLE "InvestigationOrder" ADD COLUMN IF NOT EXISTS "resultAt" TIMESTAMP(3);
 UPDATE "InvestigationOrder" SET "resultAt" = "updatedAt" WHERE "resultRef" IS NOT NULL AND "resultAt" IS NULL;
+
+-- Surgical Counselling tab (EMR Patient Disposition)
+ALTER TABLE "Visit" ADD COLUMN IF NOT EXISTS "advisedSurgeryAnaesthesia" TEXT;

@@ -536,6 +536,7 @@ model Visit {
   advisedSurgeryEye   String?
   advisedSurgeryNotes String?
   advisedSurgeryDate  DateTime?
+  advisedSurgeryAnaesthesia String?
 
   generalExam        GeneralExamination?
   medications        Medication[]

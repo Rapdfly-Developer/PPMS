@@ -10,8 +10,8 @@ import { useEMRSaveContext } from "./EmrSaveContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
-import { DispositionToggle, FollowUpdatesPanel, ReferralPanel } from "./DispositionPanel";
-import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
+import { DispositionToggle, FollowUpdatesPanel, ReferralPanel, SurgicalCounsellingPanel } from "./DispositionPanel";
+import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Scissors, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -2751,26 +2751,28 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
 
 function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
   const overview = useEmrOverview();
-  // Starts closed unless follow-up or referral details are saved; then it opens
-  // with the panels that hold them.
-  const [open, setOpen] = useState(() => !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf));
+  // Starts closed unless follow-up, referral or surgical counselling details are
+  // saved; then it opens with the panels that hold them.
+  const [open, setOpen] = useState(() => !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised));
   const [activePanels, setActivePanels] = useState<string[]>(
     [
       (visit.followUpDate || visit.inViewOf) && "follow",
       visit.referralEnabled && "referral",
+      visit.surgeryAdvised && "surgical",
     ].filter(Boolean) as string[]
   );
   // One panel at a time: opening Referral closes Follow Up Dates and vice versa.
   const togglePanel = (id: string) =>
     setActivePanels((cur) => (cur.includes(id) ? [] : [id]));
 
-  const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf);
+  const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised);
   // In overview with data, auto-open the panels that hold it so the values are visible
   const displayPanels = overview && hasFollowUpData
     ? [...new Set([
         ...activePanels,
         ...(visit.followUpDate || visit.inViewOf ? ["follow"] : []),
         ...(visit.referralEnabled ? ["referral"] : []),
+        ...(visit.surgeryAdvised ? ["surgical"] : []),
       ])]
     : activePanels;
 
@@ -2785,12 +2787,14 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
         <div data-overview-hide className="flex gap-3 flex-wrap mb-2">
           <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
           <DispositionToggle icon={<Share2 size={16} />}     label="Referral"             active={activePanels.includes("referral")} onClick={() => togglePanel("referral")} />
+          <DispositionToggle icon={<Scissors size={16} />}   label="Surgical Counselling" active={activePanels.includes("surgical")} onClick={() => togglePanel("surgical")} />
         </div>
       )}
       {open && (
         <div className="flex flex-col gap-4">
           {displayPanels.includes("follow") && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
           {displayPanels.includes("referral") && <ReferralPanel visit={visit} udid={udid} />}
+          {displayPanels.includes("surgical") && <SurgicalCounsellingPanel visit={visit} udid={udid} />}
         </div>
       )}
     </Card>

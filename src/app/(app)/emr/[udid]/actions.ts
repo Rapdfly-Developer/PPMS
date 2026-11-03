@@ -768,6 +768,53 @@ export async function saveProcedureNotes(visitId: string, udid: string, value: s
   revalidateAfter(udid);
 }
 
+// ── Surgical Counselling (Patient Disposition) ──────────────────────────
+// The visit goes to the Counselling module once it is finalized and signed.
+
+export async function saveSurgicalCounselling(
+  visitId: string,
+  udid: string,
+  data: { eye: string; name: string; anaesthesia: string; date: string; notes: string },
+): Promise<{ error?: string }> {
+  const user = await requireVisitPerm(visitId, "emr.plan.edit");
+  const name = data.name.trim();
+  if (!name) return { error: "Enter the name of the surgery." };
+  if (data.date && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) return { error: "Invalid tentative date." };
+
+  const patch = {
+    surgeryAdvised: true,
+    advisedSurgeryName: name,
+    advisedSurgeryEye: data.eye || null,
+    advisedSurgeryAnaesthesia: data.anaesthesia.trim() || null,
+    advisedSurgeryDate: data.date ? istDayRange(data.date).dayStart : null,
+    advisedSurgeryNotes: data.notes.trim() || null,
+  };
+  await prisma.visit.update({ where: { id: visitId }, data: patch });
+  await writeAudit(user.id, "Visit", visitId, "SURGICAL_COUNSELLING_SAVE", patch);
+  revalidate(udid);
+  revalidatePath("/counselling");
+  return {};
+}
+
+export async function clearSurgicalCounselling(visitId: string, udid: string): Promise<{ error?: string }> {
+  const user = await requireVisitPerm(visitId, "emr.plan.edit");
+  const rec = await prisma.counsellingRecord.findUnique({ where: { visitId }, select: { fitForSurgery: true, eligibleForSurgery: true } });
+  if (rec?.fitForSurgery || rec?.eligibleForSurgery) {
+    return { error: "Counselling has already passed Fit for surgery, so it can't be removed here." };
+  }
+  await prisma.visit.update({
+    where: { id: visitId },
+    data: {
+      surgeryAdvised: false, advisedSurgeryName: null, advisedSurgeryEye: null,
+      advisedSurgeryAnaesthesia: null, advisedSurgeryDate: null, advisedSurgeryNotes: null,
+    },
+  });
+  await writeAudit(user.id, "Visit", visitId, "SURGICAL_COUNSELLING_CLEAR", {});
+  revalidate(udid);
+  revalidatePath("/counselling");
+  return {};
+}
+
 export async function closeVisit(visitId: string, udid: string) {
   const user = await requireAnyPermission("emr.create");
   await assertVisitOwner(visitId);

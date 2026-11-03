@@ -23,18 +23,6 @@ export function counsellingStatus(rec: {
   return "PENDING";
 }
 
-/** The Minor Procedure input, as one display line ("• a\n• b" → "a, b"). */
-export function procedureText(raw: string | null | undefined): string {
-  if (!raw) return "";
-  let items: string[] = [];
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) items = parsed.filter((s): s is string => typeof s === "string");
-  } catch {}
-  if (items.length === 0) items = raw.split("\n");
-  return items.map((s) => s.replace(/^\s*•\s*/, "").trim()).filter(Boolean).join(", ");
-}
-
 export const LATERALITY_LABEL: Record<string, string> = {
   RE: "Right Eye (RE)",
   LE: "Left Eye (LE)",
@@ -42,13 +30,64 @@ export const LATERALITY_LABEL: Record<string, string> = {
 };
 
 /** Full surgery line: "Phacoemulsification with IOL — Right Eye (RE) — Peribulbar Block". */
-export function surgeryLine(v: { procedureName: string | null; procedureLaterality: string | null; anesthesiaType: string | null }): string {
+export function surgeryLine(v: { advisedSurgeryName: string | null; advisedSurgeryEye: string | null; advisedSurgeryAnaesthesia: string | null }): string {
   return [
-    procedureText(v.procedureName),
-    v.procedureLaterality ? LATERALITY_LABEL[v.procedureLaterality] ?? v.procedureLaterality : "",
-    v.anesthesiaType ?? "",
+    v.advisedSurgeryName?.trim() ?? "",
+    v.advisedSurgeryEye ? LATERALITY_LABEL[v.advisedSurgeryEye] ?? v.advisedSurgeryEye : "",
+    v.advisedSurgeryAnaesthesia ?? "",
   ].filter(Boolean).join(" — ");
 }
+
+// ── EMR Surgical Counselling tab ────────────────────────────────────────────
+export const SURGERY_OPTIONS = [
+  "Phacoemulsification with IOL",
+  "Manual Small Incision Cataract Surgery (MSICS) with IOL",
+  "Extracapsular Cataract Extraction (ECCE) with IOL",
+  "Phacoemulsification with Toric IOL",
+  "Phacoemulsification with Multifocal IOL",
+  "Secondary IOL Implantation",
+  "Trabeculectomy with MMC",
+  "Combined Phaco-Trabeculectomy",
+  "Glaucoma Drainage Device (Ahmed Valve) Implantation",
+  "Pars Plana Vitrectomy (PPV)",
+  "PPV with Silicone Oil Injection",
+  "PPV with Endolaser",
+  "Silicone Oil Removal",
+  "Scleral Buckling",
+  "Penetrating Keratoplasty (PK)",
+  "DSAEK / DMEK",
+  "Pterygium Excision with Conjunctival Autograft",
+  "Dacryocystorhinostomy (DCR)",
+  "Ptosis Correction",
+  "Strabismus Surgery",
+  "Evisceration with Orbital Implant",
+  "Enucleation with Orbital Implant",
+  "Implantable Collamer Lens (ICL)",
+];
+
+export const ANAESTHESIA_OPTIONS = [
+  "Topical Anesthesia",
+  "Local Infiltration",
+  "Peribulbar Block",
+  "Retrobulbar Block",
+  "Sub-Tenon's Block",
+  "General Anesthesia",
+  "Monitored Anesthesia Care (MAC)",
+  "Sedation + Topical",
+];
+
+export const SURGICAL_NOTE_KEYWORDS = [
+  "Pre-op investigations advised",
+  "Physician fitness required",
+  "Cardiology clearance required",
+  "Biometry done",
+  "Biometry to be repeated",
+  "Control blood sugar before surgery",
+  "Control blood pressure before surgery",
+  "Stop anticoagulants as advised",
+  "Patient counselled about risks",
+  "Guarded visual prognosis explained",
+];
 
 // ── Co-payment ──────────────────────────────────────────────────────────────
 export const PAYMENT_MODES = [

@@ -45,6 +45,7 @@ export interface CounsellingDetailData {
   surgery: string;
   laterality: string | null;
   anaesthesia: string | null;
+  surgeryNotes: string | null;
   doctorName: string;
   patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; mobile: string; photoUrl: string | null };
   chiefComplaint: string | null;
@@ -372,6 +373,7 @@ export function CounsellingDetail({
               </p>
               {/* Line 2 — surgery, tentative date, investigations */}
               <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-2 break-words">{surgeryFull}</p>
+              {data.surgeryNotes && <p className="text-caption sm:text-xs text-[var(--color-ink-500)] mt-0.5 whitespace-pre-line">{data.surgeryNotes}</p>}
               <div className="flex flex-wrap items-center gap-2 mt-1.5">
                 <span className="inline-flex items-center gap-1 text-caption sm:text-xs text-[var(--color-ink-600)]">
                   <CalendarDays size={12} /> Tentative: <b>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Not set"}</b>

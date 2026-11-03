@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { counsellingStatus, procedureText } from "@/lib/counselling";
+import { counsellingStatus } from "@/lib/counselling";
 import { CounsellingDetail, type CounsellingDetailData } from "./CounsellingDetail";
 
 export const metadata = { title: "Counselling" };
@@ -18,14 +18,16 @@ export default async function CounsellingVisitPage({
   if (!scope) notFound();
 
   const visit = await prisma.visit.findFirst({
-    where: { id: visitId, ...scope, procedureName: { not: null } },
+    where: { id: visitId, ...scope, surgeryAdvised: true, finalizedAt: { not: null }, advisedSurgeryName: { not: null } },
     select: {
       id: true,
       date: true,
       patientId: true,
-      procedureName: true,
-      procedureLaterality: true,
-      anesthesiaType: true,
+      advisedSurgeryName: true,
+      advisedSurgeryEye: true,
+      advisedSurgeryAnaesthesia: true,
+      advisedSurgeryDate: true,
+      advisedSurgeryNotes: true,
       patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
       doctor: { select: { name: true } },
       generalExam: { select: { chiefComplaint: true } },
@@ -33,7 +35,7 @@ export default async function CounsellingVisitPage({
       counsellingRecord: true,
     },
   });
-  if (!visit || !procedureText(visit.procedureName)) notFound();
+  if (!visit) notFound();
 
   // Investigation history: every order for this patient within the user's scope.
   const orders = await prisma.investigationOrder.findMany({
@@ -53,9 +55,10 @@ export default async function CounsellingVisitPage({
   const data: CounsellingDetailData = {
     visitId: visit.id,
     visitDate: visit.date.toISOString(),
-    surgery: procedureText(visit.procedureName),
-    laterality: visit.procedureLaterality,
-    anaesthesia: visit.anesthesiaType,
+    surgery: visit.advisedSurgeryName ?? "",
+    laterality: visit.advisedSurgeryEye,
+    anaesthesia: visit.advisedSurgeryAnaesthesia,
+    surgeryNotes: visit.advisedSurgeryNotes,
     doctorName: visit.doctor.name,
     patient: { ...visit.patient, udid: visit.patient.udid ?? visit.patient.id },
     chiefComplaint: visit.generalExam?.chiefComplaint ?? null,
@@ -74,7 +77,7 @@ export default async function CounsellingVisitPage({
     status: counsellingStatus(rec),
     rec: {
       implant: rec?.implant ?? "",
-      dateOfSurgery: rec?.dateOfSurgery?.toISOString() ?? null,
+      dateOfSurgery: (rec?.dateOfSurgery ?? visit.advisedSurgeryDate)?.toISOString() ?? null,
       paymentMode: rec?.paymentMode ?? "",
       paymentType: rec?.paymentType ?? "",
       schemeName: rec?.schemeName ?? "",

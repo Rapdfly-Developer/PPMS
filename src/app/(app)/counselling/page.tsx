@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { counsellingStatus, procedureText } from "@/lib/counselling";
+import { counsellingStatus } from "@/lib/counselling";
 import { CounsellingClient, type CounsellingRow } from "./CounsellingClient";
 
 export const metadata = { title: "Counselling" };
@@ -10,17 +10,18 @@ export default async function CounsellingPage() {
   const user = await requirePermission("counselling.view");
   const scope = (await visitRecordScope(user)) ?? { id: "__no_scope__" };
 
-  // A visit enters counselling as soon as a procedure is filled in the EMR
-  // Plan tab's Minor Procedure card.
+  // A visit enters counselling once Surgical Counselling is saved in the EMR
+  // Patient Disposition card and the visit is finalized and signed.
   const visits = await prisma.visit.findMany({
-    where: { ...scope, AND: [{ procedureName: { not: null } }, { procedureName: { not: "" } }] },
+    where: { ...scope, surgeryAdvised: true, finalizedAt: { not: null }, advisedSurgeryName: { not: null } },
     orderBy: { date: "desc" },
     select: {
       id: true,
       date: true,
-      procedureName: true,
-      procedureLaterality: true,
-      anesthesiaType: true,
+      advisedSurgeryName: true,
+      advisedSurgeryEye: true,
+      advisedSurgeryAnaesthesia: true,
+      advisedSurgeryDate: true,
       patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
       doctor: { select: { id: true, name: true } },
       generalExam: { select: { chiefComplaint: true } },
@@ -37,15 +38,14 @@ export default async function CounsellingPage() {
   });
 
   const rows: CounsellingRow[] = visits
-    .filter((v) => procedureText(v.procedureName))
     .map((v) => {
       const rec = v.counsellingRecord;
       return {
         visitId: v.id,
         visitDate: v.date.toISOString(),
-        surgery: procedureText(v.procedureName),
-        laterality: v.procedureLaterality,
-        anaesthesia: v.anesthesiaType,
+        surgery: v.advisedSurgeryName ?? "",
+        laterality: v.advisedSurgeryEye,
+        anaesthesia: v.advisedSurgeryAnaesthesia,
         patient: { ...v.patient, udid: v.patient.udid ?? v.patient.id },
         doctor: v.doctor,
         chiefComplaint: v.generalExam?.chiefComplaint ?? null,
@@ -53,7 +53,7 @@ export default async function CounsellingPage() {
         invDone: v.investigationOrders.filter((o) => o.resultRef).length,
         invTotal: v.investigationOrders.length,
         status: counsellingStatus(rec),
-        tentativeDate: rec?.dateOfSurgery?.toISOString() ?? null,
+        tentativeDate: (rec?.dateOfSurgery ?? v.advisedSurgeryDate)?.toISOString() ?? null,
         implant: rec?.implant ?? null,
         reportsValidUntil: rec?.reportsValidUntil?.toISOString() ?? null,
         postponedUntil: rec?.postponedUntil?.toISOString() ?? null,
