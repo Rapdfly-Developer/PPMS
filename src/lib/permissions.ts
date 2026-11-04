@@ -111,6 +111,7 @@ export const P = {
   COUNSELLING_EDIT:        "counselling.edit",
   COUNSELLING_FIT:         "counselling.fit",
   COUNSELLING_ELIGIBLE:    "counselling.eligible",
+  COUNSELLING_REPORTS:     "counselling.reports",
 
   // Settings — Plugins & Hospital
   PLUGINS_MANAGE:          "plugins.manage",

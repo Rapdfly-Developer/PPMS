@@ -226,6 +226,21 @@ export async function saveAdvance(visitId: string, data: { advancePaid: number |
   return {};
 }
 
+// ── Reports uploaded from the counselling screen ───────────────────────────
+
+export async function attachCounsellingReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
+  const { user, visit } = await loadVisit(visitId, "counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
+  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visitId: visit.id }, select: { id: true } });
+  if (!order) return { error: "Order not found." };
+  await prisma.investigationOrder.update({
+    where: { id: orderId },
+    data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" },
+  });
+  await writeAudit(user.id, "InvestigationOrder", orderId, "RESULT_ATTACHED", { resultRef });
+  refresh(visitId);
+  return {};
+}
+
 // ── H. Eligible for surgery → auto-book Pre-op appointment ──────────────────
 
 export async function markEligibleForSurgery(visitId: string, time: string, notes: string): Promise<Result> {

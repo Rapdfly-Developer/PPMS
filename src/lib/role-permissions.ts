@@ -46,6 +46,7 @@ const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
 
   "followups.edit": ["followups.view"],
   "counselling.edit": ["counselling.view"],
+  "counselling.reports": ["counselling.view"],
   "counselling.fit": ["counselling.view"],
   "counselling.eligible": ["counselling.view"],
   "reports.export": ["reports.view"],

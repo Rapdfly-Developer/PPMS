@@ -125,7 +125,7 @@ export default async function CounsellingVisitPage({
       canEdit={userCan(user, "counselling.edit")}
       canFit={userCan(user, "counselling.fit")}
       canEligible={userCan(user, "counselling.eligible")}
-      canUpload={["emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"].some((p) => userCan(user, p))}
+      canUpload={["counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"].some((p) => userCan(user, p))}
       canViewProfile={userCan(user, "patients.view")}
     />
   );

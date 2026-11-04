@@ -21,10 +21,9 @@ import {
   type CounsellingStatus, CASHLESS_TYPES, PAYER_SUGGESTIONS, LATERALITY_LABEL, PAYMENT_MODES,
   implantSuggestions, reportsValidUntil,
 } from "@/lib/counselling";
-import { attachResult } from "../../emr/[udid]/actions";
 import {
   saveCounsellingDetails, markFitForSurgery, reopenCounselling, addCounsellingInvestigations,
-  postponeSurgery, resumeCounselling, saveAdvance, markEligibleForSurgery,
+  postponeSurgery, resumeCounselling, saveAdvance, markEligibleForSurgery, attachCounsellingReport,
 } from "../actions";
 import { StatusBadge } from "../CounsellingClient";
 
@@ -207,7 +206,7 @@ function ReportThumb({ resultRef }: { resultRef: string }) {
 }
 
 /** Drop a file on it, or click to browse. */
-function UploadResult({ orderId, udid, onDone }: { orderId: string; udid: string; onDone: () => void }) {
+function UploadResult({ orderId, visitId, onDone }: { orderId: string; visitId: string; onDone: () => void }) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
@@ -223,7 +222,7 @@ function UploadResult({ orderId, udid, onDone }: { orderId: string; udid: string
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      const result = await attachResult(orderId, udid, json.url);
+      const result = await attachCounsellingReport(visitId, orderId, json.url);
       if (result?.error) throw new Error(result.error);
       onDone();
     } catch (err) {
@@ -307,7 +306,7 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
                     {o.resultRef ? (
                       <span className="shrink-0 inline-flex items-center gap-1 text-caption font-semibold text-emerald-700"><CheckCircle2 size={13} /> Complete</span>
                     ) : o.current && canUpload ? (
-                      <UploadResult orderId={o.id} udid={data.patient.udid} onDone={onChanged} />
+                      <UploadResult orderId={o.id} visitId={data.visitId} onDone={onChanged} />
                     ) : (
                       <span className="shrink-0 text-caption font-semibold text-slate-500">Pending</span>
                     )}
