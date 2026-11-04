@@ -762,8 +762,11 @@ export function CounsellingDetail({
     () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, estimateAmount: estimate === "" ? null : Number(estimate) }),
     [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, estimate],
   );
+  // Saving starts on the first edit and stays on, so changing a value back
+  // to what it was on load is saved too.
   const [initialDetails] = useState(() => JSON.stringify(details));
-  const edited = JSON.stringify(details) !== initialDetails;
+  const [edited, setEdited] = useState(false);
+  if (!edited && JSON.stringify(details) !== initialDetails) setEdited(true);
   const saveState = useAutoSave(
     details,
     async (d) => { const r = await saveCounsellingDetails(data.visitId, d); if (r.error) throw new Error(r.error); },
