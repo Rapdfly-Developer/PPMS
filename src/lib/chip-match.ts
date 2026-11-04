@@ -28,3 +28,22 @@ export const CHIP_MATCH_CLASS: Record<"best" | "match", string> = {
   best: "border-amber-500 bg-amber-100 text-amber-900 ring-2 ring-amber-300",
   match: "border-amber-300 bg-amber-50 text-amber-800",
 };
+
+/**
+ * When a chip is clicked, the partly typed term it matches is replaced by the
+ * chip rather than left behind as its own point: drops that trailing term
+ * (and any separator left dangling) so the caller can add the chip.
+ */
+export function dropTypedTerm(text: string, keyword: string): string {
+  const term = typedTerm(text);
+  if (!term || !keyword.toLowerCase().includes(term)) return text;
+  const tail = text.match(/[^•\n,]*$/)?.[0] ?? "";
+  return text.slice(0, text.length - tail.length).replace(/[\s,•]+$/, "");
+}
+
+/** Same as dropTypedTerm for fields that add chips word by word (space separated). */
+export function dropTypedWord(text: string, keyword: string): string {
+  const word = (text.match(/\S+$/)?.[0] ?? "").toLowerCase();
+  if (!word || !keyword.toLowerCase().includes(word)) return text;
+  return text.slice(0, text.length - word.length).trimEnd();
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Trash2, X } from "lucide-react";
-import { chipMatcher, CHIP_MATCH_CLASS, type ChipMatch } from "@/lib/chip-match";
+import { chipMatcher, CHIP_MATCH_CLASS, dropTypedTerm, type ChipMatch } from "@/lib/chip-match";
 
 /**
  * Distinguishes single from double activation (click/touch/keyboard).
@@ -58,7 +58,8 @@ export function keywordEntries(text: string): string[] {
 }
 
 export function appendKeywordAsBullet(text: string, keyword: string): string {
-  const items = keywordEntries(text);
+  // A partly typed term the keyword matches is replaced by it, not kept as its own point
+  const items = keywordEntries(dropTypedTerm(text, keyword));
   if (!items.some((item) => item.toLowerCase() === keyword.toLowerCase())) {
     items.push(keyword);
   }

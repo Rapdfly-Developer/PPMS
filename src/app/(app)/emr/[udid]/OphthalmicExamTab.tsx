@@ -13,7 +13,8 @@ import { useAutoSave, SaveIndicator, AutoSaveSharedLock } from "@/lib/useAutoSav
 import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
 import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
-import { chipMatcher, CHIP_MATCH_CLASS } from "@/lib/chip-match";
+import { chipMatcher, CHIP_MATCH_CLASS, dropTypedTerm, dropTypedWord } from "@/lib/chip-match";
+import { duochromeValue } from "@/lib/duochrome";
 import {
   VA_TEST_METHODS,
   VA_SNELLEN_VALUES,
@@ -561,7 +562,7 @@ function ArSlipUpload({
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
   const rc = visit.refraction;
   // ── Types ──────────────────────────────────────────────────────────────────
-  // duoRed / duoGreen: Duochrome Test (Subjective only), cycles "=" → ">" → "<" (unset = "=")
+  // duoRed: Duochrome Test (Subjective only), Red vs Green, cycles "=" → ">" → "<" (unset = "="); duoGreen is legacy (lib/duochrome)
   type RxEye = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string; k1?: string; k2?: string; duoRed?: string; duoGreen?: string };
   const emptyEye: RxEye = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
 
@@ -661,18 +662,18 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   // Duochrome Test, shown under each eye for the Subjective method only
   const DUOCHROME_NEXT: Record<string, string> = { "=": ">", ">": "<", "<": "=" };
-  const duochromeButton = (label: string, value: string, onChange: (v: string) => void) => {
+  const duochromeButton = (value: string, onChange: (v: string) => void) => {
     const active = value !== "=";
     return (
       <div className="flex items-center gap-2">
-        <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</span>
+        <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">Red</span>
         <button
           type="button"
           disabled={!editable}
           // "=" is stored as "" so an untouched test doesn't count as entered data
           onClick={() => { const next = DUOCHROME_NEXT[value] ?? "="; onChange(next === "=" ? "" : next); }}
-          title={`Duochrome Test ${label}: click to change (= → > → <)`}
-          aria-label={`Duochrome Test ${label} ${value}`}
+          title="Duochrome Test, Red vs Green: click to change (= → > → <)"
+          aria-label={`Duochrome Test Red ${value} Green`}
           className={`w-10 h-[26px] rounded-md flex items-center justify-center text-sm font-bold leading-none border transition-colors disabled:opacity-40 ${
             active
               ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]"
@@ -681,6 +682,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
         >
           {value}
         </button>
+        <span className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">Green</span>
       </div>
     );
   };
@@ -689,10 +691,8 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
     return (
       <div className="mt-4">
         <p className="text-micro sm:text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-widest mb-2">Duochrome Test</p>
-        <div className="flex items-center gap-6">
-          {duochromeButton("Red", val.duoRed || "=", (v) => setVal({ ...val, duoRed: v }))}
-          {duochromeButton("Green", val.duoGreen || "=", (v) => setVal({ ...val, duoGreen: v }))}
-        </div>
+        {/* Any older separate Green mark is folded into the single value on change */}
+        {duochromeButton(duochromeValue(val), (v) => setVal({ ...val, duoRed: v, duoGreen: "" }))}
       </div>
     );
   };
@@ -1584,7 +1584,7 @@ function GonioFindingsInput({
               </button>
               {savedKws.map((kw) => (
                 <span key={kw} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-caption sm:text-caption ${(() => { const m = kwMatch(kw); return m ? CHIP_MATCH_CLASS[m] : "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"; })()}`}>
-                  <button type="button" onClick={() => onChange(value ? `${value} ${kw}` : kw)} className="hover:underline">{kw}</button>
+                  <button type="button" onClick={() => { const base = dropTypedWord(value, kw); onChange(base ? `${base} ${kw}` : kw); }} className="hover:underline">{kw}</button>
                   <button
                     data-overview-hide
                     type="button"
@@ -2882,7 +2882,11 @@ function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: a
     const chip = next.find((c) => !prev.includes(c)) ?? prev.find((c) => !next.includes(c));
     if (!chip) return text;
     const parts = splitParts(text);
-    return (parts.includes(chip) ? parts.filter((p) => p !== chip) : [...parts, chip]).join(", ");
+    if (parts.includes(chip)) return parts.filter((p) => p !== chip).join(", ");
+    // A partly typed finding the chip matches is replaced by it
+    const last = parts[parts.length - 1];
+    const base = last && !(LACRIMAL_SAC_CHIPS as readonly string[]).includes(last) ? dropTypedTerm(text, chip) : text;
+    return [...splitParts(base), chip].join(", ");
   };
   const [openHistory, setOpenHistory] = useState<"re" | "le" | null>(null);
 
