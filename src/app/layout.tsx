@@ -36,11 +36,13 @@ export default function RootLayout({
             browser can hide it here, before paint, instead of flashing it until
             hydration removes it. The script sits in raw HTML (not a React
             <script> element) so the browser still runs it while parsing, ahead
-            of the splash markup, without React's dev "script tag" warning. */}
+            of the splash markup, without React's dev "script tag" warning.
+            In the app, the marketing landing page ("/") is skipped and the
+            launch goes straight to /login; browsers still get the landing. */}
         <div
           hidden
           dangerouslySetInnerHTML={{
-            __html: `<script>if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}</script>`,
+            __html: `<script>if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}else if(location.pathname==="/"){location.replace("/login")}</script>`,
           }}
         />
         <SplashOverlay />

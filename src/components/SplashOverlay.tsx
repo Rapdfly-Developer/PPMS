@@ -34,10 +34,9 @@ export function SplashOverlay() {
       sessionStorage.setItem("rf_splash_shown", "1");
     } catch { /* ok */ }
 
-    // The animation runs ~4s (logo fades in at 2.8–3.6s), so hold until it
-    // finishes before fading.
-    const t1 = setTimeout(() => setFading(true), 4300);
-    const t2 = setTimeout(() => setShow(false), 4900);
+    // Show the logo for ~2.5 seconds then fade out
+    const t1 = setTimeout(() => setFading(true), 2500);
+    const t2 = setTimeout(() => setShow(false), 3100);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -51,22 +50,22 @@ export function SplashOverlay() {
         position: "fixed",
         inset: 0,
         zIndex: 99999,
+        backgroundColor: "#ffffff",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         opacity: fading ? 0 : 1,
         transition: fading ? "opacity 0.6s ease" : "none",
         pointerEvents: "none",
       }}
     >
-      <iframe
-        src="/splash/RF_Health_Splash.html"
-        title="RF Health"
-        style={{
-          position: "fixed",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          border: "none",
-          pointerEvents: "none",
-        }}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/landing/logo-rf-health.webp"
+        alt=""
+        width={110}
+        height={110}
+        style={{ display: "block" }}
       />
     </div>
   );
