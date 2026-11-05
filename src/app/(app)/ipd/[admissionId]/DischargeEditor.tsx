@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
+import { ChipRow } from "./customOptions";
 import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
@@ -69,19 +70,10 @@ function Area({ label, value, onChange, editable, placeholder, min }: { label?: 
   );
 }
 
-/** Quick-pick buttons that fill a field. */
-function Picks({ options, value, onPick, editable }: { options: string[]; value: string; onPick: (v: string) => void; editable: boolean }) {
+/** Quick-pick buttons that fill a field; "+ Custom" adds your own. */
+function Picks({ storeKey, options, value, onPick, editable }: { storeKey: string; options: string[]; value: string; onPick: (v: string) => void; editable: boolean }) {
   if (!editable) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-1.5">
-      {options.map((o) => (
-        <button key={o} type="button" onClick={() => onPick(o)}
-          className={`px-2.5 py-0.5 rounded-full border text-[11px] font-medium transition-colors ${value === o ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"}`}>
-          {o}
-        </button>
-      ))}
-    </div>
-  );
+  return <div className="mt-1.5"><ChipRow storeKey={storeKey} builtIns={options} isOn={(o) => value === o} onPick={onPick} /></div>;
 }
 
 /** A multi-line text edited as a list: one row per line; Enter adds a row. */
@@ -213,7 +205,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
             <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={editable} placeholder="Medical / surgical / family history" />
             <div>
               <Field label="Allergies" value={s.allergies} onChange={(v) => set("allergies", v)} editable={editable} placeholder="Drug / other allergies" />
-              <Picks options={["No known drug allergies"]} value={s.allergies} onPick={(v) => set("allergies", v)} editable={editable} />
+              <Picks storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onPick={(v) => set("allergies", v)} editable={editable} />
             </div>
           </div>
         </div>
@@ -299,7 +291,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
           </div>
           <div className="mt-3">
             <Field label="Intra-operative events" value={s.procedure.events} onChange={(v) => setIn("procedure", "events", v)} editable={editable} />
-            <Picks options={["Uneventful", "PC rent, managed", "Vitreous loss, anterior vitrectomy done"]} value={s.procedure.events} onPick={(v) => setIn("procedure", "events", v)} editable={editable} />
+            <Picks storeKey="dc_intraop" options={["Uneventful", "PC rent, managed", "Vitreous loss, anterior vitrectomy done"]} value={s.procedure.events} onPick={(v) => setIn("procedure", "events", v)} editable={editable} />
           </div>
         </Block>
       )}
@@ -317,11 +309,11 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <Field label="General condition" value={s.condition.general} onChange={(v) => setIn("condition", "general", v)} editable={editable} />
-            <Picks options={CONDITION_PICKS} value={s.condition.general} onPick={(v) => setIn("condition", "general", v)} editable={editable} />
+            <Picks storeKey="dc_condition" options={CONDITION_PICKS} value={s.condition.general} onPick={(v) => setIn("condition", "general", v)} editable={editable} />
           </div>
           <div>
             <Field label="Operated / affected eye" value={s.condition.eye} onChange={(v) => setIn("condition", "eye", v)} editable={editable} />
-            <Picks options={EYE_PICKS} value={s.condition.eye} onPick={(v) => setIn("condition", "eye", v)} editable={editable} />
+            <Picks storeKey="dc_eye" options={EYE_PICKS} value={s.condition.eye} onPick={(v) => setIn("condition", "eye", v)} editable={editable} />
           </div>
         </div>
         <div className="mt-3">
@@ -402,7 +394,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
           </div>
           <div>
             <Field label="In view of" value={s.followUpNote} onChange={(v) => set("followUpNote", v)} editable={editable} placeholder="Reason for review" />
-            <Picks options={FOLLOW_PICKS} value={s.followUpNote} onPick={(v) => set("followUpNote", v)} editable={editable} />
+            <Picks storeKey="dc_follow" options={FOLLOW_PICKS} value={s.followUpNote} onPick={(v) => set("followUpNote", v)} editable={editable} />
           </div>
         </div>
       </Block>

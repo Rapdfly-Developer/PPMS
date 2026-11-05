@@ -7,6 +7,7 @@ import {
   ShieldCheck, Trash2, X,
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
+import { ChipRow, SelectWithCustom } from "./customOptions";
 import { searchMedications } from "@/lib/ophthalmic-medications";
 import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
 import {
@@ -275,7 +276,7 @@ function SignPanel({ item, f, onSave, onCancel }: { item: ConsentItem; f: FileIn
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <Field label="Witness" value={witness} onChange={setWitness} placeholder="Witness name" />
         <div><label className={lbl}>Explained in</label>
-          <select value={language} onChange={(e) => setLanguage(e.target.value)} className={inp}>{CONSENT_LANGUAGES.map((l) => <option key={l}>{l}</option>)}</select>
+          <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={language} onChange={setLanguage} className={inp} />
         </div>
         <Field label="Explained by (doctor)" value={explainedBy} onChange={setExplainedBy} />
       </div>
@@ -494,7 +495,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-dashed border-[var(--color-border)]">
           <div><label className={lbl}>Explained to</label><Seg options={["Patient", "Relative", "Both"]} value={v.explainedTo} onChange={(x) => change({ ...v, explainedTo: x })} disabled={!editable} /></div>
           <div><label className={lbl}>Language</label>
-            <select value={v.language} disabled={!editable} onChange={(e) => change({ ...v, language: e.target.value })} className={inp}>{CONSENT_LANGUAGES.map((l) => <option key={l}>{l}</option>)}</select>
+            <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={v.language} onChange={(x) => change({ ...v, language: x })} disabled={!editable} className={inp} />
           </div>
           <label className="flex items-center gap-2 text-sm self-end pb-1.5">
             <input type="checkbox" checked={v.teachBack} disabled={!editable} onChange={() => change({ ...v, teachBack: !v.teachBack })} className="w-4 h-4 accent-emerald-600" />
@@ -508,18 +509,13 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
         <div className="flex flex-wrap items-end gap-4 mb-3">
           <div>
             <label className={lbl}>Diet</label>
-            <div className="flex flex-wrap gap-1.5">
-              {DIET_TYPES.map((t) => {
+            <ChipRow storeKey="diet_types" builtIns={DIET_TYPES} editable={editable}
+              isOn={(t) => v.dietTypes.includes(t)}
+              tone={(t) => (t === "Nil by mouth" ? "bg-red-600 border-red-600 text-white" : undefined)}
+              onPick={(t) => {
                 const on = v.dietTypes.includes(t);
-                return (
-                  <button key={t} type="button" disabled={!editable}
-                    onClick={() => change({ ...v, dietTypes: on ? v.dietTypes.filter((x) => x !== t) : [...v.dietTypes.filter((x) => t === "Nil by mouth" ? false : x !== "Nil by mouth"), t] })}
-                    className={`px-2.5 py-1 rounded-full border text-xs font-semibold disabled:cursor-default ${on ? (t === "Nil by mouth" ? "bg-red-600 border-red-600 text-white" : "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white") : "border-[var(--color-border)] text-[var(--color-ink-600)] enabled:hover:bg-[var(--color-surface-sunken)]"}`}>
-                    {t}
-                  </button>
-                );
-              })}
-            </div>
+                change({ ...v, dietTypes: on ? v.dietTypes.filter((x) => x !== t) : [...v.dietTypes.filter((x) => (t === "Nil by mouth" ? false : x !== "Nil by mouth")), t] });
+              }} />
           </div>
           {v.dietTypes.includes("Nil by mouth") && <Field label="Nil by mouth from" type="time" value={v.nbmFrom} onChange={(x) => change({ ...v, nbmFrom: x })} disabled={!editable} className="w-40" />}
         </div>
@@ -531,7 +527,14 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
                 const rec = [...todayFood].reverse().find((e) => e.meta?.meal === m.meal);
                 return (
                   <tr key={i}>
-                    <td className={`${td} font-semibold whitespace-nowrap`}>{m.meal}</td>
+                    <td className={`${td} font-semibold whitespace-nowrap`}>
+                      <span className="inline-flex items-center gap-1">
+                        {m.meal}
+                        {editable && (
+                          <button type="button" title="Remove this meal" onClick={() => change({ ...v, meals: v.meals.filter((_, j) => j !== i) })} className="p-0.5 text-[var(--color-ink-300)] hover:text-red-600" aria-label={`Remove ${m.meal}`}><X size={12} /></button>
+                        )}
+                      </span>
+                    </td>
                     <td className={`${td} w-28`}>
                       <input type="time" value={m.time} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, time: e.target.value } : x)) })} className={inp} />
                     </td>
@@ -541,12 +544,16 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
                     <td className={`${td} whitespace-nowrap`}>
                       {rec && <p className={`text-xs font-semibold ${rec.meta?.amount === "Refused" ? "text-red-600" : "text-emerald-700"}`}>{rec.meta?.amount} · {time(rec.at)} · {rec.by}</p>}
                       {canLog && !v.dietTypes.includes("Nil by mouth") && (
-                        <div className="flex gap-1 mt-0.5">
-                          {MEAL_AMOUNTS.map((a) => (
-                            <button key={a} type="button" disabled={pending} onClick={() => run({ text: `${m.meal}: ${a}`, kind: "food", meta: { meal: m.meal, amount: a, date: today } })}
-                              className="px-2 py-0.5 rounded-md border border-[var(--color-border)] text-[11px] font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]">{a}</button>
-                          ))}
-                        </div>
+                        m.diet.trim() ? (
+                          <div className="flex gap-1 mt-0.5">
+                            {MEAL_AMOUNTS.map((a) => (
+                              <button key={a} type="button" disabled={pending} onClick={() => run({ text: `${m.meal} (${m.diet.trim()}): ${a}`, kind: "food", meta: { meal: m.meal, diet: m.diet.trim(), amount: a, date: today } })}
+                                className="px-2 py-0.5 rounded-md border border-[var(--color-border)] text-[11px] font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]">{a}</button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-[var(--color-ink-400)]">Enter the diet first</p>
+                        )
                       )}
                     </td>
                   </tr>
@@ -554,6 +561,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
               })}
             </tbody>
           </table>
+          {editable && <AddMeal onAdd={(meal, t) => change({ ...v, meals: [...v.meals, { meal, time: t, diet: "" }] })} />}
         </div>
         <ErrorText text={error} />
       </Card>
@@ -567,6 +575,18 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log 
           </ul>
         </Card>
       )}
+    </div>
+  );
+}
+
+function AddMeal({ onAdd }: { onAdd: (meal: string, time: string) => void }) {
+  const [meal, setMeal] = useState("");
+  const [t, setT] = useState("");
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-3.5 py-2.5 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40">
+      <input value={meal} onChange={(e) => setMeal(e.target.value)} placeholder="Add a meal, e.g. Bedtime" className={`${inp} max-w-[220px]`} />
+      <input type="time" value={t} onChange={(e) => setT(e.target.value)} className={`${inp} w-32`} />
+      <button type="button" disabled={!meal.trim()} onClick={() => { onAdd(meal.trim(), t); setMeal(""); setT(""); }} className={btnG}><Plus size={13} /> Add meal</button>
     </div>
   );
 }
@@ -664,11 +684,11 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
             <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-2.5">
               <div><label className={lbl}>Drug</label><DrugSearch value={draft.name} onChange={(x) => setDraft({ ...draft, name: x })} onPick={(name, dose, route) => setDraft({ ...draft, name, dose: dose || draft.dose, route: ROUTE_GUESS(route) })} /></div>
               <Field label="Dose" value={draft.dose} onChange={(x) => setDraft({ ...draft, dose: x })} list="ipd-dose-options" />
-              <div><label className={lbl}>Route</label><select value={draft.route} onChange={(e) => setDraft({ ...draft, route: e.target.value })} className={inp}>{ROUTES.map((r) => <option key={r}>{r}</option>)}</select></div>
+              <div><label className={lbl}>Route</label><SelectWithCustom storeKey="routes" builtIns={ROUTES} value={draft.route} onChange={(x) => setDraft({ ...draft, route: x })} className={inp} /></div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_2fr] gap-2.5 mt-2.5 items-end">
               <div><label className={lbl}>Eye</label><Seg options={EYES} value={draft.eye} onChange={(x) => setDraft({ ...draft, eye: draft.eye === x ? "" : x })} /></div>
-              <div><label className={lbl}>Frequency</label><select value={draft.frequency} onChange={(e) => setDraft({ ...draft, frequency: e.target.value })} className={inp}>{FREQUENCY_OPTIONS.map((x) => <option key={x}>{x}</option>)}</select></div>
+              <div><label className={lbl}>Frequency</label><SelectWithCustom storeKey="frequencies" builtIns={FREQUENCY_OPTIONS} value={draft.frequency} onChange={(x) => setDraft({ ...draft, frequency: x })} className={inp} /></div>
               <Field label="Instructions" value={draft.instructions} onChange={(x) => setDraft({ ...draft, instructions: x })} placeholder="e.g. Shake well; 5 min gap between drops" />
             </div>
             <datalist id="ipd-dose-options">{DOSE_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist>
@@ -819,12 +839,7 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
                 <Seg options={["Yes", "No"] as const} value={orders} onChange={setOrders} tone={(x) => (x === "Yes" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")} />
               </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {NURSE_QUICK_NOTES.map((c) => (
-                <button key={c} type="button" onClick={() => toggleChip(c)}
-                  className={`px-2.5 py-1 rounded-full border text-xs font-medium ${note.includes(c) ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}>{c}</button>
-              ))}
-            </div>
+            <ChipRow storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} isOn={(c) => note.includes(c)} onPick={toggleChip} />
             <Area value={note} onChange={setNote} rows={2} placeholder="Note" />
             <button type="button" disabled={pending || !note.trim()}
               onClick={() => run({ text: note.trim(), kind: "note", meta: { shift, ordersFollowed: orders } }, () => setNote(""))}
@@ -905,7 +920,7 @@ export function OtNotesForm({ value: v, change, editable, template }: FormProps<
           <Area label="Intra-operative findings" value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} />
           <div>
             <label className={lbl}>Complications</label>
-            {editable && <div className="mb-1.5"><Seg options={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} value={v.complications} onChange={(x) => set("complications", x)} /></div>}
+            {editable && <div className="mb-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
             <input value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={inp} />
           </div>
           <Area label="Post-operative instructions" value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} />
@@ -991,11 +1006,7 @@ export function DoctorNoteComposer({ onAdd, pending }: { onAdd: (text: string) =
               <>
                 <label className={lbl}>{fl.label}</label>
                 {DOCTOR_NOTE_CHIPS[fl.key] && (
-                  <div className="flex flex-wrap gap-1 mb-1.5">
-                    {DOCTOR_NOTE_CHIPS[fl.key].map((c) => (
-                      <button key={c} type="button" onClick={() => chip(fl.key, c)} className="px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[11px] font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)]">+ {c}</button>
-                    ))}
-                  </div>
+                  <div className="mb-1.5"><ChipRow storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key]} prefix="+ " onPick={(c) => chip(fl.key, c)} /></div>
                 )}
                 <textarea value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />
               </>
