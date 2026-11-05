@@ -80,11 +80,18 @@ export async function saveCounsellingDetails(visitId: string, data: {
     patch.estimateAmount = data.estimateAmount;
   }
 
-  await prisma.counsellingRecord.upsert({
-    where: { visitId },
-    create: { visitId, status: "PENDING", ...patch },
-    update: patch,
-  });
+  await prisma.$transaction([
+    prisma.counsellingRecord.upsert({
+      where: { visitId },
+      create: { visitId, status: "PENDING", ...patch },
+      update: patch,
+    }),
+    // The visit keeps the same tentative date, so the patient profile, visit
+    // summaries and prints show what Counselling set.
+    ...(patch.dateOfSurgery !== undefined
+      ? [prisma.visit.update({ where: { id: visitId }, data: { advisedSurgeryDate: patch.dateOfSurgery as Date | null } })]
+      : []),
+  ]);
   await writeAudit(user.id, "CounsellingRecord", visitId, "UPDATE", patch);
   refresh(visitId);
   return {};

@@ -167,7 +167,8 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
               {time && (
                 <span className={`shrink-0 flex items-center gap-1 text-[10px] font-medium ${hasReport ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>
                   {hasReport ? <CheckCircle2 size={9} /> : <Clock size={9} />}
-                  {format(new Date(time), "h:mm a")}
+                  {/* A report uploaded on a later day also shows its date */}
+                  {format(new Date(time), o.orderedAt && toDateKey(time) !== toDateKey(o.orderedAt) ? "d MMM, h:mm a" : "h:mm a")}
                 </span>
               )}
             </div>

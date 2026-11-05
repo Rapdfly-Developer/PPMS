@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
-import { istTodayRange } from "@/lib/ist";
+import { istTodayRange, istTodayStr } from "@/lib/ist";
 import { patientRecordScope } from "@/lib/patient-access";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
@@ -194,7 +194,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         generalExam:        { select: { chiefComplaint: true, bp: true, pulse: true } },
         diagnoses:          { select: { description: true, icd10Code: true, laterality: true, provisional: true, status: true } },
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
-        investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
+        investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, resultAt: true, createdAt: true, updatedAt: true }, orderBy: { createdAt: "asc" } },
         dispense:           { select: { shortSummary: true } },
         appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true, status: true, consultationStatus: true } },
         counsellingRecord:  true,
@@ -256,24 +256,29 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
       },
     });
 
-    // Investigation event — one card per visit that has orders
-    if (v.investigationOrders.length > 0) {
-      const testNames = v.investigationOrders.map((o) => o.testName).join(" ");
+    // Investigation events — one card per visit per day the tests were ordered,
+    // so tests added later (e.g. from Counselling) show on their own date
+    const ordersByDay = new Map<string, typeof v.investigationOrders>();
+    for (const o of v.investigationOrders) {
+      const key = istTodayStr(o.createdAt);
+      ordersByDay.set(key, [...(ordersByDay.get(key) ?? []), o]);
+    }
+    for (const [day, orders] of ordersByDay) {
+      const testNames = orders.map((o) => o.testName).join(" ");
       events.push({
-        id:          `inv-${v.id}`,
+        id:          `inv-${v.id}-${day}`,
         type:        "INVESTIGATION",
-        date:        v.investigationOrders[0].createdAt.toISOString(),
-        title:       `${v.investigationOrders.length} Investigation${v.investigationOrders.length > 1 ? "s" : ""} Ordered`,
+        date:        orders[0].createdAt.toISOString(),
+        title:       `${orders.length} Investigation${orders.length > 1 ? "s" : ""} Ordered`,
         hospitalName: hospital,
         doctorName:   doctor,
         searchText:  [testNames, hospital, doctor].filter(Boolean).join(" ").toLowerCase(),
         detail: {
-          orders: v.investigationOrders.map((o) => ({
-            ...o,
+          orders: orders.map((o) => ({
+            id: o.id, testName: o.testName, category: o.category, status: o.status,
+            laterality: o.laterality, priority: o.priority, resultRef: o.resultRef,
             orderedAt: o.createdAt.toISOString(),
-            reportUpdatedAt: o.resultRef ? o.updatedAt.toISOString() : null,
-            createdAt: undefined,
-            updatedAt: undefined,
+            reportUpdatedAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null,
           })),
         },
       });
