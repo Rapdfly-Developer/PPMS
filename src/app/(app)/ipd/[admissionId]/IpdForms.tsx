@@ -54,7 +54,9 @@ export interface FormProps<T> {
 /* ── UI primitives ─────────────────────────────────────────────────────── */
 
 const inp = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)]/50 disabled:text-[var(--color-ink-800)] disabled:cursor-default";
-const lbl = "block text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] mb-1";
+/** Label on the same line as its field. */
+const lblIn = "shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]";
+const rowIn = "flex items-center gap-2 min-w-0";
 const btnP = "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
 const btnG = "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-700)] bg-white hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
 const th = "px-2.5 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)] border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/70";
@@ -104,17 +106,17 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
   label: string; value: string; onChange: (v: string) => void; disabled?: boolean; type?: string; placeholder?: string; list?: string; className?: string;
 }) {
   return (
-    <div className={`min-w-0 ${className ?? ""}`}>
-      <label className={lbl}>{label}</label>
-      <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={inp} />
+    <div className={`${rowIn} ${className ?? ""}`}>
+      <label className={lblIn}>{label}</label>
+      <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} flex-1`} />
     </div>
   );
 }
 
 function Area({ label, value, onChange, disabled, placeholder, rows = 3 }: { label?: string; value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; rows?: number }) {
   return (
-    <div>
-      {label && <label className={lbl}>{label}</label>}
+    <div className={label ? "grid grid-cols-[auto_1fr] items-start gap-2" : ""}>
+      {label && <label className={`${lblIn} pt-2`}>{label}</label>}
       <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
     </div>
   );
@@ -212,12 +214,12 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
             ["Payment", pay ? [pay.type, pay.mode, pay.scheme, pay.policy].filter(Boolean).join(" · ").replaceAll("_", " ") : ""],
             ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy")}` : ""}` : ""],
           ].map(([k, x]) => (
-            <div key={k} className="min-w-0"><p className={lbl}>{k}</p><p className="font-semibold text-[var(--color-ink-800)]">{x || "-"}</p></div>
+            <div key={k} className={rowIn}><p className={lblIn}>{k}</p><p className="font-semibold text-[var(--color-ink-800)] min-w-0">{x || "-"}</p></div>
           ))}
         </div>
       </Card>
       <Card title="Implant used" sub="As printed on the implant pack / sticker">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Field label="Manufacturer" value={v.manufacturer} onChange={(x) => set("manufacturer", x)} disabled={!editable} placeholder="e.g. Alcon" />
           <Field label="Model" value={v.model} onChange={(x) => set("model", x)} disabled={!editable} placeholder="e.g. AcrySof IQ" />
           <Field label="IOL power (D)" value={v.power} onChange={(x) => set("power", x)} disabled={!editable} placeholder="e.g. +21.5" />
@@ -266,16 +268,16 @@ function SignPanel({ item, f, onSave, onCancel }: { item: ConsentItem; f: FileIn
     <div className="mt-3 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/50 p-3 space-y-3">
       <p className="text-xs font-bold text-[var(--color-primary-800)]">Record signature (after the patient / relative signs the printed form)</p>
       <div className="flex flex-wrap items-end gap-3">
-        <div><label className={lbl}>Signed by</label>
+        <div className={rowIn}><label className={lblIn}>Signed by</label>
           <Seg options={[{ value: "PATIENT", label: "Patient" }, { value: "RELATIVE", label: "Relative / guardian" }] as const} value={kind}
             onChange={(k) => { setKind(k); setName(k === "PATIENT" ? f.ctx.patientName : ""); }} />
         </div>
         <Field label="Name" value={name} onChange={setName} className="flex-1 min-w-[180px]" />
         {kind === "RELATIVE" && <Field label="Relationship" value={relation} onChange={setRelation} placeholder="e.g. Son" className="w-40" />}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Field label="Witness" value={witness} onChange={setWitness} placeholder="Witness name" />
-        <div><label className={lbl}>Explained in</label>
+        <div className={rowIn}><label className={lblIn}>Explained in</label>
           <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={language} onChange={setLanguage} className={inp} />
         </div>
         <Field label="Explained by (doctor)" value={explainedBy} onChange={setExplainedBy} />
@@ -426,7 +428,7 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
         </Card>
       )}
       <Card title="Pre-operative vitals & handover">
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <Field label="BP (mmHg)" value={v.vitals.bp} onChange={(x) => vit("bp", x)} disabled={!editable} placeholder="120/80" />
           <Field label="Pulse (/min)" value={v.vitals.pulse} onChange={(x) => vit("pulse", x)} disabled={!editable} />
           <Field label="Temp (°F)" value={v.vitals.temp} onChange={(x) => vit("temp", x)} disabled={!editable} />
@@ -437,9 +439,9 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
           <Field label="Last oral intake" type="time" value={v.lastOral} onChange={(x) => change({ ...v, lastOral: x })} disabled={!editable} />
           <Field label="Dilating drops started" type="time" value={v.dilationAt} onChange={(x) => change({ ...v, dilationAt: x })} disabled={!editable} />
-          <div className="min-w-0">
-            <label className={lbl}>Handed over to OT by</label>
-            <div className="flex gap-1.5">
+          <div className={rowIn}>
+            <label className={lblIn}>Handed over to OT by</label>
+            <div className="flex gap-1.5 flex-1 min-w-0">
               <input value={v.handedOverBy} disabled={!editable} onChange={(e) => change({ ...v, handedOverBy: e.target.value })} className={inp} placeholder={editable ? "Nurse name" : "-"} />
               {editable && !v.handedOverBy && <button type="button" onClick={() => change({ ...v, handedOverBy: f.me })} className={btnG}>Me</button>}
             </div>
@@ -497,8 +499,8 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
           </div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-dashed border-[var(--color-border)]">
-          <div><label className={lbl}>Explained to</label><Seg options={["Patient", "Relative", "Both"]} value={v.explainedTo} onChange={(x) => change({ ...v, explainedTo: x })} disabled={!editable} /></div>
-          <div><label className={lbl}>Language</label>
+          <div className={rowIn}><label className={lblIn}>Explained to</label><Seg options={["Patient", "Relative", "Both"]} value={v.explainedTo} onChange={(x) => change({ ...v, explainedTo: x })} disabled={!editable} /></div>
+          <div className={rowIn}><label className={lblIn}>Language</label>
             <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={v.language} onChange={(x) => change({ ...v, language: x })} disabled={!editable} className={inp} />
           </div>
           <label className="flex items-center gap-2 text-sm self-end pb-1.5">
@@ -511,8 +513,8 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
 
       <Card title="Diet chart">
         <div className="flex flex-wrap items-end gap-4 mb-3">
-          <div>
-            <label className={lbl}>Diet</label>
+          <div className={rowIn}>
+            <label className={lblIn}>Diet</label>
             <ChipRow storeKey="diet_types" builtIns={DIET_TYPES} editable={editable}
               isOn={(t) => v.dietTypes.includes(t)}
               tone={(t) => (t === "Nil by mouth" ? "bg-red-600 border-red-600 text-white" : undefined)}
@@ -601,7 +603,7 @@ function DrugSearch({ value, onChange, onPick }: { value: string; onChange: (v: 
   const [open, setOpen] = useState(false);
   const hits = searchMedications(value, 8);
   return (
-    <div className="relative">
+    <div className="relative flex-1 min-w-0">
       <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
       <input value={value} onChange={(e) => { onChange(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search drug, e.g. Moxifloxacin" className={`${inp} pl-7`} />
@@ -685,14 +687,14 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
         {editable && (
           <div className="mt-6 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/40 p-3">
             <p className="text-xs font-bold text-[var(--color-primary-800)] mb-2">New order</p>
-            <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-2.5">
-              <div><label className={lbl}>Drug</label><DrugSearch value={draft.name} onChange={(x) => setDraft({ ...draft, name: x })} onPick={(name, dose, route) => setDraft({ ...draft, name, dose: dose || draft.dose, route: ROUTE_GUESS(route) })} /></div>
+            <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr] gap-2.5">
+              <div className={rowIn}><label className={lblIn}>Drug</label><DrugSearch value={draft.name} onChange={(x) => setDraft({ ...draft, name: x })} onPick={(name, dose, route) => setDraft({ ...draft, name, dose: dose || draft.dose, route: ROUTE_GUESS(route) })} /></div>
               <Field label="Dose" value={draft.dose} onChange={(x) => setDraft({ ...draft, dose: x })} list="ipd-dose-options" />
-              <div><label className={lbl}>Route</label><SelectWithCustom storeKey="routes" builtIns={ROUTES} value={draft.route} onChange={(x) => setDraft({ ...draft, route: x })} className={inp} /></div>
+              <div className={rowIn}><label className={lblIn}>Route</label><SelectWithCustom storeKey="routes" builtIns={ROUTES} value={draft.route} onChange={(x) => setDraft({ ...draft, route: x })} className={inp} /></div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_2fr] gap-2.5 mt-2.5 items-end">
-              <div><label className={lbl}>Eye</label><Seg options={EYES} value={draft.eye} onChange={(x) => setDraft({ ...draft, eye: draft.eye === x ? "" : x })} /></div>
-              <div><label className={lbl}>Frequency</label><SelectWithCustom storeKey="frequencies" builtIns={FREQUENCY_OPTIONS} value={draft.frequency} onChange={(x) => setDraft({ ...draft, frequency: x })} className={inp} /></div>
+            <div className="grid grid-cols-1 xl:grid-cols-[auto_minmax(16rem,1fr)_1fr] gap-2.5 mt-2.5 items-center">
+              <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={draft.eye} onChange={(x) => setDraft({ ...draft, eye: draft.eye === x ? "" : x })} /></div>
+              <div className={rowIn}><label className={lblIn}>Frequency</label><SelectWithCustom storeKey="frequencies" builtIns={FREQUENCY_OPTIONS} value={draft.frequency} onChange={(x) => setDraft({ ...draft, frequency: x })} className={inp} /></div>
               <Field label="Instructions" value={draft.instructions} onChange={(x) => setDraft({ ...draft, instructions: x })} placeholder="e.g. Shake well; 5 min gap between drops" />
             </div>
             <datalist id="ipd-dose-options">{DOSE_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist>
@@ -838,8 +840,8 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
         {canLog && (
           <div className="space-y-2.5 mb-3 pb-3 border-b border-dashed border-[var(--color-border)]">
             <div className="flex flex-wrap items-end gap-4">
-              <div><label className={lbl}>Shift</label><Seg options={SHIFTS} value={shift} onChange={setShift} /></div>
-              <div><label className={lbl}>Doctor&apos;s orders followed</label>
+              <div className={rowIn}><label className={lblIn}>Shift</label><Seg options={SHIFTS} value={shift} onChange={setShift} /></div>
+              <div className={rowIn}><label className={lblIn}>Doctor&apos;s orders followed</label>
                 <Seg options={["Yes", "No"] as const} value={orders} onChange={setOrders} tone={(x) => (x === "Yes" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")} />
               </div>
             </div>
@@ -887,11 +889,11 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
       <Card title="Operation details">
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_1fr] gap-3 items-end">
           <Field label="Procedure" value={v.procedure} onChange={(x) => set("procedure", x)} disabled={!editable} />
-          <div><label className={lbl}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
+          <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
           <Field label="Anaesthesia" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} />
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-3">
-          <Field label="Implant" value={v.implant} onChange={(x) => set("implant", x)} disabled={!editable} className="col-span-2 lg:col-span-1" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <Field label="Implant" value={v.implant} onChange={(x) => set("implant", x)} disabled={!editable} className="sm:col-span-2" />
           <Field label="Surgeon" value={v.surgeon} onChange={(x) => set("surgeon", x)} disabled={!editable} />
           <Field label="Assistant" value={v.assistant} onChange={(x) => set("assistant", x)} disabled={!editable} />
           <Field label="Anaesthetist" value={v.anaesthetist} onChange={(x) => set("anaesthetist", x)} disabled={!editable} />
@@ -929,9 +931,11 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
         <div className="space-y-3">
           <Area label="Intra-operative findings" value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} />
           <div>
-            <label className={lbl}>Complications</label>
-            {editable && <div className="mb-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
-            <input value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={inp} />
+            <div className={rowIn}>
+              <label className={lblIn}>Complications</label>
+              <input value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} flex-1`} />
+            </div>
+            {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
           </div>
           <Area label="Post-operative instructions" value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} />
         </div>
@@ -972,7 +976,7 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
               <button type="button" onClick={() => change({ ...v, reviews: reviews.filter((x) => x.id !== r.id) })} className={btnG} aria-label="Remove review"><Trash2 size={12} /></button>
             </div>
           )}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field label="Vision RE" value={r.vaRe} onChange={(x) => set(r.id, "vaRe", x)} disabled={!editable} />
             <Field label="Vision LE" value={r.vaLe} onChange={(x) => set(r.id, "vaLe", x)} disabled={!editable} />
             <Field label="IOP RE (mmHg)" value={r.iopRe} onChange={(x) => set(r.id, "iopRe", x)} disabled={!editable} />
@@ -1013,16 +1017,18 @@ export function DoctorNoteComposer({ onAdd, pending }: { onAdd: (text: string) =
         {DOCTOR_NOTE_FIELDS.map((fl) => (
           <div key={fl.key}>
             {fl.key === "va" || fl.key === "iop" ? null : (
-              <>
-                <label className={lbl}>{fl.label}</label>
-                {DOCTOR_NOTE_CHIPS[fl.key] && (
-                  <div className="mb-1.5"><ChipRow storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key]} prefix="+ " onPick={(c) => chip(fl.key, c)} /></div>
-                )}
-                <textarea value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-[7rem_1fr] items-start gap-2">
+                <label className={`${lblIn} sm:pt-2`}>{fl.label}</label>
+                <div className="min-w-0">
+                  {DOCTOR_NOTE_CHIPS[fl.key] && (
+                    <div className="mb-1.5"><ChipRow storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key]} prefix="+ " onPick={(c) => chip(fl.key, c)} /></div>
+                  )}
+                  <textarea value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />
+                </div>
+              </div>
             )}
             {fl.key === "va" && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(["Vision RE", "Vision LE", "IOP RE", "IOP LE"] as const).map((x, i) => (
                   <Field key={x} label={x} value={vals[`k${i}`] ?? ""} onChange={(y) => setVals((cur) => {
                     const next = { ...cur, [`k${i}`]: y };

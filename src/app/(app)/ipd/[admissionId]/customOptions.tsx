@@ -114,7 +114,7 @@ export function SelectWithCustom({ storeKey, builtIns, value, onChange, disabled
   const o = useCustomOptions(storeKey, builtIns);
   const opts = value && !o.all.includes(value) ? [...o.all, value] : o.all;
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex flex-1 min-w-0 items-center gap-1.5">
       <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={className}>
         {opts.map((x) => <option key={x}>{x}</option>)}
       </select>

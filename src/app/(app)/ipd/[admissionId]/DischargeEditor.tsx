@@ -9,7 +9,8 @@ import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, typ
 /* ── Styling ───────────────────────────────────────────────────────────── */
 
 const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] disabled:border-transparent disabled:bg-[var(--color-surface-sunken)]/40 disabled:cursor-default";
-const labelCls = "block text-xs font-semibold text-[var(--color-ink-500)] mb-1";
+/** Label on the same line as its field. */
+const labelIn = "shrink-0 whitespace-nowrap text-xs font-semibold text-[var(--color-ink-500)]";
 const linkBtn = "inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-700)] hover:underline";
 const thCls = "px-3 py-1.5 text-left text-[11px] font-semibold text-[var(--color-ink-500)]";
 
@@ -54,17 +55,17 @@ function Field({ label, value, onChange, editable, type = "text", placeholder, c
   label: string; value: string; onChange: (v: string) => void; editable: boolean; type?: string; placeholder?: string; className?: string;
 }) {
   return (
-    <div className={`min-w-0 ${className ?? ""}`}>
-      <label className={labelCls}>{label}</label>
-      <input type={type} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "-"} className={inputCls} />
+    <div className={`flex items-center gap-2 min-w-0 ${className ?? ""}`}>
+      <label className={labelIn}>{label}</label>
+      <input type={type} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "-"} className={`${inputCls} flex-1`} />
     </div>
   );
 }
 
 function Area({ label, value, onChange, editable, placeholder, min }: { label?: string; value: string; onChange: (v: string) => void; editable: boolean; placeholder?: string; min?: number }) {
   return (
-    <div>
-      {label && <label className={labelCls}>{label}</label>}
+    <div className={label ? "grid grid-cols-[auto_1fr] items-start gap-2" : ""}>
+      {label && <label className={`${labelIn} pt-2`}>{label}</label>}
       <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
     </div>
   );
@@ -159,12 +160,12 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
     <div className="space-y-3">
       {/* 1. Patient, dates and type of discharge */}
       <Block n={next()} title="Discharge">
-        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Date of discharge" type="date" value={s.dischargeDate} onChange={(v) => set("dischargeDate", v)} editable={editable} />
           <Field label="Consultant" value={s.consultant} onChange={(v) => set("consultant", v)} editable={editable} />
         </div>
-        <div className="mt-3">
-          <label className={labelCls}>Type of discharge</label>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <label className={labelIn}>Type of discharge</label>
           <div className="inline-flex flex-wrap rounded-lg border border-[var(--color-border)] p-0.5 gap-0.5">
             {DISCHARGE_TYPES.map((t) => (
               <button key={t.value} type="button" disabled={!editable} onClick={() => set("dischargeType", t.value)}
@@ -185,8 +186,8 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
       {/* 3. Complaints, history, allergies */}
       <Block n={next()} title="Complaints & history">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Presenting complaints</label>
+          <div className="grid grid-cols-[auto_1fr] items-start gap-2">
+            <label className={`${labelIn} pt-2`}>Presenting complaints</label>
             <LineList value={s.complaints} onChange={(v) => set("complaints", v)} editable={editable} placeholder="e.g. Blurred vision LE × 6 months" addLabel="Add complaint" />
           </div>
           <div className="space-y-3">
@@ -267,7 +268,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
       {/* 6. Procedure */}
       {showProcedure && (
         <Block n={next()} title="Procedure">
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_90px_170px] gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-3">
             <Field label="Surgery" value={s.procedure.name} onChange={(v) => setIn("procedure", "name", v)} editable={editable} />
             <Field label="Eye" value={s.procedure.eye} onChange={(v) => setIn("procedure", "eye", v)} editable={editable} placeholder="RE / LE" />
             <Field label="Date" type="date" value={s.procedure.date} onChange={(v) => setIn("procedure", "date", v)} editable={editable} />
@@ -356,8 +357,8 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
       {/* 10. Advice */}
       <Block n={next()} title="Advice">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>Care, activity &amp; diet</label>
+          <div className="grid grid-cols-[auto_1fr] items-start gap-2">
+            <label className={`${labelIn} pt-2`}>Care, activity &amp; diet</label>
             <LineList value={s.advice} onChange={(v) => set("advice", v)} editable={editable} placeholder="Advice point" addLabel="Add advice" />
           </div>
           <div className="rounded-lg border border-red-100 bg-red-50/40 p-3">
@@ -369,7 +370,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
 
       {/* 11. Follow-up */}
       <Block n={next()} title="Follow-up">
-        <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Field label="Review on" type="date" value={s.followUpDate} onChange={(v) => set("followUpDate", v)} editable={editable} />
             {editable && (
