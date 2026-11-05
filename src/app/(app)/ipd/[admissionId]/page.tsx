@@ -2,11 +2,11 @@ import { notFound } from "next/navigation";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
+import { admissionTypeText, buildDischargeDraft, otTemplateSteps } from "@/lib/ipd";
 import {
-  admissionTypeText,
-  defaultChecklist, defaultConsents, defaultEducation, defaultNurse, defaultTreatment,
-  buildDischargeDraft, otNotesTemplate,
-} from "@/lib/ipd";
+  defaultChecklist, defaultConsents, defaultEducation, defaultImplant, defaultNurse, defaultOtNotes, defaultPostOp,
+  defaultTreatment, educationAdvice, isV2, type EducationData, type FormContext,
+} from "@/lib/ipd-forms";
 import { PatientFile, type FileData } from "./PatientFile";
 
 export const metadata = { title: "Patient File · IPD" };
@@ -59,6 +59,7 @@ export default async function IpdFilePage({
           patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
+          medications: { select: { drugName: true, dosage: true, frequency: true, route: true, laterality: true, instructions: true }, orderBy: { createdAt: "asc" } },
         },
       },
     },
@@ -130,13 +131,23 @@ export default async function IpdFilePage({
   ].sort((x, y) => y.at.localeCompare(x.at));
 
   const parse = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
+  const ctx: FormContext = {
+    patientName: v.patient.name, age: v.patient.age, sex: v.patient.sex, patientId: v.patient.uhid ?? udid,
+    hospital: v.hospital.name, doctor: v.doctor.name,
+    surgery: a.surgery, eye: a.laterality, implant: a.implant, anaesthesia: a.anaesthesia,
+    surgeryDate: a.surgeryDate?.toISOString() ?? null, type: a.admissionType,
+  };
+  const savedEducation = (() => { const t = a.forms.find((f) => f.key === "education"); const x = t ? parse(t.data) : null; return isV2(x) ? (x as EducationData) : null; })();
+  const education = savedEducation ?? defaultEducation(ctx);
   const defaults: Record<string, unknown> = {
-    consents: defaultConsents(),
+    implant: defaultImplant(),
+    consents: defaultConsents(ctx),
     checklist: defaultChecklist(),
-    education: defaultEducation(a.admissionType),
+    education,
     treatment: defaultTreatment(),
     nurse: defaultNurse(a.admissionType),
-    otNotes: { text: otNotesTemplate(a) },
+    otNotes: defaultOtNotes(ctx, otTemplateSteps(a)),
+    postOpNotes: defaultPostOp(),
     discharge: buildDischargeDraft({
       type: a.admissionType,
       doctor: v.doctor.name,
@@ -156,12 +167,11 @@ export default async function IpdFilePage({
       posterior: firstWith((x) => x.posteriorSegment, segHas),
       orders: orders.map((o) => ({ testName: o.testName, laterality: o.laterality, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null, createdAt: o.createdAt })),
       doctorNotes: a.doctorNotes.map((n) => ({ text: n.text, at: n.createdAt })),
-      drugs: (() => { const t = a.forms.find((f) => f.key === "treatment"); const x = t ? parse(t.data) : {}; return Array.isArray(x.drugs) ? x.drugs : []; })(),
-      education: (() => { const t = a.forms.find((f) => f.key === "education"); return (t ? parse(t.data).education : null) ?? defaultEducation(a.admissionType).education; })(),
-      diet: (() => { const t = a.forms.find((f) => f.key === "education"); const x = t ? parse(t.data) : {}; return Array.isArray(x.diet) ? x.diet : []; })(),
+      drugs: (() => { const t = a.forms.find((f) => f.key === "treatment"); const x = t ? parse(t.data) : {}; return Array.isArray(x.drugs) ? x.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : []; })(),
+      education: educationAdvice(education),
+      diet: education.meals.filter((m) => m.diet.trim()).map((m) => ({ time: m.meal, item: m.diet })),
       followUpDate: v.followUpDate,
     }),
-    postOpNotes: { text: "" },
   };
 
   const data: FileData = {
@@ -218,6 +228,9 @@ export default async function IpdFilePage({
     })),
     doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString() })),
     activity,
+    me: user.name,
+    ctx,
+    emrMeds: v.medications.map((m) => ({ name: m.drugName, dose: m.dosage ?? "", frequency: m.frequency ?? "", route: m.route ?? "", eye: m.laterality ?? "", instructions: m.instructions ?? "" })),
   };
 
   return (

@@ -6,15 +6,23 @@ import { useRouter } from "next/navigation";
 import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import {
   ArrowLeft, BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, User, FileText,
-  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, Trash2, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer,
+  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import {
   ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  formsFor, isCustomKey, isDischargeData, logsOpen, otNotesTemplate, type DischargeData,
-  type CheckItem, type ConsentItem, type DietRow, type DrugRow, type IpdStatus, type LogEntry,
+  formsFor, isCustomKey, isDischargeData, logsOpen, type DischargeData, type IpdStatus, type LogEntry,
 } from "@/lib/ipd";
+import {
+  isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
+  type OtNotesData, type PostOpData, type TreatmentData,
+} from "@/lib/ipd-forms";
+import { SaveIndicator, useAutoSave } from "@/lib/useAutoSave";
+import {
+  ChecklistForm, ConsentsForm, DoctorNoteComposer, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
+  OtNotesForm, PostOpForm, TreatmentForm, type FileInfo, type NewLog,
+} from "./IpdForms";
 import {
   addCustomForm, addDoctorNote, addFormAttachment, addFormLog, changeAdmissionType, confirmDischarge,
   freezeForm, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
@@ -68,6 +76,9 @@ export interface FileData {
   orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
   doctorNotes: { id: string; text: string; by: string; at: string }[];
   activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
+  me: string;
+  ctx: FormContext;
+  emrMeds: FileInfo["emrMeds"];
 }
 
 interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean }
@@ -104,63 +115,6 @@ function ErrorLine({ text }: { text: string }) {
   return <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} className="shrink-0" /> {text}</p>;
 }
 
-function LogBox({ title, entries, canAdd, placeholder, onAdd }: {
-  title: string; entries: LogEntry[]; canAdd: boolean; placeholder: string; onAdd: (text: string) => Promise<string | undefined>;
-}) {
-  const [text, setText] = useState("");
-  const [error, setError] = useState("");
-  const [pending, start] = useTransition();
-  const add = () => start(async () => {
-    const err = await onAdd(text);
-    if (err) setError(err); else { setText(""); setError(""); }
-  });
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 p-3">
-      <p className={labelCls}>{title}</p>
-      {canAdd && (
-        <div className="flex gap-2 mb-3">
-          <input value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && text.trim()) add(); }} placeholder={placeholder} className={inputCls} />
-          <button disabled={pending || !text.trim()} onClick={add} className={btnPrimary}>{pending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add</button>
-        </div>
-      )}
-      <ErrorLine text={error} />
-      {entries.length === 0 ? (
-        <p className="text-caption italic text-[var(--color-ink-300)]">No entries yet.</p>
-      ) : (
-        <ul className="space-y-1.5 max-h-72 overflow-y-auto">
-          {[...entries].reverse().map((e, i) => (
-            <li key={i} className="text-label sm:text-sm text-[var(--color-ink-700)] flex gap-3">
-              <span className="shrink-0 text-caption text-[var(--color-ink-400)] tabular-nums w-36">{fmtTime(e.at)}</span>
-              <span className="min-w-0 break-words">{e.text}<span className="text-caption text-[var(--color-ink-400)]"> · {e.by}</span></span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function CheckList({ items, editable, onChange, addLabel }: { items: CheckItem[]; editable: boolean; onChange: (items: CheckItem[]) => void; addLabel: string }) {
-  const [custom, setCustom] = useState("");
-  return (
-    <div className="space-y-1.5">
-      {items.map((it, i) => (
-        <label key={i} className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-label sm:text-sm ${it.done ? "border-emerald-200 bg-emerald-50/50 text-[var(--color-ink-800)]" : "border-[var(--color-border)] text-[var(--color-ink-700)]"} ${editable ? "cursor-pointer" : ""}`}>
-          <input type="checkbox" checked={it.done} disabled={!editable} onChange={() => onChange(items.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} className="w-4 h-4 accent-[var(--color-primary-600)]" />
-          <span className="flex-1">{it.label}</span>
-          {it.preOp && <span className="text-micro font-bold rounded px-1.5 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}
-        </label>
-      ))}
-      {editable && (
-        <div className="flex gap-2 pt-1">
-          <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder={addLabel} className={inputCls} />
-          <button disabled={!custom.trim()} onClick={() => { onChange([...items, { label: custom.trim(), done: false }]); setCustom(""); }} className={btnGhost}><Plus size={14} /> Add</button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ── Form bodies ───────────────────────────────────────────────────────── */
 
 function LongSummary({ visitId, complaint, diagnoses }: { visitId: string; complaint: string | null; diagnoses: FileData["diagnoses"] }) {
@@ -174,130 +128,6 @@ function LongSummary({ visitId, complaint, diagnoses }: { visitId: string; compl
   );
 }
 
-function Investigations({ orders }: { orders: FileData["orders"] }) {
-  if (orders.length === 0) return <p className="text-sm italic text-[var(--color-ink-400)]">No investigations ordered.</p>;
-  return (
-    <ul className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)]">
-      {orders.map((o) => (
-        <li key={o.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
-          <div className="min-w-0">
-            <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
-              {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}{o.testName}
-            </p>
-            <p className="text-caption text-[var(--color-ink-400)]">Ordered {fmtDay(o.createdAt)}{o.notes ? ` · ${o.notes}` : ""}</p>
-          </div>
-          {o.resultRef ? (
-            <a href={fileHref(o.resultRef)!} target="_blank" rel="noreferrer" className="shrink-0 inline-flex items-center gap-1 text-caption font-semibold text-[var(--color-primary-700)] hover:underline">
-              <FileText size={13} /> Report · {fmtDay(o.resultAt)}
-            </a>
-          ) : (
-            <span className="shrink-0 text-caption font-semibold text-amber-700">Report pending</span>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function ImplantDetails({ d }: { d: FileData }) {
-  const row = (k: string, v: React.ReactNode) => (
-    <div className="grid grid-cols-[150px_1fr] gap-3 py-2 border-b border-[var(--color-border)] last:border-0 text-label sm:text-sm">
-      <span className="text-[var(--color-ink-400)]">{k}</span><span className="text-[var(--color-ink-800)] font-medium">{v || "—"}</span>
-    </div>
-  );
-  const pay = d.payment;
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] px-4">
-      {row("Surgery", <>{d.laterality && <span className="clinical-laterality mr-1">{d.laterality}</span>}{d.surgery}</>)}
-      {row("Implant", d.implant)}
-      {row("Anaesthesia", d.anaesthesia)}
-      {row("Surgery date", fmtDay(d.surgeryDate))}
-      {pay && row("Payment", [pay.type, pay.mode, pay.scheme, pay.policy].filter(Boolean).join(" · ").replaceAll("_", " "))}
-      {pay?.eligibleBy && row("Eligible for surgery", `${pay.eligibleBy}${pay.eligibleAt ? ` · ${fmtDay(pay.eligibleAt)}` : ""}`)}
-    </div>
-  );
-}
-
-function Consents({ value, editable, onChange }: { value: { items: ConsentItem[] }; editable: boolean; onChange: (v: { items: ConsentItem[] }) => void }) {
-  const [signing, setSigning] = useState<string | null>(null);
-  const [signer, setSigner] = useState("");
-  const [custom, setCustom] = useState("");
-  const set = (id: string, patch: Partial<ConsentItem>) => onChange({ items: value.items.map((c) => (c.id === id ? { ...c, ...patch } : c)) });
-  return (
-    <div className="space-y-3">
-      {value.items.map((c) => {
-        const canEdit = editable && !c.signed;
-        return (
-          <div key={c.id} className={`rounded-xl border p-3 ${c.signed ? "border-emerald-200 bg-emerald-50/40" : "border-[var(--color-border)]"}`}>
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <p className="text-sm font-bold text-[var(--color-ink-800)]">{c.title}</p>
-              {c.signed ? (
-                <span className="inline-flex items-center gap-1 text-caption font-semibold text-emerald-700"><ShieldCheck size={13} /> Signed by {c.signedBy} · {c.signedAt ? fmtTime(c.signedAt) : ""}</span>
-              ) : editable && (
-                <button onClick={() => { setSigning(c.id); setSigner(""); }} className="text-caption font-semibold text-[var(--color-primary-700)] hover:underline">Mark signed</button>
-              )}
-            </div>
-            <textarea value={c.text} disabled={!canEdit} onChange={(e) => set(c.id, { text: e.target.value })} rows={3} className={inputCls} />
-            {signing === c.id && (
-              <div className="flex gap-2 mt-2">
-                <input autoFocus value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Signed by (patient / relative name)" className={inputCls} />
-                <button disabled={!signer.trim()} onClick={() => { set(c.id, { signed: true, signedBy: signer.trim(), signedAt: new Date().toISOString() }); setSigning(null); }} className={btnPrimary}>Confirm</button>
-                <button onClick={() => setSigning(null)} className={btnGhost}>Cancel</button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      {editable && (
-        <div className="flex gap-2">
-          <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Custom consent title…" className={inputCls} />
-          <button disabled={!custom.trim()} onClick={() => { onChange({ items: [...value.items, { id: `c-${Date.now()}`, title: custom.trim(), text: "", signed: false }] }); setCustom(""); }} className={btnGhost}><Plus size={14} /> Add consent</button>
-        </div>
-      )}
-      <p className="text-caption text-[var(--color-ink-400)]">A consent can be edited until it is marked signed. Attach a photo of the signed page below.</p>
-    </div>
-  );
-}
-
-function RowsTable<T extends Record<string, string>>({ cols, rows, editable, onChange, blank }: {
-  cols: { key: keyof T; label: string; width?: string }[]; rows: T[]; editable: boolean; onChange: (rows: T[]) => void; blank: T;
-}) {
-  return (
-    <div className="rounded-xl border border-[var(--color-border)] overflow-x-auto">
-      <table className="w-full text-label sm:text-sm">
-        <thead>
-          <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
-            {cols.map((c) => <th key={String(c.key)} style={{ width: c.width }} className="px-3 py-2 text-left text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{c.label}</th>)}
-            {editable && <th className="w-10" />}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
-            <tr><td colSpan={cols.length + 1} className="px-3 py-3 text-caption italic text-[var(--color-ink-300)]">No rows yet.</td></tr>
-          )}
-          {rows.map((r, i) => (
-            <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
-              {cols.map((c) => (
-                <td key={String(c.key)} className="px-2 py-1.5">
-                  {editable
-                    ? <input value={r[c.key]} onChange={(e) => onChange(rows.map((x, j) => (j === i ? { ...x, [c.key]: e.target.value } : x)))} className="w-full rounded-lg border border-[var(--color-border)] px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)]" />
-                    : <span className="px-1 text-[var(--color-ink-800)]">{r[c.key] || "—"}</span>}
-                </td>
-              ))}
-              {editable && (
-                <td className="px-1"><button onClick={() => onChange(rows.filter((_, j) => j !== i))} className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-600 hover:bg-red-50" aria-label="Remove row"><Trash2 size={14} /></button></td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {editable && (
-        <button onClick={() => onChange([...rows, { ...blank }])} className="w-full flex items-center justify-center gap-1.5 py-2 text-caption font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] border-t border-[var(--color-border)]"><Plus size={13} /> Add row</button>
-      )}
-    </div>
-  );
-}
-
 function TextForm({ value, editable, onChange, rows = 18, mono }: { value: string; editable: boolean; onChange: (v: string) => void; rows?: number; mono?: boolean }) {
   return (
     <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows}
@@ -305,93 +135,90 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
   );
 }
 
-/* ── Form shell: content + photos + Save / Freeze ──────────────────────── */
+/* ── Form shell: patient band + form + photos, auto-saved, freeze ──────── */
+
+const STRUCTURED = new Set(["implant", "consents", "checklist", "education", "treatment", "nurse", "otNotes", "postOpNotes"]);
+
+/** Patient band printed on every hospital chart. */
+function PatientBand({ d }: { d: FileData }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5 text-xs text-[var(--color-ink-600)]">
+      <span><b className="text-[var(--color-ink-900)]">{d.patient.name}</b> · {d.patient.age}/{SEX_SHORT[d.patient.sex] ?? d.patient.sex}</span>
+      <span>ID <b className="text-[var(--color-ink-800)]">{d.patient.id}</b></span>
+      <span>IP <b className="text-[var(--color-ink-800)]">{d.fileNo || "—"}</b></span>
+      <span>Ward <b className="text-[var(--color-ink-800)]">{[d.ward, d.floor && `Fl ${d.floor}`].filter(Boolean).join(" · ") || "—"}</b></span>
+      <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
+      <span>Consultant <b className="text-[var(--color-ink-800)]">Dr. {d.doctor}</b></span>
+    </div>
+  );
+}
 
 function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
 }) {
-  // The discharge summary is structured; an older free-text draft starts from the new layout
-  const hasData = row && Object.keys(row.data ?? {}).length && (keyName !== "discharge" || isDischargeData(row.data));
-  const initial = hasData ? row!.data : (d.defaults[keyName] ?? { text: "" });
-  const [value, setValue] = useState<FormJson>(initial as FormJson);
-  const [dirty, setDirty] = useState(false);
+  const defaults = (d.defaults[keyName] ?? { text: "" }) as FormJson;
+  const initial: FormJson = (() => {
+    if (!row || !Object.keys(row.data ?? {}).length) return defaults;
+    if (keyName === "discharge") return isDischargeData(row.data) ? row.data : defaults;
+    if (STRUCTURED.has(keyName)) return isV2(row.data) ? { ...defaults, ...row.data } : { ...defaults, log: row.data.log ?? [] };
+    return row.data;
+  })();
+  const [value, setValue] = useState<FormJson>(initial);
+  const [touched, setTouched] = useState(false);
   const [error, setError] = useState("");
-  const [savedMsg, setSavedMsg] = useState(false);
   const [confirmFreeze, setConfirmFreeze] = useState(false);
   const [pending, start] = useTransition();
   const frozen = !!row?.frozen;
   const editable = can.edit && formEditable(keyName, frozen, d.status) && !display;
   const canFreeze = can.edit && !frozen && d.status === "ADMITTED";
-  const logs = can.edit && logsOpen(d.status);
+  const canLog = can.edit && logsOpen(d.status);
 
-  // Print opens the saved summary, so unsaved edits are saved first
+  // Auto-save while editing (no Save button), like the Counselling screen
+  const saveState = useAutoSave(value, async (val) => {
+    const r = await saveForm(d.id, keyName, val);
+    if (r.error) { setError(r.error); throw new Error(r.error); }
+    setError("");
+  }, 30000, { paused: !editable || !touched, flushOnUnmount: true });
+
+  const change = (v: FormJson) => { setValue(v); setTouched(true); };
+  const saveNow = async (v: FormJson) => {
+    const r = await saveForm(d.id, keyName, v);
+    if (r.error) return r.error;
+    onRefresh();
+    return undefined;
+  };
+  // Print opens the saved summary, so the latest edits are saved first
   const printSummary = () => start(async () => {
-    if (editable && dirty) {
-      const r = await saveForm(d.id, keyName, value);
-      if (r.error) { setError(r.error); return; }
-      setDirty(false); onRefresh();
-    } else if (!row && editable) {
-      const r = await saveForm(d.id, keyName, value);
-      if (r.error) { setError(r.error); return; }
-      onRefresh();
-    }
+    if (editable) { const err = await saveNow(value); if (err) { setError(err); return; } }
     window.open(`/ipd-print/${d.id}`, "_blank");
-  });
-  const change = (v: FormJson) => { setValue(v); setDirty(true); setSavedMsg(false); setError(""); };
-  const save = () => start(async () => {
-    const r = await saveForm(d.id, keyName, value);
-    if (r.error) setError(r.error); else { setDirty(false); setSavedMsg(true); onRefresh(); }
   });
   const freeze = () => start(async () => {
     setConfirmFreeze(false);
     const r = await freezeForm(d.id, keyName, display ? undefined : value);
-    if (r.error) setError(r.error); else { setDirty(false); onRefresh(); }
+    if (r.error) setError(r.error); else onRefresh();
   });
-  const addLog = async (text: string) => {
-    const r = await addFormLog(d.id, keyName, text);
+  const addLog = async (e: NewLog) => {
+    const r = await addFormLog(d.id, keyName, e);
     if (r.error) return r.error;
     onRefresh();
     return undefined;
   };
   const log: LogEntry[] = Array.isArray(row?.data?.log) ? row!.data.log : [];
+  const info: FileInfo = d;
+  const props = { value, change, saveNow, editable, canLog, addLog, log, f: info };
 
   let body: React.ReactNode;
   switch (keyName) {
     case "summary": body = <LongSummary visitId={d.visitId} complaint={d.complaint} diagnoses={d.diagnoses} />; break;
-    case "investigations": body = <Investigations orders={d.orders} />; break;
-    case "implant": body = <ImplantDetails d={d} />; break;
-    case "consents": body = <Consents value={{ items: value.items ?? [] }} editable={editable} onChange={change} />; break;
-    case "checklist": body = <CheckList items={value.items ?? []} editable={editable} onChange={(items) => change({ ...value, items })} addLabel="Custom checklist item…" />; break;
-    case "education":
-      body = (
-        <div className="space-y-4">
-          <div><label className={labelCls}>Patient Education</label><TextForm value={value.education ?? ""} editable={editable} onChange={(t) => change({ ...value, education: t })} rows={7} /></div>
-          <div>
-            <label className={labelCls}>Diet Chart</label>
-            <RowsTable<DietRow & Record<string, string>> cols={[{ key: "time", label: "Time / Meal", width: "30%" }, { key: "item", label: "Diet" }]} rows={value.diet ?? []} editable={editable} onChange={(diet) => change({ ...value, diet })} blank={{ time: "", item: "" }} />
-          </div>
-          <LogBox title="Food taken (log)" entries={log} canAdd={logs} placeholder="e.g. Lunch taken fully" onAdd={addLog} />
-        </div>
-      );
-      break;
-    case "treatment":
-      body = (
-        <div className="space-y-4">
-          <RowsTable<DrugRow & Record<string, string>>
-            cols={[{ key: "name", label: "Drug", width: "30%" }, { key: "dose", label: "Dose" }, { key: "route", label: "Route" }, { key: "eye", label: "Eye" }, { key: "frequency", label: "Frequency" }]}
-            rows={value.drugs ?? []} editable={editable} onChange={(drugs) => change({ ...value, drugs })} blank={{ name: "", dose: "", route: "", eye: "", frequency: "" }} />
-          <LogBox title="Medicines given (log)" entries={log} canAdd={logs} placeholder="e.g. Moxifloxacin 1 drop RE given" onAdd={addLog} />
-        </div>
-      );
-      break;
-    case "nurse":
-      body = (
-        <div className="space-y-4">
-          <CheckList items={value.checks ?? []} editable={editable} onChange={(checks) => change({ ...value, checks })} addLabel="Custom item…" />
-          <LogBox title="Nurse notes (well-being, fresh complaints, orders followed)" entries={log} canAdd={logs} placeholder="e.g. Patient comfortable, no vomiting or headache" onAdd={addLog} />
-        </div>
-      );
-      break;
+    case "investigations": body = <InvestigationsForm f={info} />; break;
+    case "implant": body = <ImplantForm {...props} value={value as ImplantData} change={change} saveNow={saveNow} />; break;
+    case "consents": body = <ConsentsForm {...props} value={value as ConsentsData} change={change} saveNow={saveNow} />; break;
+    case "checklist": body = <ChecklistForm {...props} value={value as ChecklistData} change={change} saveNow={saveNow} />; break;
+    case "education": body = <EducationForm {...props} value={value as EducationData} change={change} saveNow={saveNow} />; break;
+    case "treatment": body = <TreatmentForm {...props} value={value as TreatmentData} change={change} saveNow={saveNow} />; break;
+    case "nurse": body = <NurseForm {...props} value={value as NurseData} change={change} saveNow={saveNow} />; break;
+    case "otNotes": body = <OtNotesForm {...props} value={value as OtNotesData} change={change} saveNow={saveNow} template={(d.defaults.otNotes as OtNotesData).steps} />; break;
+    case "postOpNotes": body = <PostOpForm {...props} value={value as PostOpData} change={change} saveNow={saveNow} />; break;
     case "discharge":
       // A summary signed before the structured layout keeps its signed text
       body = frozen && typeof row?.data?.text === "string" && !isDischargeData(row.data)
@@ -399,31 +226,32 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
         : <DischargeEditor value={value as DischargeData} onChange={(v) => change(v as unknown as FormJson)} editable={editable} ctx={dischargeCtx(d)} />;
       break;
     default:
-      body = (
-        <div className="space-y-2">
-          {keyName === "otNotes" && editable && (
-            <button onClick={() => change({ text: otNotesTemplate(d) })} className="text-caption font-semibold text-[var(--color-primary-700)] hover:underline">Reset to the template for this surgery</button>
-          )}
-          <TextForm value={value.text ?? ""} editable={editable} onChange={(t) => change({ text: t })} mono={keyName === "otNotes"} rows={keyName === "postOpNotes" || isCustomKey(keyName) ? 10 : 22} />
-        </div>
-      );
+      body = <TextForm value={value.text ?? ""} editable={editable} onChange={(t) => change({ text: t })} rows={12} />;
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{title}</h2>
-        {keyName === "discharge" && (
-          <button type="button" disabled={pending} onClick={printSummary} className={`${btnGhost} ml-auto`}><Printer size={14} /> Print / PDF</button>
-        )}
-        {frozen ? (
-          <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-            <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
-          </span>
-        ) : (
-          <span className="text-caption font-semibold text-[var(--color-ink-400)]">Not frozen</span>
-        )}
+        <div className="flex flex-wrap items-center gap-2 ml-auto">
+          {editable && touched && <SaveIndicator state={saveState} />}
+          {keyName === "discharge" && (
+            <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print / PDF</button>
+          )}
+          {frozen ? (
+            <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
+            </span>
+          ) : canFreeze ? (
+            <button disabled={pending} onClick={() => setConfirmFreeze(true)} className={btnPrimary}>
+              <Lock size={14} /> {display ? "Confirm & Freeze" : "Freeze"}
+            </button>
+          ) : (
+            <span className="text-caption font-semibold text-[var(--color-ink-400)]">Not frozen</span>
+          )}
+        </div>
       </div>
+      <PatientBand d={d} />
       {frozen && d.status === "POST_OP" && editable && (
         <p className="text-caption text-emerald-700">Post-op ward: this chart stays editable until discharge.</p>
       )}
@@ -431,25 +259,12 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
       {body}
 
       <ErrorLine text={error} />
-      {(editable || canFreeze) && (
-        <div className="flex flex-wrap items-center gap-3">
-          {editable && <button disabled={pending || !dirty} onClick={save} className={btnGhost}>Save</button>}
-          {canFreeze && (
-            <button disabled={pending} onClick={() => setConfirmFreeze(true)} className={btnPrimary}>
-              <Lock size={14} /> {display ? "Confirm & Freeze" : "Save & Freeze"}
-            </button>
-          )}
-          {pending && <Loader2 size={14} className="animate-spin text-[var(--color-ink-400)]" />}
-          {savedMsg && !dirty && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved</span>}
-        </div>
-      )}
-
       <Photos d={d} keyName={keyName} list={row?.attachments ?? []} canAdd={can.edit && attachOpen(d.status)} onRefresh={onRefresh} />
 
       {confirmFreeze && (
         <ConfirmDialog
           title={`Freeze ${title}?`}
-          message="Confirm the entries are verified and final. A frozen form can't be edited again in the ward (the diet, treatment and nurse charts reopen in the post-op ward)."
+          message="Confirm the entries are verified and final. A frozen form can't be edited again in the ward (the diet, treatment and nurse charts reopen in the post-op ward). Chart entries such as doses given, food and vitals can still be recorded until discharge."
           confirmLabel="Freeze"
           onConfirm={freeze}
           onCancel={() => setConfirmFreeze(false)}
@@ -516,34 +331,33 @@ function Photos({ d, keyName, list, canAdd, onRefresh }: { d: FileData; keyName:
 /* ── Doctor's notes and activity ───────────────────────────────────────── */
 
 function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: () => void }) {
-  const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const canAdd = can.doctorNotes && logsOpen(d.status);
-  const add = () => start(async () => {
+  const add = (text: string) => start(async () => {
     const r = await addDoctorNote(d.id, text);
-    if (r.error) setError(r.error); else { setText(""); setError(""); onRefresh(); }
+    if (r.error) setError(r.error); else { setError(""); onRefresh(); }
   });
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
-      <p className="text-caption text-[var(--color-ink-400)] -mt-2">Frequent updates until the patient is fit for discharge. Each note is labelled with its time.</p>
-      {canAdd && (
-        <div className="space-y-2">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder="Findings, orders, plan…" className={inputCls} />
-          <ErrorLine text={error} />
-          <button disabled={pending || !text.trim()} onClick={add} className={btnPrimary}>{pending ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} Add note</button>
-        </div>
-      )}
+    <div className="flex flex-col gap-3">
+      <div>
+        <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
+        <p className="text-caption text-[var(--color-ink-400)]">Ward rounds until the patient is fit for discharge. Each note is labelled with its time.</p>
+      </div>
+      <PatientBand d={d} />
+      {canAdd && <DoctorNoteComposer onAdd={add} pending={pending} />}
+      <ErrorLine text={error} />
       {d.doctorNotes.length === 0 ? (
         <p className="text-sm italic text-[var(--color-ink-400)]">No notes yet.</p>
       ) : (
-        <ol className="relative border-l border-[var(--color-border)] ml-2 space-y-4">
+        <ol className="space-y-2">
           {d.doctorNotes.map((n) => (
-            <li key={n.id} className="pl-4">
-              <span className="absolute -left-[5px] mt-1.5 w-2.5 h-2.5 rounded-full bg-[var(--color-primary-500)]" />
-              <p className="text-caption font-semibold text-[var(--color-ink-500)]">{fmtTime(n.at)} · {n.by}</p>
-              <p className="text-sm text-[var(--color-ink-800)] whitespace-pre-line mt-0.5">{n.text}</p>
+            <li key={n.id} className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-[var(--color-surface-sunken)]/70 border-b border-[var(--color-border)]">
+                <span className="text-xs font-bold text-[var(--color-ink-800)]">{fmtTime(n.at)}</span>
+                <span className="text-xs text-[var(--color-ink-500)]">Dr. {n.by.replace(/^Dr\.?\s*/i, "")}</span>
+              </div>
+              <div className="px-3.5 py-2.5"><DoctorNoteText text={n.text} /></div>
             </li>
           ))}
         </ol>
@@ -829,7 +643,7 @@ function dischargeCtx(d: FileData): DischargeContext {
     surgical: d.type === "PRE_OP" || !!d.surgery,
     orders: d.orders,
     doctorNotes: d.doctorNotes.map((n) => ({ text: n.text, at: n.at })),
-    drugs: Array.isArray(t?.drugs) ? t.drugs : [],
+    drugs: Array.isArray(t?.drugs) ? t.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : [],
     signed: d.status === "DISCHARGED" && d.dischargedBy && d.dischargedAt ? { by: d.dischargedBy, at: discharge?.frozenAt ?? d.dischargedAt } : null,
   };
 }

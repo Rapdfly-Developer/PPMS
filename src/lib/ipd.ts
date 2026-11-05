@@ -42,7 +42,7 @@ export interface FormDef {
 export const IPD_FORMS: FormDef[] = [
   { key: "summary",        title: "Today's Long Summary",          display: true },
   { key: "investigations", title: "Investigation Reports",         display: true },
-  { key: "implant",        title: "Implant Details",               display: true, preOpOnly: true },
+  { key: "implant",        title: "Implant Details",               preOpOnly: true },
   { key: "consents",       title: "Consents",                      preOpOnly: true },
   { key: "checklist",      title: "Surgery Checklist",             preOpOnly: true },
   { key: "education",      title: "Patient Education & Diet Chart", postOp: true },
@@ -93,86 +93,7 @@ export function canDischargeNow(type: string, status: string): boolean {
 
 /* ── Form data shapes ───────────────────────────────────────────────────── */
 
-export interface LogEntry { at: string; by: string; text: string }
-export interface ConsentItem { id: string; title: string; text: string; signed: boolean; signedBy?: string; signedAt?: string; recordedBy?: string }
-export interface CheckItem { label: string; done: boolean; preOp?: boolean }
-export interface DrugRow { name: string; dose: string; route: string; eye: string; frequency: string }
-export interface DietRow { time: string; item: string }
-
-export interface ConsentsData { items: ConsentItem[] }
-export interface ChecklistData { items: CheckItem[] }
-export interface EducationData { education: string; diet: DietRow[]; log: LogEntry[] }
-export interface TreatmentData { drugs: DrugRow[]; log: LogEntry[] }
-export interface NurseData { checks: CheckItem[]; log: LogEntry[] }
-export interface TextData { text: string }
-
-const CONSENT_TEXT: Record<string, string> = {
-  General:
-    "I, the undersigned, consent to admission and to the examinations, treatment and nursing care advised by the treating doctor. The nature of my condition and the proposed treatment have been explained to me in a language I understand, and I have had the opportunity to ask questions.",
-  GVP:
-    "General / Visual Prognosis: I understand that the visual outcome after surgery depends on the condition of my eye and other health factors. The expected benefit, the possibility of limited improvement, and the need for glasses or further procedures have been explained to me.",
-  Anaesthesia:
-    "I consent to the type of anaesthesia advised for my procedure. Its risks, including allergy, bruising, globe injury (for blocks) and the rare risks of sedation or general anaesthesia, have been explained to me.",
-  Negative:
-    "I have been explained the possible complications, including infection, bleeding, raised eye pressure, retinal problems and, rarely, loss of vision or of the eye. I understand that no guarantee of outcome has been given.",
-};
-
-export function defaultConsents(): ConsentsData {
-  return {
-    items: (["General", "GVP", "Anaesthesia", "Negative"] as const).map((k) => ({
-      id: k, title: k === "GVP" ? "GVP (Visual Prognosis)" : k, text: CONSENT_TEXT[k], signed: false,
-    })),
-  };
-}
-
-export const SURGERY_CHECKLIST = [
-  "Patient identity confirmed (name, ID, wristband)",
-  "Operative eye confirmed and marked",
-  "All consents signed",
-  "Pre-op investigations reviewed and within validity",
-  "Implant / IOL available and power verified",
-  "Pupil dilated as advised",
-  "Pre-op antibiotic drops instilled",
-  "Fasting status confirmed (if GA / sedation)",
-  "Allergies checked and recorded",
-  "Blood pressure and blood sugar recorded",
-  "Anticoagulants / antiplatelets status noted",
-  "Jewellery, dentures and contact lenses removed",
-];
-
-export function defaultChecklist(): ChecklistData {
-  return { items: SURGERY_CHECKLIST.map((label) => ({ label, done: false })) };
-}
-
-export function defaultNurse(type: string): NurseData {
-  const preOp = type === "PRE_OP";
-  return {
-    checks: [
-      ...(preOp ? [{ label: "OT gown", done: false, preOp: true }, { label: "Remove ornaments", done: false, preOp: true }] : []),
-      { label: "Pass urine", done: false },
-    ],
-    log: [],
-  };
-}
-
-export function defaultEducation(type: string): EducationData {
-  const surgical = type === "PRE_OP";
-  return {
-    education: surgical
-      ? "• Do not rub or press the operated eye.\n• Wear the eye shield at night for 2 weeks.\n• Use the eye drops exactly as prescribed; wash hands before instilling.\n• Avoid water and soap entering the eye for 2 weeks.\n• Avoid bending, lifting heavy weights and dusty places.\n• Report pain, redness, sudden drop in vision or discharge immediately."
-      : "• Use the medicines exactly as prescribed.\n• Report any new pain, redness or drop in vision immediately.",
-    diet: [
-      { time: "Breakfast", item: "" },
-      { time: "Lunch", item: "" },
-      { time: "Dinner", item: "" },
-    ],
-    log: [],
-  };
-}
-
-export function defaultTreatment(): TreatmentData {
-  return { drugs: [], log: [] };
-}
+export type { LogEntry } from "./ipd-forms";
 
 /* ── Draft OT notes (starter templates; doctors can edit per patient) ───── */
 
@@ -296,6 +217,14 @@ const GENERIC_OT_STEPS = [
   "Dressing / shield applied.",
   "Intra-op events: Uneventful / ___",
 ];
+
+/** Template steps for the surgery, with anaesthesia and implant filled in. */
+export function otTemplateSteps(a: { surgery?: string | null; implant?: string | null; anaesthesia?: string | null }): string[] {
+  const steps = OT_TEMPLATES.find((t) => t.match.test(a.surgery ?? ""))?.steps ?? GENERIC_OT_STEPS;
+  return steps
+    .filter((s) => !s.startsWith("  ") && s !== "Procedure steps:" && !s.startsWith("Intra-op events"))
+    .map((s) => s.replace("{anaesthesia}", a.anaesthesia || "___").replace("{implant}", a.implant || "___"));
+}
 
 export function otNotesTemplate(a: { surgery?: string | null; laterality?: string | null; implant?: string | null; anaesthesia?: string | null }): string {
   const steps = OT_TEMPLATES.find((t) => t.match.test(a.surgery ?? ""))?.steps ?? GENERIC_OT_STEPS;

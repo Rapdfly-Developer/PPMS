@@ -158,17 +158,25 @@ export async function freezeForm(admissionId: string, key: string, data?: unknow
 }
 
 /** Add a timed entry to a running chart (diet, treatment, nurse notes) until discharge. */
-export async function addFormLog(admissionId: string, key: string, text: string): Promise<Result> {
+/** Add a timed chart entry (dose given, food taken, vitals, nurse note); kind/meta are structured details. */
+export async function addFormLog(
+  admissionId: string,
+  key: string,
+  entry: string | { text: string; kind?: string; meta?: Record<string, unknown> },
+): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
   if (!["education", "treatment", "nurse"].includes(key)) return { error: "Entries can't be added to this form." };
   if (!logsOpen(admission.status)) return { error: "Entries can't be added now." };
-  const t = text.trim();
+  const e = typeof entry === "string" ? { text: entry } : entry;
+  const t = (e.text ?? "").trim();
   if (!t) return { error: "Enter the note." };
+  const kind = ["dose", "food", "vitals", "note"].includes(e.kind ?? "") ? e.kind : undefined;
+  const meta = e.meta && typeof e.meta === "object" && JSON.stringify(e.meta).length < 2000 ? e.meta : undefined;
   const row = admission.forms.find((f) => f.key === key);
   let data: Record<string, unknown> = {};
   try { data = row ? JSON.parse(row.data) : {}; } catch { data = {}; }
   const log = Array.isArray(data.log) ? (data.log as LogEntry[]) : [];
-  data.log = [...log, { at: new Date().toISOString(), by: user.name, text: t.slice(0, 2000) }];
+  data.log = [...log, { at: new Date().toISOString(), by: user.name, text: t.slice(0, 2000), ...(kind ? { kind } : {}), ...(meta ? { meta } : {}) }];
   await prisma.ipdForm.upsert({
     where: { admissionId_key: { admissionId, key } },
     create: { admissionId, key, title: titleOf(key, admission.forms), data: JSON.stringify(data) },
