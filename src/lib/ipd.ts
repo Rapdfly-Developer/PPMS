@@ -35,7 +35,7 @@ export interface FormDef {
   preOpOnly?: boolean;
   /** Read-only content pulled from the EMR / Counselling; can still be confirmed (frozen) and have photos. */
   display?: boolean;
-  /** Stays editable in the post-op ward (everything else is frozen there). */
+  /** "Edit till discharge" (document): stays editable after freezing and in the post-op ward. */
   postOp?: boolean;
 }
 
@@ -50,7 +50,7 @@ export const IPD_FORMS: FormDef[] = [
   { key: "nurse",          title: "Nurse Notes",                   postOp: true },
   { key: "otNotes",        title: "Draft OT Notes",                preOpOnly: true },
   { key: "discharge",      title: "Draft Discharge Summary",       postOp: true },
-  { key: "postOpNotes",    title: "Draft Post-op Notes" },
+  { key: "postOpNotes",    title: "Draft Post-op Notes",           postOp: true },
 ];
 
 export const isCustomKey = (key: string) => key.startsWith("custom-");
@@ -66,10 +66,18 @@ export function requiredKeys(type: string, customKeys: string[]): string[] {
 }
 
 /** Can the form's main content be changed? (Running logs follow logsOpen.) */
+/**
+ * Can the form be changed? Forms the document marks "edit till discharge"
+ * (education & diet, treatment, nurse notes, discharge summary, post-op notes)
+ * stay editable after freezing and in the post-op ward; freezing them still
+ * counts as confirmed for Shift to OT. All other forms lock when frozen.
+ * Nothing is editable while the patient is in OT or after discharge.
+ */
 export function formEditable(key: string, frozen: boolean, status: string): boolean {
-  if (status === "POST_OP") return IPD_FORMS.some((f) => f.key === key && f.postOp);
-  if (status !== "ADMITTED") return false;
-  return !frozen;
+  if (status !== "ADMITTED" && status !== "POST_OP") return false;
+  const tillDischarge = IPD_FORMS.some((f) => f.key === key && f.postOp);
+  if (status === "POST_OP") return tillDischarge;
+  return !frozen || tillDischarge;
 }
 
 /** Nurse / treatment / diet entries can be added until discharge (not while in OT). */
@@ -381,7 +389,7 @@ export function buildDischargeDraft(i: DischargeInputs): DischargeData {
     dischargeDate: istDay(i.expectedDischarge) || "",
     consultant: i.doctor,
     diagnosis: i.diagnoses
-      .map((d) => [d.laterality, d.description].filter(Boolean).join(" ") + (d.status && d.status !== "ACTIVE" ? ` (${d.status.toLowerCase()})` : ""))
+      .map((d) => [d.laterality, d.description].filter(Boolean).join(" ") + (d.status && !["ACTIVE", "BLANK"].includes(d.status) ? ` (${d.status.toLowerCase()})` : ""))
       .join("\n"),
     complaints: (i.complaint ?? "").trim(),
     history,

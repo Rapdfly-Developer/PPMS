@@ -11,7 +11,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import {
-  ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
+  ADMISSION_TYPE_LABEL, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
   formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry,
 } from "@/lib/ipd";
 import {
@@ -254,8 +254,8 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
         </div>
       </div>
       <PatientBand d={d} />
-      {frozen && d.status === "POST_OP" && editable && (
-        <p className="text-caption text-emerald-700">Post-op ward: this chart stays editable until discharge.</p>
+      {frozen && editable && (
+        <p className="text-caption text-emerald-700">Confirmed · stays editable until discharge.</p>
       )}
 
       {body}
@@ -266,7 +266,9 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
       {confirmFreeze && (
         <ConfirmDialog
           title={`Freeze ${title}?`}
-          message="Confirm the entries are verified and final. A frozen form can't be edited again in the ward (the diet, treatment and nurse charts reopen in the post-op ward). Chart entries such as doses given, food and vitals can still be recorded until discharge."
+          message={IPD_FORMS.some((f) => f.key === keyName && f.postOp)
+            ? "Confirm the entries are verified. This form stays editable until discharge (as the document asks), but it now counts as confirmed for Shift to OT."
+            : "Confirm the entries are verified and final. A frozen form can't be edited again."}
           confirmLabel="Freeze"
           onConfirm={freeze}
           onCancel={() => setConfirmFreeze(false)}
