@@ -3,7 +3,9 @@
 import { prisma } from "@/lib/prisma";
 
 export type ActivityTone = "primary" | "amber" | "emerald" | "orange" | "slate" | "red";
-export type ActivityEvent = { at: string; title: string; detail?: string; by?: string; tone: ActivityTone };
+/** Milestones also shown on the patient's Time Stamp calendar. */
+export type ActivityMilestone = "fit" | "reopen" | "postpone" | "resume" | "eligible" | "preop";
+export type ActivityEvent = { at: string; title: string; detail?: string; by?: string; tone: ActivityTone; milestone?: ActivityMilestone };
 
 const parse = (raw: string | null): Record<string, unknown> => {
   if (!raw) return {};
@@ -93,21 +95,21 @@ export async function getCounsellingActivity(input: {
         break;
       case "CounsellingRecord:FIT_FOR_SURGERY":
         seen.add("fit");
-        ev.push({ at: t, title: "Marked fit for surgery", detail: v.validUntil ? `Reports valid till ${day(v.validUntil)}` : undefined, by, tone: "amber" });
+        ev.push({ at: t, title: "Marked fit for surgery", detail: v.validUntil ? `Reports valid till ${day(v.validUntil)}` : undefined, by, tone: "amber", milestone: "fit" });
         break;
       case "CounsellingRecord:REOPEN":
-        ev.push({ at: t, title: "Counselling reopened — reports to be redone", by, tone: "red" });
+        ev.push({ at: t, title: "Counselling reopened — reports to be redone", by, tone: "red", milestone: "reopen" });
         break;
       case "CounsellingRecord:POSTPONE":
         seen.add("postpone");
         ev.push({
           at: t, title: "Surgery date not confirmed",
           detail: [v.postponedIndefinitely ? "Not decided yet" : v.postponedUntil ? `Expected ${day(v.postponedUntil)}` : "", v.deferralNotes as string].filter(Boolean).join(" · ") || undefined,
-          by, tone: "orange",
+          by, tone: "orange", milestone: "postpone",
         });
         break;
       case "CounsellingRecord:RESUME":
-        ev.push({ at: t, title: "Counselling resumed", by, tone: "primary" });
+        ev.push({ at: t, title: "Counselling resumed", by, tone: "primary", milestone: "resume" });
         break;
       case "CounsellingRecord:ADVANCE":
         seen.add("advance");
@@ -115,10 +117,10 @@ export async function getCounsellingActivity(input: {
         break;
       case "CounsellingRecord:ELIGIBLE_FOR_SURGERY":
         seen.add("eligible");
-        ev.push({ at: t, title: "Confirmation done — eligible for surgery", detail: "Date, implant and surgery verified twice", by, tone: "emerald" });
+        ev.push({ at: t, title: "Confirmation done — eligible for surgery", detail: "Date, implant and surgery verified twice", by, tone: "emerald", milestone: "eligible" });
         if (input.preOp) {
           seen.add("preop");
-          ev.push({ at: at(new Date(l.timestamp.getTime() + 1)), title: "Pre-op appointment booked", detail: input.preOp.dateTime.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }), by, tone: "emerald" });
+          ev.push({ at: at(new Date(l.timestamp.getTime() + 1)), title: "Pre-op appointment booked", detail: input.preOp.dateTime.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }), by, tone: "emerald", milestone: "preop" });
         }
         break;
     }
@@ -130,11 +132,11 @@ export async function getCounsellingActivity(input: {
   }
   if (rec) {
     if (!detailsStarted) ev.push({ at: at(rec.createdAt), title: "Counselling started — details being filled", tone: "primary" });
-    if (rec.fitForSurgery && rec.doctorReviewedAt && !seen.has("fit")) ev.push({ at: at(rec.doctorReviewedAt), title: "Marked fit for surgery", by: rec.fitByName ?? undefined, tone: "amber" });
-    if (rec.surgeryDeferred && rec.postponedAt && !seen.has("postpone")) ev.push({ at: at(rec.postponedAt), title: "Surgery date not confirmed", tone: "orange" });
-    if (rec.eligibleForSurgery && rec.confirmedAt && !seen.has("eligible")) ev.push({ at: at(rec.confirmedAt), title: "Confirmation done — eligible for surgery", by: rec.eligibleByName ?? undefined, tone: "emerald" });
+    if (rec.fitForSurgery && rec.doctorReviewedAt && !seen.has("fit")) ev.push({ at: at(rec.doctorReviewedAt), title: "Marked fit for surgery", by: rec.fitByName ?? undefined, tone: "amber", milestone: "fit" });
+    if (rec.surgeryDeferred && rec.postponedAt && !seen.has("postpone")) ev.push({ at: at(rec.postponedAt), title: "Surgery date not confirmed", tone: "orange", milestone: "postpone" });
+    if (rec.eligibleForSurgery && rec.confirmedAt && !seen.has("eligible")) ev.push({ at: at(rec.confirmedAt), title: "Confirmation done — eligible for surgery", by: rec.eligibleByName ?? undefined, tone: "emerald", milestone: "eligible" });
     if (rec.eligibleForSurgery && rec.confirmedAt && input.preOp && !seen.has("preop")) {
-      ev.push({ at: at(new Date(rec.confirmedAt.getTime() + 1)), title: "Pre-op appointment booked", detail: input.preOp.dateTime.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }), tone: "emerald" });
+      ev.push({ at: at(new Date(rec.confirmedAt.getTime() + 1)), title: "Pre-op appointment booked", detail: input.preOp.dateTime.toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }), tone: "emerald", milestone: "preop" });
     }
   }
 

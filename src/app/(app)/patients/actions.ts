@@ -13,6 +13,8 @@ import { getStaffHospitalId } from "@/lib/booking-scope";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 import { isAppointmentSessionClosed, isAppointmentSessionOver } from "@/lib/sessionClose";
 import { PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
+import { getCounsellingActivity } from "@/lib/counselling-activity";
+import { surgeryLine } from "@/lib/counselling";
 
 // ── Undo Dispense ────────────────────────────────────────────────────────────
 
@@ -118,7 +120,8 @@ export type TimelineEventType =
   | "SURGERY"
   | "BILLING"
   | "TRANSFER"
-  | "EXTERNAL";
+  | "EXTERNAL"
+  | "COUNSELLING";
 
 export type TimelineEvent = {
   id: string;
@@ -161,6 +164,10 @@ export type TimelineEvent = {
     anaesthesiaType?: string;
     // BILLING
     billSummary?: string;
+    // COUNSELLING
+    surgery?: string;
+    counsellingNote?: string | null;
+    counsellingBy?: string | null;
     // TRANSFER
     fromHospital?: string | null;
     toHospital?: string | null;
@@ -190,6 +197,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, createdAt: true, updatedAt: true } },
         dispense:           { select: { shortSummary: true } },
         appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true, status: true, consultationStatus: true } },
+        counsellingRecord:  true,
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -284,6 +292,34 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         detail: { billSummary: v.dispense.shortSummary },
       });
     }
+  }
+
+  // Counselling milestones (fit, eligible, date not confirmed, …), each on its own date
+  const counselled = visits.filter((v) => v.counsellingRecord);
+  const preOpIds = counselled.map((v) => v.counsellingRecord!.preOpAppointmentId).filter((id): id is string => !!id);
+  const preOps = preOpIds.length
+    ? new Map((await prisma.appointment.findMany({ where: { id: { in: preOpIds } }, select: { id: true, dateTime: true } })).map((a) => [a.id, a]))
+    : new Map<string, { dateTime: Date }>();
+  const counsellingActivity = await Promise.all(counselled.map((v) => {
+    const rec = v.counsellingRecord!;
+    const surgery = surgeryLine(v);
+    return getCounsellingActivity({
+      visitId: v.id, visitDate: v.date, finalizedAt: v.finalizedAt, doctorName: v.doctor?.name ?? "", surgery, orders: [], rec,
+      preOp: rec.preOpAppointmentId ? preOps.get(rec.preOpAppointmentId) ?? null : null,
+    }).then((activity) => ({ v, surgery, activity }));
+  }));
+  for (const { v, surgery, activity } of counsellingActivity) {
+    activity.filter((a) => a.milestone).forEach((a, i) => {
+      events.push({
+        id:          `couns-${v.id}-${i}`,
+        type:        "COUNSELLING",
+        date:        a.at,
+        title:       a.title.charAt(0).toUpperCase() + a.title.slice(1),
+        hospitalName: v.hospital?.name ?? null,
+        searchText:  [a.title, a.detail, surgery, a.by, v.hospital?.name].filter(Boolean).join(" ").toLowerCase(),
+        detail:      { surgery, counsellingNote: a.detail ?? null, counsellingBy: a.by ?? null },
+      });
+    });
   }
 
   // Past external visits

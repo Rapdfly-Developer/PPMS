@@ -11,7 +11,7 @@ import {
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
   Timer, CalendarDays,
   Loader2, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, ClipboardCheck,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
 import { waitingMinutes } from "@/lib/visit-durations";
@@ -45,6 +45,12 @@ const EVENT_CFG = {
   TRANSFER: {
     label: "Transfer", Icon: ArrowRightLeft,
     dot: "bg-amber-500", dotHex: "#F59E0B",
+    border: "border-l-amber-400",
+    badge: "bg-amber-100 text-amber-700", card: "bg-amber-50/40",
+  },
+  COUNSELLING: {
+    label: "Counselling", Icon: ClipboardCheck,
+    dot: "bg-amber-500", dotHex: "#D97706",
     border: "border-l-amber-400",
     badge: "bg-amber-100 text-amber-700", card: "bg-amber-50/40",
   },
@@ -191,6 +197,14 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       {d.fromHospital    && <p><span className="font-semibold">From: </span>{d.fromHospital}</p>}
       {d.toHospital      && <p><span className="font-semibold">To: </span>{d.toHospital}</p>}
       {d.transferReason  && <p><span className="font-semibold">Reason: </span>{d.transferReason}</p>}
+    </div>
+  );
+
+  if (ev.type === "COUNSELLING") return (
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)] space-y-1">
+      {d.surgery         && <p><span className="font-semibold">Surgery: </span>{d.surgery}</p>}
+      {d.counsellingNote && <p><span className="font-semibold">Details: </span>{d.counsellingNote}</p>}
+      {d.counsellingBy   && <p><span className="font-semibold">By: </span>{d.counsellingBy}</p>}
     </div>
   );
 
