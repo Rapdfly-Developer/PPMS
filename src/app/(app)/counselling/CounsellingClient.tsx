@@ -178,6 +178,35 @@ function dateGroup(r: CounsellingRow): DateGroup {
   return "Later";
 }
 
+/** Browser-style tabs, one per date group; the active tab joins the card below. */
+function GroupTabs({ groups, active, onSelect }: {
+  groups: (readonly [DateGroup, CounsellingRow[]])[];
+  active: DateGroup;
+  onSelect: (g: DateGroup) => void;
+}) {
+  return (
+    <div role="tablist" aria-label="Surgery date" className="flex items-end gap-1 overflow-x-auto px-1 -mb-px relative z-[1] [scrollbar-width:none]">
+      {groups.map(([g, list]) => {
+        const m = GROUP_META[g];
+        const on = g === active;
+        return (
+          <button key={g} type="button" role="tab" aria-selected={on} onClick={() => onSelect(g)}
+            title={m.hint} style={on ? undefined : { borderColor: "transparent" }}
+            className={`group shrink-0 inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
+              on
+                ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
+                : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"
+            }`}>
+            <span className={`w-5 h-5 rounded-md flex items-center justify-center ${on ? m.icon : "text-[var(--color-ink-400)]"}`}>{m.glyph}</span>
+            {g}
+            <span className={`rounded-full px-1.5 py-px text-micro font-bold tabular-nums ${on ? m.count : "bg-white/70 text-[var(--color-ink-500)]"}`}>{list.length}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── List pieces (fields per the requirements: DP, name, age, sex, ID, C/c,
    diagnosis, surgery, status, tentative date) ───────────────────────────── */
 function Avatar({ r, size }: { r: CounsellingRow; size: "sm" | "md" }) {
@@ -354,6 +383,9 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
   const groups = useMemo(() => GROUP_ORDER
     .map((g) => [g, filtered.filter((r) => dateGroup(r) === g)] as const)
     .filter(([, list]) => list.length > 0), [filtered]);
+  // Selected date tab; falls back to the first tab that has patients
+  const [tab, setTab] = useState<DateGroup | null>(null);
+  const activeGroup = groups.find(([g]) => g === tab) ?? groups[0];
 
   const filtersActive = !!(search || statusFilter !== "ALL" || dateFrom || dateTo);
   const toggleCard = (c: CardFilter) => { setCard(card === c ? "ALL" : c); setStatusFilter("ALL"); };
@@ -475,53 +507,34 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
         </div>
       ) : (
         <>
-          {/* Desktop — one card per date group; columns line up across groups */}
-          <div className="hidden lg:flex flex-col gap-3">
-            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] overflow-hidden">
-              <table className="w-full table-fixed">
-                <ListCols />
-                <thead>
-                  <tr>
-                    {["Patient", "Complaint / Diagnosis", "Surgery", "Tentative Date", "Status", ""].map((h) => (
-                      <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-              </table>
-            </div>
-            {groups.map(([g, list]) => {
-              const m = GROUP_META[g];
-              return (
-                <section key={g} className={`rounded-xl border bg-[var(--color-surface)] overflow-hidden ${m.border}`}>
-                  <header className={`flex items-center gap-2 px-4 py-2 border-b ${m.head}`}>
-                    <span className={`w-6 h-6 rounded-md flex items-center justify-center ${m.icon}`}>{m.glyph}</span>
-                    <span className="text-xs font-bold text-[var(--color-ink-800)]">{g}</span>
-                    <span className={`ml-1 rounded-full px-2 py-px text-micro font-bold ${m.count}`}>{list.length}</span>
-                    {m.hint && <span className="ml-auto text-micro font-medium text-[var(--color-ink-400)]">{m.hint}</span>}
-                  </header>
-                  <table className="w-full table-fixed">
-                    <ListCols />
-                    <tbody>
-                      {list.map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
-                    </tbody>
-                  </table>
-                </section>
-              );
-            })}
+          <GroupTabs groups={groups} active={activeGroup[0]} onSelect={setTab} />
+
+          {/* Desktop — the selected date tab's patients */}
+          <div className={`hidden lg:block rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden`}>
+            {GROUP_META[activeGroup[0]].hint && (
+              <p className="px-4 pt-2.5 text-micro font-medium text-[var(--color-ink-400)]">{GROUP_META[activeGroup[0]].hint}</p>
+            )}
+            <table className="w-full table-fixed">
+              <ListCols />
+              <thead>
+                <tr className="border-b border-[var(--color-border)]">
+                  {["Patient", "Complaint / Diagnosis", "Surgery", "Tentative Date", "Status", ""].map((h) => (
+                    <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {activeGroup[1].map((r) => <PatientRow key={r.visitId} r={r} onOpen={() => router.push(`/counselling/${r.visitId}`)} />)}
+              </tbody>
+            </table>
           </div>
 
           {/* Mobile cards */}
-          <div className="lg:hidden space-y-4">
-            {groups.map(([g, list]) => (
-              <section key={g} className={`rounded-xl border p-2 space-y-2 ${GROUP_META[g].border} ${GROUP_META[g].head}`}>
-                <header className="flex items-center gap-2 px-1.5 pt-0.5">
-                  <span className={`w-6 h-6 rounded-md flex items-center justify-center ${GROUP_META[g].icon}`}>{GROUP_META[g].glyph}</span>
-                  <span className="text-xs font-bold text-[var(--color-ink-800)]">{g}</span>
-                  <span className={`rounded-full px-2 py-px text-micro font-bold ${GROUP_META[g].count}`}>{list.length}</span>
-                </header>
-                {list.map((r) => <PatientCard key={r.visitId} r={r} />)}
-              </section>
-            ))}
+          <div className="lg:hidden rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] p-2 space-y-2">
+            {GROUP_META[activeGroup[0]].hint && (
+              <p className="px-1.5 pt-0.5 text-micro font-medium text-[var(--color-ink-400)]">{GROUP_META[activeGroup[0]].hint}</p>
+            )}
+            {activeGroup[1].map((r) => <PatientCard key={r.visitId} r={r} />)}
           </div>
         </>
       )}
