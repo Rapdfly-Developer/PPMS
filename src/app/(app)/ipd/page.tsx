@@ -34,6 +34,7 @@ export default async function IpdPage() {
     diagnoses: a.visit.diagnoses,
     type: a.admissionType,
     typeOther: a.admissionTypeOther,
+    reason: a.admissionReason,
     surgery: a.surgery,
     laterality: a.laterality,
     implant: a.implant,

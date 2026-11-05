@@ -54,6 +54,7 @@ export interface FileData {
   diagnoses: { description: string; laterality: string | null }[];
   type: string;
   typeOther: string | null;
+  reason: string | null;
   surgery: string | null;
   laterality: string | null;
   implant: string | null;
@@ -561,7 +562,7 @@ function TypeDialog({ d, onClose, onDone }: { d: FileData; onClose: () => void; 
         ))}
       </div>
       {type === "OTHERS" && <input value={other} onChange={(e) => setOther(e.target.value)} placeholder="Describe…" className={`${inputCls} mt-3`} />}
-      <p className="mt-3 text-caption text-[var(--color-ink-400)]">Pre-op imports the surgery from counselling (needs Eligible for surgery). Forms that apply only to Pre-op are shown or hidden accordingly.</p>
+      <p className="mt-3 text-caption text-[var(--color-ink-400)]">Switching to Pre-op imports the counselling sheet if the patient has one and none was imported yet. Forms that apply only to Pre-op are shown or hidden accordingly.</p>
       <div className="mt-4 space-y-3">
         <ErrorLine text={error} />
         <div className="flex justify-end gap-2">
@@ -734,6 +735,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                   <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-700)] hover:underline"><Pencil size={11} /> Edit</button>
                 )}
               </div>
+              {d.reason && <p className="mt-0.5 text-sm text-[var(--color-ink-500)]">Reason <b className="text-[var(--color-ink-800)] font-semibold">{d.reason}</b></p>}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
                 <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
                 {d.type === "PRE_OP" && <span>DOS <b className="text-[var(--color-ink-800)]">{fmtDay(d.surgeryDate)}</b></span>}

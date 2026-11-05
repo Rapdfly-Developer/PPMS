@@ -20,6 +20,7 @@ export interface IpdRow {
   diagnoses: { description: string; laterality: string | null }[];
   type: string;
   typeOther: string | null;
+  reason: string | null;
   surgery: string | null;
   laterality: string | null;
   implant: string | null;
@@ -168,6 +169,7 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
             <td className="px-4 py-3"><PatientCell r={r} /></td>
             <td className="px-4 py-3">
               <span className="block text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{admissionTypeText(r.type, r.typeOther)}</span>
+              {r.reason && <span className="block text-caption text-[var(--color-ink-600)] mt-0.5 line-clamp-2">{r.reason}</span>}
               {wardText(r) && <span className="block text-caption text-[var(--color-ink-500)] mt-0.5">{wardText(r)}</span>}
             </td>
             <td className="px-4 py-3">{r.surgery ? <SurgeryText r={r} /> : <span className="italic text-caption text-[var(--color-ink-300)]">—</span>}</td>
@@ -287,7 +289,7 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
       if (dateFrom && doa < dateFrom) return false;
       if (dateTo && doa > dateTo) return false;
       if (q) {
-        const hay = [r.patient.name, r.patient.udid, r.patient.uhid ?? "", r.surgery ?? "", r.typeOther ?? "", r.fileNo ?? "", r.ward ?? "", r.doctor].join(" ").toLowerCase();
+        const hay = [r.patient.name, r.patient.udid, r.patient.uhid ?? "", r.surgery ?? "", r.typeOther ?? "", r.reason ?? "", r.fileNo ?? "", r.ward ?? "", r.doctor].join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;

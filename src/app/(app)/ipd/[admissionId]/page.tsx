@@ -200,6 +200,7 @@ export default async function IpdFilePage({
     diagnoses: v.diagnoses,
     type: a.admissionType,
     typeOther: a.admissionTypeOther,
+    reason: a.admissionReason,
     surgery: a.surgery,
     laterality: a.laterality,
     implant: a.implant,

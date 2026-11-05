@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { writeAudit } from "@/lib/audit";
 import { istDayRange, istTodayStr } from "@/lib/ist";
 import { sendMail } from "@/lib/mailer";
-import { eligibleSurgeryFor } from "@/lib/ipd-server";
+import { counsellingSheetFor } from "@/lib/ipd-server";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 import {
   IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
@@ -74,20 +74,16 @@ export async function changeAdmissionType(admissionId: string, type: string, oth
   if (!["CONSERVATIVE", "PRE_OP", "OTHERS"].includes(type)) return { error: "Select the type of admission." };
   if (type === "OTHERS" && !other.trim()) return { error: "Describe the type of admission." };
 
-  let pre: Awaited<ReturnType<typeof eligibleSurgeryFor>> = null;
-  if (type === "PRE_OP") {
-    pre = await eligibleSurgeryFor(admission.visit.patientId, scope);
-    if (!pre) return { error: "Pre-op admission needs counselling marked Eligible for surgery." };
-  }
+  // Surgery details already imported stay; switching to Pre-op imports the
+  // counselling sheet if there is one and nothing was imported yet.
+  const pre = type === "PRE_OP" && !admission.counsellingVisitId ? await counsellingSheetFor(admission.visit.patientId, scope) : null;
   const patch = {
     admissionType: type,
     admissionTypeOther: type === "OTHERS" ? other.trim() : null,
-    counsellingVisitId: pre?.visitId ?? null,
-    surgery: pre?.surgery ?? null,
-    laterality: pre?.laterality ?? null,
-    implant: pre?.implant ?? null,
-    anaesthesia: pre?.anaesthesia ?? null,
-    surgeryDate: pre?.date ? new Date(pre.date) : null,
+    ...(pre ? {
+      counsellingVisitId: pre.visitId, surgery: pre.surgery, laterality: pre.laterality, implant: pre.implant,
+      anaesthesia: pre.anaesthesia, surgeryDate: pre.date ? new Date(pre.date) : null,
+    } : {}),
   };
   await prisma.ipdAdmission.update({ where: { id: admissionId }, data: patch });
   await audit(user.id, user.name, admissionId, "TYPE_CHANGED", { from: admission.admissionType, to: type, other: patch.admissionTypeOther });

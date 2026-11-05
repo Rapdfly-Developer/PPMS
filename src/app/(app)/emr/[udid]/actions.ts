@@ -14,7 +14,7 @@ import { isSameDay } from "date-fns";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { medicationLaterality } from "@/lib/medication-laterality";
-import { eligibleSurgeryFor } from "@/lib/ipd-server";
+import { counsellingSheetFor } from "@/lib/ipd-server";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -811,10 +811,14 @@ export async function saveSurgicalCounselling(
 export async function saveAdmission(
   visitId: string,
   udid: string,
-  data: { type: string; other: string; admittedOn: string; expectedDischarge: string; ward: string; floor: string; fileNo: string },
+  data: {
+    type: string; other: string; reason: string; importCounselling: boolean;
+    admittedOn: string; expectedDischarge: string; ward: string; floor: string; fileNo: string;
+  },
 ): Promise<{ error?: string }> {
   const user = await requireVisitPerm(visitId, "ipd.admit");
   if (!userCan(user, "ipd.admit")) return { error: "You do not have permission to admit patients." };
+  if (!data.reason.trim()) return { error: "Enter the reason for admission." };
   if (!["CONSERVATIVE", "PRE_OP", "OTHERS"].includes(data.type)) return { error: "Select the type of admission." };
   if (data.type === "OTHERS" && !data.other.trim()) return { error: "Describe the type of admission." };
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
@@ -829,17 +833,17 @@ export async function saveAdmission(
   if (!visit) return { error: "Visit not found." };
   if (visit.finalizedAt && visit.ipdAdmission) return { error: "The patient is already admitted. Make changes in the IPD patient file." };
 
-  // Pre-op only for a patient whose counselling is complete (Eligible for surgery)
-  let preOp: Awaited<ReturnType<typeof eligibleSurgeryFor>> = null;
-  if (data.type === "PRE_OP") {
+  // Counselling sheet is imported only when the doctor ticks it (any admission type)
+  let preOp: Awaited<ReturnType<typeof counsellingSheetFor>> = null;
+  if (data.importCounselling) {
     const scope = await visitRecordScope(user);
-    preOp = scope ? await eligibleSurgeryFor(visit.patientId, scope) : null;
-    if (!preOp) return { error: "Pre-op admission needs counselling marked Eligible for surgery." };
+    preOp = scope ? await counsellingSheetFor(visit.patientId, scope) : null;
   }
 
   const fields = {
     admissionType: data.type,
     admissionTypeOther: data.type === "OTHERS" ? data.other.trim() : null,
+    admissionReason: data.reason.trim().slice(0, 2000),
     admittedOn: istDayRange(data.admittedOn).dayStart,
     expectedDischarge: data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null,
     ward: data.ward.trim() || null,

@@ -1572,6 +1572,7 @@ model IpdAdmission {
 
   admissionType      String    // CONSERVATIVE | PRE_OP | OTHERS
   admissionTypeOther String?
+  admissionReason    String?
   admittedOn         DateTime  // date of admission (IST day start)
   expectedDischarge  DateTime?
   ward               String?

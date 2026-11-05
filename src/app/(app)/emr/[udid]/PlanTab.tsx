@@ -2810,7 +2810,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
           {displayPanels.includes("follow") && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
           {displayPanels.includes("referral") && <ReferralPanel visit={visit} udid={udid} />}
           {displayPanels.includes("surgical") && <SurgicalCounsellingPanel visit={visit} udid={udid} />}
-          {displayPanels.includes("admit") && showAdmit && <AdmitPanel visit={visit} udid={udid} eligible={admit?.eligible ?? null} canAdmit={!!admit?.canAdmit} />}
+          {displayPanels.includes("admit") && showAdmit && <AdmitPanel visit={visit} udid={udid} eligible={admit?.eligible ?? null} canAdmit={!!admit?.canAdmit} onClose={() => setActivePanels((cur) => cur.filter((x) => x !== "admit"))} />}
         </div>
       )}
     </Card>
