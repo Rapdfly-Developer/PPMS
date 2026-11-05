@@ -73,7 +73,7 @@ function StatusPill({ status }: { status: string }) {
 function Completion({ r }: { r: IpdRow }) {
   const pct = r.total ? Math.round((r.done / r.total) * 100) : 0;
   return (
-    <div className="w-28">
+    <div className="w-full max-w-28 min-w-0">
       <div className="flex items-center justify-between text-micro font-semibold text-[var(--color-ink-500)] mb-1">
         <span>Forms</span><span className="tabular-nums">{r.done}/{r.total}</span>
       </div>
@@ -146,7 +146,7 @@ const profileHref = (r: IpdRow) => `/patients/${r.patient.udid}?source=ipd&retur
 function ListCols() {
   return (
     <colgroup>
-      <col className="w-[22%]" /><col className="w-[18%]" /><col className="w-[22%]" /><col className="w-[15%]" /><col className="w-[11%]" /><col className="w-[9%]" /><col className="w-[3%]" />
+      <col className="w-[21%]" /><col className="w-[17%]" /><col className="w-[21%]" /><col className="w-[15%]" /><col className="w-[12%]" /><col className="w-[11%]" /><col className="w-[3%]" />
     </colgroup>
   );
 }
@@ -268,7 +268,7 @@ function Calendar({ rows, month, onMonth, selected, onSelect }: {
 export function IpdClient({ rows }: { rows: IpdRow[] }) {
   const router = useRouter();
   const [card, setCard]               = useState<Card>("TODAY");
-  const [tab, setTab]                 = useState<Tab>("Pre-op");
+  const [pickedTab, setTab]           = useState<Tab | null>(null);
   const [search, setSearch]           = useState("");
   const [typeFilter, setTypeFilter]   = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -297,6 +297,8 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
   // Today = everyone currently in the hospital (not discharged)
   const inHouse = useMemo(() => filtered.filter((r) => r.status !== "DISCHARGED"), [filtered]);
   const byTab = useMemo(() => Object.fromEntries(TABS.map((t) => [t, inHouse.filter((r) => tabOf(r) === t)])) as Record<Tab, IpdRow[]>, [inHouse]);
+  // Selected tab; until one is picked, the first tab that has patients (as in Counselling)
+  const tab: Tab = pickedTab ?? TABS.find((t) => byTab[t].length > 0) ?? "Pre-op";
 
   const overallList = useMemo(() => {
     if (!calDay) return filtered.filter((r) => {
