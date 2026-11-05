@@ -721,11 +721,11 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
               {d.patient.photoUrl ? <img src={fileHref(d.patient.photoUrl)!} alt={d.patient.name} className="w-full h-full object-cover" /> : <User size={20} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">
-              <p className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)] leading-tight">{title}</p>
-              <p className="text-sm text-[var(--color-ink-600)] mt-1">
+              <p className="text-sm font-semibold text-[var(--color-ink-900)]">{title}</p>
+              <p className="text-sm text-[var(--color-ink-600)] mt-0.5">
                 <span className="font-semibold text-[var(--color-ink-800)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
               </p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-caption text-[var(--color-ink-500)]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
                 <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "—"}</b></span>
                 <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "—"}</b></span>
                 <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "—"}</b></span>
@@ -733,7 +733,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                   <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-700)] hover:underline"><Pencil size={11} /> Edit</button>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-caption text-[var(--color-ink-500)]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
                 <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
                 {d.type === "PRE_OP" && <span>DOS <b className="text-[var(--color-ink-800)]">{fmtDay(d.surgeryDate)}</b></span>}
                 {d.dischargedAt
@@ -750,14 +750,14 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-caption font-bold px-2.5 py-1 rounded-full ${
+            <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-0.5 rounded-full ${
               status === "IN_OT" ? "bg-violet-50 text-violet-700 border border-violet-200"
                 : status === "POST_OP" ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 : status === "DISCHARGED" ? "bg-slate-100 text-slate-600 border border-slate-200"
                 : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
               <BedDouble size={12} /> {IPD_STATUS_LABEL[status] ?? status}
             </span>
-            <span className="text-caption font-semibold text-[var(--color-ink-500)] tabular-nums">Forms frozen {frozenCount}/{required.length}</span>
+            <span className="text-sm font-semibold text-[var(--color-ink-500)] tabular-nums">Forms frozen {frozenCount}/{required.length}</span>
             <div className="flex flex-wrap justify-end gap-2">
               {showOt && (
                 <button
