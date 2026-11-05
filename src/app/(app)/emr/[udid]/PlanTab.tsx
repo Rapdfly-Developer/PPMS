@@ -10,8 +10,8 @@ import { useEMRSaveContext } from "./EmrSaveContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
-import { DispositionToggle, FollowUpdatesPanel, ReferralPanel, SurgicalCounsellingPanel } from "./DispositionPanel";
-import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Scissors, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
+import { AdmitPanel, DispositionToggle, FollowUpdatesPanel, ReferralPanel, SurgicalCounsellingPanel, type AdmitInfo } from "./DispositionPanel";
+import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Scissors, BedDouble, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
   type TreatmentPreset, type PresetMatch, type AppliedPreset,
   getTreatmentPresets, matchPresets, mergeMeds,
@@ -1305,7 +1305,7 @@ export function ProtocolPromptCard({
 
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
-export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false, canViewMedications = true, medicationsReadOnly = readOnly }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean; canViewMedications?: boolean; medicationsReadOnly?: boolean }) {
+export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false, admit, canViewMedications = true, medicationsReadOnly = readOnly }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean; admit?: AdmitInfo; canViewMedications?: boolean; medicationsReadOnly?: boolean }) {
   const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
@@ -1529,7 +1529,7 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
       />}
       <AdviseNotesCard visit={visit} priorVisits={priorVisits} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} readOnly={readOnly} />
       <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
-      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} />
+      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} admit={admit} />
 
     </div>
   );
@@ -2754,28 +2754,30 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
   );
 }
 
-function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean }) {
+function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly = false, admit }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean; admit?: AdmitInfo }) {
   const overview = useEmrOverview();
-  // Starts closed unless follow-up, referral or surgical counselling details are
+  // Starts closed unless follow-up, referral, surgical counselling or admit details are
   // saved; then it opens with the panels that hold them.
-  const [open, setOpen] = useState(() => !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised));
+  const [open, setOpen] = useState(() => !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised || visit.ipdAdmission));
   const [activePanels, setActivePanels] = useState<string[]>(
     [
       (visit.followUpDate || visit.inViewOf) && "follow",
       visit.referralEnabled && "referral",
       visit.surgeryAdvised && "surgical",
+      visit.ipdAdmission && "admit",
     ].filter(Boolean) as string[]
   );
+  const showAdmit = !!(admit?.canAdmit || visit.ipdAdmission);
   // One panel at a time: opening Referral closes Follow Up Dates and vice versa.
   const togglePanel = (id: string) =>
     setActivePanels((cur) => (cur.includes(id) ? [] : [id]));
 
-  const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised);
+  const hasFollowUpData = !!(visit.followUpDate || visit.referralEnabled || visit.inViewOf || visit.surgeryAdvised || visit.ipdAdmission);
   // Opens when details arrive later (e.g. a treatment preset sets the follow-up date)
   useEffect(() => {
     if (!hasFollowUpData) return;
     setOpen(true);
-    setActivePanels((cur) => cur.length ? cur : [visit.followUpDate || visit.inViewOf ? "follow" : visit.referralEnabled ? "referral" : "surgical"]);
+    setActivePanels((cur) => cur.length ? cur : [visit.followUpDate || visit.inViewOf ? "follow" : visit.referralEnabled ? "referral" : visit.surgeryAdvised ? "surgical" : "admit"]);
   }, [hasFollowUpData]); // eslint-disable-line react-hooks/exhaustive-deps
   // In overview with data, auto-open the panels that hold it so the values are visible
   const displayPanels = overview && hasFollowUpData
@@ -2784,6 +2786,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
         ...(visit.followUpDate || visit.inViewOf ? ["follow"] : []),
         ...(visit.referralEnabled ? ["referral"] : []),
         ...(visit.surgeryAdvised ? ["surgical"] : []),
+        ...(visit.ipdAdmission ? ["admit"] : []),
       ])]
     : activePanels;
 
@@ -2799,6 +2802,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
           <DispositionToggle icon={<RefreshCw size={16} />}  label="Follow Up Dates"      active={activePanels.includes("follow")}   onClick={() => togglePanel("follow")} />
           <DispositionToggle icon={<Share2 size={16} />}     label="Referral"             active={activePanels.includes("referral")} onClick={() => togglePanel("referral")} />
           <DispositionToggle icon={<Scissors size={16} />}   label="Surgical Counselling" active={activePanels.includes("surgical")} onClick={() => togglePanel("surgical")} />
+          {showAdmit && <DispositionToggle icon={<BedDouble size={16} />} label="Admit" active={activePanels.includes("admit")} onClick={() => togglePanel("admit")} />}
         </div>
       )}
       {open && (
@@ -2806,6 +2810,7 @@ function DispositionCard({ visit, udid, patientSex, priorVisits = [], readOnly =
           {displayPanels.includes("follow") && <FollowUpdatesPanel visit={visit} udid={udid} priorVisits={priorVisits} />}
           {displayPanels.includes("referral") && <ReferralPanel visit={visit} udid={udid} />}
           {displayPanels.includes("surgical") && <SurgicalCounsellingPanel visit={visit} udid={udid} />}
+          {displayPanels.includes("admit") && showAdmit && <AdmitPanel visit={visit} udid={udid} eligible={admit?.eligible ?? null} canAdmit={!!admit?.canAdmit} />}
         </div>
       )}
     </Card>

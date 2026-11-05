@@ -9,7 +9,7 @@ import {
   ChevronRight, ChevronDown, Hospital, Stethoscope, FileText,
   CheckCircle2, Clock, AlertCircle, Filter, ClipboardCheck,
   ArrowRightLeft, X, Download, Loader2, RefreshCw,
-  Activity, Sparkles, Eye,
+  Activity, Sparkles, Eye, FolderOpen,
 } from "lucide-react";
 import { EmrViewerButton, VisitDownloadButton } from "./EmrViewerModal";
 import {
@@ -820,6 +820,7 @@ export function PatientProfileClient({
   hasRequestedAppt = false,
   canOpenTodayVisit = false,
   showTodayVisit = true,
+  ipdFileHref = null,
   allowEmrEdit = true,
   timelineEntries = [],
   todayVisitSummary = null,
@@ -836,6 +837,8 @@ export function PatientProfileClient({
   /** Doctors, plus staff with refraction access (who open existing visits but cannot start one). */
   canOpenTodayVisit?: boolean;
   showTodayVisit?: boolean;
+  /** Set when opened from IPD: shows "Open Patient File" instead of the visit buttons. */
+  ipdFileHref?: string | null;
   /** False when navigating from the Total Dispensed card — EMR is view-only, no edit allowed. */
   allowEmrEdit?: boolean;
   timelineEntries?: TimelineEntry[];
@@ -884,8 +887,19 @@ export function PatientProfileClient({
           </Link>
         )}
 
+        {/* Opened from IPD — the patient file replaces the visit buttons */}
+        {ipdFileHref ? (
+          <Link
+            href={ipdFileHref}
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            <FolderOpen size={16} />
+            Open Patient File
+          </Link>
+        ) : null}
+
         {/* Today's Visit — only shown when navigating from OPD Queue or Patient Library */}
-        {showTodayVisit && canOpenTodayVisit ? (
+        {!ipdFileHref && showTodayVisit && canOpenTodayVisit ? (
           hasToday ? (
             todayIsFinalized ? (
               // Incomplete visits (closed at end of session, never finalized) are view-only

@@ -113,6 +113,13 @@ export const P = {
   COUNSELLING_ELIGIBLE:    "counselling.eligible",
   COUNSELLING_REPORTS:     "counselling.reports",
 
+  // IPD (in-patient)
+  IPD_VIEW:                "ipd.view",
+  IPD_ADMIT:               "ipd.admit",
+  IPD_EDIT:                "ipd.edit",
+  IPD_SHIFT_OT:            "ipd.shiftOt",
+  IPD_DISCHARGE:           "ipd.discharge",
+
   // Settings — Plugins & Hospital
   PLUGINS_MANAGE:          "plugins.manage",
   HOSPITAL_MANAGE:         "hospital.manage",
@@ -166,6 +173,9 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.COUNSELLING_VIEW,
     P.COUNSELLING_EDIT,
     P.COUNSELLING_ELIGIBLE,
+    P.IPD_VIEW,
+    P.IPD_EDIT,
+    P.IPD_SHIFT_OT,
     P.SETTINGS_VIEW,
   ],
 

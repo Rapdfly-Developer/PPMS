@@ -555,6 +555,7 @@ model Visit {
   diagnoses          Diagnosis[]
   dispense              Dispense?
   counsellingRecord     CounsellingRecord?
+  ipdAdmission          IpdAdmission?
 
   @@index([patientId])
   @@index([doctorId])
@@ -1554,6 +1555,83 @@ model CounsellingRecord {
   fitByName             String?
   eligibleByName        String?
   preOpAppointmentId    String?
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// IPD (Phase 2) — created from the EMR Patient Disposition "Admit" tab; the
+// patient enters the IPD module once that visit is finalized and signed.
+// ──────────────────────────────────────────────────────────────────────────
+
+model IpdAdmission {
+  id                 String    @id @default(cuid())
+  visitId            String    @unique
+  visit              Visit     @relation(fields: [visitId], references: [id])
+  patientId          String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  admissionType      String    // CONSERVATIVE | PRE_OP | OTHERS
+  admissionTypeOther String?
+  admittedOn         DateTime  // date of admission (IST day start)
+  expectedDischarge  DateTime?
+  ward               String?
+  floor              String?
+  fileNo             String?
+  admittedByName     String?
+
+  // Pre-op: imported from the Eligible counselling record
+  counsellingVisitId String?
+  surgery            String?
+  laterality         String?
+  implant            String?
+  anaesthesia        String?
+  surgeryDate        DateTime?
+
+  // ADMITTED → IN_OT → POST_OP → DISCHARGED
+  status             String    @default("ADMITTED")
+  shiftedToOtAt      DateTime?
+  shiftedToOtBy      String?
+  returnedFromOtAt   DateTime?
+  dischargedAt       DateTime?
+  dischargedBy       String?
+  dischargeNotes     String?
+  dischargeOtp       String?
+  dischargeOtpExpires DateTime?
+
+  forms              IpdForm[]
+  doctorNotes        IpdDoctorNote[]
+
+  @@index([patientId])
+  @@index([status])
+  @@index([admittedOn])
+}
+
+model IpdForm {
+  id          String       @id @default(cuid())
+  admissionId String
+  admission   IpdAdmission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  key         String       // fixed form key, or "custom-<n>" for added forms
+  title       String
+  data        String       @default("{}") // JSON, shape depends on the form
+  attachments String       @default("[]") // JSON: [{ ref, name, at, by }]
+  frozen      Boolean      @default(false)
+  frozenAt    DateTime?
+  frozenBy    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([admissionId, key])
+}
+
+model IpdDoctorNote {
+  id          String       @id @default(cuid())
+  admissionId String
+  admission   IpdAdmission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  text        String
+  byName      String
+  createdAt   DateTime     @default(now())
+
+  @@index([admissionId, createdAt])
 }
 
 // ──────────────────────────────────────────────────────────────────────────

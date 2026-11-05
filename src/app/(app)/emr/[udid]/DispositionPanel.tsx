@@ -3,13 +3,15 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
-import { saveDispense, saveFollowUp, saveSurgicalCounselling, clearSurgicalCounselling } from "./actions";
+import { saveDispense, saveFollowUp, saveSurgicalCounselling, clearSurgicalCounselling, saveAdmission, clearAdmission } from "./actions";
 import { AlertTriangle, History, Plus, Search, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { istTodayStr } from "@/lib/ist";
 import { ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS, rescheduledSurgeryDate } from "@/lib/counselling";
+import { admissionTypeText } from "@/lib/ipd";
+import type { EligibleSurgery } from "@/lib/ipd-server";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -562,6 +564,205 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         <ConfirmDialog
           title="Remove surgical counselling?"
           message="This clears all fields and removes the saved surgery for this visit, so the patient will not go to Counselling."
+          confirmLabel="Remove"
+          onConfirm={doClear}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ── Admit (IPD) ──────────────────────────────────────────────────────────
+   Saved on the visit; the patient enters IPD after Finalize & Sign. Pre-op is
+   offered only when counselling marked the patient Eligible for surgery, and
+   imports the surgery details from there. */
+
+export interface AdmitInfo { canAdmit: boolean; eligible: EligibleSurgery | null }
+
+const ADMIT_TYPES = [
+  { value: "CONSERVATIVE", label: "Conservative Management" },
+  { value: "PRE_OP",       label: "Pre-op" },
+  { value: "OTHERS",       label: "Others" },
+] as const;
+
+const fmtDay = (d: string | Date | null | undefined) =>
+  d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
+
+export function AdmitPanel({ visit, udid, eligible, canAdmit }: { visit: any; udid: string; eligible: EligibleSurgery | null; canAdmit: boolean }) {
+  const a = visit.ipdAdmission;
+  const toInputDate = (d: string | Date | null | undefined) => (d ? istTodayStr(new Date(d)) : "");
+  const [type, setType]           = useState<string>(a?.admissionType ?? "");
+  const [other, setOther]         = useState<string>(a?.admissionTypeOther ?? "");
+  const [admittedOn, setAdmitted] = useState<string>(a ? toInputDate(a.admittedOn) : istTodayStr());
+  const [expected, setExpected]   = useState<string>(toInputDate(a?.expectedDischarge));
+  const [ward, setWard]           = useState<string>(a?.ward ?? "");
+  const [floor, setFloor]         = useState<string>(a?.floor ?? "");
+  const [fileNo, setFileNo]       = useState<string>(a?.fileNo ?? "");
+  const [isSaved, setIsSaved]     = useState<boolean>(!!a);
+  const [savedMsg, setSavedMsg]   = useState(false);
+  const [error, setError]         = useState("");
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const overview = useEmrOverview();
+  // After Finalize & Sign the admission lives in the IPD patient file
+  const locked = !!visit.finalizedAt || !canAdmit;
+
+  const touch = () => { setSavedMsg(false); setError(""); };
+  const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase block mb-1.5";
+  const inputCls = "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-70";
+
+  // Pre-op details: imported from counselling while editing, as saved once locked
+  const pre = type !== "PRE_OP" ? null
+    : locked && a?.admissionType === "PRE_OP"
+      ? { surgery: a.surgery, laterality: a.laterality, implant: a.implant, anaesthesia: a.anaesthesia, date: a.surgeryDate }
+      : eligible;
+
+  const save = () =>
+    startTransition(async () => {
+      const r = await saveAdmission(visit.id, udid, { type, other, admittedOn, expectedDischarge: expected, ward, floor, fileNo });
+      if (r.error) { setError(r.error); return; }
+      setIsSaved(true);
+      setSavedMsg(true);
+    });
+
+  const resetFields = () => {
+    setType(""); setOther(""); setAdmitted(istTodayStr()); setExpected(""); setWard(""); setFloor(""); setFileNo(""); touch();
+  };
+  const cancel = () => { if (!isSaved) { resetFields(); return; } setConfirmClear(true); };
+  const doClear = () =>
+    startTransition(async () => {
+      setConfirmClear(false);
+      const r = await clearAdmission(visit.id, udid);
+      if (r.error) { setError(r.error); return; }
+      resetFields();
+      setIsSaved(false);
+    });
+
+  if (overview) {
+    if (!a) return null;
+    return (
+      <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-1">
+        <p className={labelCls}>Admit</p>
+        <p className="text-label sm:text-sm text-[var(--color-ink-700)]">{admissionTypeText(a.admissionType, a.admissionTypeOther)}</p>
+        {a.admissionType === "PRE_OP" && (
+          <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
+            {[a.laterality, a.surgery, a.implant, a.anaesthesia].filter(Boolean).join(" · ")}
+            {a.surgeryDate ? ` · Surgery ${fmtDay(a.surgeryDate)}` : ""}
+          </p>
+        )}
+        <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
+          Admission {fmtDay(a.admittedOn)}
+          {a.expectedDischarge ? ` · Expected discharge ${fmtDay(a.expectedDischarge)}` : ""}
+          {[a.ward && `Ward ${a.ward}`, a.floor && `Floor ${a.floor}`, a.fileNo && `File ${a.fileNo}`].filter(Boolean).map((t) => ` · ${t}`).join("")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
+      {/* Type of admission */}
+      <div>
+        <label className={labelCls}>Type of Admission</label>
+        <div className="flex flex-wrap gap-2">
+          {ADMIT_TYPES.map((t) => {
+            const disabled = locked || (t.value === "PRE_OP" && !eligible);
+            const on = type === t.value;
+            return (
+              <button
+                key={t.value}
+                type="button"
+                disabled={disabled}
+                title={t.value === "PRE_OP" && !eligible ? "Available once counselling marks the patient Eligible for surgery" : undefined}
+                onClick={() => { setType(on ? "" : t.value); touch(); }}
+                className={`px-3.5 py-2 rounded-lg border text-xs font-semibold transition-colors disabled:cursor-not-allowed ${
+                  on
+                    ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white"
+                    : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:border-[var(--color-border)]"
+                }`}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+        {!eligible && !locked && (
+          <p className="mt-1.5 text-caption text-[var(--color-ink-400)]">Pre-op is available once counselling marks the patient Eligible for surgery.</p>
+        )}
+      </div>
+
+      {type === "OTHERS" && (
+        <div>
+          <label className={labelCls}>Describe</label>
+          <input value={other} disabled={locked} onChange={(e) => { setOther(e.target.value); touch(); }} placeholder="Reason / type of admission…" className={inputCls} />
+        </div>
+      )}
+
+      {pre && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+          <p className="text-caption font-semibold tracking-widest text-emerald-700 uppercase mb-1">From Counselling · Eligible for surgery</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-label sm:text-sm text-[var(--color-ink-700)]">
+            <span><span className="text-[var(--color-ink-400)]">Surgery: </span>{pre.laterality && <span className="clinical-laterality mr-1">{pre.laterality}</span>}{pre.surgery}</span>
+            <span><span className="text-[var(--color-ink-400)]">Implant: </span>{pre.implant || "—"}</span>
+            <span><span className="text-[var(--color-ink-400)]">Anaesthesia: </span>{pre.anaesthesia || "—"}</span>
+            <span><span className="text-[var(--color-ink-400)]">Surgery date: </span>{fmtDay(pre.date) || "—"}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Admission details */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div>
+          <label className={labelCls}>Date of Admission</label>
+          <input type="date" value={admittedOn} disabled={locked} onChange={(e) => { setAdmitted(e.target.value); touch(); }} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Expected Discharge</label>
+          <input type="date" value={expected} min={admittedOn} disabled={locked} onChange={(e) => { setExpected(e.target.value); touch(); }} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Ward No.</label>
+          <input value={ward} disabled={locked} onChange={(e) => { setWard(e.target.value); touch(); }} placeholder="e.g. 3" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Floor No.</label>
+          <input value={floor} disabled={locked} onChange={(e) => { setFloor(e.target.value); touch(); }} placeholder="e.g. 2" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>File No.</label>
+          <input value={fileNo} disabled={locked} onChange={(e) => { setFileNo(e.target.value); touch(); }} placeholder="IP file no." className={inputCls} />
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} /> {error}</p>}
+
+      {locked ? (
+        visit.finalizedAt && a && <p className="text-caption text-[var(--color-ink-400)]">Admitted · changes are made in the IPD patient file.</p>
+      ) : (
+        <div data-overview-hide className="flex items-center gap-3">
+          <button
+            disabled={pending || !type || (type === "OTHERS" && !other.trim())}
+            onClick={save}
+            className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
+          >
+            Save
+          </button>
+          <button
+            disabled={pending}
+            onClick={cancel}
+            className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-60 transition-colors"
+          >
+            Cancel
+          </button>
+          {savedMsg && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved · goes to IPD after Finalize &amp; Sign</span>}
+        </div>
+      )}
+
+      {confirmClear && (
+        <ConfirmDialog
+          title="Remove admission?"
+          message="This clears all fields and removes the saved admission for this visit, so the patient will not go to IPD."
           confirmLabel="Remove"
           onConfirm={doClear}
           onCancel={() => setConfirmClear(false)}

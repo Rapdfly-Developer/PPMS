@@ -13,6 +13,7 @@ import { DeletePatientButton } from "../DeletePatientButton";
 import { EditPatientButton } from "../EditPatientButton";
 import { fileHref } from "@/lib/file-href";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
+import { visitRecordScope } from "@/lib/patient-access";
 
 const CATEGORY_STYLES: Record<string, string> = {
   GENERAL:    "bg-white/20 text-white border border-white/30",
@@ -355,6 +356,18 @@ export default async function PatientProfilePage({
       : null,
   ].filter(Boolean) as { icon: React.ReactNode; label: string }[];
 
+  // Opened from IPD: "Open Patient File" replaces Today's Visit / View Last Visit EMR
+  let ipdFileHref: string | null = null;
+  if (source === "ipd" && userCan(user, "ipd.view")) {
+    const ipdScope = await visitRecordScope(user);
+    const adm = ipdScope ? await prisma.ipdAdmission.findFirst({
+      where: { patientId: patient.id, visit: { ...ipdScope, finalizedAt: { not: null } } },
+      orderBy: { admittedOn: "desc" },
+      select: { id: true },
+    }) : null;
+    if (adm) ipdFileHref = `/ipd/${adm.id}?returnTo=${encodeURIComponent(profileReturnPath)}`;
+  }
+
   return (
     <div className="fade-in pb-12">
       {/* ── Patient banner — full width ──────────────────────────────── */}
@@ -550,6 +563,7 @@ export default async function PatientProfilePage({
             canOpenTodayVisit={user.role === "DOCTOR" || (userCan(user, "emr.view") && canRecordRefraction(user))}
           allowEmrEdit={source !== "total-dispensed"}
             showTodayVisit={showTodayVisit}
+            ipdFileHref={ipdFileHref}
             timelineEntries={timelineEntries}
             todayVisitSummary={todayVisitSummary}
             lastVisitSummary={lastVisitSummary}

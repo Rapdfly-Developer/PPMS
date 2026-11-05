@@ -33,6 +33,8 @@ import { EmrTabsProvider } from "./EmrTabsContext";
 import { EmrBannerNavButtons } from "./EmrBannerNavButtons";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
+import { visitRecordScope } from "@/lib/patient-access";
+import { eligibleSurgeryFor } from "@/lib/ipd-server";
 
 /** "h:mm a" in clinic time. Formatted on the server so the markup is stable. */
 function fmtStamp(d: Date | string | null | undefined): string | null {
@@ -66,6 +68,7 @@ export default async function PatientDetailedEMR({
         include: {
           hospital: true,
           counsellingRecord: { select: { dateOfSurgery: true } },
+          ipdAdmission: true,
           generalExam: true,
           visualAcuity: true,
           refraction: true,
@@ -307,6 +310,10 @@ export default async function PatientDetailedEMR({
     fullEdit || userCan(user, "emr.oculoplasty.edit")
   );
   const canEditPlan = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.plan.edit"));
+  // Admit tab (IPD): Pre-op is offered only when counselling is Eligible for surgery
+  const canAdmit = userCan(user, "ipd.admit");
+  const admitScope = canAdmit ? await visitRecordScope(user) : null;
+  const eligibleSurgery = admitScope ? await eligibleSurgeryFor(patient.id, admitScope) : null;
   const canViewMedications = userCan(user, "emr.medications.view") || userCan(user, "emr.medications.edit");
   const canEditMedications = !viewOnlySource && !visitLocked && (fullEdit || userCan(user, "emr.medications.edit"));
   const canPrint = userCan(user, "emr.print");
@@ -728,7 +735,7 @@ export default async function PatientDetailedEMR({
                 hidden: !canViewPlan,
                 content: canViewPlan ? (
                   <div className="flex flex-col gap-4">
-                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} readOnly={!canEditPlan} canViewMedications={canViewMedications} medicationsReadOnly={!canEditMedications} />
+                    <PlanTab visit={activeVisit} udid={udid} patientSex={patient.sex} priorVisits={priorVisits} readOnly={!canEditPlan} admit={{ canAdmit, eligible: eligibleSurgery }} canViewMedications={canViewMedications} medicationsReadOnly={!canEditMedications} />
                   </div>
                 ) : null,
               },

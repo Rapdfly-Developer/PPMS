@@ -13,6 +13,7 @@ import { getStaffHospitalId } from "@/lib/booking-scope";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 import { isAppointmentSessionClosed, isAppointmentSessionOver } from "@/lib/sessionClose";
 import { PRESCRIBABLE_REFRACTION_METHOD } from "@/lib/constants";
+import { admissionTypeText } from "@/lib/ipd";
 import { getCounsellingActivity } from "@/lib/counselling-activity";
 import { surgeryLine } from "@/lib/counselling";
 
@@ -121,7 +122,8 @@ export type TimelineEventType =
   | "BILLING"
   | "TRANSFER"
   | "EXTERNAL"
-  | "COUNSELLING";
+  | "COUNSELLING"
+  | "IPD";
 
 export type TimelineEvent = {
   id: string;
@@ -168,6 +170,9 @@ export type TimelineEvent = {
     surgery?: string;
     counsellingNote?: string | null;
     counsellingBy?: string | null;
+    // IPD
+    admission?: string;
+    ipdBy?: string | null;
     // TRANSFER
     fromHospital?: string | null;
     toHospital?: string | null;
@@ -198,6 +203,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         dispense:           { select: { shortSummary: true } },
         appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true, status: true, consultationStatus: true } },
         counsellingRecord:  true,
+        ipdAdmission:       true,
       },
     }),
     prisma.pastExternalVisit.findMany({
@@ -323,6 +329,32 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         hospitalName: v.hospital?.name ?? null,
         searchText:  [a.title, a.detail, surgery, a.by, v.hospital?.name].filter(Boolean).join(" ").toLowerCase(),
         detail:      { surgery, counsellingNote: a.detail ?? null, counsellingBy: a.by ?? null },
+      });
+    });
+  }
+
+  // IPD milestones: admitted (on Finalize & Sign), shifted to OT, back to ward, discharged
+  for (const v of visits) {
+    const a = v.ipdAdmission;
+    if (!a || !v.finalizedAt) continue;
+    const admission = [admissionTypeText(a.admissionType, a.admissionTypeOther), [a.laterality, a.surgery].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+    const where = [a.ward && `Ward ${a.ward}`, a.floor && `Floor ${a.floor}`, a.fileNo && `File ${a.fileNo}`].filter(Boolean).join(" · ");
+    const steps: [string, Date | null, string | null][] = [
+      ["Admitted to IPD", v.finalizedAt, a.admittedByName ?? v.doctor?.name ?? null],
+      ["Shifted to OT", a.shiftedToOtAt, a.shiftedToOtBy],
+      ["Back to ward (post-op)", a.returnedFromOtAt, null],
+      ["Discharged", a.dischargedAt, a.dischargedBy],
+    ];
+    steps.forEach(([title, at, by], i) => {
+      if (!at) return;
+      events.push({
+        id:          `ipd-${a.id}-${i}`,
+        type:        "IPD",
+        date:        at.toISOString(),
+        title,
+        hospitalName: v.hospital?.name ?? null,
+        searchText:  [title, admission, where, by, v.hospital?.name].filter(Boolean).join(" ").toLowerCase(),
+        detail:      { admission: where ? `${admission} · ${where}` : admission, ipdBy: by },
       });
     });
   }

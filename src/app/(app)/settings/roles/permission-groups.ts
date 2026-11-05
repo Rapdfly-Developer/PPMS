@@ -199,6 +199,18 @@ export const PERMISSION_GROUPS: {
     ],
   },
 
+  // ── IPD ───────────────────────────────────────────────────────────────────
+  {
+    category: "IPD",
+    permissions: [
+      { key: "ipd.view",      label: "View IPD",             description: "See admitted patients and open the patient file" },
+      { key: "ipd.admit",     label: "Admit Patient",        description: "Use the Admit tab in the EMR Patient Disposition card" },
+      { key: "ipd.edit",      label: "Fill Patient File",    description: "Fill, freeze and attach photos to the patient file forms; ward, floor and file no." },
+      { key: "ipd.shiftOt",   label: "Shift to OT",          description: "Shift the file to OT once every form is frozen" },
+      { key: "ipd.discharge", label: "Discharge",            description: "Sign the discharge summary with OTP and discharge the patient" },
+    ],
+  },
+
   // ── Reports & Analytics ───────────────────────────────────────────────────
   {
     category: "Reports & Analytics",

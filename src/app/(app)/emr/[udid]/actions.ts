@@ -14,6 +14,7 @@ import { isSameDay } from "date-fns";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { medicationLaterality } from "@/lib/medication-laterality";
+import { eligibleSurgeryFor } from "@/lib/ipd-server";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -800,6 +801,79 @@ export async function saveSurgicalCounselling(
   await writeAudit(user.id, "Visit", visitId, "SURGICAL_COUNSELLING_SAVE", patch);
   revalidate(udid);
   revalidatePath("/counselling");
+  return {};
+}
+
+/* ── Admit (IPD) ──────────────────────────────────────────────────────────
+   Saved on the visit; the patient enters the IPD module once the visit is
+   finalized and signed. After that, changes are made in the patient file. */
+
+export async function saveAdmission(
+  visitId: string,
+  udid: string,
+  data: { type: string; other: string; admittedOn: string; expectedDischarge: string; ward: string; floor: string; fileNo: string },
+): Promise<{ error?: string }> {
+  const user = await requireVisitPerm(visitId, "ipd.admit");
+  if (!userCan(user, "ipd.admit")) return { error: "You do not have permission to admit patients." };
+  if (!["CONSERVATIVE", "PRE_OP", "OTHERS"].includes(data.type)) return { error: "Select the type of admission." };
+  if (data.type === "OTHERS" && !data.other.trim()) return { error: "Describe the type of admission." };
+  const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRe.test(data.admittedOn)) return { error: "Enter the date of admission." };
+  if (data.expectedDischarge && !dateRe.test(data.expectedDischarge)) return { error: "Invalid expected discharge date." };
+  if (data.expectedDischarge && data.expectedDischarge < data.admittedOn) return { error: "Expected discharge can't be before the date of admission." };
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { patientId: true, finalizedAt: true, ipdAdmission: { select: { id: true } } },
+  });
+  if (!visit) return { error: "Visit not found." };
+  if (visit.finalizedAt && visit.ipdAdmission) return { error: "The patient is already admitted. Make changes in the IPD patient file." };
+
+  // Pre-op only for a patient whose counselling is complete (Eligible for surgery)
+  let preOp: Awaited<ReturnType<typeof eligibleSurgeryFor>> = null;
+  if (data.type === "PRE_OP") {
+    const scope = await visitRecordScope(user);
+    preOp = scope ? await eligibleSurgeryFor(visit.patientId, scope) : null;
+    if (!preOp) return { error: "Pre-op admission needs counselling marked Eligible for surgery." };
+  }
+
+  const fields = {
+    admissionType: data.type,
+    admissionTypeOther: data.type === "OTHERS" ? data.other.trim() : null,
+    admittedOn: istDayRange(data.admittedOn).dayStart,
+    expectedDischarge: data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null,
+    ward: data.ward.trim() || null,
+    floor: data.floor.trim() || null,
+    fileNo: data.fileNo.trim() || null,
+    admittedByName: user.name,
+    counsellingVisitId: preOp?.visitId ?? null,
+    surgery: preOp?.surgery ?? null,
+    laterality: preOp?.laterality ?? null,
+    implant: preOp?.implant ?? null,
+    anaesthesia: preOp?.anaesthesia ?? null,
+    surgeryDate: preOp?.date ? new Date(preOp.date) : null,
+  };
+  await prisma.ipdAdmission.upsert({
+    where: { visitId },
+    create: { visitId, patientId: visit.patientId, ...fields },
+    update: fields,
+  });
+  await writeAudit(user.id, "Visit", visitId, "ADMIT_SAVE", fields, { moduleName: "IPD", userName: user.name });
+  revalidate(udid);
+  revalidatePath("/ipd");
+  return {};
+}
+
+export async function clearAdmission(visitId: string, udid: string): Promise<{ error?: string }> {
+  const user = await requireVisitPerm(visitId, "ipd.admit");
+  if (!userCan(user, "ipd.admit")) return { error: "You do not have permission to admit patients." };
+  const visit = await prisma.visit.findUnique({ where: { id: visitId }, select: { finalizedAt: true, ipdAdmission: { select: { id: true } } } });
+  if (!visit?.ipdAdmission) return {};
+  if (visit.finalizedAt) return { error: "The patient is already in IPD; the admission can't be removed here." };
+  await prisma.ipdAdmission.delete({ where: { visitId } });
+  await writeAudit(user.id, "Visit", visitId, "ADMIT_CLEAR", {}, { moduleName: "IPD", userName: user.name });
+  revalidate(udid);
+  revalidatePath("/ipd");
   return {};
 }
 

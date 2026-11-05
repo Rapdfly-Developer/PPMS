@@ -11,7 +11,7 @@ import {
   Receipt, ArrowRightLeft, FileText, ChevronDown, ChevronUp,
   Timer, CalendarDays,
   Loader2, CheckCircle2, Clock, AlertCircle, LogIn, Calendar,
-  ChevronLeft, ChevronRight, ClipboardCheck,
+  ChevronLeft, ChevronRight, ClipboardCheck, BedDouble,
 } from "lucide-react";
 import { getPatientTimeline, type TimelineEvent, type TimelineEventType } from "../actions";
 import { waitingMinutes } from "@/lib/visit-durations";
@@ -53,6 +53,12 @@ const EVENT_CFG = {
     dot: "bg-amber-500", dotHex: "#D97706",
     border: "border-l-amber-400",
     badge: "bg-amber-100 text-amber-700", card: "bg-amber-50/40",
+  },
+  IPD: {
+    label: "IPD", Icon: BedDouble,
+    dot: "bg-sky-500", dotHex: "#0EA5E9",
+    border: "border-l-sky-400",
+    badge: "bg-sky-100 text-sky-700", card: "bg-sky-50/40",
   },
   EXTERNAL: {
     label: "External Visit", Icon: FileText,
@@ -206,6 +212,13 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       {d.surgery         && <p><span className="font-semibold">Surgery: </span>{d.surgery}</p>}
       {d.counsellingNote && <p><span className="font-semibold">Details: </span>{d.counsellingNote}</p>}
       {d.counsellingBy   && <p><span className="font-semibold">By: </span>{d.counsellingBy}</p>}
+    </div>
+  );
+
+  if (ev.type === "IPD") return (
+    <div className="mt-3 text-caption sm:text-xs text-[var(--color-ink-700)] space-y-1">
+      {d.admission && <p><span className="font-semibold">Admission: </span>{d.admission}</p>}
+      {d.ipdBy     && <p><span className="font-semibold">By: </span>{d.ipdBy}</p>}
     </div>
   );
 
