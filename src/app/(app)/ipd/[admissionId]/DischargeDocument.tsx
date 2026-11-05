@@ -3,11 +3,11 @@
 // sections are left out. Pure markup (no <header>/<nav>: the app's print
 // styles hide those).
 import { admissionTypeText, dischargeTypeLabel, type DischargeData } from "@/lib/ipd";
-import { fileHref } from "@/lib/file-href";
+import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 
 export interface DischargeHeader {
-  hospital: string; address: string | null; contact: string | null; logoUrl: string | null;
-  doctor: string; qualifications: string | null; regNo: string | null;
+  hospital: string; address: string | null; contact: string | null; logoUrl: string | null; email?: string | null;
+  doctor: string; qualifications: string | null; regNo: string | null; specialty?: string | null;
   patient: { name: string; age: number; sex: string; id: string };
   fileNo: string | null; ward: string | null; floor: string | null;
   type: string; typeOther: string | null;
@@ -91,22 +91,6 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   const consultant = s.consultant || h.doctor;
   const procedure = [s.procedure.eye, s.procedure.name].filter(Boolean).join(" ");
 
-  const letterhead = (
-    <div className="flex items-center justify-between gap-6 pb-3">
-      <div className="flex items-center gap-3">
-        {h.logoUrl && <img src={fileHref(h.logoUrl) ?? h.logoUrl} alt="" className="h-12 max-w-[120px] object-contain" />}
-        <div className="leading-tight">
-          <p className="text-[15px] font-bold" style={{ color: ACCENT }}>{h.hospital}</p>
-          <p className="text-[10.5px] text-gray-500">{[h.address, h.contact && `Ph ${h.contact}`].filter(Boolean).join("  ·  ")}</p>
-        </div>
-      </div>
-      <div className="text-right leading-tight">
-        <p className="text-[12px] font-bold text-gray-900">{dr(h.doctor)}</p>
-        <p className="text-[10.5px] text-gray-500">{[h.qualifications, h.regNo && `Reg. ${h.regNo}`].filter(Boolean).join("  ·  ") || "Ophthalmology"}</p>
-      </div>
-    </div>
-  );
-
   const footer = (
     <div className="mt-4 flex items-center justify-between gap-4 border-t border-gray-200 pt-2 text-[9.5px] text-gray-500">
       <span>{h.patient.name} · {h.patient.id}{h.fileNo ? ` · IP ${h.fileNo}` : ""}</span>
@@ -116,33 +100,34 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   );
 
   return (
-    <div className="mx-auto w-[210mm] max-w-full bg-white text-gray-900 px-[16mm] py-[12mm] print:w-auto print:p-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif" }}>
+    <div className="mx-auto w-[210mm] max-w-full bg-white text-gray-900 px-[14mm] pt-0 pb-[12mm] print:w-auto print:p-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif" }}>
       <table className="w-full border-collapse">
-        <thead><tr><td className="p-0">{letterhead}<div className={`h-[3px] rounded-full ${exact}`} style={{ background: ACCENT }} /></td></tr></thead>
+
         <tfoot><tr><td className="p-0">{footer}</td></tr></tfoot>
         <tbody><tr><td className="p-0 align-top">
 
-          {/* Title + status */}
-          <div className="flex items-end justify-between gap-4 mt-5 mb-4">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Department of Ophthalmology</p>
-              <h1 className="text-[24px] font-light tracking-tight text-gray-900 leading-tight">Discharge Summary</h1>
-            </div>
+          <IpdPrintHeader
+            hospital={{ name: h.hospital, logoUrl: h.logoUrl, address: h.address, contact: h.contact, email: h.email ?? null }}
+            doctor={consultant}
+            specialty={h.specialty ?? null}
+            kicker="Clinical Report"
+            title="Discharge Summary"
+            dateText={`Discharged ${day(s.dischargeDate) || "—"}`}
+            boxes={[
+              ["Patient", h.patient.name],
+              ["Hospital No.", h.patient.id],
+              ["Age / Gender", `${h.patient.age} yrs / ${SEX[h.patient.sex] ?? h.patient.sex}`],
+              ["IP No.", h.fileNo ?? ""],
+              ["Admitted", day(h.admittedOn)],
+              ["Discharged", day(s.dischargeDate)],
+              ["Ward / Floor", [h.ward && `Ward ${h.ward}`, h.floor && `Floor ${h.floor}`].filter(Boolean).join(", ")],
+              ["Admission", admissionTypeText(h.type, h.typeOther)],
+            ]}
+          />
+          <div className="flex justify-end -mt-1 mb-1">
             {h.signed
-              ? <span className={`rounded-full border px-3 py-1 text-[10.5px] font-semibold ${exact}`} style={{ borderColor: ACCENT, color: ACCENT }}>Signed {dateTime(h.signed.at)}</span>
-              : <span className={`rounded-full border border-amber-400 bg-amber-50 px-3 py-1 text-[10.5px] font-bold text-amber-700 ${exact}`}>DRAFT · NOT SIGNED</span>}
-          </div>
-
-          {/* Patient strip */}
-          <div className={`grid grid-cols-4 gap-x-6 gap-y-3 rounded-lg bg-gray-50 px-4 py-3 ${exact}`}>
-            <Fact label="Patient">{h.patient.name}</Fact>
-            <Fact label="Age / Sex">{h.patient.age} yrs · {SEX[h.patient.sex] ?? h.patient.sex}</Fact>
-            <Fact label="Hospital No.">{h.patient.id}</Fact>
-            <Fact label="IP No.">{h.fileNo}</Fact>
-            <Fact label="Admitted">{day(h.admittedOn)}</Fact>
-            <Fact label="Discharged">{day(s.dischargeDate)}</Fact>
-            <Fact label="Ward">{[h.ward && `Ward ${h.ward}`, h.floor && `Floor ${h.floor}`].filter(Boolean).join(", ")}</Fact>
-            <Fact label="Consultant">{dr(consultant)}</Fact>
+              ? <span className={`rounded-full border px-3 py-0.5 text-[10px] font-semibold ${exact}`} style={{ borderColor: ACCENT, color: ACCENT }}>Signed {dateTime(h.signed.at)} · verified by OTP</span>
+              : <span className={`rounded-full border border-amber-400 bg-amber-50 px-3 py-0.5 text-[10px] font-bold text-amber-700 ${exact}`}>DRAFT · NOT SIGNED</span>}
           </div>
 
           {/* At a glance */}

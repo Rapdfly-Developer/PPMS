@@ -22,8 +22,8 @@ export default async function DischargePrintPage({ params, searchParams }: { par
       forms: { where: { key: "discharge" } },
       visit: {
         select: {
-          hospital: { select: { name: true, address: true, contact: true, logoUrl: true } },
-          doctor: { select: { name: true, qualifications: true, medicalRegNumber: true } },
+          hospital: { select: { name: true, address: true, contact: true, logoUrl: true, email: true } },
+          doctor: { select: { name: true, qualifications: true, medicalRegNumber: true, specialty: true } },
           patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true } },
         },
       },
@@ -53,8 +53,8 @@ export default async function DischargePrintPage({ params, searchParams }: { par
           <DischargeDocument
             s={summary}
             h={{
-              hospital: v.hospital.name, address: v.hospital.address, contact: v.hospital.contact, logoUrl: v.hospital.logoUrl,
-              doctor: v.doctor.name, qualifications: v.doctor.qualifications, regNo: v.doctor.medicalRegNumber,
+              hospital: v.hospital.name, address: v.hospital.address, contact: v.hospital.contact, logoUrl: v.hospital.logoUrl, email: v.hospital.email,
+              doctor: v.doctor.name, qualifications: v.doctor.qualifications, regNo: v.doctor.medicalRegNumber, specialty: v.doctor.specialty || null,
               patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? v.patient.udid ?? v.patient.id },
               fileNo: a.fileNo, ward: a.ward, floor: a.floor,
               type: a.admissionType, typeOther: a.admissionTypeOther,
