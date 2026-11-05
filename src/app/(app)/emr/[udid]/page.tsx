@@ -65,7 +65,6 @@ export default async function PatientDetailedEMR({
         orderBy: { date: "desc" },
         include: {
           hospital: true,
-          counsellingRecord: { select: { dateOfSurgery: true } },
           generalExam: true,
           visualAcuity: true,
           refraction: true,

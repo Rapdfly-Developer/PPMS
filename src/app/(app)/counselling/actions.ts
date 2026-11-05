@@ -59,8 +59,9 @@ export async function saveCounsellingDetails(visitId: string, data: {
   estimateAmount?: number | null;
 }): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
-  // Details stay editable until Eligible for surgery, which finalizes counselling.
+  // Eligible for surgery finalizes counselling; after Fit only the date can change.
   if (rec?.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery). Details can't be changed." };
+  const dateOnly = !!rec?.fitForSurgery;
   // A past date can't be set; an unchanged earlier date doesn't block saving the other fields.
   const currentDate = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   const nextDate = data.dateOfSurgery === undefined ? undefined : dayFromStr(data.dateOfSurgery);
@@ -75,19 +76,23 @@ export async function saveCounsellingDetails(visitId: string, data: {
   }
 
   const patch: Record<string, unknown> = {};
-  if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
   if (data.dateOfSurgery !== undefined) patch.dateOfSurgery = dayFromStr(data.dateOfSurgery);
-  if (data.paymentMode !== undefined) patch.paymentMode = data.paymentMode || null;
-  if (data.paymentType !== undefined) patch.paymentType = data.paymentType || null;
-  if (data.schemeName !== undefined) patch.schemeName = data.schemeName.trim() || null;
-  if (data.policyNumber !== undefined) patch.policyNumber = data.policyNumber.trim() || null;
-  if (data.estimateAmount !== undefined) {
-    if (data.estimateAmount !== null && !(data.estimateAmount >= 0)) return { error: "Invalid estimate amount." };
-    patch.estimateAmount = data.estimateAmount;
+  // Implant, payment and estimate stay frozen after Fit
+  if (!dateOnly) {
+    if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
+    if (data.paymentMode !== undefined) patch.paymentMode = data.paymentMode || null;
+    if (data.paymentType !== undefined) patch.paymentType = data.paymentType || null;
+    if (data.schemeName !== undefined) patch.schemeName = data.schemeName.trim() || null;
+    if (data.policyNumber !== undefined) patch.policyNumber = data.policyNumber.trim() || null;
+    if (data.estimateAmount !== undefined) {
+      if (data.estimateAmount !== null && !(data.estimateAmount >= 0)) return { error: "Invalid estimate amount." };
+      patch.estimateAmount = data.estimateAmount;
+    }
   }
 
   // The signed visit keeps the date the doctor wrote; Counselling's date is
-  // stored here and shown beside it as "Rescheduled to …".
+  // stored here and shown beside it as "Rescheduled to …" (the EMR itself
+  // shows only what the doctor entered).
   await prisma.counsellingRecord.upsert({
     where: { visitId },
     create: { visitId, status: "PENDING", ...patch },

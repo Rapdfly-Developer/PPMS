@@ -604,7 +604,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function LockedTag() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Finalized</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Frozen</span>;
 }
 
 function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; children: React.ReactNode }) {
@@ -752,10 +752,10 @@ export function CounsellingDetail({
   const [preview, setPreview] = useState<CounsellingOrder | null>(null);
   const [error, setError] = useState("");
 
-  // Eligible for surgery finalizes counselling (like Finalize & Sign in the EMR);
-  // until then the details stay editable, also after Fit for surgery.
-  const frozen = rec.eligibleForSurgery;
+  const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
   const editable = canEdit && !frozen;
+  // After Fit only the surgery date can still change, until Eligible finalizes counselling.
+  const dateEditable = canEdit && !rec.eligibleForSurgery;
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
   // Stable object (auto-save treats every new reference as a change), and no
@@ -773,7 +773,7 @@ export function CounsellingDetail({
     details,
     async (d) => { const r = await saveCounsellingDetails(data.visitId, d); if (r.error) throw new Error(r.error); },
     undefined,
-    { flushOnUnmount: true, paused: !editable || !edited },
+    { flushOnUnmount: true, paused: !dateEditable || !edited },
   );
 
   const currentOrders = data.orders.filter((o) => o.current);
@@ -1053,7 +1053,7 @@ export function CounsellingDetail({
           {/* ── A & B ─────────────────────────────────────────────────── */}
           <SectionCard
             step={1} icon={<Package size={15} />} title="Surgery Details"
-            right={frozen ? <LockedTag /> : editable ? <SaveIndicator state={saveState} /> : null}
+            right={dateEditable ? <SaveIndicator state={saveState} /> : frozen ? <LockedTag /> : null}
           >
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
               <InlineField label="Type of Implant" tight>
@@ -1081,7 +1081,7 @@ export function CounsellingDetail({
                 </div>
               </InlineField>
               <InlineField label="Tentative Date" tight>
-                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
               </InlineField>
             </div>
           </SectionCard>
@@ -1373,7 +1373,7 @@ export function CounsellingDetail({
               <p className="text-xs font-bold text-amber-900">Before you confirm</p>
             </div>
             <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The details above stay <b>editable until Eligible for surgery</b>; the date must stay within the reports&apos; validity.</span></li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, payment and estimate above will be <b>frozen</b>. Only the date can still be changed (within the reports&apos; validity) until Eligible for surgery.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
                 <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
@@ -1391,7 +1391,7 @@ export function CounsellingDetail({
                 if (saved.error) return saved;
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
-              <ShieldCheck size={15} /> Confirm Fit
+              <ShieldCheck size={15} /> Confirm &amp; Freeze
             </button>
           </div>
         </Modal>
@@ -1416,7 +1416,7 @@ export function CounsellingDetail({
           pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
           onSubmit={(time, notes) => run(async () => {
             // Unsaved edits are saved first, so what was verified is what gets finalized
-            if (editable && edited) {
+            if (dateEditable && edited) {
               const saved = await saveCounsellingDetails(data.visitId, details);
               if (saved.error) return saved;
             }
