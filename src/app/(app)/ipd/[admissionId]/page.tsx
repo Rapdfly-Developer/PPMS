@@ -5,7 +5,7 @@ import { visitRecordScope } from "@/lib/patient-access";
 import {
   admissionTypeText,
   defaultChecklist, defaultConsents, defaultEducation, defaultNurse, defaultTreatment,
-  dischargeTemplate, otNotesTemplate,
+  buildDischargeDraft, otNotesTemplate,
 } from "@/lib/ipd";
 import { PatientFile, type FileData } from "./PatientFile";
 
@@ -53,8 +53,9 @@ export default async function IpdFilePage({
       visit: {
         select: {
           id: true, date: true, finalizedAt: true,
-          hospital: { select: { name: true } },
-          doctor: { select: { name: true } },
+          followUpDate: true,
+          hospital: { select: { name: true, address: true, contact: true, logoUrl: true } },
+          doctor: { select: { name: true, qualifications: true, medicalRegNumber: true } },
           patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
@@ -72,6 +73,30 @@ export default async function IpdFilePage({
     orderBy: { createdAt: "desc" },
     select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, updatedAt: true, createdAt: true },
   });
+
+  // EMR details for the discharge draft: the admitting visit first, then the
+  // patient's most recent earlier visit that has them (e.g. the counselling visit)
+  const emrVisits = await prisma.visit.findMany({
+    where: { patientId: v.patient.id, ...scope, date: { lte: v.date } },
+    orderBy: { date: "desc" },
+    take: 8,
+    select: {
+      id: true,
+      generalExam: { select: { chiefComplaint: true, pastMedicalHistory: true, pmhOtherText: true, familyHistory: true, allergies: true, nkda: true } },
+      diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" } },
+      visualAcuity: { select: { re: true, le: true } },
+      iopReadings: { select: { re: true, le: true }, orderBy: { takenAt: "desc" }, take: 1 },
+      anteriorSegment: { select: { re: true, le: true } },
+      posteriorSegment: { select: { re: true, le: true } },
+    },
+  });
+  const ordered = [...emrVisits.filter((x) => x.id === v.id), ...emrVisits.filter((x) => x.id !== v.id)];
+  const firstWith = <T,>(pick: (x: (typeof emrVisits)[number]) => T | null | undefined, ok: (t: T) => boolean = () => true): T | null => {
+    for (const x of ordered) { const t = pick(x); if (t != null && ok(t)) return t; }
+    return null;
+  };
+  const vaHas = (r: { re: string | null; le: string | null }) => /\d|PL|HM|CF/.test(`${r.re ?? ""}${r.le ?? ""}`);
+  const segHas = (r: { re: string | null; le: string | null }) => /:"[^"]+"/.test(`${r.re ?? ""}${r.le ?? ""}`);
 
   const counselling = a.counsellingVisitId
     ? await prisma.counsellingRecord.findUnique({
@@ -112,16 +137,30 @@ export default async function IpdFilePage({
     treatment: defaultTreatment(),
     nurse: defaultNurse(a.admissionType),
     otNotes: { text: otNotesTemplate(a) },
-    discharge: {
-      text: dischargeTemplate({
-        hospital: v.hospital.name, patientName: v.patient.name, age: v.patient.age, sex: v.patient.sex, patientId: v.patient.uhid ?? udid,
-        admittedOn: a.admittedOn, expectedDischarge: a.expectedDischarge, ward: a.ward, fileNo: a.fileNo, doctor: v.doctor.name,
-        complaint: v.generalExam?.chiefComplaint ?? null,
-        diagnoses: v.diagnoses.map((d) => [d.laterality, d.description].filter(Boolean).join(" ")),
-        type: a.admissionType, typeOther: a.admissionTypeOther,
-        surgery: a.surgery, laterality: a.laterality, implant: a.implant, anaesthesia: a.anaesthesia, surgeryDate: a.surgeryDate,
-      }),
-    },
+    discharge: buildDischargeDraft({
+      type: a.admissionType,
+      doctor: v.doctor.name,
+      admittedOn: a.admittedOn,
+      expectedDischarge: a.expectedDischarge,
+      surgery: a.surgery, laterality: a.laterality, implant: a.implant, anaesthesia: a.anaesthesia, surgeryDate: a.surgeryDate,
+      complaint: firstWith((x) => x.generalExam?.chiefComplaint, (t) => !!t.trim()),
+      diagnoses: firstWith((x) => x.diagnoses, (t) => t.length > 0) ?? [],
+      pastHistory: firstWith((x) => x.generalExam?.pastMedicalHistory, (t) => t !== "[]"),
+      pmhOther: firstWith((x) => x.generalExam?.pmhOtherText, (t) => !!t.trim()),
+      familyHistory: firstWith((x) => x.generalExam?.familyHistory, (t) => !!t.trim()),
+      allergies: firstWith((x) => x.generalExam?.allergies, (t) => !!t.trim()),
+      nkda: !!firstWith((x) => (x.generalExam?.nkda ? true : null)),
+      va: firstWith((x) => x.visualAcuity, vaHas),
+      iop: firstWith((x) => x.iopReadings[0], (r) => r.re != null || r.le != null),
+      anterior: firstWith((x) => x.anteriorSegment, segHas),
+      posterior: firstWith((x) => x.posteriorSegment, segHas),
+      orders: orders.map((o) => ({ testName: o.testName, laterality: o.laterality, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null, createdAt: o.createdAt })),
+      doctorNotes: a.doctorNotes.map((n) => ({ text: n.text, at: n.createdAt })),
+      drugs: (() => { const t = a.forms.find((f) => f.key === "treatment"); const x = t ? parse(t.data) : {}; return Array.isArray(x.drugs) ? x.drugs : []; })(),
+      education: (() => { const t = a.forms.find((f) => f.key === "education"); return (t ? parse(t.data).education : null) ?? defaultEducation(a.admissionType).education; })(),
+      diet: (() => { const t = a.forms.find((f) => f.key === "education"); const x = t ? parse(t.data) : {}; return Array.isArray(x.diet) ? x.diet : []; })(),
+      followUpDate: v.followUpDate,
+    }),
     postOpNotes: { text: "" },
   };
 
@@ -133,6 +172,10 @@ export default async function IpdFilePage({
     patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? udid, photoUrl: v.patient.photoUrl },
     doctor: v.doctor.name,
     hospital: v.hospital.name,
+    letterhead: {
+      hospital: v.hospital.name, address: v.hospital.address, contact: v.hospital.contact, logoUrl: v.hospital.logoUrl,
+      doctor: v.doctor.name, qualifications: v.doctor.qualifications, regNo: v.doctor.medicalRegNumber,
+    },
     complaint: v.generalExam?.chiefComplaint ?? null,
     diagnoses: v.diagnoses,
     type: a.admissionType,

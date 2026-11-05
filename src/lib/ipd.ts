@@ -307,76 +307,159 @@ export function otNotesTemplate(a: { surgery?: string | null; laterality?: strin
   return `${head}\n${body}`;
 }
 
-/* ── Draft discharge summary ─────────────────────────────────────────────── */
+/* ── Discharge summary (structured, NABH-style sections) ─────────────────── */
 
-const fmt = (d?: Date | string | null) =>
-  d ? new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "________";
+export const DISCHARGE_TYPES = [
+  { value: "ROUTINE", label: "Routine" },
+  { value: "ON_REQUEST", label: "On request" },
+  { value: "LAMA", label: "Against medical advice (LAMA)" },
+  { value: "REFERRED", label: "Referred" },
+] as const;
 
-export function dischargeTemplate(a: {
-  hospital?: string | null; patientName: string; age: number; sex: string; patientId: string;
-  admittedOn: Date | string; expectedDischarge?: Date | string | null; ward?: string | null; fileNo?: string | null;
-  doctor?: string | null; complaint?: string | null; diagnoses?: string[]; type: string; typeOther?: string | null;
-  surgery?: string | null; laterality?: string | null; implant?: string | null; anaesthesia?: string | null; surgeryDate?: Date | string | null;
-}): string {
-  const blank = "________";
-  const surgical = a.type === "PRE_OP" || !!a.surgery;
-  return [
-    `DISCHARGE SUMMARY`,
-    a.hospital ? a.hospital : "",
-    ``,
-    `Patient Name : ${a.patientName}        Age / Sex : ${a.age} / ${a.sex}`,
-    `Patient ID   : ${a.patientId}          IP / File No. : ${a.fileNo || blank}`,
-    `Ward         : ${a.ward || blank}`,
-    `Date of Admission : ${fmt(a.admittedOn)}        Date of Discharge : ${a.expectedDischarge ? fmt(a.expectedDischarge) : blank}`,
-    `Consultant   : ${a.doctor || blank}`,
-    `Type of Admission : ${admissionTypeText(a.type, a.typeOther)}`,
-    ``,
-    `PRESENTING COMPLAINTS`,
-    a.complaint?.trim() || blank,
-    ``,
-    `DIAGNOSIS`,
-    a.diagnoses?.length ? a.diagnoses.map((d) => `• ${d}`).join("\n") : blank,
-    ``,
-    ...(surgical
-      ? [
-          `PROCEDURE DONE`,
-          `${[a.laterality, a.surgery].filter(Boolean).join(" ") || blank} on ${a.surgeryDate ? fmt(a.surgeryDate) : blank}`,
-          `Implant : ${a.implant || blank}`,
-          `Anaesthesia : ${a.anaesthesia || blank}`,
-          `Intra-operative findings / events : ${blank}`,
-          ``,
-        ]
-      : []),
-    `COURSE IN HOSPITAL`,
-    blank,
-    ``,
-    `CONDITION AT DISCHARGE`,
-    `General condition : ${blank}`,
-    `Visual acuity     : RE ${blank}   LE ${blank}`,
-    `IOP               : RE ${blank}   LE ${blank}`,
-    `Operated eye      : ${blank}`,
-    ``,
-    `MEDICATIONS ON DISCHARGE`,
-    `1. ${blank}`,
-    `2. ${blank}`,
-    `3. ${blank}`,
-    ``,
-    `ADVICE`,
-    ...(surgical
-      ? [
-          `• Do not rub or press the operated eye; wear the shield at night.`,
-          `• Keep water and soap out of the eye for 2 weeks.`,
-          `• Avoid heavy lifting, bending and dusty places.`,
-        ]
-      : [`• Continue medicines as advised.`]),
-    `• Return immediately if there is pain, redness, discharge or a sudden drop in vision.`,
-    ``,
-    `FOLLOW-UP`,
-    `Review on ${blank}`,
-    ``,
-    `Doctor's signature : ${blank}`,
-  ].join("\n");
+export interface DischargeMed { name: string; dose: string; eye: string; frequency: string; duration: string }
+
+export interface DischargeData {
+  v: 2;
+  dischargeType: string;
+  referredTo: string;
+  dischargeDate: string;          // yyyy-mm-dd
+  consultant: string;
+  diagnosis: string;
+  complaints: string;
+  history: string;
+  allergies: string;
+  findings: { vaRe: string; vaLe: string; iopRe: string; iopLe: string; anterior: string; posterior: string };
+  investigations: string;
+  procedure: { name: string; eye: string; date: string; anaesthesia: string; implant: string; surgeon: string; events: string };
+  course: string;
+  condition: { general: string; vaRe: string; vaLe: string; iopRe: string; iopLe: string; eye: string };
+  meds: DischargeMed[];
+  advice: string;
+  warning: string;
+  followUpDate: string;           // yyyy-mm-dd
+  followUpNote: string;
 }
+
+export const isDischargeData = (x: unknown): x is DischargeData =>
+  !!x && typeof x === "object" && (x as { v?: unknown }).v === 2;
+
+export const DISCHARGE_WARNING_SIGNS =
+  "Return to the hospital immediately, or call us, if you notice:\n• Increasing pain, redness or swelling of the eye\n• Sudden drop or blurring of vision\n• Sticky discharge or watering that keeps increasing\n• Flashes of light, new floaters or a curtain over the vision\n• Nausea, vomiting or severe headache";
+
+const istDay = (d?: Date | string | null) =>
+  d ? new Date(new Date(d).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "";
+const dayLabel = (d: Date | string) =>
+  new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+
+const parseJson = <T,>(s: string | null | undefined, fallback: T): T => {
+  if (!s) return fallback;
+  try { return JSON.parse(s) as T; } catch { return fallback; }
+};
+
+const SEGMENT_LABELS: Record<string, string> = {
+  upperLid: "Upper lid", lowerLid: "Lower lid", conjunctiva: "Conjunctiva", sclera: "Sclera", cornea: "Cornea",
+  anteriorChamber: "AC", iris: "Iris", pupil: "Pupil", lens: "Lens",
+  media: "Media", cdr: "CDR", nrr: "NRR", macula: "Macula", retinalVessels: "Vessels", background: "Background", periphery: "Periphery",
+  discSize: "Disc size", discShape: "Disc shape", discColour: "Disc colour", discMargin: "Disc margin", discVessels: "Disc vessels",
+};
+
+/** "RE: Cornea clear; Lens NS2 · LE: …" from the EMR segment JSON (empty fields skipped). */
+function segmentLine(re?: string | null, le?: string | null): string {
+  const side = (raw?: string | null) => {
+    const o = parseJson<Record<string, unknown>>(raw, {});
+    return Object.entries(o)
+      .map(([k, v]) => [k, typeof v === "string" ? v.replace(/•/g, "").replace(/\s+/g, " ").trim() : ""] as const)
+      .filter(([k, v]) => v && SEGMENT_LABELS[k])
+      .map(([k, v]) => `${SEGMENT_LABELS[k]} ${v}`)
+      .join("; ");
+  };
+  return [side(re) && `RE: ${side(re)}`, side(le) && `LE: ${side(le)}`].filter(Boolean).join("\n");
+}
+
+export interface DischargeInputs {
+  type: string;
+  doctor: string;
+  admittedOn: Date | string;
+  expectedDischarge?: Date | string | null;
+  surgery?: string | null; laterality?: string | null; implant?: string | null; anaesthesia?: string | null; surgeryDate?: Date | string | null;
+  complaint?: string | null;
+  diagnoses: { description: string; laterality: string | null; status?: string | null }[];
+  pastHistory?: string | null; pmhOther?: string | null; familyHistory?: string | null;
+  allergies?: string | null; nkda?: boolean;
+  va?: { re?: string | null; le?: string | null } | null;
+  iop?: { re?: number | null; le?: number | null } | null;
+  anterior?: { re?: string | null; le?: string | null } | null;
+  posterior?: { re?: string | null; le?: string | null } | null;
+  orders: { testName: string; laterality: string | null; resultAt: string | Date | null; createdAt: string | Date }[];
+  doctorNotes: { text: string; at: string | Date }[];
+  drugs: { name: string; dose: string; eye: string; frequency: string }[];
+  education?: string | null;
+  diet?: { time: string; item: string }[];
+  followUpDate?: Date | string | null;
+}
+
+export function courseFromNotes(notes: { text: string; at: string | Date }[]): string {
+  return [...notes]
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    .map((n) => `${dayLabel(n.at)}: ${n.text.trim()}`)
+    .join("\n");
+}
+
+export function medsFromDrugs(drugs: { name: string; dose: string; eye: string; frequency: string }[]): DischargeMed[] {
+  return drugs.filter((d) => d.name?.trim()).map((d) => ({ name: d.name, dose: d.dose, eye: d.eye, frequency: d.frequency, duration: "" }));
+}
+
+/** A first draft filled from everything the system already knows; every field stays editable. */
+export function buildDischargeDraft(i: DischargeInputs): DischargeData {
+  const surgical = i.type === "PRE_OP" || !!i.surgery;
+  const va = (raw?: string | null) => {
+    const o = parseJson<Record<string, string>>(raw, {});
+    return [o.unaided && `${o.unaided} (unaided)`, o.bestCorrected && `${o.bestCorrected} (BCVA)`].filter(Boolean).join(", ");
+  };
+  const pmh = parseJson<unknown[]>(i.pastHistory, []).filter((x): x is string => typeof x === "string");
+  const history = [
+    pmh.length ? `Past history: ${pmh.join(", ")}` : "",
+    i.pmhOther?.trim() ? i.pmhOther.trim() : "",
+    i.familyHistory?.trim() ? `Family history: ${i.familyHistory.trim()}` : "",
+  ].filter(Boolean).join("\n");
+  const diet = (i.diet ?? []).filter((r) => r.item?.trim()).map((r) => `${r.time}: ${r.item}`).join("; ");
+
+  return {
+    v: 2,
+    dischargeType: "ROUTINE",
+    referredTo: "",
+    dischargeDate: istDay(i.expectedDischarge) || "",
+    consultant: i.doctor,
+    diagnosis: i.diagnoses
+      .map((d) => [d.laterality, d.description].filter(Boolean).join(" ") + (d.status && d.status !== "ACTIVE" ? ` (${d.status.toLowerCase()})` : ""))
+      .join("\n"),
+    complaints: (i.complaint ?? "").trim(),
+    history,
+    allergies: i.nkda ? "No known drug allergies" : (i.allergies ?? "").trim(),
+    findings: {
+      vaRe: va(i.va?.re), vaLe: va(i.va?.le),
+      iopRe: i.iop?.re != null ? `${i.iop.re} mmHg` : "", iopLe: i.iop?.le != null ? `${i.iop.le} mmHg` : "",
+      anterior: segmentLine(i.anterior?.re, i.anterior?.le),
+      posterior: segmentLine(i.posterior?.re, i.posterior?.le),
+    },
+    investigations: i.orders
+      .map((o) => `${[o.laterality, o.testName].filter(Boolean).join(" ")} (${dayLabel(o.createdAt)}): ${o.resultAt ? `report on file, ${dayLabel(o.resultAt)}` : "report pending"}`)
+      .join("\n"),
+    procedure: surgical
+      ? { name: i.surgery ?? "", eye: i.laterality ?? "", date: istDay(i.surgeryDate), anaesthesia: i.anaesthesia ?? "", implant: i.implant ?? "", surgeon: i.doctor, events: "Uneventful" }
+      : { name: "", eye: "", date: "", anaesthesia: "", implant: "", surgeon: "", events: "" },
+    course: courseFromNotes(i.doctorNotes),
+    condition: { general: "Stable, ambulatory", vaRe: "", vaLe: "", iopRe: "", iopLe: "", eye: surgical ? "Quiet, wound healthy" : "" },
+    meds: medsFromDrugs(i.drugs),
+    advice: [i.education?.trim() ?? "", diet ? `Diet: ${diet}` : ""].filter(Boolean).join("\n"),
+    warning: DISCHARGE_WARNING_SIGNS,
+    followUpDate: istDay(i.followUpDate),
+    followUpNote: surgical ? "Post-operative review" : "",
+  };
+}
+
+export const dischargeTypeLabel = (v: string) => DISCHARGE_TYPES.find((t) => t.value === v)?.label ?? v;
+
 
 /** Count frozen required forms. */
 export function completion(type: string, forms: { key: string; frozen: boolean }[]): { done: number; total: number } {

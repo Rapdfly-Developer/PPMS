@@ -5,11 +5,11 @@ import { requireAnyPermission } from "@/lib/rbac";
 import { visitRecordScope } from "@/lib/patient-access";
 import { revalidatePath } from "next/cache";
 import { writeAudit } from "@/lib/audit";
-import { istDayRange } from "@/lib/ist";
+import { istDayRange, istTodayStr } from "@/lib/ist";
 import { sendMail } from "@/lib/mailer";
 import { eligibleSurgeryFor } from "@/lib/ipd-server";
 import {
-  IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, logsOpen, requiredKeys,
+  IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
   type LogEntry,
 } from "@/lib/ipd";
 
@@ -267,21 +267,24 @@ export async function requestDischargeOtp(admissionId: string): Promise<Result &
   return { email: masked };
 }
 
-export async function confirmDischarge(admissionId: string, code: string, summary: string, notes: string): Promise<Result> {
+export async function confirmDischarge(admissionId: string, code: string, summary: unknown, notes: string): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.discharge");
   if (!canDischargeNow(admission.admissionType, admission.status)) return { error: "The patient can't be discharged at this stage." };
   if (!admission.dischargeOtp || !admission.dischargeOtpExpires || admission.dischargeOtpExpires < new Date()) {
     return { error: "OTP expired or not requested. Send a new one." };
   }
   if (admission.dischargeOtp !== code.trim()) return { error: "Incorrect OTP. Please try again." };
-  if (!summary.trim()) return { error: "The discharge summary is empty." };
+  if (!isDischargeData(summary)) return { error: "The discharge summary is incomplete." };
+  if (!summary.diagnosis.trim()) return { error: "Add the diagnosis to the discharge summary." };
+  // The date of discharge defaults to the day it is signed
+  if (!summary.dischargeDate) summary = { ...summary, dischargeDate: istTodayStr() };
 
   const now = new Date();
   await prisma.$transaction([
     prisma.ipdForm.upsert({
       where: { admissionId_key: { admissionId, key: "discharge" } },
-      create: { admissionId, key: "discharge", title: titleOf("discharge", admission.forms), data: JSON.stringify({ text: summary }), frozen: true, frozenAt: now, frozenBy: user.name },
-      update: { data: JSON.stringify({ text: summary }), frozen: true, frozenAt: now, frozenBy: user.name },
+      create: { admissionId, key: "discharge", title: titleOf("discharge", admission.forms), data: JSON.stringify(summary), frozen: true, frozenAt: now, frozenBy: user.name },
+      update: { data: JSON.stringify(summary), frozen: true, frozenAt: now, frozenBy: user.name },
     }),
     prisma.ipdAdmission.update({
       where: { id: admissionId },

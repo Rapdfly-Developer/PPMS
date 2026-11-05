@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import {
   ArrowLeft, BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, User, FileText,
-  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, Trash2, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays,
+  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, Trash2, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import {
   ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  formsFor, isCustomKey, logsOpen, otNotesTemplate,
+  formsFor, isCustomKey, isDischargeData, logsOpen, otNotesTemplate, type DischargeData,
   type CheckItem, type ConsentItem, type DietRow, type DrugRow, type IpdStatus, type LogEntry,
 } from "@/lib/ipd";
 import {
@@ -20,6 +20,7 @@ import {
   freezeForm, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
 } from "../actions";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
+import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -40,6 +41,7 @@ export interface FileData {
   patient: { name: string; age: number; sex: string; id: string; photoUrl: string | null };
   doctor: string;
   hospital: string;
+  letterhead: { hospital: string; address: string | null; contact: string | null; logoUrl: string | null; doctor: string; qualifications: string | null; regNo: string | null };
   complaint: string | null;
   diagnoses: { description: string; laterality: string | null }[];
   type: string;
@@ -308,7 +310,9 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
 function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
 }) {
-  const initial = row && Object.keys(row.data ?? {}).length ? row.data : (d.defaults[keyName] ?? { text: "" });
+  // The discharge summary is structured; an older free-text draft starts from the new layout
+  const hasData = row && Object.keys(row.data ?? {}).length && (keyName !== "discharge" || isDischargeData(row.data));
+  const initial = hasData ? row!.data : (d.defaults[keyName] ?? { text: "" });
   const [value, setValue] = useState<FormJson>(initial as FormJson);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
@@ -320,6 +324,19 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   const canFreeze = can.edit && !frozen && d.status === "ADMITTED";
   const logs = can.edit && logsOpen(d.status);
 
+  // Print opens the saved summary, so unsaved edits are saved first
+  const printSummary = () => start(async () => {
+    if (editable && dirty) {
+      const r = await saveForm(d.id, keyName, value);
+      if (r.error) { setError(r.error); return; }
+      setDirty(false); onRefresh();
+    } else if (!row && editable) {
+      const r = await saveForm(d.id, keyName, value);
+      if (r.error) { setError(r.error); return; }
+      onRefresh();
+    }
+    window.open(`/ipd-print/${d.id}`, "_blank");
+  });
   const change = (v: FormJson) => { setValue(v); setDirty(true); setSavedMsg(false); setError(""); };
   const save = () => start(async () => {
     const r = await saveForm(d.id, keyName, value);
@@ -375,13 +392,19 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
         </div>
       );
       break;
+    case "discharge":
+      // A summary signed before the structured layout keeps its signed text
+      body = frozen && typeof row?.data?.text === "string" && !isDischargeData(row.data)
+        ? <TextForm value={row.data.text} editable={false} onChange={() => {}} mono rows={22} />
+        : <DischargeEditor value={value as DischargeData} onChange={(v) => change(v as unknown as FormJson)} editable={editable} ctx={dischargeCtx(d)} />;
+      break;
     default:
       body = (
         <div className="space-y-2">
           {keyName === "otNotes" && editable && (
             <button onClick={() => change({ text: otNotesTemplate(d) })} className="text-caption font-semibold text-[var(--color-primary-700)] hover:underline">Reset to the template for this surgery</button>
           )}
-          <TextForm value={value.text ?? ""} editable={editable} onChange={(t) => change({ text: t })} mono={keyName === "otNotes" || keyName === "discharge"} rows={keyName === "postOpNotes" || isCustomKey(keyName) ? 10 : 22} />
+          <TextForm value={value.text ?? ""} editable={editable} onChange={(t) => change({ text: t })} mono={keyName === "otNotes"} rows={keyName === "postOpNotes" || isCustomKey(keyName) ? 10 : 22} />
         </div>
       );
   }
@@ -390,6 +413,9 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{title}</h2>
+        {keyName === "discharge" && (
+          <button type="button" disabled={pending} onClick={printSummary} className={`${btnGhost} ml-auto`}><Printer size={14} /> Print / PDF</button>
+        )}
         {frozen ? (
           <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
             <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
@@ -732,9 +758,9 @@ function TypeDialog({ d, onClose, onDone }: { d: FileData; onClose: () => void; 
   );
 }
 
-function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary: string; onClose: () => void; onDone: () => void }) {
+function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary: DischargeData; onClose: () => void; onDone: () => void }) {
   const [step, setStep] = useState<"confirm" | "review">("confirm");
-  const [text, setText] = useState(summary);
+  const [text, setText] = useState<DischargeData>(summary);
   const [notes, setNotes] = useState("");
   const [otpSentTo, setOtpSentTo] = useState("");
   const [code, setCode] = useState("");
@@ -763,7 +789,9 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
   return (
     <Modal title="Discharge summary · review & sign" onClose={onClose} wide>
       <div className="space-y-4">
-        <TextForm value={text} editable onChange={setText} mono rows={20} />
+        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2 max-h-[55vh] overflow-y-auto">
+          <DischargeEditor value={text} onChange={setText} editable ctx={dischargeCtx(d)} />
+        </div>
         <div>
           <label className={labelCls}>Additional notes (optional)</label>
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />
@@ -780,13 +808,30 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
               </div>
             </>
           ) : (
-            <button disabled={pending || !text.trim()} onClick={sendOtp} className={btnPrimary}>Send OTP to my email</button>
+            <button disabled={pending || !text.diagnosis.trim()} onClick={sendOtp} title={text.diagnosis.trim() ? undefined : "Add the diagnosis first"} className={btnPrimary}>Send OTP to my email</button>
           )}
           <ErrorLine text={error} />
         </div>
       </div>
     </Modal>
   );
+}
+
+/** What the discharge editor shows besides the summary itself. */
+function dischargeCtx(d: FileData): DischargeContext {
+  const t = d.forms.find((f) => f.key === "treatment")?.data;
+  const discharge = d.forms.find((f) => f.key === "discharge");
+  return {
+    patient: d.patient,
+    fileNo: d.fileNo, ward: d.ward, floor: d.floor,
+    admittedOn: d.admittedOn,
+    typeText: admissionTypeText(d.type, d.typeOther),
+    surgical: d.type === "PRE_OP" || !!d.surgery,
+    orders: d.orders,
+    doctorNotes: d.doctorNotes.map((n) => ({ text: n.text, at: n.at })),
+    drugs: Array.isArray(t?.drugs) ? t.drugs : [],
+    signed: d.status === "DISCHARGED" && d.dischargedBy && d.dischargedAt ? { by: d.dischargedBy, at: discharge?.frozenAt ?? d.dischargedAt } : null,
+  };
 }
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
@@ -819,7 +864,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
     : admissionTypeText(d.type, d.typeOther);
   const showOt = canGoToOt(d.type) && status === "ADMITTED" && can.shiftOt;
   const showDischarge = can.discharge && canDischargeNow(d.type, status);
-  const summaryNow = (rowOf("discharge")?.data?.text as string | undefined) ?? (d.defaults.discharge as { text: string }).text;
+  const savedSummary = rowOf("discharge")?.data;
+  const summaryNow = isDischargeData(savedSummary) ? savedSummary : (d.defaults.discharge as DischargeData);
 
   const doShift = () => start(async () => {
     setDialog(null);
