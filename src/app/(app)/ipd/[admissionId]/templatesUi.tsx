@@ -100,7 +100,7 @@ export function ManageMine({ kind, templates, title }: { kind: "OT" | "EDUCATION
                   <li key={t.id} className="py-2.5">
                     <div className="flex items-center gap-2">
                       <input value={names[t.id] ?? t.name} onChange={(e) => setNames({ ...names, [t.id]: e.target.value })}
-                        onBlur={() => rename(t)} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} className={inp} aria-label="Name" />
+                        onBlur={() => rename(t)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); rename(t); } }} className={inp} aria-label="Name" />
                       {confirmId === t.id ? (
                         <span className="flex items-center gap-1 shrink-0">
                           <button type="button" disabled={pending} onClick={() => remove(t.id)} className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-700">Delete</button>
