@@ -717,10 +717,11 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
               {d.patient.photoUrl ? <img src={fileHref(d.patient.photoUrl)!} alt={d.patient.name} className="w-full h-full object-cover" /> : <User size={20} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-[var(--color-ink-900)]">{title}</p>
-              <p className="text-sm text-[var(--color-ink-600)] mt-0.5">
-                <span className="font-semibold text-[var(--color-ink-800)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
+              {/* Patient first; then the document's title (eye + surgery + implant + anaesthesia), ward / file / floor, admission type */}
+              <p className="text-sm text-[var(--color-ink-600)]">
+                <span className="font-semibold text-[var(--color-ink-900)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
               </p>
+              <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-0.5">{title}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
                 <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b></span>
                 <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "-"}</b></span>
