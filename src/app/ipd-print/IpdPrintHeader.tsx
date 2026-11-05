@@ -17,11 +17,11 @@ export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dat
   const logo = hospital.logoUrl ? (fileHref(hospital.logoUrl) ?? hospital.logoUrl) : null;
   return (
     <div style={{ fontFamily: "Inter, Arial, Helvetica, sans-serif" }}>
-      {/* Brand accent line */}
-      <div style={{ height: 4, background: `linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%)`, ...exact }} />
+      {/* Brand accent line (full page width) */}
+      <div style={{ margin: "0 -14mm", height: 4, background: `linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%)`, ...exact }} />
 
-      {/* Header band */}
-      <div style={{ padding: "11px 14px 13px", background: "linear-gradient(135deg,#F7FCFB 0%,#E8F5F2 55%,#F2FAF8 100%)", ...exact }}>
+      {/* Header band (full page width) */}
+      <div style={{ margin: "0 -14mm", padding: "12px 14mm 14px", background: "linear-gradient(135deg,#F7FCFB 0%,#E8F5F2 55%,#F2FAF8 100%)", ...exact }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "flex-start", gap: 18 }}>
           {/* Left: logo card + hospital */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
@@ -69,25 +69,21 @@ export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dat
       </div>
 
       {/* Soft divider */}
-      <div style={{ height: 1, background: "linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC)", marginBottom: 10, ...exact }} />
+      <div style={{ margin: "0 -14mm 12px", height: 1, background: "linear-gradient(90deg,#DCEFEC,#B8DED7,#DCEFEC)", ...exact }} />
 
-      {/* Patient detail strip (boxes, four per row) */}
-      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 12 }}>
-        <tbody>
-          {Array.from({ length: Math.ceil(boxes.length / 4) }, (_, r) => (
-            <tr key={r}>
-              {boxes.slice(r * 4, r * 4 + 4).map(([label, value]) => (
-                <td key={label} style={{ paddingRight: 10, paddingBottom: 6, verticalAlign: "top", width: "25%" }}>
-                  <div style={{ background: "#fff", border: `1.5px solid ${MINT}`, borderRadius: 5, padding: "4px 9px 5px", minHeight: 26 }}>
-                    <div style={{ fontSize: 7.5, fontWeight: 700, color: LABEL_C, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: 1 }}>{label}</div>
-                    <div style={{ fontSize: 9.5, color: "#111", fontWeight: 500 }}>{value || "—"}</div>
-                  </div>
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Patient band: ruled grid, label over value, four per row */}
+      <div style={{ borderTop: `2px solid ${BRAND}`, borderBottom: `1px solid #B8DED7`, marginBottom: 14, ...exact }}>
+        {Array.from({ length: Math.ceil(boxes.length / 4) }, (_, r) => (
+          <div key={r} style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderTop: r ? "1px solid #E3F1EE" : undefined }}>
+            {boxes.slice(r * 4, r * 4 + 4).map(([label, value], i) => (
+              <div key={label} style={{ padding: "6px 10px 7px", borderLeft: i ? "1px solid #E3F1EE" : undefined, background: r % 2 ? "#FBFEFD" : undefined, ...exact }}>
+                <div style={{ fontSize: 7.5, fontWeight: 700, color: LABEL_C, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</div>
+                <div style={{ fontSize: 10.5, color: "#111", fontWeight: 600, marginTop: 1 }}>{value || "—"}</div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

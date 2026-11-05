@@ -8,7 +8,7 @@ import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 export interface DischargeHeader {
   hospital: string; address: string | null; contact: string | null; logoUrl: string | null; email?: string | null;
   doctor: string; qualifications: string | null; regNo: string | null; specialty?: string | null;
-  patient: { name: string; age: number; sex: string; id: string };
+  patient: { name: string; age: number; sex: string; id: string; mobile?: string | null };
   fileNo: string | null; ward: string | null; floor: string | null;
   type: string; typeOther: string | null;
   admittedOn: string;
@@ -100,7 +100,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   );
 
   return (
-    <div className="mx-auto w-[210mm] max-w-full bg-white text-gray-900 px-[14mm] pt-0 pb-[12mm] print:w-auto print:p-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif" }}>
+    <div className="mx-auto w-[210mm] max-w-full bg-white text-gray-900 px-[14mm] pt-0 pb-[12mm] print:w-auto print:py-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif" }}>
       <table className="w-full border-collapse">
 
         <tfoot><tr><td className="p-0">{footer}</td></tr></tfoot>
@@ -115,9 +115,9 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
             dateText={`Discharged ${day(s.dischargeDate) || "—"}`}
             boxes={[
               ["Patient", h.patient.name],
-              ["Hospital No.", h.patient.id],
               ["Age / Gender", `${h.patient.age} yrs / ${SEX[h.patient.sex] ?? h.patient.sex}`],
-              ["IP No.", h.fileNo ?? ""],
+              ["Phone", h.patient.mobile ?? ""],
+              ["Hospital No. / IP No.", [h.patient.id, h.fileNo].filter(Boolean).join(" / ")],
               ["Admitted", day(h.admittedOn)],
               ["Discharged", day(s.dischargeDate)],
               ["Ward / Floor", [h.ward && `Ward ${h.ward}`, h.floor && `Floor ${h.floor}`].filter(Boolean).join(", ")],

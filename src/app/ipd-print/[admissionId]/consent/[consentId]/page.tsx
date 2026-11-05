@@ -30,7 +30,7 @@ export default async function ConsentPrintPage({ params, searchParams }: {
         select: {
           hospital: { select: { name: true, address: true, contact: true, logoUrl: true, email: true } },
           doctor: { select: { name: true, qualifications: true, specialty: true } },
-          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true } },
+          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true } },
         },
       },
     },
@@ -51,10 +51,10 @@ export default async function ConsentPrintPage({ params, searchParams }: {
   const line = "border-t border-gray-800 pt-1 mt-12";
   return (
     <main className="min-h-screen bg-gray-100 print:bg-white">
-      <style>{"@page { size: A4; margin: 12mm 14mm; }"}</style>
+      <style>{"@page { size: A4; margin: 10mm 0; }"}</style>
       <PrintBar autoPrint={print !== "0"} title={c.title} />
       <div className="py-6 print:py-0">
-        <div className="mx-auto w-[210mm] max-w-full bg-white px-[14mm] pt-0 pb-[12mm] shadow-sm print:shadow-none print:w-auto print:p-0 text-black" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div className="mx-auto w-[210mm] max-w-full bg-white px-[14mm] pt-0 pb-[12mm] shadow-sm print:shadow-none print:w-auto print:py-0 text-black" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
           <IpdPrintHeader
             hospital={{ name: v.hospital.name, logoUrl: v.hospital.logoUrl, address: v.hospital.address, contact: v.hospital.contact, email: v.hospital.email }}
             doctor={ctx.doctor}
@@ -64,9 +64,9 @@ export default async function ConsentPrintPage({ params, searchParams }: {
             dateText={c.signedAt ? dateTime(c.signedAt) : "Date: ____________"}
             boxes={[
               ["Patient", ctx.patientName],
-              ["Hospital No.", pid],
               ["Age / Gender", `${ctx.age} yrs / ${SEX[ctx.sex] ?? ctx.sex}`],
-              ["IP No.", a.fileNo ?? ""],
+              ["Phone", v.patient.mobile],
+              ["Hospital No. / IP No.", [pid, a.fileNo].filter(Boolean).join(" / ")],
               ["Procedure", [ctx.eye, ctx.surgery].filter(Boolean).join(" ")],
               ["Eye", eyeName(ctx.eye)],
               ["Surgeon", `Dr. ${ctx.doctor}`],

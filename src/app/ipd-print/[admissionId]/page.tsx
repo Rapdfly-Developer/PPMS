@@ -24,7 +24,7 @@ export default async function DischargePrintPage({ params, searchParams }: { par
         select: {
           hospital: { select: { name: true, address: true, contact: true, logoUrl: true, email: true } },
           doctor: { select: { name: true, qualifications: true, medicalRegNumber: true, specialty: true } },
-          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true } },
+          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true } },
         },
       },
     },
@@ -46,7 +46,7 @@ export default async function DischargePrintPage({ params, searchParams }: { par
 
   return (
     <main className="min-h-screen bg-gray-100 print:bg-white">
-      <style>{"@page { size: A4; margin: 10mm 12mm; }"}</style>
+      <style>{"@page { size: A4; margin: 10mm 0; }"}</style>
       <PrintBar autoPrint={print !== "0"} />
       <div className="py-6 print:py-0">
         <div className="mx-auto w-fit shadow-sm print:shadow-none">
@@ -55,7 +55,7 @@ export default async function DischargePrintPage({ params, searchParams }: { par
             h={{
               hospital: v.hospital.name, address: v.hospital.address, contact: v.hospital.contact, logoUrl: v.hospital.logoUrl, email: v.hospital.email,
               doctor: v.doctor.name, qualifications: v.doctor.qualifications, regNo: v.doctor.medicalRegNumber, specialty: v.doctor.specialty || null,
-              patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? v.patient.udid ?? v.patient.id },
+              patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? v.patient.udid ?? v.patient.id, mobile: v.patient.mobile },
               fileNo: a.fileNo, ward: a.ward, floor: a.floor,
               type: a.admissionType, typeOther: a.admissionTypeOther,
               admittedOn: a.admittedOn.toISOString(),
