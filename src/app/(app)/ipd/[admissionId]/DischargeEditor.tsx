@@ -158,19 +158,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
   return (
     <div className="space-y-3">
       {/* 1. Patient, dates and type of discharge */}
-      <Block n={next()} title="Admission & discharge">
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-x-4 gap-y-2 rounded-lg bg-[var(--color-surface-sunken)]/50 px-3 py-2.5 mb-3">
-          {[
-            ["Patient", `${ctx.patient.name}, ${ctx.patient.age}/${ctx.patient.sex.charAt(0)}`],
-            ["Patient ID", ctx.patient.id],
-            ["IP / File no.", ctx.fileNo || "—"],
-            ["Ward / Floor", [ctx.ward, ctx.floor].filter(Boolean).join(" / ") || "—"],
-            ["Admitted", fmtDay(ctx.admittedOn)],
-            ["Admission type", ctx.typeText],
-          ].map(([k, v]) => (
-            <div key={k} className="min-w-0"><p className="text-[11px] text-[var(--color-ink-400)]">{k}</p><p className="text-sm font-semibold text-[var(--color-ink-800)] truncate">{v}</p></div>
-          ))}
-        </div>
+      <Block n={next()} title="Discharge">
         <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
           <Field label="Date of discharge" type="date" value={s.dischargeDate} onChange={(v) => set("dischargeDate", v)} editable={editable} />
           <Field label="Consultant" value={s.consultant} onChange={(v) => set("consultant", v)} editable={editable} />

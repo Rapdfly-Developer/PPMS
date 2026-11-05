@@ -15,7 +15,7 @@ import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
 import {
   CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, DOCTOR_NOTE_CHIPS, DOCTOR_NOTE_FIELDS, BUILTIN_EDUCATION_SETS, EYES,
   IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, ROUTES, SHIFTS,
-  composeDoctorNote, eyeName, scheduleFor,
+  composeDoctorNote, scheduleFor,
   type ChecklistData, type CheckAnswer, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
   type FormContext, type ImplantData, type LogEntry, type NurseData, type OtNotesData, type PostOpData,
   type PostOpReview, type TreatmentData,
@@ -206,12 +206,9 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
   return (
     <div className="space-y-3">
       <Card title="Planned implant (from counselling)">
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
           {[
-            ["Surgery", [f.ctx.eye, f.ctx.surgery].filter(Boolean).join(" ")],
             ["Implant", f.ctx.implant],
-            ["Anaesthesia", f.ctx.anaesthesia],
-            ["Date of surgery", f.ctx.surgeryDate ? format(new Date(f.ctx.surgeryDate), "d MMM yyyy") : ""],
             ["Payment", pay ? [pay.type, pay.mode, pay.scheme, pay.policy].filter(Boolean).join(" · ").replaceAll("_", " ") : ""],
             ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy")}` : ""}` : ""],
           ].map(([k, x]) => (
@@ -312,7 +309,6 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
     if (editable) { const err = await saveNow(v); if (err) { setError(err); return; } }
     printInPlace(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`);
   });
-  const proc = [f.ctx.eye, f.ctx.surgery].filter(Boolean).join(" ") || "—";
 
   return (
     <div className="space-y-3">
@@ -333,12 +329,6 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
               <button type="button" disabled={busy} onClick={() => print(c)} className={btnG}><Printer size={12} /> Print</button>
             </div>
           }>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-1 text-xs mb-3 pb-3 border-b border-dashed border-[var(--color-border)]">
-            <p><span className="text-[var(--color-ink-400)]">Patient: </span><b>{f.ctx.patientName}</b></p>
-            <p><span className="text-[var(--color-ink-400)]">Age / Sex: </span><b>{f.ctx.age} / {f.ctx.sex}</b></p>
-            <p><span className="text-[var(--color-ink-400)]">Procedure: </span><b>{proc}</b></p>
-            <p><span className="text-[var(--color-ink-400)]">Eye: </span><b>{eyeName(f.ctx.eye)}</b></p>
-          </div>
           {editable && !c.signed
             ? <Area value={c.text} onChange={(x) => setItem({ ...c, text: x })} rows={Math.min(14, Math.max(4, c.text.split("\n").length + 2))} placeholder="Consent wording…" />
             : <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">{c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</div>}

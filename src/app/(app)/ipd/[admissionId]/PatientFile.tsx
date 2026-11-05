@@ -142,20 +142,6 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
 
 const STRUCTURED = new Set(["implant", "consents", "checklist", "education", "treatment", "nurse", "otNotes", "postOpNotes"]);
 
-/** Patient band printed on every hospital chart. */
-function PatientBand({ d }: { d: FileData }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5 text-xs text-[var(--color-ink-600)]">
-      <span><b className="text-[var(--color-ink-900)]">{d.patient.name}</b> · {d.patient.age}/{SEX_SHORT[d.patient.sex] ?? d.patient.sex}</span>
-      <span>ID <b className="text-[var(--color-ink-800)]">{d.patient.id}</b></span>
-      <span>IP <b className="text-[var(--color-ink-800)]">{d.fileNo || "—"}</b></span>
-      <span>Ward <b className="text-[var(--color-ink-800)]">{[d.ward, d.floor && `Fl ${d.floor}`].filter(Boolean).join(" · ") || "—"}</b></span>
-      <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
-      <span>Consultant <b className="text-[var(--color-ink-800)]">Dr. {d.doctor}</b></span>
-    </div>
-  );
-}
-
 function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
 }) {
@@ -254,7 +240,6 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
           )}
         </div>
       </div>
-      <PatientBand d={d} />
       {frozen && editable && (
         <p className="text-caption text-emerald-700">Confirmed · stays editable until discharge.</p>
       )}
@@ -303,32 +288,39 @@ function Photos({ d, keyName, list, canAdd, onRefresh }: { d: FileData; keyName:
     }
   };
   if (!canAdd && list.length === 0) return null;
+  const picker = canAdd && (
+    <>
+      <input ref={ref} type="file" accept="image/*,.pdf" capture="environment" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+      <button disabled={busy} onClick={() => ref.current?.click()} className="inline-flex items-center gap-1.5 text-caption font-semibold text-[var(--color-primary-700)] hover:underline disabled:opacity-60">
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} Add photo
+      </button>
+    </>
+  );
+  // Nothing attached yet: one slim line instead of an empty box
+  if (list.length === 0) {
+    return (
+      <div className="flex items-center justify-between gap-2 border-t border-dashed border-[var(--color-border)] pt-2.5">
+        <span className="text-caption text-[var(--color-ink-400)]">Photos of documents · none</span>
+        {picker}
+        <ErrorLine text={error} />
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-dashed border-[var(--color-border)] p-3">
       <div className="flex items-center justify-between gap-2 mb-2">
         <p className={labelCls + " mb-0"}>Photos of documents</p>
-        {canAdd && (
-          <>
-            <input ref={ref} type="file" accept="image/*,.pdf" capture="environment" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
-            <button disabled={busy} onClick={() => ref.current?.click()} className="inline-flex items-center gap-1.5 text-caption font-semibold text-[var(--color-primary-700)] hover:underline disabled:opacity-60">
-              {busy ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} Add photo
-            </button>
-          </>
-        )}
+        {picker}
       </div>
       <ErrorLine text={error} />
-      {list.length === 0 ? (
-        <p className="text-caption italic text-[var(--color-ink-300)]">No photos attached.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {list.map((a, i) => (
-            <a key={i} href={fileHref(a.ref)!} target="_blank" rel="noreferrer" title={`${a.name} · ${a.by} · ${fmtTime(a.at)}`}
-              className="inline-flex items-center gap-1.5 max-w-[220px] rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-caption text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]">
-              <FileText size={13} className="shrink-0 text-[var(--color-primary-600)]" /><span className="truncate">{a.name}</span>
-            </a>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {list.map((a, i) => (
+          <a key={i} href={fileHref(a.ref)!} target="_blank" rel="noreferrer" title={`${a.name} · ${a.by} · ${fmtTime(a.at)}`}
+            className="inline-flex items-center gap-1.5 max-w-[220px] rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-caption text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]">
+            <FileText size={13} className="shrink-0 text-[var(--color-primary-600)]" /><span className="truncate">{a.name}</span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
@@ -349,7 +341,6 @@ function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: 
         <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
         <p className="text-caption text-[var(--color-ink-400)]">Ward rounds until the patient is fit for discharge. Each note is labelled with its time.</p>
       </div>
-      <PatientBand d={d} />
       {canAdd && <DoctorNoteComposer onAdd={add} pending={pending} />}
       <ErrorLine text={error} />
       {d.doctorNotes.length === 0 ? (
