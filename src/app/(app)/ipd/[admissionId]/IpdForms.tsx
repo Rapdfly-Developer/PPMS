@@ -8,10 +8,11 @@ import {
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { ChipRow, SelectWithCustom } from "./customOptions";
+import { EducationSetPicker, LoadOtTemplate, ManageMine, SaveAsMine, type PickableSet, type SavedTemplate } from "./templatesUi";
 import { searchMedications } from "@/lib/ophthalmic-medications";
 import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
 import {
-  CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, DOCTOR_NOTE_CHIPS, DOCTOR_NOTE_FIELDS, EDUCATION_PRESETS, EYES,
+  CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, DOCTOR_NOTE_CHIPS, DOCTOR_NOTE_FIELDS, BUILTIN_EDUCATION_SETS, EYES,
   IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, ROUTES, SHIFTS,
   composeDoctorNote, eyeName, scheduleFor,
   type ChecklistData, type CheckAnswer, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
@@ -32,6 +33,7 @@ export interface FileInfo {
   orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
   emrMeds: { name: string; dose: string; frequency: string; route: string; eye: string; instructions: string }[];
   payment: { type: string | null; mode: string | null; scheme: string | null; policy: string | null; eligibleBy: string | null; eligibleAt: string | null } | null;
+  templates: SavedTemplate[];
 }
 
 export type NewLog = { text: string; kind: LogEntry["kind"]; meta?: Record<string, unknown> };
@@ -459,21 +461,32 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
 
 /* ── 5. Patient education & diet chart ─────────────────────────────────── */
 
-export function EducationForm({ value: v, change, editable, canLog, addLog, log }: FormProps<EducationData>) {
+export function EducationForm({ value: v, change, editable, canLog, addLog, log, f }: FormProps<EducationData>) {
   const [point, setPoint] = useState("");
   const { run, pending, error } = useLogger(addLog);
   const today = istDate();
   const todayFood = log.filter((e) => e.kind === "food" && e.meta?.date === today);
-  const setPreset = (p: string) => {
+  // The doctor's saved sets first, then one standard set per surgery
+  const sets: PickableSet[] = useMemo(() => [
+    ...f.templates.filter((t) => t.kind === "EDUCATION").map((t) => ({ id: t.id, label: t.name, points: t.items, mine: true })),
+    ...BUILTIN_EDUCATION_SETS,
+  ], [f.templates]);
+  const pickSet = (set: PickableSet) => {
     const keep = new Set(v.points.filter((x) => x.done).map((x) => x.text));
-    change({ ...v, preset: p, points: EDUCATION_PRESETS[p].points.map((text) => ({ text, done: keep.has(text) })) });
+    change({ ...v, preset: set.label, points: set.points.map((text) => ({ text, done: keep.has(text) })) });
   };
   const explained = v.points.filter((p) => p.done).length;
 
   return (
     <div className="space-y-3">
       <Card title="Patient education" sub={`${explained} of ${v.points.length} points explained`}
-        right={editable && <Seg options={Object.entries(EDUCATION_PRESETS).map(([value, x]) => ({ value, label: x.label }))} value={v.preset} onChange={setPreset} />}>
+        right={editable && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <SaveAsMine kind="EDUCATION" surgery={f.ctx.surgery} items={v.points.map((p) => p.text)} defaultName={`My set · ${v.preset}`} label="Save as my set" />
+            <ManageMine kind="EDUCATION" templates={f.templates} title="My education sets" />
+          </div>
+        )}>
+        <div className="mb-3"><EducationSetPicker value={v.preset} sets={sets} onPick={pickSet} disabled={!editable} /></div>
         <ul className="space-y-1">
           {v.points.map((p, i) => (
             <li key={i} className="flex items-center gap-2.5">
@@ -869,7 +882,7 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
 
 /* ── 8. Draft OT notes ─────────────────────────────────────────────────── */
 
-export function OtNotesForm({ value: v, change, editable, template }: FormProps<OtNotesData> & { template: string[] }) {
+export function OtNotesForm({ value: v, change, editable, template, f }: FormProps<OtNotesData> & { template: string[] }) {
   const set = (k: keyof OtNotesData, x: string) => change({ ...v, [k]: x });
   const setStep = (i: number, x: string) => change({ ...v, steps: v.steps.map((s, j) => (j === i ? x : s)) });
   const move = (i: number, d: -1 | 1) => {
@@ -895,7 +908,13 @@ export function OtNotesForm({ value: v, change, editable, template }: FormProps<
         </div>
       </Card>
       <Card title="Procedure steps" sub="Step-by-step, from the template for this surgery"
-        right={editable && <button type="button" onClick={() => change({ ...v, steps: template })} className={btnG}><RotateCcw size={12} /> Load template</button>}>
+        right={editable && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <LoadOtTemplate templates={f.templates} surgery={v.procedure || f.ctx.surgery} starter={template} onLoad={(steps) => change({ ...v, steps: [...steps] })} />
+            <SaveAsMine kind="OT" surgery={v.procedure || f.ctx.surgery} items={v.steps} defaultName={`My ${v.procedure || f.ctx.surgery || "OT"} template`} label="Save as my template" />
+            <ManageMine kind="OT" templates={f.templates} title="My OT note templates" />
+          </div>
+        )}>
         <ol className="space-y-1.5">
           {v.steps.map((s, i) => (
             <li key={i} className="flex items-start gap-2">

@@ -7,6 +7,7 @@ import {
   defaultChecklist, defaultConsents, defaultEducation, defaultImplant, defaultNurse, defaultOtNotes, defaultPostOp,
   defaultTreatment, educationAdvice, isV2, type EducationData, type FormContext,
 } from "@/lib/ipd-forms";
+import { getOwnerDoctorId } from "@/lib/role-permissions";
 import { PatientFile, type FileData } from "./PatientFile";
 
 export const metadata = { title: "Patient File · IPD" };
@@ -131,6 +132,15 @@ export default async function IpdFilePage({
   ].sort((x, y) => y.at.localeCompare(x.at));
 
   const parse = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
+
+  // The doctor's own OT templates and education sets (staff use their doctor's)
+  const ownerId = user.role === "DOCTOR" ? user.profileId : await getOwnerDoctorId(user.id);
+  const templates = ownerId
+    ? (await prisma.ipdTemplate.findMany({ where: { doctorId: ownerId }, orderBy: { updatedAt: "desc" } })).map((t) => ({
+        id: t.id, kind: t.kind, name: t.name, surgery: t.surgery,
+        items: (() => { const x = parse(t.items); return Array.isArray(x) ? x.filter((i): i is string => typeof i === "string") : []; })(),
+      }))
+    : [];
   const ctx: FormContext = {
     patientName: v.patient.name, age: v.patient.age, sex: v.patient.sex, patientId: v.patient.uhid ?? udid,
     hospital: v.hospital.name, doctor: v.doctor.name,
@@ -229,6 +239,7 @@ export default async function IpdFilePage({
     doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString() })),
     activity,
     me: user.name,
+    templates,
     ctx,
     emrMeds: v.medications.map((m) => ({ name: m.drugName, dose: m.dosage ?? "", frequency: m.frequency ?? "", route: m.route ?? "", eye: m.laterality ?? "", instructions: m.instructions ?? "" })),
   };

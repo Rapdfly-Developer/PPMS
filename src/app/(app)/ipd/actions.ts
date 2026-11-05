@@ -8,6 +8,7 @@ import { writeAudit } from "@/lib/audit";
 import { istDayRange, istTodayStr } from "@/lib/ist";
 import { sendMail } from "@/lib/mailer";
 import { eligibleSurgeryFor } from "@/lib/ipd-server";
+import { getOwnerDoctorId } from "@/lib/role-permissions";
 import {
   IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
   type LogEntry,
@@ -304,5 +305,50 @@ export async function confirmDischarge(admissionId: string, code: string, summar
   ]);
   await audit(user.id, user.name, admissionId, "DISCHARGED", { at: now.toISOString(), signedWith: "OTP" });
   refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/* ── Doctor's own templates (OT notes, education sets) ─────────────────── */
+
+/** Templates belong to the doctor; staff save and use their doctor's set. */
+async function templateOwner(...permissions: string[]) {
+  const user = await requireAnyPermission(...permissions);
+  const doctorId = user.role === "DOCTOR" ? user.profileId : await getOwnerDoctorId(user.id);
+  if (!doctorId) throw new Error("No doctor linked to this account.");
+  return { user, doctorId };
+}
+
+const TEMPLATE_KINDS = ["OT", "EDUCATION"];
+
+export async function saveIpdTemplate(kind: string, name: string, surgery: string | null, items: string[]): Promise<Result & { id?: string }> {
+  const { doctorId, user } = await templateOwner("ipd.edit");
+  if (!TEMPLATE_KINDS.includes(kind)) return { error: "Unknown template type." };
+  const n = name.trim().slice(0, 120);
+  if (!n) return { error: "Enter a name." };
+  const list = items.map((x) => String(x).trim()).filter(Boolean).slice(0, 100).map((x) => x.slice(0, 1000));
+  if (!list.length) return { error: "Nothing to save yet." };
+  const t = await prisma.ipdTemplate.create({
+    data: { doctorId, kind, name: n, surgery: surgery?.trim() || null, items: JSON.stringify(list) },
+  });
+  await writeAudit(user.id, "IpdTemplate", t.id, "TEMPLATE_SAVED", { kind, name: n }, { moduleName: "IPD", userName: user.name });
+  revalidatePath("/ipd", "layout");
+  return { id: t.id };
+}
+
+export async function renameIpdTemplate(id: string, name: string): Promise<Result> {
+  const { doctorId } = await templateOwner("ipd.edit");
+  const n = name.trim().slice(0, 120);
+  if (!n) return { error: "Enter a name." };
+  const r = await prisma.ipdTemplate.updateMany({ where: { id, doctorId }, data: { name: n } });
+  if (!r.count) return { error: "Template not found." };
+  revalidatePath("/ipd", "layout");
+  return {};
+}
+
+export async function deleteIpdTemplate(id: string): Promise<Result> {
+  const { doctorId } = await templateOwner("ipd.edit");
+  const r = await prisma.ipdTemplate.deleteMany({ where: { id, doctorId } });
+  if (!r.count) return { error: "Template not found." };
+  revalidatePath("/ipd", "layout");
   return {};
 }

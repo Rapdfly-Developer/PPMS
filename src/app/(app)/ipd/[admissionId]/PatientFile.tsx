@@ -77,6 +77,7 @@ export interface FileData {
   doctorNotes: { id: string; text: string; by: string; at: string }[];
   activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
   me: string;
+  templates: FileInfo["templates"];
   ctx: FormContext;
   emrMeds: FileInfo["emrMeds"];
 }

@@ -1,5 +1,6 @@
 // IPD patient-file forms: data shapes, hospital-standard defaults and presets.
 // Shared by the server (defaults) and the form screens. No server imports.
+import { SURGERY_OPTIONS } from "@/lib/counselling";
 
 /* ── Running logs (charts) ─────────────────────────────────────────────── */
 
@@ -178,57 +179,119 @@ export function defaultChecklist(): ChecklistData {
 
 /* ── Patient education & diet chart ────────────────────────────────────── */
 
-export const EDUCATION_PRESETS: Record<string, { label: string; points: string[] }> = {
-  cataract: {
-    label: "Cataract surgery",
-    points: [
-      "Do not rub or press the operated eye",
-      "Wear the protective shield while sleeping for 2 weeks",
-      "Wash hands before putting drops; keep a 5-minute gap between drops",
-      "Keep water and soap out of the eye for 2 weeks",
-      "Avoid bending, lifting heavy weights and dusty or smoky places",
-      "Wear dark glasses outdoors",
-      "Reading and watching TV are allowed in moderation",
-      "Come back immediately for pain, redness or a sudden drop in vision",
-    ],
-  },
-  glaucoma: {
-    label: "Glaucoma surgery",
-    points: [
-      "Do not rub or press the operated eye; wear the shield at night",
-      "Use drops exactly as charted; do not stop any drop on your own",
-      "Avoid bending and lifting heavy weights",
-      "Keep all review appointments for eye-pressure checks",
-      "Come back immediately for pain, redness, watering or a drop in vision",
-    ],
-  },
-  retina: {
-    label: "Retina / vitreous surgery",
-    points: [
-      "Maintain the head position advised by the doctor",
-      "Do not travel by air or to high altitude while gas is in the eye",
-      "Do not rub or press the operated eye; wear the shield at night",
-      "Use drops exactly as charted",
-      "Come back immediately for pain, a curtain over the vision or flashes",
-    ],
-  },
-  general: {
-    label: "Medical / conservative treatment",
-    points: [
-      "Use the medicines exactly as charted",
-      "Keep the eye clean; do not rub the eye",
-      "Inform the nurse of any pain, vomiting, headache or drop in vision",
-      "Follow the diet advised",
-    ],
-  },
+/** Education points by kind of surgery; every surgery in the list maps to one. */
+const EDU_POINTS: Record<string, string[]> = {
+  cataract: [
+    "Do not rub or press the operated eye",
+    "Wear the protective shield while sleeping for 2 weeks",
+    "Wash hands before putting drops; keep a 5-minute gap between drops",
+    "Keep water and soap out of the eye for 2 weeks",
+    "Avoid bending, lifting heavy weights and dusty or smoky places",
+    "Wear dark glasses outdoors",
+    "Reading and watching TV are allowed in moderation",
+    "Come back immediately for pain, redness or a sudden drop in vision",
+  ],
+  glaucoma: [
+    "Do not rub or press the operated eye; wear the shield at night",
+    "Use drops exactly as charted; do not stop any drop on your own",
+    "Avoid bending and lifting heavy weights",
+    "Keep all review appointments for eye-pressure checks",
+    "Come back immediately for pain, redness, watering or a drop in vision",
+  ],
+  retina: [
+    "Maintain the head position advised by the doctor",
+    "Do not travel by air or to high altitude while gas is in the eye",
+    "Do not rub or press the operated eye; wear the shield at night",
+    "Use drops exactly as charted",
+    "Come back immediately for pain, a curtain over the vision or flashes",
+  ],
+  cornea: [
+    "Do not rub or press the eye; wear the shield at all times for the first week",
+    "Use steroid and antibiotic drops exactly as charted; never stop them suddenly",
+    "Lie on your back as advised (endothelial grafts)",
+    "Avoid dust, smoke and swimming until the doctor allows",
+    "Watch for graft rejection: redness, sensitivity to light, blurred vision or pain (RSVP) — come back immediately",
+  ],
+  pterygium: [
+    "Do not rub the eye; mild watering and foreign-body feeling are expected",
+    "Use drops as charted to reduce the chance of recurrence",
+    "Wear dark glasses outdoors; avoid dust and sun exposure",
+    "Come back for pain, discharge or the graft moving",
+  ],
+  lacrimal: [
+    "Do not blow the nose forcefully for 2 weeks",
+    "Apply the nasal drops / spray as charted",
+    "Keep the skin wound dry and clean until the stitches are removed",
+    "Some blood-stained nasal discharge for a day or two is expected",
+    "Come back for heavy bleeding, fever or swelling",
+  ],
+  lid: [
+    "Apply cold compresses for the first 48 hours to reduce swelling",
+    "Keep the wound clean and dry; apply ointment as charted",
+    "Sleep with the head raised for the first few nights",
+    "Bruising and swelling settle in 1–2 weeks",
+    "Come back for bleeding, increasing pain or difficulty closing the eye",
+  ],
+  squint: [
+    "Mild redness and discomfort for a few days are expected",
+    "Use drops as charted; keep water out of the eyes for a week",
+    "Double vision for a short time can occur and usually settles",
+    "Continue glasses / exercises as advised",
+    "Come back for increasing pain, discharge or reduced vision",
+  ],
+  socket: [
+    "Keep the pressure bandage on until the doctor removes it",
+    "Use drops / ointment in the socket as charted",
+    "Swelling and discomfort settle over 1–2 weeks",
+    "The artificial eye (prosthesis) is fitted after about 6 weeks",
+    "Come back for bleeding, fever or discharge from the socket",
+  ],
+  icl: [
+    "Do not rub or press the eye; wear the shield at night for 1 week",
+    "Use drops exactly as charted",
+    "Keep water out of the eye for 1 week; avoid swimming for 1 month",
+    "Come back immediately for pain, haloes with headache or a drop in vision",
+  ],
+  general: [
+    "Use the medicines exactly as charted",
+    "Keep the eye clean; do not rub the eye",
+    "Inform the nurse of any pain, vomiting, headache or drop in vision",
+    "Follow the diet advised",
+  ],
 };
 
-export function educationPresetFor(surgery?: string | null, type?: string): string {
+function categoryOf(surgery?: string | null): string {
   const s = (surgery ?? "").toLowerCase();
+  if (!s) return "general";
+  if (/trab|glaucoma|ahmed|valve|drainage/.test(s)) return "glaucoma";
+  if (/collamer|\bicl\b/.test(s)) return "icl";
   if (/phaco|cataract|msics|ecce|iol/.test(s)) return "cataract";
-  if (/trab|glaucoma|ahmed|valve/.test(s)) return "glaucoma";
-  if (/vitrect|ppv|retin|buckle|silicone/.test(s)) return "retina";
-  return type === "PRE_OP" ? "cataract" : "general";
+  if (/vitrect|ppv|retin|buckl|silicone/.test(s)) return "retina";
+  if (/kerato|dsaek|dmek|cornea/.test(s)) return "cornea";
+  if (/pterygium/.test(s)) return "pterygium";
+  if (/dacryo|dcr|lacrimal/.test(s)) return "lacrimal";
+  if (/ptosis|lid|chalazion|entropion|ectropion/.test(s)) return "lid";
+  if (/strabism|squint/.test(s)) return "squint";
+  if (/eviscer|enucle|socket/.test(s)) return "socket";
+  return "general";
+}
+
+export interface EducationSet { id: string; label: string; points: string[]; mine?: boolean }
+
+export const MEDICAL_SET_LABEL = "Medical / conservative treatment";
+
+/** One built-in set per surgery in the surgery list, plus medical treatment. */
+export const BUILTIN_EDUCATION_SETS: EducationSet[] = [
+  ...SURGERY_OPTIONS.map((s) => ({ id: `s:${s}`, label: s, points: EDU_POINTS[categoryOf(s)] })),
+  { id: "s:medical", label: MEDICAL_SET_LABEL, points: EDU_POINTS.general },
+];
+
+/** The set that matches the patient's surgery (any surgery name, even one not in the list). */
+export function educationSetFor(surgery?: string | null, type?: string): EducationSet {
+  const exact = BUILTIN_EDUCATION_SETS.find((x) => x.label.toLowerCase() === (surgery ?? "").trim().toLowerCase());
+  if (exact) return exact;
+  if (surgery?.trim()) return { id: `s:${surgery.trim()}`, label: surgery.trim(), points: EDU_POINTS[categoryOf(surgery)] };
+  return type === "PRE_OP" ? BUILTIN_EDUCATION_SETS[0] : BUILTIN_EDUCATION_SETS[BUILTIN_EDUCATION_SETS.length - 1];
 }
 
 export const DIET_TYPES = ["Normal", "Diabetic", "Soft", "Liquid", "Low salt", "Nil by mouth"];
@@ -259,10 +322,10 @@ export const DEFAULT_MEALS: Meal[] = [
 ];
 
 export function defaultEducation(c: Pick<FormContext, "surgery" | "type">): EducationData {
-  const preset = educationPresetFor(c.surgery, c.type);
+  const set = educationSetFor(c.surgery, c.type);
   return {
-    v: 2, preset,
-    points: EDUCATION_PRESETS[preset].points.map((text) => ({ text, done: false })),
+    v: 2, preset: set.label,
+    points: set.points.map((text) => ({ text, done: false })),
     explainedTo: "", language: "English", teachBack: false, notes: "",
     dietTypes: ["Normal"], nbmFrom: "", meals: DEFAULT_MEALS.map((m) => ({ ...m })), log: [],
   };

@@ -1623,6 +1623,20 @@ model IpdForm {
   @@unique([admissionId, key])
 }
 
+/// A doctor's own OT note templates and patient-education sets (saved from the IPD forms).
+model IpdTemplate {
+  id        String   @id @default(cuid())
+  doctorId  String
+  kind      String   // OT | EDUCATION
+  name      String
+  surgery   String?  // OT: the surgery it was saved for
+  items     String   @default("[]") // JSON: string[] (steps / points)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([doctorId, kind])
+}
+
 model IpdDoctorNote {
   id          String       @id @default(cuid())
   admissionId String
