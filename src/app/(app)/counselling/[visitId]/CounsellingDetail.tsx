@@ -604,7 +604,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function LockedTag() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Frozen</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Finalized</span>;
 }
 
 function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; children: React.ReactNode }) {
@@ -752,7 +752,9 @@ export function CounsellingDetail({
   const [preview, setPreview] = useState<CounsellingOrder | null>(null);
   const [error, setError] = useState("");
 
-  const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
+  // Eligible for surgery finalizes counselling (like Finalize & Sign in the EMR);
+  // until then the details stay editable, also after Fit for surgery.
+  const frozen = rec.eligibleForSurgery;
   const editable = canEdit && !frozen;
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
@@ -806,11 +808,6 @@ export function CounsellingDetail({
   }
 
   const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" — ");
-  const paymentText = paymentMode === "CASH"
-    ? "Cash (Self-pay)"
-    : paymentMode === "CASHLESS"
-      ? [cashless?.label ?? "Cashless", schemeName, policyNumber].filter(Boolean).join(" · ")
-      : "—";
 
   const steps = [
     { label: "Counselling", icon: ClipboardList, done: true },
@@ -966,9 +963,10 @@ export function CounsellingDetail({
       </section>
 
       {/* ── Banners ───────────────────────────────────────────────────── */}
-      {data.preOp && (
-        <Banner tone="emerald" icon={<CalendarCheck size={15} />}>
-          Counselling complete · Pre-op appointment on <b>{fmtDateTime(data.preOp.dateTime)}</b>
+      {rec.eligibleForSurgery && (
+        <Banner tone="emerald" icon={<Lock size={15} />}>
+          Counselling finalized{rec.eligibleByName ? <> by <b>{rec.eligibleByName}</b></> : ""}{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""} · read-only
+          {data.preOp && <> · Pre-op appointment on <b>{fmtDateTime(data.preOp.dateTime)}</b></>}
         </Banner>
       )}
       {rec.surgeryDeferred && (
@@ -1083,7 +1081,7 @@ export function CounsellingDetail({
                 </div>
               </InlineField>
               <InlineField label="Tentative Date" tight>
-                <input type="date" value={dateOfSurgery} min={istTodayStr()} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!editable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
               </InlineField>
             </div>
           </SectionCard>
@@ -1323,7 +1321,7 @@ export function CounsellingDetail({
 
       {/* Modals */}
       {modal === "investigations" && (
-        <InvestigationsModal data={data} canUpload={canUpload} onClose={() => setModal(null)} onChanged={() => router.refresh()} />
+        <InvestigationsModal data={data} canUpload={canUpload && !rec.eligibleForSurgery} onClose={() => setModal(null)} onChanged={() => router.refresh()} />
       )}
 
       {modal === "fit" && (
@@ -1375,7 +1373,7 @@ export function CounsellingDetail({
               <p className="text-xs font-bold text-amber-900">Before you confirm</p>
             </div>
             <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, date, payment and estimate above will be <b>frozen</b>.</span></li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The details above stay <b>editable until Eligible for surgery</b>; the date must stay within the reports&apos; validity.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
                 <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
@@ -1393,7 +1391,7 @@ export function CounsellingDetail({
                 if (saved.error) return saved;
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
-              <ShieldCheck size={15} /> Confirm &amp; Freeze
+              <ShieldCheck size={15} /> Confirm Fit
             </button>
           </div>
         </Modal>
@@ -1408,11 +1406,22 @@ export function CounsellingDetail({
       {modal === "eligible" && (
         <EligibleModal
           pending={pending} error={error} onClose={() => setModal(null)}
-          surgery={surgeryFull} implant={rec.implant || "—"} date={fmtDate(rec.dateOfSurgery)}
-          payment={paymentText} estimate={rupees(rec.estimateAmount)}
+          laterality={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia}
+          implant={implant || "—"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}
+          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}
+          payerLabel={cashless?.nameLabel ?? "Covered by"} payer={paymentMode === "CASHLESS" ? schemeName : ""}
+          idLabel={cashless?.idLabel ?? "ID"} payerId={paymentMode === "CASHLESS" ? policyNumber : ""}
+          estimate={rupees(estimateNum)}
           advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "—"}
-          patient={`${data.patient.name} · ${data.patient.age}y · ${data.patient.uhid ?? data.patient.udid}`}
-          onSubmit={(time, notes) => run(() => markEligibleForSurgery(data.visitId, time, notes), () => setModal(null))}
+          pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
+          onSubmit={(time, notes) => run(async () => {
+            // Unsaved edits are saved first, so what was verified is what gets finalized
+            if (editable && edited) {
+              const saved = await saveCounsellingDetails(data.visitId, details);
+              if (saved.error) return saved;
+            }
+            return markEligibleForSurgery(data.visitId, time, notes);
+          }, () => setModal(null))}
         />
       )}
     </div>
@@ -1595,14 +1604,19 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   );
 }
 
-/* ── H. Eligible — verify each item twice on one screen, then book pre-op ── */
+/* ── H. Eligible — final sign-off: verify each item twice, then book pre-op ── */
 type VerifyKey = "date" | "implant" | "surgery";
 
-function EligRow({ label, children }: { label: string; children: React.ReactNode }) {
+/** A confirm line (same layout as the Fit pop-up) with the 1st and 2nd check beside it. */
+function VerifyLine({ label, strong, first, second, onFirst, onSecond, children }: {
+  label: string; strong?: boolean; first: boolean; second: boolean; onFirst: () => void; onSecond: () => void; children: React.ReactNode;
+}) {
   return (
-    <div className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 items-baseline">
-      <p className="text-caption text-[var(--color-ink-400)]">{label}</p>
-      <p className="text-sm leading-snug break-words text-[var(--color-ink-800)]">{children}</p>
+    <div className={`grid grid-cols-[8.5rem_minmax(0,1fr)_2.25rem_2.25rem] gap-3 items-center rounded-lg -mx-1.5 px-1.5 py-1 transition-colors ${first && second ? "bg-emerald-50" : ""}`}>
+      <p className="text-caption text-[var(--color-ink-400)] break-words">{label}</p>
+      <p className={`text-sm leading-snug break-words ${strong ? "font-bold text-[var(--color-ink-900)]" : "font-medium text-[var(--color-ink-800)]"}`}>{children}</p>
+      <div className="flex justify-center"><CheckDot on={first} onClick={onFirst} label={`1st check: ${label}`} /></div>
+      <div className="flex justify-center"><CheckDot on={second} disabled={!first} onClick={onSecond} label={`2nd check: ${label}`} /></div>
     </div>
   );
 }
@@ -1610,88 +1624,84 @@ function EligRow({ label, children }: { label: string; children: React.ReactNode
 function CheckDot({ on, disabled, onClick, label }: { on: boolean; disabled?: boolean; onClick: () => void; label: string }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} aria-label={label} aria-pressed={on} title={disabled ? "Do the 1st check first" : label}
-      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all disabled:cursor-not-allowed ${
-        on ? "bg-emerald-500 border-emerald-500 text-white scale-105"
+      className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all disabled:cursor-not-allowed ${
+        on ? "bg-emerald-500 border-emerald-500 text-white"
           : disabled ? "bg-[var(--color-surface-sunken)] border-dashed border-[var(--color-ink-300)] text-transparent"
           : "bg-white border-[var(--color-ink-300)] text-transparent hover:border-emerald-400"
       }`}>
-      <Check size={15} strokeWidth={3} />
+      <Check size={13} strokeWidth={3} />
     </button>
   );
 }
 
 function EligibleModal({
-  pending, error, onClose, onSubmit, surgery, implant, date, payment, estimate, advance, patient,
+  pending, error, onClose, onSubmit, laterality, surgery, anaesthesia, implant, date,
+  paymentOption, payerLabel, payer, idLabel, payerId, estimate, advance, pendingAmount,
 }: {
   pending: boolean; error: string; onClose: () => void; onSubmit: (time: string, notes: string) => void;
-  surgery: string; implant: string; date: string; payment: string; estimate: string; advance: string; patient: string;
+  laterality: string | null; surgery: string; anaesthesia: string | null; implant: string; date: string;
+  paymentOption: string; payerLabel: string; payer: string; idLabel: string; payerId: string;
+  estimate: string; advance: string; pendingAmount: string | null;
 }) {
   const [first, setFirst] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
   const [second, setSecond] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
 
-  const items: { key: VerifyKey; label: string; value: string; icon: React.ReactNode }[] = [
-    { key: "date", label: "Date of surgery", value: date, icon: <CalendarDays size={14} /> },
-    { key: "implant", label: "Implant", value: implant, icon: <Package size={14} /> },
-    { key: "surgery", label: "Full name of surgery", value: surgery, icon: <Scissors size={14} /> },
-  ];
-  const checks = items.reduce((n, i) => n + (first[i.key] ? 1 : 0) + (second[i.key] ? 1 : 0), 0);
-  const allChecked = checks === items.length * 2;
-
-  const toggleFirst = (k: VerifyKey) => {
-    const on = !first[k];
-    setFirst({ ...first, [k]: on });
-    if (!on) setSecond({ ...second, [k]: false }); // un-ticking the 1st clears the 2nd
-  };
+  const keys: VerifyKey[] = ["surgery", "implant", "date"];
+  const checks = keys.reduce((n, k) => n + (first[k] ? 1 : 0) + (second[k] ? 1 : 0), 0);
+  const allChecked = checks === keys.length * 2;
+  const verify = (k: VerifyKey) => ({
+    first: first[k], second: second[k],
+    // un-ticking the 1st clears the 2nd
+    onFirst: () => { const on = !first[k]; setFirst({ ...first, [k]: on }); if (!on) setSecond({ ...second, [k]: false }); },
+    onSecond: () => setSecond({ ...second, [k]: !second[k] }),
+  });
+  const timeLabel = time ? format(new Date(`2000-01-01T${time}`), "h:mm a") : null;
 
   return (
-    <Modal title="Eligible for Surgery" onClose={onClose} wide>
-      {/* Summary */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-4 py-3 space-y-1.5">
-        <EligRow label="Patient">
-          <b className="text-[var(--color-ink-900)]">{patient.split(" · ")[0]}</b>
-          <span className="text-[var(--color-ink-500)]"> · {patient.split(" · ").slice(1).join(" · ")}</span>
-        </EligRow>
-        <EligRow label="Payment">{payment}</EligRow>
-        <EligRow label="Estimate"><b className="text-[var(--color-ink-900)] tabular-nums">{estimate}</b></EligRow>
-        <EligRow label="Advance"><b className="text-[var(--color-ink-900)] tabular-nums">{advance}</b></EligRow>
-      </div>
-
-      {/* Verification table */}
-      <div className="mt-4 rounded-xl border border-[var(--color-border)] overflow-hidden">
-        <div className="grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-2 bg-[var(--color-surface-sunken)] border-b border-[var(--color-border)]">
-          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Verify with the patient — twice</p>
-          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-center">1st</p>
-          <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)] text-center">2nd</p>
+    <Modal title="Confirm Eligible for Surgery" onClose={onClose} wide>
+      <div className="grid grid-cols-1 gap-3">
+        {/* Surgery — each item verified twice with the patient */}
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 px-3.5 py-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_2.25rem_2.25rem] gap-3 items-center mb-2">
+            <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]"><Scissors size={13} /> Surgery · verify twice with the patient</p>
+            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] text-center">1st</p>
+            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] text-center">2nd</p>
+          </div>
+          <div className="space-y-1">
+            <VerifyLine label="Surgery" {...verify("surgery")}>
+              {laterality && <span className="clinical-laterality mr-1">{laterality}</span>}{surgery}
+              {anaesthesia && <span className="text-[var(--color-ink-500)]"> · {anaesthesia}</span>}
+            </VerifyLine>
+            <VerifyLine label="Implant" {...verify("implant")}>{implant}</VerifyLine>
+            <VerifyLine label="Date of surgery" strong {...verify("date")}>{date}</VerifyLine>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="flex-1 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
+              <span className="block h-full rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${(checks / (keys.length * 2)) * 100}%` }} />
+            </span>
+            <span className={`text-caption font-semibold tabular-nums ${allChecked ? "text-emerald-700" : "text-[var(--color-ink-500)]"}`}>{checks}/{keys.length * 2} checks</span>
+          </div>
         </div>
-        {items.map((i) => {
-          const done = first[i.key] && second[i.key];
-          return (
-            <div key={i.key} className={`grid grid-cols-[minmax(0,1fr)_3.5rem_3.5rem] items-center gap-2 px-4 py-3 border-b last:border-0 border-[var(--color-border)] transition-colors ${done ? "bg-emerald-50/70" : ""}`}>
-              <div className="min-w-0 flex items-start gap-3">
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${done ? "bg-emerald-100 text-emerald-700" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>{i.icon}</span>
-                <div className="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-[9.5rem_minmax(0,1fr)] gap-x-3 gap-y-0.5 sm:items-baseline pt-1">
-                  <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{i.label}</p>
-                  <p className="text-sm sm:text-base font-bold text-[var(--color-ink-900)] break-words leading-snug">{i.value}</p>
-                </div>
-              </div>
-              <div className="flex justify-center"><CheckDot on={first[i.key]} onClick={() => toggleFirst(i.key)} label={`1st check: ${i.label}`} /></div>
-              <div className="flex justify-center"><CheckDot on={second[i.key]} disabled={!first[i.key]} onClick={() => setSecond({ ...second, [i.key]: !second[i.key] })} label={`2nd check: ${i.label}`} /></div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="mt-2 flex items-center gap-2">
-        <span className="flex-1 h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-          <span className="block h-full rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${(checks / (items.length * 2)) * 100}%` }} />
-        </span>
-        <span className={`text-caption font-semibold tabular-nums ${allChecked ? "text-emerald-700" : "text-[var(--color-ink-500)]"}`}>{checks}/{items.length * 2} checks</span>
+
+        {/* Payment */}
+        <ConfirmCard icon={<Wallet size={13} />} title="Payment">
+          <ConfirmLine inline label="Option">{paymentOption}</ConfirmLine>
+          {payer && <ConfirmLine inline label={payerLabel}>{payer}</ConfirmLine>}
+          {payerId && <ConfirmLine inline label={idLabel}>{payerId}</ConfirmLine>}
+          <ConfirmLine inline label="Estimate">{estimate}</ConfirmLine>
+          <ConfirmLine inline label="Advance" strong>{advance}</ConfirmLine>
+          {pendingAmount && <ConfirmLine inline label="Pending">{pendingAmount}</ConfirmLine>}
+        </ConfirmCard>
       </div>
 
-      {/* Pre-op booking */}
-      <div className="mt-4 rounded-xl border border-[var(--color-border)] px-4 py-3">
-        <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2"><CalendarCheck size={12} /> Pre-op appointment · {date}</p>
+      {/* Pre-op appointment */}
+      <div className="mt-3 rounded-xl border border-[var(--color-border)] px-3.5 py-3">
+        <p className="flex items-center justify-between text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">
+          <span className="inline-flex items-center gap-1.5"><CalendarCheck size={12} /> Pre-op appointment</span>
+          <span className="text-[var(--color-ink-500)]">{date}</span>
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3">
           <InlineField label="Time" tight>
             <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={`${inputCls} sm:w-36`} />
@@ -1702,13 +1712,26 @@ function EligibleModal({
         </div>
       </div>
 
+      {/* Finalize notice */}
+      <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
+        <div className="flex items-center gap-2 bg-amber-100/70 px-3.5 py-2">
+          <Lock size={13} className="text-amber-700" />
+          <p className="text-xs font-bold text-amber-900">Before you confirm</p>
+        </div>
+        <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
+          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>This <b>finalizes counselling</b>, like Finalize &amp; Sign in the EMR.</span></li>
+          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, date, payment, advance and reports become <b>read-only</b> and can&apos;t be reopened.</span></li>
+          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>A Pre-op appointment will be booked on <b className="whitespace-nowrap">{date}</b>{timeLabel ? <> at <b className="whitespace-nowrap">{timeLabel}</b></> : ""}.</span></li>
+        </ul>
+      </div>
+
       {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
-      <div className="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[var(--color-border)]">
-        <p className="text-caption text-[var(--color-ink-400)]">{allChecked ? (time ? "Ready to book." : "Pick the pre-op time to continue.") : "Tick every item twice to continue."}</p>
+      <div className="flex items-center justify-between gap-3 mt-4">
+        <p className="text-caption text-[var(--color-ink-400)]">{allChecked ? (time ? "Ready to finalize." : "Pick the pre-op time to continue.") : "Tick every item twice to continue."}</p>
         <div className="flex gap-2 shrink-0">
           <button className={btnOutline} onClick={onClose}>Cancel</button>
           <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || !allChecked || !time} onClick={() => onSubmit(time, notes)}>
-            <CheckCircle2 size={15} /> Confirm &amp; Book Pre-op
+            <CheckCircle2 size={15} /> Confirm &amp; Finalize
           </button>
         </div>
       </div>

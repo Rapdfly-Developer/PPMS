@@ -59,12 +59,20 @@ export async function saveCounsellingDetails(visitId: string, data: {
   estimateAmount?: number | null;
 }): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
-  if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Details are frozen after Fit for surgery." };
+  // Details stay editable until Eligible for surgery, which finalizes counselling.
+  if (rec?.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery). Details can't be changed." };
   // A past date can't be set; an unchanged earlier date doesn't block saving the other fields.
   const currentDate = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   const nextDate = data.dateOfSurgery === undefined ? undefined : dayFromStr(data.dateOfSurgery);
   const dateChanged = nextDate !== undefined && (currentDate ? istTodayStr(currentDate) : null) !== (nextDate ? istTodayStr(nextDate) : null);
   if (nextDate && dateChanged && isPastDay(nextDate)) return { error: "The surgery date can't be in the past." };
+  // After Fit the date must stay set and within the reports' 1-month validity.
+  if (rec?.fitForSurgery && dateChanged) {
+    if (!nextDate) return { error: "The surgery date is required after Fit for surgery." };
+    if (rec.reportsValidUntil && nextDate > rec.reportsValidUntil) {
+      return { error: `The reports are valid only till ${rec.reportsValidUntil.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
+    }
+  }
 
   const patch: Record<string, unknown> = {};
   if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
@@ -181,8 +189,8 @@ export async function addCounsellingInvestigations(visitId: string, tests: strin
 export async function postponeSurgery(visitId: string, data: { until: string | null; indefinitely: boolean; reason: string }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.eligibleForSurgery) return { error: "Counselling is already complete." };
-  // Per the requirements this is the doctor's option before Fit; after Fit the details are frozen.
-  if (rec?.fitForSurgery) return { error: "Details are frozen after Fit for surgery." };
+  // Per the requirements this is the doctor's option at review, before Fit for surgery.
+  if (rec?.fitForSurgery) return { error: "Date not confirmed is chosen at the doctor's review, before Fit for surgery." };
   if (!data.indefinitely && !data.until) return { error: "Pick an expected date or choose Not decided yet." };
   if (!data.indefinitely && data.until && isPastDay(dayFromStr(data.until)!)) return { error: "The expected date can't be in the past." };
   if (!data.reason.trim()) return { error: "Enter the reason the date is not confirmed." };
@@ -232,7 +240,8 @@ export async function saveAdvance(visitId: string, data: { advancePaid: number |
 // ── Reports uploaded from the counselling screen ───────────────────────────
 
 export async function attachCounsellingReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
-  const { user, visit } = await loadVisit(visitId, "counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
+  const { user, visit, rec } = await loadVisit(visitId, "counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
+  if (rec?.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery). Reports can't be changed here." };
   const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visitId: visit.id }, select: { id: true } });
   if (!order) return { error: "Order not found." };
   await prisma.investigationOrder.update({
