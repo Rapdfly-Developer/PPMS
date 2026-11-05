@@ -9,6 +9,7 @@ import { complaintLabel, parseComplaintItems } from "@/lib/appointment-cc";
 import { MONTSERRAT_600_WOFF2 } from "@/lib/pdfFonts";
 import { formatHpi } from "./hpi-builder";
 import { medicationLaterality, NO_LATERALITY_ROUTES } from "@/lib/medication-laterality";
+import { rescheduledSurgeryDate } from "@/lib/counselling";
 
 // All timestamps in generated PDFs are Indian wall-clock times; production runs on UTC.
 const format = (d: Date | number, fmt: string) => formatBase(toISTWall(new Date(d)), fmt);
@@ -1127,13 +1128,18 @@ function suiProcedure(p: { procedureName?: string | null; procedureLaterality?: 
 }
 
 /** Surgical counselling: laterality + surgery (+ anaesthesia), tentative date, notes box below. */
-function suiSurgicalCounselling(s: { name: string; eye?: string | null; anaesthesia?: string | null; date?: Date | string | null; notes?: string | null }): string {
+function suiSurgicalCounselling(s: { name: string; eye?: string | null; anaesthesia?: string | null; date?: Date | string | null; rescheduledTo?: Date | string | null; notes?: string | null }): string {
   const date = s.date ? new Date(s.date) : null;
+  const moved = s.rescheduledTo ? new Date(s.rescheduledTo) : null;
+  const fmt = (d: Date) => escapeHtml(d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }));
   return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_800};">` +
     (s.eye ? `<span style="font-weight:700;color:${SUI.P700};margin-right:5px;">${escapeHtml(s.eye)}</span>` : "") +
     escapeHtml(s.name) +
     (s.anaesthesia ? `<span style="font-weight:400;color:${SUI.INK_500};"> · Under ${escapeHtml(s.anaesthesia)}</span>` : "") +
-    (date && !isNaN(date.getTime()) ? `<span style="font-weight:400;color:${SUI.INK_500};"> · Tentative date: ${escapeHtml(date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }))}</span>` : "") +
+    (date && !isNaN(date.getTime()) ? `<span style="font-weight:400;color:${SUI.INK_500};"> · Tentative date: ${fmt(date)}</span>` : "") +
+    (moved && !isNaN(moved.getTime())
+      ? `<span style="font-weight:400;color:${SUI.INK_500};"> · ${date ? `Rescheduled to ${fmt(moved)} (Counselling)` : `Tentative date: ${fmt(moved)} (set in Counselling)`}</span>`
+      : "") +
     `</span>` +
     (s.notes ? `<div style="margin-top:5px;">${suiNote(s.notes, "plain", false)}</div>` : "");
 }
@@ -1507,7 +1513,7 @@ export type FullEmrData = {
   posteriorSegment?: { re?: Record<string, any> | null; le?: Record<string, any> | null; notes?: string | null } | null;
   diagnoses: { description: string; icd10Code: string; status: string; laterality?: string | null }[];
   minorProcedure?: { procedureName?: string | null; procedureLaterality?: string | null; anesthesiaType?: string | null; procedureNotes?: string | null } | null;
-  surgicalCounselling?: { name: string; eye?: string | null; anaesthesia?: string | null; date?: Date | string | null; notes?: string | null } | null;
+  surgicalCounselling?: { name: string; eye?: string | null; anaesthesia?: string | null; date?: Date | string | null; rescheduledTo?: Date | string | null; notes?: string | null } | null;
   medications: { drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[];
   adviseNotes?: string | null;
   opticalRx?: {
@@ -2368,6 +2374,7 @@ export async function generateVisitSummaryPdf(visit: any): Promise<Buffer> {
       eye: (visit as any).advisedSurgeryEye ?? null,
       anaesthesia: (visit as any).advisedSurgeryAnaesthesia ?? null,
       date: (visit as any).advisedSurgeryDate ?? null,
+      rescheduledTo: rescheduledSurgeryDate(visit.advisedSurgeryDate, visit.counsellingRecord?.dateOfSurgery),
       notes: (visit as any).advisedSurgeryNotes ?? null,
     } : null,
     medications: (visit.medications ?? []).map((m: any) => ({ drugName: m.drugName, dosage: m.dosage ?? null, frequency: m.frequency ?? null, duration: m.duration ?? null, instructions: m.instructions ?? null, route: m.route ?? null, laterality: m.laterality ?? null })),

@@ -10,6 +10,7 @@ export async function getVisitEmrData(visitId: string) {
     include: {
       hospital:          { select: { name: true } },
       doctor:            { select: { name: true } },
+      counsellingRecord: { select: { dateOfSurgery: true } },
       generalExam:       true,
       visualAcuity:      true,
       refraction:        true,

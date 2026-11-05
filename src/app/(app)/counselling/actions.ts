@@ -61,12 +61,10 @@ export async function saveCounsellingDetails(visitId: string, data: {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
   if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Details are frozen after Fit for surgery." };
   // A past date can't be set; an unchanged earlier date doesn't block saving the other fields.
-  if (data.dateOfSurgery) {
-    const next = dayFromStr(data.dateOfSurgery)!;
-    const current = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
-    const changed = !current || istTodayStr(current) !== istTodayStr(next);
-    if (changed && isPastDay(next)) return { error: "The surgery date can't be in the past." };
-  }
+  const currentDate = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
+  const nextDate = data.dateOfSurgery === undefined ? undefined : dayFromStr(data.dateOfSurgery);
+  const dateChanged = nextDate !== undefined && (currentDate ? istTodayStr(currentDate) : null) !== (nextDate ? istTodayStr(nextDate) : null);
+  if (nextDate && dateChanged && isPastDay(nextDate)) return { error: "The surgery date can't be in the past." };
 
   const patch: Record<string, unknown> = {};
   if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
@@ -80,19 +78,17 @@ export async function saveCounsellingDetails(visitId: string, data: {
     patch.estimateAmount = data.estimateAmount;
   }
 
-  await prisma.$transaction([
-    prisma.counsellingRecord.upsert({
-      where: { visitId },
-      create: { visitId, status: "PENDING", ...patch },
-      update: patch,
-    }),
-    // The visit keeps the same tentative date, so the patient profile, visit
-    // summaries and prints show what Counselling set.
-    ...(patch.dateOfSurgery !== undefined
-      ? [prisma.visit.update({ where: { id: visitId }, data: { advisedSurgeryDate: patch.dateOfSurgery as Date | null } })]
-      : []),
-  ]);
+  // The signed visit keeps the date the doctor wrote; Counselling's date is
+  // stored here and shown beside it as "Rescheduled to …".
+  await prisma.counsellingRecord.upsert({
+    where: { visitId },
+    create: { visitId, status: "PENDING", ...patch },
+    update: patch,
+  });
   await writeAudit(user.id, "CounsellingRecord", visitId, "UPDATE", patch);
+  if (dateChanged) {
+    await writeAudit(user.id, "CounsellingRecord", visitId, "DATE_CHANGED", { from: currentDate, to: nextDate });
+  }
   refresh(visitId);
   return {};
 }

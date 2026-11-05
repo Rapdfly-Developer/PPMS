@@ -10,6 +10,7 @@ import { HpiFormatted } from "@/components/emr/HpiFormatted";
 import { parseOculoplasty, hasFindings, findingsText, eomRows } from "@/lib/oculoplasty";
 import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
 import { medicationLaterality } from "@/lib/medication-laterality";
+import { rescheduledSurgeryDate } from "@/lib/counselling";
 
 type Tab = "short" | "long" | "ai";
 
@@ -862,6 +863,7 @@ function LongContent({
   const hasExam     = hasVitals || hasVA || hasRC || hasCV || hasCS || hasIOP || hasGonio || hasTear || hasLacrimal || hasAnt || hasPost || hasEOM || hasOcu;
   const hasFollowUp = !!(data.followUpDate || data.adviseNotes || data.referralEnabled);
   const hasSurgical = !!(data.surgeryAdvised && data.advisedSurgeryName);
+  const surgeryMovedTo = rescheduledSurgeryDate(data.advisedSurgeryDate, data.counsellingRecord?.dateOfSurgery);
 
   const isEmpty = !g?.chiefComplaint && !hasVitals && !hasDiag && !hasMeds && !hasInv && !hasVA && !hasRC && !hasCV && !hasCS && !hasIOP && !hasGonio && !hasOcu && !hasTear && !hasLacrimal && !hasAnt && !hasPost && !g?.hpi && !hasPMH && !hasFollowUp && !hasProc && !hasSurgical;
   if (isEmpty) return <EmptyNote>{emptyNote ?? "No detailed clinical notes recorded for this visit."}</EmptyNote>;
@@ -1545,6 +1547,13 @@ function LongContent({
               {data.advisedSurgeryAnaesthesia && <span className="font-normal text-[var(--color-ink-500)]"> · Under {data.advisedSurgeryAnaesthesia}</span>}
               {data.advisedSurgeryDate && (
                 <span className="font-normal text-[var(--color-ink-500)]"> · Tentative date: {new Date(data.advisedSurgeryDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+              )}
+              {surgeryMovedTo && (
+                <span className="font-normal text-[var(--color-ink-500)]">
+                  {" · "}{data.advisedSurgeryDate ? "Rescheduled to " : "Tentative date: "}
+                  <span className="font-semibold text-amber-700">{surgeryMovedTo.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                  {data.advisedSurgeryDate ? " (Counselling)" : " (set in Counselling)"}
+                </span>
               )}
             </span>
             {data.advisedSurgeryNotes && (

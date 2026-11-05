@@ -6,6 +6,7 @@ import { printDeniedReason } from "../access";
 import { generateFullEmrPdf } from "@/lib/pdf";
 import { parseJSON } from "@/lib/json";
 import { rxMethodParam } from "@/lib/print-sections";
+import { rescheduledSurgeryDate } from "@/lib/counselling";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ visitId: string }> }) {
   const { visitId } = await params;
@@ -26,6 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
       patient: true,
       hospital: true,
       doctor: true,
+      counsellingRecord: { select: { dateOfSurgery: true } },
       generalExam: true,
       visualAcuity: true,
       refraction: true,
@@ -255,6 +257,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ visi
         eye: (visit as any).advisedSurgeryEye ?? null,
         anaesthesia: (visit as any).advisedSurgeryAnaesthesia ?? null,
         date: (visit as any).advisedSurgeryDate ?? null,
+        rescheduledTo: rescheduledSurgeryDate(visit.advisedSurgeryDate, visit.counsellingRecord?.dateOfSurgery),
         notes: (visit as any).advisedSurgeryNotes ?? null,
       } : null,
       investigations: on("inv") ? visit.investigationOrders.map((i: any) => ({

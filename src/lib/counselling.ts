@@ -1,4 +1,5 @@
 // Shared helpers for the Counselling module (surgery-bound patients).
+import { istTodayStr } from "@/lib/ist";
 
 export type CounsellingStatus = "PENDING" | "PARTIAL" | "COMPLETED" | "POSTPONED";
 
@@ -190,4 +191,18 @@ export function implantSuggestions(surgery: string): string[] {
   const out: string[] = [];
   for (const p of IMPLANT_PRESETS) if (p.match.test(surgery)) out.push(...p.implants);
   return [...new Set(out)];
+}
+
+/**
+ * The surgery date Counselling moved to, when it differs from the tentative
+ * date signed in the EMR (null when unchanged). The signed date itself is
+ * never rewritten; this is shown beside it as "Rescheduled to …".
+ */
+export function rescheduledSurgeryDate(
+  signed: Date | string | null | undefined,
+  counselling: Date | string | null | undefined,
+): Date | null {
+  if (!counselling) return null;
+  const c = new Date(counselling);
+  return signed && istTodayStr(new Date(signed)) === istTodayStr(c) ? null : c;
 }

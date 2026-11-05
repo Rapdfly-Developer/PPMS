@@ -19,6 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ udid
       patient:             true,
       hospital:            true,
       doctor:              true,
+      counsellingRecord:   { select: { dateOfSurgery: true } },
       generalExam:         true,
       visualAcuity:        true,
       refraction:          true,

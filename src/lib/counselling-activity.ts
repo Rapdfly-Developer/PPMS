@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export type ActivityTone = "primary" | "amber" | "emerald" | "orange" | "slate" | "red";
 /** Milestones also shown on the patient's Time Stamp calendar. */
-export type ActivityMilestone = "fit" | "reopen" | "postpone" | "resume" | "eligible" | "preop";
+export type ActivityMilestone = "fit" | "reopen" | "postpone" | "resume" | "eligible" | "preop" | "date";
 export type ActivityEvent = { at: string; title: string; detail?: string; by?: string; tone: ActivityTone; milestone?: ActivityMilestone };
 
 const parse = (raw: string | null): Record<string, unknown> => {
@@ -80,6 +80,13 @@ export async function getCounsellingActivity(input: {
       case "CounsellingRecord:UPDATE":
         // Details auto-save on every change; only the first save is a milestone.
         if (!detailsStarted) { detailsStarted = true; ev.push({ at: t, title: "Counselling started — details being filled", by, tone: "primary" }); }
+        break;
+      case "CounsellingRecord:DATE_CHANGED":
+        ev.push({
+          at: t, title: v.from ? "Surgery date changed" : "Surgery date set",
+          detail: v.from ? `${day(v.from)} → ${day(v.to) ?? "not set"}` : day(v.to) ?? undefined,
+          by, tone: "orange", milestone: "date",
+        });
         break;
       case "CounsellingRecord:ADD_INVESTIGATIONS": {
         const names = Array.isArray(v.names) ? (v.names as string[]).join(", ") : "";
