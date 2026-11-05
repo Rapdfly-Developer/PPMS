@@ -14,8 +14,15 @@ export async function getLastVisitCC(patientId: string): Promise<{ notes: string
   // Also used by the walk-in encounter form, so walk-in permission is enough.
   const user = await requireUser();
   if (!(await getBookingScope()) && !userCan(user, "opd.walkin.create")) return null;
+  // Pre-op bookings made by Counselling carry the surgery in their notes, not a
+  // complaint, so they are left out; every other appointment is read as before.
+  const counsellingPreOps = await prisma.counsellingRecord.findMany({
+    where: { visit: { patientId }, preOpAppointmentId: { not: null } },
+    select: { preOpAppointmentId: true },
+  });
+  const skipIds = counsellingPreOps.map((r) => r.preOpAppointmentId!);
   const appt = await prisma.appointment.findFirst({
-    where: { patientId, notes: { not: null } },
+    where: { patientId, notes: { not: null }, ...(skipIds.length ? { id: { notIn: skipIds } } : {}) },
     orderBy: { dateTime: "desc" },
     select: { notes: true, dateTime: true },
   });
