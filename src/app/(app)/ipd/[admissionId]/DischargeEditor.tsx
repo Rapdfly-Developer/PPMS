@@ -56,7 +56,7 @@ function Field({ label, value, onChange, editable, type = "text", placeholder, c
   return (
     <div className={`min-w-0 ${className ?? ""}`}>
       <label className={labelCls}>{label}</label>
-      <input type={type} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "—"} className={inputCls} />
+      <input type={type} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "-"} className={inputCls} />
     </div>
   );
 }
@@ -65,7 +65,7 @@ function Area({ label, value, onChange, editable, placeholder, min }: { label?: 
   return (
     <div>
       {label && <label className={labelCls}>{label}</label>}
-      <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "—"} className={`${inputCls} resize-y leading-relaxed`} />
+      <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
     </div>
   );
 }
@@ -91,7 +91,7 @@ function LineList({ value, onChange, editable, placeholder, numbered, addLabel }
     : <span className="w-5 shrink-0 flex justify-end"><span className="h-1.5 w-1.5 rounded-full bg-[var(--color-ink-300)]" /></span>);
 
   if (!editable) {
-    return list.length === 0 ? <p className="text-sm text-[var(--color-ink-400)]">—</p> : (
+    return list.length === 0 ? <p className="text-sm text-[var(--color-ink-400)]">-</p> : (
       <ul className="space-y-1">{list.map((l, i) => <li key={i} className="flex items-baseline gap-2 text-sm text-[var(--color-ink-800)]">{marker(i)}<span>{l}</span></li>)}</ul>
     );
   }
@@ -133,8 +133,8 @@ function EyeGrid({ editable, cells }: { editable: boolean; cells: { label: strin
           {cells.map((c) => (
             <tr key={c.label} className="border-b border-[var(--color-border)] last:border-0">
               <td className="px-3 py-1.5 text-xs font-semibold text-[var(--color-ink-500)]">{c.label}</td>
-              <td className="px-2 py-1.5"><input value={c.re} disabled={!editable} onChange={(e) => c.onRe(e.target.value)} placeholder={editable ? c.ph[0] : "—"} className={inputCls} /></td>
-              <td className="px-2 py-1.5"><input value={c.le} disabled={!editable} onChange={(e) => c.onLe(e.target.value)} placeholder={editable ? c.ph[1] : "—"} className={inputCls} /></td>
+              <td className="px-2 py-1.5"><input value={c.re} disabled={!editable} onChange={(e) => c.onRe(e.target.value)} placeholder={editable ? c.ph[0] : "-"} className={inputCls} /></td>
+              <td className="px-2 py-1.5"><input value={c.le} disabled={!editable} onChange={(e) => c.onLe(e.target.value)} placeholder={editable ? c.ph[1] : "-"} className={inputCls} /></td>
             </tr>
           ))}
         </tbody>
@@ -233,8 +233,8 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                   return (
                     <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
                       <td className="px-3 py-2 font-semibold text-[var(--color-ink-800)]">{r.test}</td>
-                      <td className="px-3 py-2 text-[var(--color-ink-700)]">{r.eye || "—"}</td>
-                      <td className="px-3 py-2 text-[var(--color-ink-600)] whitespace-nowrap">{r.ordered ? fmtDay(r.ordered) : "—"}</td>
+                      <td className="px-3 py-2 text-[var(--color-ink-700)]">{r.eye || "-"}</td>
+                      <td className="px-3 py-2 text-[var(--color-ink-600)] whitespace-nowrap">{r.ordered ? fmtDay(r.ordered) : "-"}</td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {r.received ? (
                           <span className="inline-flex items-center gap-2">

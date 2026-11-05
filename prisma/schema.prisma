@@ -1558,7 +1558,7 @@ model CounsellingRecord {
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// IPD (Phase 2) — created from the EMR Patient Disposition "Admit" tab; the
+// IPD (Phase 2) - created from the EMR Patient Disposition "Admit" tab; the
 // patient enters the IPD module once that visit is finalized and signed.
 // ──────────────────────────────────────────────────────────────────────────
 

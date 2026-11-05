@@ -106,7 +106,7 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
   return (
     <div className={`min-w-0 ${className ?? ""}`}>
       <label className={lbl}>{label}</label>
-      <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "—" : placeholder} className={inp} />
+      <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={inp} />
     </div>
   );
 }
@@ -115,7 +115,7 @@ function Area({ label, value, onChange, disabled, placeholder, rows = 3 }: { lab
   return (
     <div>
       {label && <label className={lbl}>{label}</label>}
-      <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "—" : placeholder} className={`${inp} resize-y leading-relaxed`} />
+      <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
     </div>
   );
 }
@@ -170,8 +170,8 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
                   return (
                     <tr key={o.id} className={o.resultRef ? "" : "bg-amber-50/40"}>
                       <td className={`${td} font-semibold`}>{o.testName}</td>
-                      <td className={td}>{o.laterality ?? "—"}</td>
-                      <td className={`${td} text-[var(--color-ink-500)]`}>{o.notes || "—"}</td>
+                      <td className={td}>{o.laterality ?? "-"}</td>
+                      <td className={`${td} text-[var(--color-ink-500)]`}>{o.notes || "-"}</td>
                       <td className={td}>
                         {o.resultRef
                           ? <span className="text-xs font-semibold text-emerald-700">Received {o.resultAt ? format(new Date(o.resultAt), "d MMM") : ""}</span>
@@ -183,7 +183,7 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
                             {img ? <img src={fileHref(o.resultRef)!} alt="" className="h-9 w-12 rounded border border-[var(--color-border)] object-cover" /> : <FileText size={14} />}
                             Open
                           </a>
-                        ) : "—"}
+                        ) : "-"}
                       </td>
                     </tr>
                   );
@@ -212,7 +212,7 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
             ["Payment", pay ? [pay.type, pay.mode, pay.scheme, pay.policy].filter(Boolean).join(" · ").replaceAll("_", " ") : ""],
             ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy")}` : ""}` : ""],
           ].map(([k, x]) => (
-            <div key={k} className="min-w-0"><p className={lbl}>{k}</p><p className="font-semibold text-[var(--color-ink-800)]">{x || "—"}</p></div>
+            <div key={k} className="min-w-0"><p className={lbl}>{k}</p><p className="font-semibold text-[var(--color-ink-800)]">{x || "-"}</p></div>
           ))}
         </div>
       </Card>
@@ -337,16 +337,16 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
           {c.signed ? (
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               {[
-                [c.signer?.kind === "RELATIVE" ? `Relative (${c.signer.relation})` : "Patient", c.signer?.name ?? c.signedBy ?? "—"],
-                ["Witness", c.witness || "—"],
-                ["Explained by", c.explainedBy ? `Dr. ${c.explainedBy.replace(/^Dr\.?\s*/i, "")}${c.language ? ` (in ${c.language})` : ""}` : "—"],
+                [c.signer?.kind === "RELATIVE" ? `Relative (${c.signer.relation})` : "Patient", c.signer?.name ?? c.signedBy ?? "-"],
+                ["Witness", c.witness || "-"],
+                ["Explained by", c.explainedBy ? `Dr. ${c.explainedBy.replace(/^Dr\.?\s*/i, "")}${c.language ? ` (in ${c.language})` : ""}` : "-"],
               ].map(([k, x]) => (
                 <div key={k} className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2">
                   <p className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-700">{k}</p>
                   <p className="font-semibold text-[var(--color-ink-800)]">{x}</p>
                 </div>
               ))}
-              <p className="sm:col-span-3 text-[11px] text-[var(--color-ink-400)]">Recorded by {c.recordedBy ?? "—"}{c.signedAt ? ` · ${dateTime(c.signedAt)}` : ""}</p>
+              <p className="sm:col-span-3 text-[11px] text-[var(--color-ink-400)]">Recorded by {c.recordedBy ?? "-"}{c.signedAt ? ` · ${dateTime(c.signedAt)}` : ""}</p>
             </div>
           ) : signing === c.id ? (
             <SignPanel item={c} f={f} onSave={commit} onCancel={() => setSigning(null)} />
@@ -440,7 +440,7 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
           <div className="min-w-0">
             <label className={lbl}>Handed over to OT by</label>
             <div className="flex gap-1.5">
-              <input value={v.handedOverBy} disabled={!editable} onChange={(e) => change({ ...v, handedOverBy: e.target.value })} className={inp} placeholder={editable ? "Nurse name" : "—"} />
+              <input value={v.handedOverBy} disabled={!editable} onChange={(e) => change({ ...v, handedOverBy: e.target.value })} className={inp} placeholder={editable ? "Nurse name" : "-"} />
               {editable && !v.handedOverBy && <button type="button" onClick={() => change({ ...v, handedOverBy: f.me })} className={btnG}>Me</button>}
             </div>
           </div>
@@ -543,7 +543,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
                       <input type="time" value={m.time} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, time: e.target.value } : x)) })} className={inp} />
                     </td>
                     <td className={td}>
-                      <input value={m.diet} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "—"} className={inp} />
+                      <input value={m.diet} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />
                     </td>
                     <td className={`${td} whitespace-nowrap`}>
                       {rec && <p className={`text-xs font-semibold ${rec.meta?.amount === "Refused" ? "text-red-600" : "text-emerald-700"}`}>{rec.meta?.amount} · {time(rec.at)} · {rec.by}</p>}
@@ -667,10 +667,10 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
                     {d.instructions && <p className="text-xs text-[var(--color-ink-500)]">{d.instructions}</p>}
                     {d.stopped && <p className="text-[11px] text-red-600">Stopped{d.stoppedBy ? ` by ${d.stoppedBy}` : ""}{d.stoppedAt ? `, ${dateTime(d.stoppedAt)}` : ""}</p>}
                   </td>
-                  <td className={td}>{d.dose || "—"}</td>
-                  <td className={td}>{d.route || "—"}</td>
-                  <td className={`${td} font-semibold`}>{d.eye || "—"}</td>
-                  <td className={td}>{d.frequency || "—"}</td>
+                  <td className={td}>{d.dose || "-"}</td>
+                  <td className={td}>{d.route || "-"}</td>
+                  <td className={`${td} font-semibold`}>{d.eye || "-"}</td>
+                  <td className={td}>{d.frequency || "-"}</td>
                   <td className={`${td} text-xs text-[var(--color-ink-500)] whitespace-nowrap`}>{d.start ? format(new Date(`${d.start}T00:00:00`), "d MMM") : ""}<br />{d.orderedBy}</td>
                   <td className={`${td} text-right whitespace-nowrap`}>
                     {editable && (d.stopped
@@ -763,13 +763,13 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
 
 const VITAL_KEYS = [
   { key: "bp", label: "BP", ph: "120/80" }, { key: "pulse", label: "Pulse", ph: "/min" }, { key: "temp", label: "Temp", ph: "°F" },
-  { key: "spo2", label: "SpO₂", ph: "%" }, { key: "rbs", label: "RBS", ph: "mg/dL" }, { key: "pain", label: "Pain (0–10)", ph: "0–10" },
+  { key: "spo2", label: "SpO₂", ph: "%" }, { key: "rbs", label: "RBS", ph: "mg/dL" }, { key: "pain", label: "Pain (0-10)", ph: "0-10" },
 ] as const;
 
 export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }: FormProps<NurseData>) {
   const { run, pending, error } = useLogger(addLog);
   const [vit, setVit] = useState<Record<string, string>>({});
-  // Shift by the hospital's (IST) clock: 8 am–2 pm morning, 2–8 pm evening, else night
+  // Shift by the hospital's (IST) clock: 8 am-2 pm morning, 2-8 pm evening, else night
   const [shift, setShift] = useState(() => { const h = new Date(Date.now() + 5.5 * 3600 * 1000).getUTCHours(); return h >= 8 && h < 14 ? "Morning" : h >= 14 && h < 20 ? "Evening" : "Night"; });
   const [orders, setOrders] = useState<"Yes" | "No" | "">("Yes");
   const [note, setNote] = useState("");
@@ -825,7 +825,7 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
               {[...vitals].reverse().map((e, i) => (
                 <tr key={i}>
                   <td className={`${td} text-xs whitespace-nowrap`}>{dateTime(e.at)}</td>
-                  {VITAL_KEYS.map((k) => <td key={k.key} className={td}>{e.meta?.[k.key] || "—"}</td>)}
+                  {VITAL_KEYS.map((k) => <td key={k.key} className={td}>{e.meta?.[k.key] || "-"}</td>)}
                   <td className={`${td} text-xs text-[var(--color-ink-500)]`}>{e.by}</td>
                 </tr>
               ))}
@@ -984,7 +984,7 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
                 {POSTOP_EXAM.map((x) => (
                   <tr key={x.key}>
                     <td className={`${td} w-40 font-semibold text-xs uppercase tracking-wide text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)]/50`}>{x.label}</td>
-                    <td className={td}><input value={r[x.key]} disabled={!editable} onChange={(e) => set(r.id, x.key, e.target.value)} placeholder={editable ? POSTOP_NORMAL[x.key] : "—"} className={inp} /></td>
+                    <td className={td}><input value={r[x.key]} disabled={!editable} onChange={(e) => set(r.id, x.key, e.target.value)} placeholder={editable ? POSTOP_NORMAL[x.key] : "-"} className={inp} /></td>
                   </tr>
                 ))}
               </tbody>

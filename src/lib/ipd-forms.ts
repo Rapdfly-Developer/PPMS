@@ -210,7 +210,7 @@ const EDU_POINTS: Record<string, string[]> = {
     "Use steroid and antibiotic drops exactly as charted; never stop them suddenly",
     "Lie on your back as advised (endothelial grafts)",
     "Avoid dust, smoke and swimming until the doctor allows",
-    "Watch for graft rejection: redness, sensitivity to light, blurred vision or pain (RSVP) — come back immediately",
+    "Watch for graft rejection: redness, sensitivity to light, blurred vision or pain (RSVP) - come back immediately",
   ],
   pterygium: [
     "Do not rub the eye; mild watering and foreign-body feeling are expected",
@@ -229,7 +229,7 @@ const EDU_POINTS: Record<string, string[]> = {
     "Apply cold compresses for the first 48 hours to reduce swelling",
     "Keep the wound clean and dry; apply ointment as charted",
     "Sleep with the head raised for the first few nights",
-    "Bruising and swelling settle in 1–2 weeks",
+    "Bruising and swelling settle in 1-2 weeks",
     "Come back for bleeding, increasing pain or difficulty closing the eye",
   ],
   squint: [
@@ -242,7 +242,7 @@ const EDU_POINTS: Record<string, string[]> = {
   socket: [
     "Keep the pressure bandage on until the doctor removes it",
     "Use drops / ointment in the socket as charted",
-    "Swelling and discomfort settle over 1–2 weeks",
+    "Swelling and discomfort settle over 1-2 weeks",
     "The artificial eye (prosthesis) is fitted after about 6 weeks",
     "Come back for bleeding, fever or discharge from the socket",
   ],

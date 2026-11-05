@@ -112,7 +112,7 @@ function Dates({ r }: { r: IpdRow }) {
   const line = (label: string, v: string | null) => (
     <span className="block text-caption text-[var(--color-ink-500)] whitespace-nowrap">
       <span className="inline-block w-9 font-semibold text-[var(--color-ink-400)]">{label}</span>
-      <span className={v ? "text-[var(--color-ink-800)] font-medium" : "italic text-[var(--color-ink-300)]"}>{v ?? "—"}</span>
+      <span className={v ? "text-[var(--color-ink-800)] font-medium" : "italic text-[var(--color-ink-300)]"}>{v ?? "-"}</span>
     </span>
   );
   return (
@@ -172,7 +172,7 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
               {r.reason && <span className="block text-caption text-[var(--color-ink-600)] mt-0.5 line-clamp-2">{r.reason}</span>}
               {wardText(r) && <span className="block text-caption text-[var(--color-ink-500)] mt-0.5">{wardText(r)}</span>}
             </td>
-            <td className="px-4 py-3">{r.surgery ? <SurgeryText r={r} /> : <span className="italic text-caption text-[var(--color-ink-300)]">—</span>}</td>
+            <td className="px-4 py-3">{r.surgery ? <SurgeryText r={r} /> : <span className="italic text-caption text-[var(--color-ink-300)]">-</span>}</td>
             <td className="px-4 py-3"><Dates r={r} /></td>
             <td className="px-4 py-3"><Completion r={r} /></td>
             <td className="px-4 py-3"><StatusPill status={r.status} /></td>

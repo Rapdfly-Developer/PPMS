@@ -477,7 +477,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
-      {/* Line 1 — laterality, surgery, anaesthesia */}
+      {/* Line 1 - laterality, surgery, anaesthesia */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
         <div className="shrink-0">
           <label className={labelCls}>Laterality</label>
@@ -508,7 +508,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         </div>
       </div>
 
-      {/* Line 2 — tentative date, notes */}
+      {/* Line 2 - tentative date, notes */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-start">
         <div>
           <label className={labelCls}>Tentative Date</label>
@@ -755,9 +755,9 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
           <p className="text-caption font-semibold tracking-widest text-emerald-700 uppercase mb-1">From Counselling{imported.stage ? ` · ${imported.stage}` : ""}</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-label sm:text-sm text-[var(--color-ink-700)]">
             <span><span className="text-[var(--color-ink-400)]">Surgery: </span>{imported.laterality && <span className="clinical-laterality mr-1">{imported.laterality}</span>}{imported.surgery}</span>
-            <span><span className="text-[var(--color-ink-400)]">Implant: </span>{imported.implant || "—"}</span>
-            <span><span className="text-[var(--color-ink-400)]">Anaesthesia: </span>{imported.anaesthesia || "—"}</span>
-            <span><span className="text-[var(--color-ink-400)]">Surgery date: </span>{fmtDay(imported.date) || "—"}</span>
+            <span><span className="text-[var(--color-ink-400)]">Implant: </span>{imported.implant || "-"}</span>
+            <span><span className="text-[var(--color-ink-400)]">Anaesthesia: </span>{imported.anaesthesia || "-"}</span>
+            <span><span className="text-[var(--color-ink-400)]">Surgery date: </span>{fmtDay(imported.date) || "-"}</span>
           </div>
         </div>
       )}
@@ -827,8 +827,8 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
             <dt className="text-[var(--color-ink-400)]">Type</dt><dd className="font-semibold text-[var(--color-ink-800)]">{type === "OTHERS" ? other : typeLabel}</dd>
             <dt className="text-[var(--color-ink-400)]">Reason</dt><dd className="text-[var(--color-ink-800)] whitespace-pre-line">{reason}</dd>
             <dt className="text-[var(--color-ink-400)]">Counselling sheet</dt><dd className="text-[var(--color-ink-800)]">{importSheet && sheet ? <>Imported · {[sheet.laterality, sheet.surgery].filter(Boolean).join(" ")}</> : "Not imported"}</dd>
-            <dt className="text-[var(--color-ink-400)]">Admission</dt><dd className="text-[var(--color-ink-800)]">{fmtDay(admittedOn) || "—"}{expected ? ` · expected discharge ${fmtDay(expected)}` : ""}</dd>
-            <dt className="text-[var(--color-ink-400)]">Ward / Floor / File</dt><dd className="text-[var(--color-ink-800)]">{[ward && `Ward ${ward}`, floor && `Floor ${floor}`, fileNo && `File ${fileNo}`].filter(Boolean).join(" · ") || "—"}</dd>
+            <dt className="text-[var(--color-ink-400)]">Admission</dt><dd className="text-[var(--color-ink-800)]">{fmtDay(admittedOn) || "-"}{expected ? ` · expected discharge ${fmtDay(expected)}` : ""}</dd>
+            <dt className="text-[var(--color-ink-400)]">Ward / Floor / File</dt><dd className="text-[var(--color-ink-800)]">{[ward && `Ward ${ward}`, floor && `Floor ${floor}`, fileNo && `File ${fileNo}`].filter(Boolean).join(" · ") || "-"}</dd>
           </dl>
           <p className="mt-4 text-caption text-[var(--color-ink-400)]">The patient goes to IPD when this visit is finalized and signed.</p>
           <div className="mt-5 flex justify-end gap-2">

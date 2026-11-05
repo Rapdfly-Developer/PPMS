@@ -1,4 +1,4 @@
-// IPD (Phase 2) — shared rules and templates. No server-only imports, so the
+// IPD (Phase 2) - shared rules and templates. No server-only imports, so the
 // file screens and the server actions read the same definitions.
 
 export type AdmissionType = "CONSERVATIVE" | "PRE_OP" | "OTHERS";
@@ -114,10 +114,10 @@ const OT_TEMPLATES: { match: RegExp; steps: string[] }[] = [
       "Painting with 5% povidone-iodine, draping, speculum applied.",
       "Main incision: ___ mm clear corneal / scleral tunnel at ___ o'clock; side port made.",
       "Viscoelastic injected into the anterior chamber.",
-      "Continuous curvilinear capsulorhexis (~5.0–5.5 mm).",
+      "Continuous curvilinear capsulorhexis (~5.0-5.5 mm).",
       "Hydrodissection and hydrodelineation.",
       "Phacoemulsification of nucleus by ___ technique.",
-      "Irrigation–aspiration of cortex.",
+      "Irrigation-aspiration of cortex.",
       "Capsular bag inflated with viscoelastic.",
       "IOL implanted in the bag: {implant}.",
       "Viscoelastic removed; wounds hydrated and checked for leak.",
@@ -169,12 +169,12 @@ const OT_TEMPLATES: { match: RegExp; steps: string[] }[] = [
       "Patient identity, eye and consent verified; time-out done.",
       "Anaesthesia: {anaesthesia}.",
       "Painting, draping, speculum.",
-      "23 / 25G trocar cannulas placed 3.5–4 mm from limbus; infusion checked.",
+      "23 / 25G trocar cannulas placed 3.5-4 mm from limbus; infusion checked.",
       "Core vitrectomy; PVD induced / confirmed.",
       "Peripheral vitrectomy with scleral depression.",
       "Membrane peeling / ILM peeling (if done): ___",
       "Endolaser: ___ spots.",
-      "Fluid–air exchange; tamponade: ___",
+      "Fluid-air exchange; tamponade: ___",
       "Ports removed; sclerotomies checked for leak / sutured.",
       "Subconjunctival antibiotic + steroid injection.",
       "Eye patched; positioning advised: ___",

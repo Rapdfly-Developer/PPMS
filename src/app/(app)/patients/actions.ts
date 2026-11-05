@@ -262,7 +262,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
       },
     });
 
-    // Investigation events — one card per visit per day the tests were ordered,
+    // Investigation events - one card per visit per day the tests were ordered,
     // so tests added later (e.g. from Counselling) show on their own date
     const ordersByDay = new Map<string, typeof v.investigationOrders>();
     for (const o of v.investigationOrders) {

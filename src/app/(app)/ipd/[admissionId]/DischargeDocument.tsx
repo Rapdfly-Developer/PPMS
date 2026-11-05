@@ -67,8 +67,8 @@ function EyeTable({ rows }: { rows: [string, string, string][] }) {
         {shown.map(([k, re, le]) => (
           <tr key={k}>
             <td className="pr-6 py-0.5 text-gray-500">{k}</td>
-            <td className="pr-8 py-0.5 font-semibold">{re || "—"}</td>
-            <td className="py-0.5 font-semibold">{le || "—"}</td>
+            <td className="pr-8 py-0.5 font-semibold">{re || "-"}</td>
+            <td className="py-0.5 font-semibold">{le || "-"}</td>
           </tr>
         ))}
       </tbody>
@@ -80,7 +80,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div className="min-w-0">
       <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em] text-gray-500">{label}</p>
-      <p className="text-[12px] font-semibold text-gray-900 leading-snug">{children || "—"}</p>
+      <p className="text-[12px] font-semibold text-gray-900 leading-snug">{children || "-"}</p>
     </div>
   );
 }
@@ -112,7 +112,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
             specialty={h.specialty ?? null}
             kicker="Clinical Report"
             title="Discharge Summary"
-            dateText={`Discharged ${day(s.dischargeDate) || "—"}`}
+            dateText={`Discharged ${day(s.dischargeDate) || "-"}`}
             boxes={[
               ["Patient", h.patient.name],
               ["Age / Gender", `${h.patient.age} yrs / ${SEX[h.patient.sex] ?? h.patient.sex}`],
@@ -135,7 +135,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
             <p className="text-[9.5px] font-semibold uppercase tracking-[0.12em]" style={{ color: ACCENT }}>Diagnosis</p>
             {diagnoses.length
               ? diagnoses.map((d, i) => <p key={i} className="text-[14px] font-semibold text-gray-900 leading-snug">{d}</p>)
-              : <p className="text-[13px] text-gray-500">—</p>}
+              : <p className="text-[13px] text-gray-500">-</p>}
             <div className="mt-2.5 grid grid-cols-3 gap-6">
               {surgical
                 ? <Fact label="Procedure">{procedure}{s.procedure.date ? `, ${day(s.procedure.date)}` : ""}</Fact>
@@ -173,8 +173,8 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
                     {s.invList.map((r) => (
                       <tr key={r.id} className="border-b border-gray-100 last:border-0">
                         <td className="py-1 pr-3 font-semibold">{r.test}</td>
-                        <td className="py-1 pr-3">{r.eye || "—"}</td>
-                        <td className="py-1 pr-3">{day(r.ordered) || "—"}</td>
+                        <td className="py-1 pr-3">{r.eye || "-"}</td>
+                        <td className="py-1 pr-3">{day(r.ordered) || "-"}</td>
                         <td className={`py-1 ${r.received ? "" : "text-amber-700 font-semibold"}`}>{r.received ? `Received ${day(r.received)}` : "Pending"}</td>
                       </tr>
                     ))}
@@ -188,7 +188,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
           )}
           {surgical && (
             <Row title="Procedure">
-              <p className="font-semibold">{procedure || "—"}{s.procedure.date ? <span className="font-normal text-gray-500"> · {day(s.procedure.date)}</span> : null}</p>
+              <p className="font-semibold">{procedure || "-"}{s.procedure.date ? <span className="font-normal text-gray-500"> · {day(s.procedure.date)}</span> : null}</p>
               <div className="mt-1 grid grid-cols-3 gap-4">
                 <Fact label="Anaesthesia">{s.procedure.anaesthesia}</Fact>
                 <Fact label="Implant">{s.procedure.implant}</Fact>
@@ -199,7 +199,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
           )}
           {has(s.course) && <Row title="Course in hospital"><Lines v={s.course} /></Row>}
           <Row title="At discharge">
-            <p className="mb-1"><span className="text-gray-500">General condition: </span><span className="font-semibold">{s.condition.general || "—"}</span></p>
+            <p className="mb-1"><span className="text-gray-500">General condition: </span><span className="font-semibold">{s.condition.general || "-"}</span></p>
             <EyeTable rows={[["Vision", s.condition.vaRe, s.condition.vaLe], ["IOP", s.condition.iopRe, s.condition.iopLe]]} />
             {has(s.condition.eye) && <p className="mt-1"><span className="text-gray-500">Operated / affected eye: </span>{s.condition.eye}</p>}
           </Row>

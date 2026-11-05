@@ -78,7 +78,7 @@ export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dat
             {boxes.slice(r * 4, r * 4 + 4).map(([label, value], i) => (
               <div key={label} style={{ padding: "6px 10px 7px", borderLeft: i ? "1px solid #E3F1EE" : undefined, background: r % 2 ? "#FBFEFD" : undefined, ...exact }}>
                 <div style={{ fontSize: 7.5, fontWeight: 700, color: LABEL_C, letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</div>
-                <div style={{ fontSize: 10.5, color: "#111", fontWeight: 600, marginTop: 1 }}>{value || "—"}</div>
+                <div style={{ fontSize: 10.5, color: "#111", fontWeight: 600, marginTop: 1 }}>{value || "-"}</div>
               </div>
             ))}
           </div>

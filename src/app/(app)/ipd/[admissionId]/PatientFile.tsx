@@ -87,7 +87,7 @@ export interface FileData {
 interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "—");
+const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "-");
 const fmtTime = (iso: string) => format(new Date(iso), "d MMM yyyy, h:mm a");
 const istInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "");
 
@@ -722,9 +722,9 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                 <span className="font-semibold text-[var(--color-ink-800)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
               </p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
-                <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "—"}</b></span>
-                <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "—"}</b></span>
-                <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "—"}</b></span>
+                <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b></span>
+                <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "-"}</b></span>
+                <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "-"}</b></span>
                 {can.edit && status !== "DISCHARGED" && (
                   <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-700)] hover:underline"><Pencil size={11} /> Edit</button>
                 )}
@@ -776,12 +776,12 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
         </div>
         {status === "IN_OT" && (
           <div className="mt-4 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/40 px-4 py-3 text-sm text-violet-800">
-            In OT since {d.shiftedToOtAt ? fmtTime(d.shiftedToOtAt) : "—"}. The file returns to the post-op ward from the OT module.
+            In OT since {d.shiftedToOtAt ? fmtTime(d.shiftedToOtAt) : "-"}. The file returns to the post-op ward from the OT module.
           </div>
         )}
         {status === "DISCHARGED" && (
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            Discharged by {d.dischargedBy} on {d.dischargedAt ? fmtTime(d.dischargedAt) : "—"} · summary signed with OTP. The file is read-only.
+            Discharged by {d.dischargedBy} on {d.dischargedAt ? fmtTime(d.dischargedAt) : "-"} · summary signed with OTP. The file is read-only.
             {d.dischargeNotes && <span className="block mt-1 text-slate-600">Notes: {d.dischargeNotes}</span>}
           </div>
         )}

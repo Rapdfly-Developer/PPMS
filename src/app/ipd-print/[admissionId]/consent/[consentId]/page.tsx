@@ -96,7 +96,7 @@ export default async function ConsentPrintPage({ params, searchParams }: {
             </div>
           </div>
           <p className="mt-6 text-[11px]">Date & time: {c.signedAt ? dateTime(c.signedAt) : "______________________"}</p>
-          {c.signed && <p className="mt-1 text-[10px] text-gray-500">Signature recorded in the patient file by {c.recordedBy ?? "—"}.</p>}
+          {c.signed && <p className="mt-1 text-[10px] text-gray-500">Signature recorded in the patient file by {c.recordedBy ?? "-"}.</p>}
         </div>
       </div>
     </main>

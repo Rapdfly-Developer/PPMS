@@ -887,7 +887,7 @@ export function PatientProfileClient({
           </Link>
         )}
 
-        {/* Opened from IPD — the patient file replaces the visit buttons */}
+        {/* Opened from IPD - the patient file replaces the visit buttons */}
         {ipdFileHref ? (
           <Link
             href={ipdFileHref}
