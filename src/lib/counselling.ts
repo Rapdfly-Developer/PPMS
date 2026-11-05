@@ -30,13 +30,13 @@ export const LATERALITY_LABEL: Record<string, string> = {
   OU: "Both Eyes (OU)",
 };
 
-/** Full surgery line: "Phacoemulsification with IOL - Right Eye (RE) - Peribulbar Block". */
+/** Full surgery line: "Phacoemulsification with IOL — Right Eye (RE) — Peribulbar Block". */
 export function surgeryLine(v: { advisedSurgeryName: string | null; advisedSurgeryEye: string | null; advisedSurgeryAnaesthesia: string | null }): string {
   return [
     v.advisedSurgeryName?.trim() ?? "",
     v.advisedSurgeryEye ? LATERALITY_LABEL[v.advisedSurgeryEye] ?? v.advisedSurgeryEye : "",
     v.advisedSurgeryAnaesthesia ?? "",
-  ].filter(Boolean).join(" - ");
+  ].filter(Boolean).join(" — ");
 }
 
 // ── EMR Surgical Counselling tab ────────────────────────────────────────────

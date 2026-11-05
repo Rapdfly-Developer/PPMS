@@ -47,7 +47,7 @@ function oldestReportAt(orders: { resultRef: string | null; resultAt: Date | nul
   return times.length ? new Date(Math.min(...times)) : null;
 }
 
-// ── Checklist A-D (frozen once Fit for surgery) ─────────────────────────────
+// ── Checklist A–D (frozen once Fit for surgery) ─────────────────────────────
 
 export async function saveCounsellingDetails(visitId: string, data: {
   implant?: string;
@@ -144,7 +144,7 @@ export async function markFitForSurgery(visitId: string): Promise<Result & { val
   return { validUntil: validUntil?.toISOString() ?? null };
 }
 
-/** Reports expired before surgery - unfreeze so the process can be redone. */
+/** Reports expired before surgery — unfreeze so the process can be redone. */
 export async function reopenCounselling(visitId: string): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (!rec?.fitForSurgery || rec.eligibleForSurgery) return { error: "Nothing to reopen." };

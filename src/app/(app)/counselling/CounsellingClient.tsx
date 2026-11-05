@@ -221,7 +221,7 @@ function Avatar({ r, size }: { r: CounsellingRow; size: "sm" | "md" }) {
 }
 
 function Diagnoses({ r }: { r: CounsellingRow }) {
-  if (r.diagnoses.length === 0) return <span className="italic text-caption text-[var(--color-ink-300)]">-</span>;
+  if (r.diagnoses.length === 0) return <span className="italic text-caption text-[var(--color-ink-300)]">—</span>;
   return (
     <span className="flex flex-wrap gap-1 min-w-0">
       {r.diagnoses.map((d, i) => (
@@ -321,7 +321,7 @@ function PatientCard({ r }: { r: CounsellingRow }) {
         <span className="text-[var(--color-ink-400)]">Complaint</span>
         {r.chiefComplaint
           ? <ComplaintChips value={r.chiefComplaint} wrap />
-          : <span className="italic text-[var(--color-ink-300)]">-</span>}
+          : <span className="italic text-[var(--color-ink-300)]">—</span>}
         <span className="text-[var(--color-ink-400)]">Diagnosis</span>
         <Diagnoses r={r} />
         <span className="text-[var(--color-ink-400)]">Surgery</span>
@@ -342,7 +342,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
   const [dateTo, setDateTo]             = useState("");
   const [showFilters, setShowFilters]   = useState(false);
 
-  // Overall counts follow the date range, as the "Overall - according to date" card.
+  // Overall counts follow the date range, as the "Overall — according to date" card.
   const inDateRange = (r: CounsellingRow) => {
     if (!dateFrom && !dateTo) return true;
     const d = format(new Date(r.tentativeDate ?? r.visitDate), "yyyy-MM-dd");
@@ -509,7 +509,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
         <>
           <GroupTabs groups={groups} active={activeGroup[0]} onSelect={setTab} />
 
-          {/* Desktop - the selected date tab's patients */}
+          {/* Desktop — the selected date tab's patients */}
           <div className={`hidden lg:block rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden`}>
             {GROUP_META[activeGroup[0]].hint && (
               <p className="px-4 pt-2.5 text-micro font-medium text-[var(--color-ink-400)]">{GROUP_META[activeGroup[0]].hint}</p>

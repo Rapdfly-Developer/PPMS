@@ -99,9 +99,9 @@ const IN_VIEW_OF_SUGGESTIONS = [
   "Bleeding risk",
 ];
 
-const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "-");
+const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "—");
 const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : null);
-const rupees = (n: number | null) => (n == null ? "-" : `₹${n.toLocaleString("en-IN")}`);
+const rupees = (n: number | null) => (n == null ? "—" : `₹${n.toLocaleString("en-IN")}`);
 
 function getCustomImplants(): string[] {
   try {
@@ -696,7 +696,7 @@ function MoneyChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg bg-[var(--color-surface-sunken)] px-2.5 py-1.5 min-w-0">
       <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</p>
-      <p className={`text-xs font-bold tabular-nums truncate ${value ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "-"}</p>
+      <p className={`text-xs font-bold tabular-nums truncate ${value ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{value || "—"}</p>
     </div>
   );
 }
@@ -731,7 +731,7 @@ export function CounsellingDetail({
   const [pending, startTransition] = useTransition();
   const { rec } = data;
 
-  // A-D form state (auto-saved until Fit for surgery freezes it)
+  // A–D form state (auto-saved until Fit for surgery freezes it)
   const [implant, setImplant]           = useState(rec.implant);
   const [dateOfSurgery, setDate]        = useState(rec.dateOfSurgery ? istTodayStr(new Date(rec.dateOfSurgery)) : "");
   const [paymentMode, setPaymentMode]   = useState(rec.paymentMode);
@@ -807,7 +807,7 @@ export function CounsellingDetail({
     });
   }
 
-  const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" - ");
+  const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" — ");
 
   const steps = [
     { label: "Counselling", icon: ClipboardList, done: true },
@@ -824,7 +824,7 @@ export function CounsellingDetail({
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
       <section className="relative rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white px-4 py-3.5">
-        {/* Line 1 - patient details */}
+        {/* Line 1 — patient details */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden ring-2 ring-white shadow-sm bg-gradient-to-br from-[var(--color-primary-400)] to-[var(--color-primary-600)] flex items-center justify-center">
             {data.patient.photoUrl
@@ -858,7 +858,7 @@ export function CounsellingDetail({
           </div>
         </div>
 
-        {/* Line 2 - surgery · tentative date · investigations */}
+        {/* Line 2 — surgery · tentative date · investigations */}
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
             {data.laterality
@@ -929,7 +929,7 @@ export function CounsellingDetail({
           </div>
         )}
 
-        {/* Progress - icon steps on a smooth track (hover for the step name) */}
+        {/* Progress — icon steps on a smooth track (hover for the step name) */}
         <ol className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center px-1">
           {steps.map((st, i) => {
             const isCurrent = i === currentStep;
@@ -938,7 +938,7 @@ export function CounsellingDetail({
             const segHalf = i < steps.length - 1 && !segDone && st.done;
             return (
               <Fragment key={st.label}>
-                <li className="relative shrink-0" title={`${st.label}${st.done ? " - done" : isCurrent ? " - current step" : ""}`}>
+                <li className="relative shrink-0" title={`${st.label}${st.done ? " — done" : isCurrent ? " — current step" : ""}`}>
                   {isCurrent && <span className="absolute inset-0 rounded-full bg-[var(--color-primary-300)] opacity-40 animate-ping" />}
                   <span className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                     st.done
@@ -1167,7 +1167,7 @@ export function CounsellingDetail({
           >
             {rec.fitForSurgery ? (
               <p className="text-sm text-[var(--color-ink-700)]">
-                Marked fit by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+                Marked fit by <b>{rec.fitByName ?? "—"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
                 {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
               </p>
             ) : (
@@ -1243,14 +1243,14 @@ export function CounsellingDetail({
                     </span>
                     <span>
                       <span className="block text-sm font-bold text-[var(--color-ink-900)]">Advance amount received</span>
-                      <span className="block text-caption text-[var(--color-ink-500)]">{advanceReceived ? "Marked as received - amount not recorded" : "Tap to mark as received without entering the amount"}</span>
+                      <span className="block text-caption text-[var(--color-ink-500)]">{advanceReceived ? "Marked as received — amount not recorded" : "Tap to mark as received without entering the amount"}</span>
                     </span>
                   </button>
                 ) : (
                   <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
                     <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5">
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Estimate</p>
-                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-700)]">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "-"}</p>
+                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-700)]">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "—"}</p>
                     </div>
                     <div className="rounded-lg border-2 border-[var(--color-primary-300)] bg-white px-3 py-1 focus-within:border-[var(--color-primary-500)] transition-colors">
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-700)]">Advance received</p>
@@ -1262,7 +1262,7 @@ export function CounsellingDetail({
                     </div>
                     <div className={`rounded-lg border px-3 py-1.5 ${rec.estimateAmount != null && (advanceNum ?? 0) >= rec.estimateAmount ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
                       <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">Pending</p>
-                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-900)]">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "-"}</p>
+                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-900)]">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "—"}</p>
                     </div>
                     {rec.estimateAmount != null && rec.estimateAmount > 0 && (
                       <div className="col-span-3">
@@ -1298,7 +1298,7 @@ export function CounsellingDetail({
           >
             {rec.eligibleForSurgery ? (
               <p className="text-sm text-[var(--color-ink-700)]">
-                Confirmed by <b>{rec.eligibleByName ?? "-"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
+                Confirmed by <b>{rec.eligibleByName ?? "—"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
               </p>
             ) : canEligible ? (
               <div className="flex flex-wrap items-center gap-3">
@@ -1333,13 +1333,13 @@ export function CounsellingDetail({
                 {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}{data.surgery}
               </ConfirmLine>
               {data.anaesthesia && <ConfirmLine inline label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
-              <ConfirmLine inline label="Implant">{implant || "-"}</ConfirmLine>
-              <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}</ConfirmLine>
+              <ConfirmLine inline label="Implant">{implant || "—"}</ConfirmLine>
+              <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}</ConfirmLine>
             </ConfirmCard>
 
             {/* Payment */}
             <ConfirmCard icon={<Wallet size={13} />} title="Payment">
-              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}</ConfirmLine>
+              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}</ConfirmLine>
               {paymentMode === "CASHLESS" && schemeName && <ConfirmLine inline label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
               {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine inline label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
               <ConfirmLine inline label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
@@ -1376,7 +1376,7 @@ export function CounsellingDetail({
               <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, payment and estimate above will be <b>frozen</b>. Only the date can still be changed (within the reports&apos; validity) until Eligible for surgery.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> - on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
+                <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
               </li>
               <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>After that the reports expire and the process must be redone.</span></li>
             </ul>
@@ -1407,12 +1407,12 @@ export function CounsellingDetail({
         <EligibleModal
           pending={pending} error={error} onClose={() => setModal(null)}
           laterality={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia}
-          implant={implant || "-"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}
-          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}
+          implant={implant || "—"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}
+          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}
           payerLabel={cashless?.nameLabel ?? "Covered by"} payer={paymentMode === "CASHLESS" ? schemeName : ""}
           idLabel={cashless?.idLabel ?? "ID"} payerId={paymentMode === "CASHLESS" ? policyNumber : ""}
           estimate={rupees(estimateNum)}
-          advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "-"}
+          advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "—"}
           pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
           onSubmit={(time, notes) => run(async () => {
             // Unsaved edits are saved first, so what was verified is what gets finalized
@@ -1604,7 +1604,7 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   );
 }
 
-/* ── H. Eligible - final sign-off: verify each item twice, then book pre-op ── */
+/* ── H. Eligible — final sign-off: verify each item twice, then book pre-op ── */
 type VerifyKey = "date" | "implant" | "surgery";
 
 /** A confirm line (same layout as the Fit pop-up) with the 1st and 2nd check beside it. */
@@ -1662,7 +1662,7 @@ function EligibleModal({
   return (
     <Modal title="Confirm Eligible for Surgery" onClose={onClose} wide>
       <div className="grid grid-cols-1 gap-3">
-        {/* Surgery - each item verified twice with the patient */}
+        {/* Surgery — each item verified twice with the patient */}
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 px-3.5 py-3">
           <div className="grid grid-cols-[minmax(0,1fr)_2.25rem_2.25rem] gap-3 items-center mb-2">
             <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]"><Scissors size={13} /> Surgery · verify twice with the patient</p>

@@ -477,7 +477,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
-      {/* Line 1 - laterality, surgery, anaesthesia */}
+      {/* Line 1 — laterality, surgery, anaesthesia */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
         <div className="shrink-0">
           <label className={labelCls}>Laterality</label>
@@ -508,7 +508,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         </div>
       </div>
 
-      {/* Line 2 - tentative date, notes */}
+      {/* Line 2 — tentative date, notes */}
       <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-start">
         <div>
           <label className={labelCls}>Tentative Date</label>
