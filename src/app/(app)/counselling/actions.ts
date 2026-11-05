@@ -91,8 +91,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
   }
 
   // The signed visit keeps the date the doctor wrote; Counselling's date is
-  // stored here and shown beside it as "Rescheduled to …" (the EMR itself
-  // shows only what the doctor entered).
+  // stored here and shown beside it as "Rescheduled to …".
   await prisma.counsellingRecord.upsert({
     where: { visitId },
     create: { visitId, status: "PENDING", ...patch },

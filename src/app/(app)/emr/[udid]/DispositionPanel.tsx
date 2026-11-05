@@ -9,7 +9,7 @@ import { useEmrOverview } from "./EmrOverviewContext";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { istTodayStr } from "@/lib/ist";
-import { ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS } from "@/lib/counselling";
+import { ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS, rescheduledSurgeryDate } from "@/lib/counselling";
 
 
 const IN_VIEW_OF_KEYWORDS: { group: string; items: string[] }[] = [
@@ -413,6 +413,8 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
   const [savedMsg, setSavedMsg]       = useState(false);
   const [error, setError]             = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
+  // Date Counselling moved the surgery to; the date the doctor entered stays as written
+  const movedTo = rescheduledSurgeryDate(visit.advisedSurgeryDate, visit.counsellingRecord?.dateOfSurgery);
   const [pending, startTransition]    = useTransition();
   const overview = useEmrOverview();
 
@@ -457,6 +459,13 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         {visit.advisedSurgeryDate && (
           <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
             Tentative date: {new Date(visit.advisedSurgeryDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+          </p>
+        )}
+        {movedTo && (
+          <p className="text-label sm:text-sm text-amber-700">
+            {visit.advisedSurgeryDate ? "Rescheduled to " : "Tentative date: "}
+            {movedTo.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+            {visit.advisedSurgeryDate ? " (Counselling)" : " (set in Counselling)"}
           </p>
         )}
         {visit.advisedSurgeryNotes && <p className="text-label sm:text-sm text-[var(--color-ink-500)] whitespace-pre-line">{visit.advisedSurgeryNotes}</p>}
@@ -508,6 +517,13 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
             onChange={(e) => { setDate(e.target.value); touch(); }}
             className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
           />
+          {movedTo && (
+            <p className="mt-1 text-caption text-amber-700">
+              {visit.advisedSurgeryDate ? "Rescheduled to " : "Set in Counselling: "}
+              {movedTo.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+              {visit.advisedSurgeryDate ? " (Counselling)" : ""}
+            </p>
+          )}
         </div>
         <div className="min-w-0">
           <label className={labelCls}>Notes</label>
