@@ -9,8 +9,9 @@ import { PrintBar } from "./PrintBar";
 export const metadata = { title: "Discharge Summary" };
 
 /** Printable discharge summary, outside the app shell so only the document prints. */
-export default async function DischargePrintPage({ params }: { params: Promise<{ admissionId: string }> }) {
+export default async function DischargePrintPage({ params, searchParams }: { params: Promise<{ admissionId: string }>; searchParams: Promise<{ print?: string }> }) {
   const { admissionId } = await params;
+  const { print } = await searchParams;
   const user = await requirePermission("ipd.view");
   const scope = await visitRecordScope(user);
   if (!scope) notFound();
@@ -45,8 +46,8 @@ export default async function DischargePrintPage({ params }: { params: Promise<{
 
   return (
     <main className="min-h-screen bg-gray-100 print:bg-white">
-      <style>{"@page { size: A4; margin: 14mm 12mm; }"}</style>
-      <PrintBar autoPrint />
+      <style>{"@page { size: A4; margin: 10mm 12mm; }"}</style>
+      <PrintBar autoPrint={print !== "0"} />
       <div className="py-6 print:py-0">
         <div className="mx-auto w-fit shadow-sm print:shadow-none">
           <DischargeDocument

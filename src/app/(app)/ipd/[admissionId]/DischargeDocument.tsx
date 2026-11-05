@@ -1,4 +1,6 @@
-// Printable discharge summary (A4). Pure markup, used by the print page.
+// Printable discharge summary (A4), laid out like a standard hospital discharge
+// summary. Pure markup, used by the print page. No <header>/<nav> elements:
+// the app's print styles hide those.
 import { admissionTypeText, dischargeTypeLabel, type DischargeData } from "@/lib/ipd";
 import { fileHref } from "@/lib/file-href";
 
@@ -12,146 +14,239 @@ export interface DischargeHeader {
   signed: { by: string; at: string } | null;
 }
 
-const day = (s?: string | null) =>
-  s ? new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "—";
+const ordinal = (n: number) => (n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th");
+function LongDate({ s }: { s?: string | null }) {
+  if (!s) return <>—</>;
+  const d = new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s);
+  const day = Number(d.toLocaleDateString("en-GB", { day: "numeric", timeZone: "Asia/Kolkata" }));
+  const rest = d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" });
+  return <>{String(day).padStart(2, "0")}<sup>{ordinal(day)}</sup> {rest}</>;
+}
 const dateTime = (s: string) =>
   new Date(s).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
+const lines = (v: string) => v.split("\n").map((l) => l.trim()).filter(Boolean);
 
-function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+const Dashed = () => <div className="my-2.5 border-t border-dashed border-gray-400" />;
+
+function Heading({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-[12px] font-bold uppercase tracking-wide text-black mb-1">{children}</h3>;
+}
+
+/** One section: bold heading, plain content, dashed rule after it. */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="mt-4 break-inside-avoid">
-      <h3 className="text-[11px] font-bold uppercase tracking-wider text-teal-800 border-b border-teal-700/30 pb-0.5 mb-1.5">{n}. {title}</h3>
-      <div className="text-[12px] leading-relaxed text-gray-800">{children}</div>
+    <section className="break-inside-avoid">
+      <Heading>{title}</Heading>
+      <div className="text-[12px] leading-[1.55] text-gray-900">{children}</div>
+      <Dashed />
     </section>
   );
 }
-const Text = ({ v }: { v: string }) => (v.trim() ? <p className="whitespace-pre-line">{v}</p> : <p className="text-gray-400">—</p>);
+
+function Para({ v }: { v: string }) {
+  const ls = lines(v);
+  if (!ls.length) return <p className="text-gray-500">Nil</p>;
+  return <>{ls.map((l, i) => <p key={i}>{l}</p>)}</>;
+}
+
+/** label : value row of the patient details block. */
+function Pair({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <>
+      <span className="font-bold uppercase text-[11px] tracking-wide text-black">{k}</span>
+      <span className="text-[12px] text-gray-900"><span className="mr-1.5">:</span>{v || "—"}</span>
+    </>
+  );
+}
+
+const cell = "border border-gray-700 px-2 py-1 text-left align-top";
 
 export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeData }) {
   const surgical = !!(s.procedure.name || s.procedure.implant);
-  let n = 0;
-  const next = () => ++n;
+  const diagnoses = lines(s.diagnosis);
+  const consultant = s.consultant || h.doctor;
+
+  const letterhead = (
+    <div className="flex items-start justify-between gap-6 pb-3 mb-3 border-b-2 border-gray-800">
+      <div className="text-[11px] leading-snug text-gray-900">
+        <p className="text-[14px] font-extrabold uppercase tracking-wide text-black">{h.hospital}</p>
+        {h.address && <p className="max-w-[300px]">{h.address}</p>}
+        {h.contact && <p>Ph: {h.contact}</p>}
+      </div>
+      {h.logoUrl
+        ? <img src={fileHref(h.logoUrl) ?? h.logoUrl} alt={h.hospital} className="h-16 max-w-[180px] object-contain" />
+        : <p className="text-[20px] font-black text-teal-800 leading-none text-right max-w-[220px]">{h.hospital}</p>}
+    </div>
+  );
+
+  const footer = (
+    <div className="pt-3 text-center">
+      <p className="text-[10px] font-semibold text-gray-800">{h.hospital}{h.address ? `, ${h.address}` : ""}{h.contact ? ` · Tel: ${h.contact}` : ""}</p>
+      <div className="mt-1.5 bg-teal-800 text-white py-1.5 text-[15px] tracking-[0.12em] [print-color-adjust:exact] [-webkit-print-color-adjust:exact]" style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+        EMERGENCY CALL{h.contact ? ` - ${h.contact}` : ""}
+      </div>
+      <p className="mt-1.5 text-[10px] font-bold uppercase text-gray-900">&ldquo;Keep the reports carefully and bring them along during your next visit to our hospital&rdquo;</p>
+    </div>
+  );
+
   return (
-    <article className="mx-auto w-full max-w-[210mm] bg-white text-gray-900 p-8 print:p-0">
-      {/* Letterhead */}
-      <header className="flex items-start justify-between gap-6 border-b-2 border-teal-800 pb-3">
-        <div className="flex items-start gap-3">
-          {h.logoUrl && <img src={fileHref(h.logoUrl) ?? h.logoUrl} alt="" className="h-14 w-14 object-contain" />}
-          <div>
-            <h1 className="text-xl font-bold text-teal-900 leading-tight">{h.hospital}</h1>
-            {h.address && <p className="text-[11px] text-gray-600 mt-0.5">{h.address}</p>}
-            {h.contact && <p className="text-[11px] text-gray-600">Contact: {h.contact}</p>}
+    <div className="mx-auto w-[210mm] max-w-full bg-white text-black px-[14mm] py-[10mm] print:w-auto print:p-0" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+      {/* thead / tfoot repeat the letterhead and footer on every printed page */}
+      <table className="w-full border-collapse">
+        <thead><tr><td className="p-0">{letterhead}</td></tr></thead>
+        <tfoot><tr><td className="p-0">{footer}</td></tr></tfoot>
+        <tbody><tr><td className="p-0 align-top">
+          {/* Title */}
+          <div className="relative text-center mb-3">
+            <p className="text-[12px] font-bold uppercase tracking-wide">Department of Ophthalmology</p>
+            <h1 className="text-[20px] font-bold underline underline-offset-4 mt-1">Discharge Summary</h1>
+            {h.fileNo && <p className="absolute right-0 top-0 text-[14px] font-semibold" style={{ fontFamily: "'Courier New', monospace" }}>{h.fileNo}</p>}
           </div>
-        </div>
-        <div className="text-right text-[11px] text-gray-700">
-          <p className="font-bold text-[13px] text-gray-900">Dr. {h.doctor}</p>
-          {h.qualifications && <p>{h.qualifications}</p>}
-          {h.regNo && <p>Reg. No. {h.regNo}</p>}
-        </div>
-      </header>
 
-      <h2 className="text-center text-base font-extrabold tracking-[0.2em] text-gray-900 mt-3">DISCHARGE SUMMARY</h2>
-
-      {/* 1. Patient & admission details */}
-      <Section n={next()} title="Patient & admission details">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-0.5">
-          <p><b>Name:</b> {h.patient.name}</p>
-          <p><b>Age / Sex:</b> {h.patient.age} / {SEX[h.patient.sex] ?? h.patient.sex}</p>
-          <p><b>Patient ID:</b> {h.patient.id}</p>
-          <p><b>IP / File No.:</b> {h.fileNo || "—"}</p>
-          <p><b>Ward / Floor:</b> {[h.ward, h.floor].filter(Boolean).join(" / ") || "—"}</p>
-          <p><b>Consultant:</b> {s.consultant || h.doctor}</p>
-          <p><b>Date of admission:</b> {day(h.admittedOn)}</p>
-          <p><b>Date of discharge:</b> {day(s.dischargeDate)}</p>
-          <p><b>Type of admission:</b> {admissionTypeText(h.type, h.typeOther)}</p>
-          <p><b>Type of discharge:</b> {dischargeTypeLabel(s.dischargeType)}{s.dischargeType === "REFERRED" && s.referredTo ? ` to ${s.referredTo}` : ""}</p>
-        </div>
-      </Section>
-
-      <Section n={next()} title="Diagnosis"><Text v={s.diagnosis} /></Section>
-      <Section n={next()} title="Presenting complaints, history & allergies">
-        <Text v={s.complaints} />
-        {s.history.trim() && <p className="whitespace-pre-line mt-1">{s.history}</p>}
-        <p className="mt-1"><b>Allergies:</b> {s.allergies || "—"}</p>
-      </Section>
-      <Section n={next()} title="Findings on admission">
-        <table className="w-full text-[12px] border border-gray-300">
-          <thead><tr className="bg-gray-50"><th className="border border-gray-300 px-2 py-0.5 text-left w-32"></th><th className="border border-gray-300 px-2 py-0.5 text-left">RE</th><th className="border border-gray-300 px-2 py-0.5 text-left">LE</th></tr></thead>
-          <tbody>
-            <tr><td className="border border-gray-300 px-2 py-0.5 font-semibold">Visual acuity</td><td className="border border-gray-300 px-2 py-0.5">{s.findings.vaRe || "—"}</td><td className="border border-gray-300 px-2 py-0.5">{s.findings.vaLe || "—"}</td></tr>
-            <tr><td className="border border-gray-300 px-2 py-0.5 font-semibold">IOP</td><td className="border border-gray-300 px-2 py-0.5">{s.findings.iopRe || "—"}</td><td className="border border-gray-300 px-2 py-0.5">{s.findings.iopLe || "—"}</td></tr>
-          </tbody>
-        </table>
-        {s.findings.anterior.trim() && <p className="whitespace-pre-line mt-1"><b>Anterior segment:</b> {s.findings.anterior}</p>}
-        {s.findings.posterior.trim() && <p className="whitespace-pre-line mt-1"><b>Posterior segment:</b> {s.findings.posterior}</p>}
-      </Section>
-      <Section n={next()} title="Investigations"><Text v={s.investigations} /></Section>
-      {surgical && (
-        <Section n={next()} title="Procedure">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-0.5">
-            <p><b>Surgery:</b> {[s.procedure.eye, s.procedure.name].filter(Boolean).join(" ") || "—"}</p>
-            <p><b>Date:</b> {day(s.procedure.date)}</p>
-            <p><b>Anaesthesia:</b> {s.procedure.anaesthesia || "—"}</p>
-            <p><b>Implant:</b> {s.procedure.implant || "—"}</p>
-            <p><b>Surgeon:</b> {s.procedure.surgeon || "—"}</p>
+          {/* Patient details */}
+          <Heading>Patient Details</Heading>
+          <div className="border-y border-gray-800 py-2 mb-3 grid grid-cols-[auto_1fr_auto_1fr] gap-x-4 gap-y-1.5 items-baseline">
+            <Pair k="Name" v={h.patient.name} />
+            <Pair k="Hospital No" v={h.patient.id} />
+            <Pair k="Age / Sex" v={`${h.patient.age} Yrs / ${SEX[h.patient.sex] ?? h.patient.sex}`} />
+            <Pair k="IP No" v={h.fileNo} />
+            <Pair k="Admission Date" v={<LongDate s={h.admittedOn} />} />
+            <Pair k="Discharge Date" v={<LongDate s={s.dischargeDate} />} />
+            <Pair k="Admitted Under" v={`Dr. ${consultant}`} />
+            <Pair k="Department" v="Ophthalmology" />
+            <Pair k="Ward / Bed" v={[h.ward && `Ward ${h.ward}`, h.floor && `Floor ${h.floor}`].filter(Boolean).join(", ")} />
+            <Pair k="Admission Type" v={admissionTypeText(h.type, h.typeOther)} />
+            <Pair k="Discharge Type" v={`${dischargeTypeLabel(s.dischargeType)}${s.dischargeType === "REFERRED" && s.referredTo ? ` to ${s.referredTo}` : ""}`} />
           </div>
-          <p className="whitespace-pre-line mt-1"><b>Intra-operative events:</b> {s.procedure.events || "—"}</p>
-        </Section>
-      )}
-      <Section n={next()} title="Course in hospital"><Text v={s.course} /></Section>
-      <Section n={next()} title="Condition at discharge">
-        <p><b>General condition:</b> {s.condition.general || "—"}</p>
-        <p><b>Visual acuity:</b> RE {s.condition.vaRe || "—"} · LE {s.condition.vaLe || "—"}</p>
-        <p><b>IOP:</b> RE {s.condition.iopRe || "—"} · LE {s.condition.iopLe || "—"}</p>
-        {s.condition.eye.trim() && <p><b>Operated / affected eye:</b> {s.condition.eye}</p>}
-      </Section>
-      <Section n={next()} title="Medicines on discharge">
-        {s.meds.length === 0 ? <p className="text-gray-400">—</p> : (
-          <table className="w-full text-[12px] border border-gray-300">
-            <thead><tr className="bg-gray-50">{["#", "Medicine", "Dose", "Eye", "Frequency", "Duration"].map((x) => <th key={x} className="border border-gray-300 px-2 py-0.5 text-left">{x}</th>)}</tr></thead>
-            <tbody>
-              {s.meds.map((m, i) => (
-                <tr key={i}>
-                  <td className="border border-gray-300 px-2 py-0.5">{i + 1}</td>
-                  <td className="border border-gray-300 px-2 py-0.5 font-semibold">{m.name}</td>
-                  <td className="border border-gray-300 px-2 py-0.5">{m.dose}</td>
-                  <td className="border border-gray-300 px-2 py-0.5">{m.eye}</td>
-                  <td className="border border-gray-300 px-2 py-0.5">{m.frequency}</td>
-                  <td className="border border-gray-300 px-2 py-0.5">{m.duration}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Section>
-      <Section n={next()} title="Advice">
-        <Text v={s.advice} />
-        {s.warning.trim() && <div className="mt-2 rounded border border-red-200 bg-red-50 px-2 py-1 whitespace-pre-line text-red-900">{s.warning}</div>}
-      </Section>
-      <Section n={next()} title="Follow-up">
-        <p><b>Review on:</b> {day(s.followUpDate)}{s.followUpNote ? ` · ${s.followUpNote}` : ""}</p>
-      </Section>
 
-      {/* Signatures */}
-      <section className="mt-8 grid grid-cols-2 gap-10 break-inside-avoid text-[11px]">
-        <div>
-          {h.signed ? (
-            <div className="rounded border border-teal-700/40 bg-teal-50 px-3 py-2">
-              <p className="font-bold text-teal-900">Signed electronically by Dr. {h.signed.by}</p>
-              <p className="text-teal-800">{dateTime(h.signed.at)} · verified by OTP</p>
-            </div>
-          ) : (
-            <p className="rounded border border-amber-300 bg-amber-50 px-3 py-2 font-semibold text-amber-800">DRAFT · not yet signed</p>
+          <Section title="Treating Clinicians">
+            <p>Dr. {consultant}{h.qualifications ? `, ${h.qualifications}` : ""}</p>
+          </Section>
+
+          <Section title="Diagnosis">
+            {diagnoses.length === 0 ? <p className="text-gray-500">Nil</p> : (
+              <ol className="list-decimal pl-5 font-bold text-[#1f2a5a]">
+                {diagnoses.map((d, i) => <li key={i}>{d}</li>)}
+              </ol>
+            )}
+          </Section>
+
+          <Section title="Chief Complaints">
+            <Para v={s.complaints} />
+          </Section>
+
+          <Section title="History">
+            <Para v={s.history} />
+            <p className="mt-1"><span className="font-semibold">Allergies:</span> {s.allergies || "Nil"}</p>
+          </Section>
+
+          <Section title="Examination on Admission">
+            <p>Visual acuity: RE {s.findings.vaRe || "—"}, LE {s.findings.vaLe || "—"}</p>
+            <p>IOP: RE {s.findings.iopRe || "—"}, LE {s.findings.iopLe || "—"}</p>
+            {lines(s.findings.anterior).map((l, i) => <p key={`a${i}`}>{i === 0 ? "Anterior segment: " : ""}{l}</p>)}
+            {lines(s.findings.posterior).map((l, i) => <p key={`p${i}`}>{i === 0 ? "Posterior segment: " : ""}{l}</p>)}
+          </Section>
+
+          <Section title="Investigations">
+            <Para v={s.investigations} />
+          </Section>
+
+          {surgical && (
+            <Section title="Surgery / Procedures Done">
+              <table className="w-full border-collapse text-[12px] mb-1.5">
+                <thead>
+                  <tr className="bg-gray-100 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    <th className={`${cell} w-[60%]`}>Surgery / Procedure Name</th>
+                    <th className={cell}>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className={cell}>{[s.procedure.eye, s.procedure.name].filter(Boolean).join(" ") || "—"}</td>
+                    <td className={cell}><LongDate s={s.procedure.date} /></td>
+                  </tr>
+                </tbody>
+              </table>
+              <p>Anaesthesia: {s.procedure.anaesthesia || "—"}</p>
+              <p>Implant: {s.procedure.implant || "—"}</p>
+              <p>Surgeon: {s.procedure.surgeon ? `Dr. ${s.procedure.surgeon.replace(/^Dr\.?\s*/i, "")}` : "—"}</p>
+              <p>Intra-operative events: {s.procedure.events || "—"}</p>
+            </Section>
           )}
-          <p className="mt-6 border-t border-gray-400 pt-1 text-gray-600">Consultant: Dr. {s.consultant || h.doctor}</p>
-        </div>
-        <div>
-          <div className="h-[52px]" />
-          <p className="mt-6 border-t border-gray-400 pt-1 text-gray-600">Patient / attendant: received and understood the advice</p>
-        </div>
-      </section>
-      <p className="mt-6 text-center text-[10px] text-gray-400">This is a computer-generated discharge summary from {h.hospital}.</p>
-    </article>
+
+          <Section title="Course in Hospital">
+            <Para v={s.course} />
+          </Section>
+
+          <Section title="Condition at Discharge">
+            <p>General condition: {s.condition.general || "—"}</p>
+            <p>Visual acuity: RE {s.condition.vaRe || "—"}, LE {s.condition.vaLe || "—"}</p>
+            <p>IOP: RE {s.condition.iopRe || "—"}, LE {s.condition.iopLe || "—"}</p>
+            {s.condition.eye.trim() && <p>Operated / affected eye: {s.condition.eye}</p>}
+          </Section>
+
+          <Section title="Medications on Discharge">
+            {s.meds.length === 0 ? <p className="text-gray-500">Nil</p> : (
+              <table className="w-full border-collapse text-[12px]">
+                <thead>
+                  <tr className="bg-gray-100 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    {["S.No", "Medicine", "Dose", "Eye", "Frequency", "Duration"].map((x) => <th key={x} className={cell}>{x}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {s.meds.map((m, i) => (
+                    <tr key={i}>
+                      <td className={`${cell} w-10`}>{i + 1}</td>
+                      <td className={`${cell} font-semibold`}>{m.name}</td>
+                      <td className={cell}>{m.dose}</td>
+                      <td className={cell}>{m.eye}</td>
+                      <td className={cell}>{m.frequency}</td>
+                      <td className={cell}>{m.duration}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </Section>
+
+          <Section title="Advice on Discharge">
+            <Para v={s.advice} />
+            {lines(s.warning).length > 0 && (
+              <div className="mt-2">
+                {lines(s.warning).map((l, i) => <p key={i} className={i === 0 ? "font-bold" : ""}>{l}</p>)}
+              </div>
+            )}
+          </Section>
+
+          <Section title="Follow-up">
+            <p>Review on <span className="font-semibold"><LongDate s={s.followUpDate} /></span>{s.followUpNote ? ` (${s.followUpNote})` : ""}</p>
+          </Section>
+
+          {/* Signatures */}
+          <div className="mt-6 grid grid-cols-2 gap-10 break-inside-avoid text-[12px]">
+            <div>
+              {h.signed ? (
+                <p className="text-[11px] text-gray-700">Signed electronically on {dateTime(h.signed.at)} (verified by OTP)</p>
+              ) : (
+                <p className="text-[11px] font-bold text-red-700">DRAFT, NOT YET SIGNED</p>
+              )}
+              <div className="mt-8 border-t border-gray-800 pt-1">
+                <p className="font-bold">Dr. {h.signed?.by ?? consultant}</p>
+                {h.qualifications && <p>{h.qualifications}</p>}
+                {h.regNo && <p>Reg. No. {h.regNo}</p>}
+                <p className="text-gray-600">Treating Consultant</p>
+              </div>
+            </div>
+            <div className="self-end">
+              <div className="border-t border-gray-800 pt-1">
+                <p className="font-bold">Patient / Attendant</p>
+                <p className="text-gray-600">I have received and understood the advice given.</p>
+              </div>
+            </div>
+          </div>
+        </td></tr></tbody>
+      </table>
+    </div>
   );
 }
