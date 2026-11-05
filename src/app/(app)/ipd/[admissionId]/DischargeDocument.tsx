@@ -175,7 +175,32 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
               {has(s.findings.posterior) && <div className="mt-1.5"><span className="text-gray-500">Posterior segment </span><Lines v={s.findings.posterior} /></div>}
             </Row>
           )}
-          {has(s.investigations) && <Row title="Investigations"><Bullets v={s.investigations} /></Row>}
+          {((s.invList?.length ?? 0) > 0 || has(s.investigations)) && (
+            <Row title="Investigations">
+              {s.invList && s.invList.length > 0 && (
+                <table className="w-full text-[12px] border-collapse mb-1">
+                  <thead>
+                    <tr className="text-[10px] uppercase tracking-wider text-gray-500 border-b border-gray-300">
+                      {["Investigation", "Eye", "Done on", "Report"].map((x) => <th key={x} className="py-1 pr-3 text-left font-semibold">{x}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.invList.map((r) => (
+                      <tr key={r.id} className="border-b border-gray-100 last:border-0">
+                        <td className="py-1 pr-3 font-semibold">{r.test}</td>
+                        <td className="py-1 pr-3">{r.eye || "—"}</td>
+                        <td className="py-1 pr-3">{day(r.ordered) || "—"}</td>
+                        <td className={`py-1 ${r.received ? "" : "text-amber-700 font-semibold"}`}>{r.received ? `Received ${day(r.received)}` : "Pending"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {has(s.investigations) && (s.invList?.length
+                ? <p className="mt-1.5"><span className="text-gray-500">Key findings: </span>{lines(s.investigations).join("; ")}</p>
+                : <Bullets v={s.investigations} />)}
+            </Row>
+          )}
           {surgical && (
             <Row title="Procedure">
               <p className="font-semibold">{procedure || "—"}{s.procedure.date ? <span className="font-normal text-gray-500"> · {day(s.procedure.date)}</span> : null}</p>

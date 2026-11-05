@@ -1,8 +1,8 @@
 "use client";
 
-import { Plus, RefreshCw, Trash2, FileText, ShieldCheck } from "lucide-react";
+import { Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
-import { DISCHARGE_TYPES, courseFromNotes, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
+import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
 
 const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-100 disabled:bg-white disabled:text-[var(--color-ink-800)] disabled:cursor-default";
 const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase block mb-1";
@@ -12,7 +12,7 @@ export interface DischargeContext {
   patient: { name: string; age: number; sex: string; id: string };
   fileNo: string | null; ward: string | null; floor: string | null;
   admittedOn: string; typeText: string; surgical: boolean;
-  orders: { id: string; testName: string; laterality: string | null; resultRef: string | null; resultAt: string | null }[];
+  orders: { id: string; testName: string; laterality: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
   doctorNotes: { text: string; at: string }[];
   drugs: { name: string; dose: string; eye: string; frequency: string }[];
   signed: { by: string; at: string } | null;
@@ -127,18 +127,57 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
         </div>
       </Block>
 
-      {/* 6. Investigations */}
-      <Block n={next()} title="Investigations">
-        <Area value={s.investigations} onChange={(v) => set("investigations", v)} editable={editable} placeholder="Test, date and result" />
-        {ctx.orders.some((o) => o.resultRef) && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {ctx.orders.filter((o) => o.resultRef).map((o) => (
-              <a key={o.id} href={fileHref(o.resultRef)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-lg border border-[var(--color-border)] px-2 py-1 text-caption text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
-                <FileText size={12} className="text-[var(--color-primary-600)]" /> {[o.laterality, o.testName].filter(Boolean).join(" ")}
-              </a>
-            ))}
+      {/* 6. Investigations: table of tests done + key findings */}
+      <Block n={next()} title="Investigations"
+        action={editable && ctx.orders.length > 0 && (
+          <button type="button" onClick={() => set("invList", invListFromOrders(ctx.orders))} className={linkBtn}><RefreshCw size={12} /> Refresh from orders</button>
+        )}>
+        {(s.invList ?? []).length === 0 ? (
+          <p className="text-sm italic text-[var(--color-ink-400)]">No investigations listed.</p>
+        ) : (
+          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-[var(--color-surface-sunken)]/60 border-b border-[var(--color-border)]">
+                  {["Investigation", "Eye", "Done on", "Report"].map((h) => <th key={h} className="px-3 py-1.5 text-left text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>)}
+                  {editable && <th className="w-9" />}
+                </tr>
+              </thead>
+              <tbody>
+                {(s.invList ?? []).map((r) => {
+                  const order = ctx.orders.find((o) => o.id === r.id);
+                  return (
+                    <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
+                      <td className="px-3 py-2 font-semibold text-[var(--color-ink-800)]">{r.test}</td>
+                      <td className="px-3 py-2 text-[var(--color-ink-700)]">{r.eye || "—"}</td>
+                      <td className="px-3 py-2 text-[var(--color-ink-600)] whitespace-nowrap">{r.ordered ? fmtDay(r.ordered) : "—"}</td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {r.received ? (
+                          <span className="inline-flex items-center gap-2">
+                            <span className="text-xs font-semibold text-emerald-700">Received {fmtDay(r.received)}</span>
+                            {order?.resultRef && (
+                              <a href={fileHref(order.resultRef)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-700)] hover:underline"><FileText size={12} /> View</a>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-700">Pending</span>
+                        )}
+                      </td>
+                      {editable && (
+                        <td className="px-1 text-center">
+                          <button type="button" title="Leave out of the summary" onClick={() => set("invList", (s.invList ?? []).filter((x) => x.id !== r.id))} className="p-1.5 rounded-lg text-[var(--color-ink-300)] hover:text-red-600 hover:bg-red-50" aria-label="Remove"><X size={14} /></button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
+        <div className="mt-3">
+          <Area label="Key findings" value={s.investigations} onChange={(v) => set("investigations", v)} editable={editable} placeholder="e.g. FFA: no leakage. OCT macula: normal foveal contour." />
+        </div>
       </Block>
 
       {/* 7. Procedure */}

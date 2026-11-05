@@ -12,7 +12,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import {
   ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  formsFor, isCustomKey, isDischargeData, logsOpen, type DischargeData, type IpdStatus, type LogEntry,
+  formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry,
 } from "@/lib/ipd";
 import {
   isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
@@ -159,7 +159,7 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   const defaults = (d.defaults[keyName] ?? { text: "" }) as FormJson;
   const initial: FormJson = (() => {
     if (!row || !Object.keys(row.data ?? {}).length) return defaults;
-    if (keyName === "discharge") return isDischargeData(row.data) ? row.data : defaults;
+    if (keyName === "discharge") return isDischargeData(row.data) ? normalizeDischarge(row.data, d.orders) : defaults;
     if (STRUCTURED.has(keyName)) return isV2(row.data) ? { ...defaults, ...row.data } : { ...defaults, log: row.data.log ?? [] };
     return row.data;
   })();
@@ -679,7 +679,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   const showOt = canGoToOt(d.type) && status === "ADMITTED" && can.shiftOt;
   const showDischarge = can.discharge && canDischargeNow(d.type, status);
   const savedSummary = rowOf("discharge")?.data;
-  const summaryNow = isDischargeData(savedSummary) ? savedSummary : (d.defaults.discharge as DischargeData);
+  const summaryNow = isDischargeData(savedSummary) ? normalizeDischarge(savedSummary, d.orders) : (d.defaults.discharge as DischargeData);
 
   const doShift = () => start(async () => {
     setDialog(null);

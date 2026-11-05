@@ -245,6 +245,24 @@ export const DISCHARGE_TYPES = [
   { value: "REFERRED", label: "Referred" },
 ] as const;
 
+export interface DischargeInvestigation { id: string; test: string; eye: string; ordered: string; received: string }
+
+type OrderLike = { id?: string; testName: string; laterality: string | null; resultAt: string | Date | null; createdAt: string | Date };
+
+export function invListFromOrders(orders: OrderLike[]): DischargeInvestigation[] {
+  return orders.map((o, i) => ({
+    id: o.id ?? `o${i}`, test: o.testName, eye: o.laterality ?? "",
+    ordered: istDay(o.createdAt), received: o.resultAt ? istDay(o.resultAt) : "",
+  }));
+}
+
+/** Older drafts listed investigations as text lines; move them into the table. */
+export function normalizeDischarge(s: DischargeData, orders: OrderLike[]): DischargeData {
+  if (s.invList) return s;
+  const auto = /report (pending|on file)/.test(s.investigations);
+  return { ...s, invList: invListFromOrders(orders), investigations: auto ? "" : s.investigations };
+}
+
 export interface DischargeMed { name: string; dose: string; eye: string; frequency: string; duration: string }
 
 export interface DischargeData {
@@ -258,7 +276,10 @@ export interface DischargeData {
   history: string;
   allergies: string;
   findings: { vaRe: string; vaLe: string; iopRe: string; iopLe: string; anterior: string; posterior: string };
+  /** Key findings / results to report (free text). */
   investigations: string;
+  /** Investigations done, as a table (older drafts have only the text above). */
+  invList?: DischargeInvestigation[];
   procedure: { name: string; eye: string; date: string; anaesthesia: string; implant: string; surgeon: string; events: string };
   course: string;
   condition: { general: string; vaRe: string; vaLe: string; iopRe: string; iopLe: string; eye: string };
@@ -319,7 +340,7 @@ export interface DischargeInputs {
   iop?: { re?: number | null; le?: number | null } | null;
   anterior?: { re?: string | null; le?: string | null } | null;
   posterior?: { re?: string | null; le?: string | null } | null;
-  orders: { testName: string; laterality: string | null; resultAt: string | Date | null; createdAt: string | Date }[];
+  orders: OrderLike[];
   doctorNotes: { text: string; at: string | Date }[];
   drugs: { name: string; dose: string; eye: string; frequency: string }[];
   education?: string | null;
@@ -371,9 +392,8 @@ export function buildDischargeDraft(i: DischargeInputs): DischargeData {
       anterior: segmentLine(i.anterior?.re, i.anterior?.le),
       posterior: segmentLine(i.posterior?.re, i.posterior?.le),
     },
-    investigations: i.orders
-      .map((o) => `${[o.laterality, o.testName].filter(Boolean).join(" ")} (${dayLabel(o.createdAt)}): ${o.resultAt ? `report on file, ${dayLabel(o.resultAt)}` : "report pending"}`)
-      .join("\n"),
+    investigations: "",
+    invList: invListFromOrders(i.orders),
     procedure: surgical
       ? { name: i.surgery ?? "", eye: i.laterality ?? "", date: istDay(i.surgeryDate), anaesthesia: i.anaesthesia ?? "", implant: i.implant ?? "", surgeon: i.doctor, events: "Uneventful" }
       : { name: "", eye: "", date: "", anaesthesia: "", implant: "", surgeon: "", events: "" },

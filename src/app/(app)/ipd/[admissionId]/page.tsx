@@ -165,7 +165,7 @@ export default async function IpdFilePage({
       iop: firstWith((x) => x.iopReadings[0], (r) => r.re != null || r.le != null),
       anterior: firstWith((x) => x.anteriorSegment, segHas),
       posterior: firstWith((x) => x.posteriorSegment, segHas),
-      orders: orders.map((o) => ({ testName: o.testName, laterality: o.laterality, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null, createdAt: o.createdAt })),
+      orders: orders.map((o) => ({ id: o.id, testName: o.testName, laterality: o.laterality, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null, createdAt: o.createdAt })),
       doctorNotes: a.doctorNotes.map((n) => ({ text: n.text, at: n.createdAt })),
       drugs: (() => { const t = a.forms.find((f) => f.key === "treatment"); const x = t ? parse(t.data) : {}; return Array.isArray(x.drugs) ? x.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : []; })(),
       education: educationAdvice(education),
