@@ -3,12 +3,24 @@ import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
 import {
+  admissionTypeText,
   defaultChecklist, defaultConsents, defaultEducation, defaultNurse, defaultTreatment,
   dischargeTemplate, otNotesTemplate,
 } from "@/lib/ipd";
 import { PatientFile, type FileData } from "./PatientFile";
 
 export const metadata = { title: "Patient File · IPD" };
+
+/** Category shown as the coloured badge, as on the patient Time Stamp. */
+const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "discharge"> = {
+  DETAILS_UPDATED: "update",
+  TYPE_CHANGED: "update",
+  FORM_FROZEN: "form",
+  FORM_ADDED: "form",
+  PHOTO_ADDED: "form",
+  SHIFTED_TO_OT: "ot",
+  DISCHARGED: "discharge",
+};
 
 const ACTIVITY_TEXT: Record<string, string> = {
   DETAILS_UPDATED: "Ward / floor / file details updated",
@@ -81,12 +93,16 @@ export default async function IpdFilePage({
         const nv = l.newValue ? JSON.parse(l.newValue) : null;
         if (l.action === "FORM_FROZEN" || l.action === "FORM_ADDED") detail = nv?.title ?? "";
         if (l.action === "PHOTO_ADDED") detail = nv?.name ?? "";
-        if (l.action === "TYPE_CHANGED") detail = `${nv?.from ?? ""} → ${nv?.to ?? ""}`;
+        if (l.action === "TYPE_CHANGED") detail = `${admissionTypeText(nv?.from ?? "")} → ${admissionTypeText(nv?.to ?? "", nv?.other)}`;
+        if (l.action === "DETAILS_UPDATED") {
+          detail = [nv?.ward && `Ward ${nv.ward}`, nv?.floor && `Floor ${nv.floor}`, nv?.fileNo && `File ${nv.fileNo}`].filter(Boolean).join(" · ");
+        }
       } catch { /* ignore */ }
-      return { at: l.timestamp.toISOString(), by: l.userName ?? "", text: ACTIVITY_TEXT[l.action] ?? l.action, detail };
+      return { at: l.timestamp.toISOString(), by: l.userName ?? "", text: ACTIVITY_TEXT[l.action] ?? l.action, detail, kind: ACTIVITY_KIND[l.action] ?? "update" };
     }),
-    { at: (v.finalizedAt ?? a.createdAt).toISOString(), by: v.doctor.name, text: "Admitted (EMR finalized & signed)", detail: "" },
-  ];
+    { at: (v.finalizedAt ?? a.createdAt).toISOString(), by: v.doctor.name, text: "Admitted (EMR finalized & signed)", detail: admissionTypeText(a.admissionType, a.admissionTypeOther), kind: "admission" as const },
+    ...(a.returnedFromOtAt ? [{ at: a.returnedFromOtAt.toISOString(), by: "", text: "Back to ward (post-op)", detail: "", kind: "ot" as const }] : []),
+  ].sort((x, y) => y.at.localeCompare(x.at));
 
   const parse = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
   const defaults: Record<string, unknown> = {

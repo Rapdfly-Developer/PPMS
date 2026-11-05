@@ -3,10 +3,10 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import {
   ArrowLeft, BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, User, FileText,
-  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, Trash2, ShieldCheck,
+  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, Trash2, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
@@ -65,7 +65,7 @@ export interface FileData {
   defaults: Record<string, unknown>;
   orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
   doctorNotes: { id: string; text: string; by: string; at: string }[];
-  activity: { at: string; by: string; text: string; detail: string }[];
+  activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
 }
 
 interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean }
@@ -526,21 +526,144 @@ function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: 
   );
 }
 
+/* Activity: calendar + day timeline, same layout as the patient Time Stamp */
+type ActivityKind = FileData["activity"][number]["kind"];
+const KIND_CFG: Record<ActivityKind, { label: string; hex: string; dot: string; border: string; badge: string; card: string }> = {
+  admission: { label: "Admission", hex: "#0EA5E9", dot: "bg-sky-500",                    border: "border-l-sky-400",                    badge: "bg-sky-100 text-sky-700",                                    card: "bg-sky-50/40" },
+  form:      { label: "Form",      hex: "#14B8A6", dot: "bg-[var(--color-primary-500)]", border: "border-l-[var(--color-primary-400)]", badge: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]", card: "bg-[var(--color-primary-50)]/40" },
+  update:    { label: "Update",    hex: "#F59E0B", dot: "bg-amber-500",                  border: "border-l-amber-400",                  badge: "bg-amber-100 text-amber-700",                                card: "bg-amber-50/40" },
+  ot:        { label: "OT",        hex: "#8B5CF6", dot: "bg-violet-500",                 border: "border-l-violet-400",                 badge: "bg-violet-100 text-violet-700",                              card: "bg-violet-50/40" },
+  discharge: { label: "Discharge", hex: "#10B981", dot: "bg-emerald-500",                border: "border-l-emerald-400",                badge: "bg-emerald-100 text-emerald-700",                            card: "bg-emerald-50/40" },
+};
+const ACT_DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+const dayKeyOf = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
+
 function ActivityLog({ d }: { d: FileData }) {
+  const events = d.activity;
+  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const latestKey = events.length ? dayKeyOf(events[0].at) : todayKey;
+  const [selectedKey, setSelectedKey] = useState(latestKey);
+  const [month, setMonth] = useState(() => startOfMonth(new Date(latestKey)));
+
+  const byDay = useMemo(() => {
+    const map: Record<string, FileData["activity"]> = {};
+    for (const e of events) (map[dayKeyOf(e.at)] ??= []).push(e);
+    for (const k in map) map[k].sort((a, b) => a.at.localeCompare(b.at));
+    return map;
+  }, [events]);
+
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const legend = [...new Set(events.map((e) => e.kind))];
+  const dayEvents = byDay[selectedKey] ?? [];
+  const select = (key: string) => {
+    setSelectedKey(key);
+    const dt = new Date(key);
+    if (dt.getMonth() !== month.getMonth() || dt.getFullYear() !== month.getFullYear()) setMonth(startOfMonth(dt));
+  };
+
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Activity</h2>
-      <ul className="space-y-2">
-        {d.activity.map((e, i) => (
-          <li key={i} className="flex gap-3 text-label sm:text-sm">
-            <span className="shrink-0 text-caption text-[var(--color-ink-400)] tabular-nums w-40">{fmtTime(e.at)}</span>
-            <span className="min-w-0 text-[var(--color-ink-700)]">
-              <span className="font-semibold text-[var(--color-ink-800)]">{e.text}</span>{e.detail ? ` · ${e.detail}` : ""}
-              {e.by && <span className="text-caption text-[var(--color-ink-400)]"> · {e.by}</span>}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Activity</h2>
+        <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{events.length} event{events.length === 1 ? "" : "s"}</span>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
+        {/* Calendar */}
+        <div className="rounded-xl border border-[var(--color-border)] px-4 pt-2.5 pb-2" style={{ background: "linear-gradient(160deg, var(--color-primary-50) 0%, #fff 60%)" }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <button onClick={() => setMonth((m) => subMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Previous month">
+              <ChevronLeft size={13} />
+            </button>
+            <h3 className="text-[13px] font-bold tracking-tight text-[var(--color-ink-800)]">{format(month, "MMMM yyyy")}</h3>
+            <button onClick={() => setMonth((m) => addMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Next month">
+              <ChevronRight size={13} />
+            </button>
+          </div>
+          <div className="grid grid-cols-7 mb-1">
+            {ACT_DAY_LABELS.map((x) => <span key={x} className="text-center text-[9px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">{x}</span>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: getDay(days[0]) }).map((_, i) => <div key={`b-${i}`} />)}
+            {days.map((day) => {
+              const key = format(day, "yyyy-MM-dd");
+              const list = byDay[key] ?? [];
+              const has = list.length > 0;
+              const isSel = key === selectedKey;
+              const isToday = isSameDay(day, new Date());
+              const kinds = [...new Set(list.map((e) => e.kind))];
+              return (
+                <button key={key} disabled={!has} onClick={() => select(key)}
+                  className={[
+                    "relative flex flex-col items-center justify-center w-full h-9 rounded-xl transition-all duration-150",
+                    isSel ? "bg-[var(--color-primary-600)] text-white shadow-sm"
+                      : has ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] cursor-pointer"
+                      : "text-[var(--color-ink-300)] cursor-default",
+                    isToday && !isSel ? "ring-2 ring-[var(--color-primary-400)] ring-offset-1" : "",
+                  ].join(" ")}>
+                  <span className="text-[11px] font-bold leading-none">{format(day, "d")}</span>
+                  {has && (
+                    <div className="flex gap-[3px] mt-[3px]">
+                      {kinds.slice(0, 3).map((k) => (
+                        <span key={k} className="w-[4px] h-[4px] rounded-full shrink-0" style={{ background: isSel ? "rgba(255,255,255,0.8)" : KIND_CFG[k].hex }} />
+                      ))}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-border)]/60">
+            <button onClick={() => select(todayKey)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] shadow-sm transition-all">
+              Today
+            </button>
+            <div className="flex flex-wrap gap-x-2 gap-y-1 justify-end">
+              {legend.map((k) => (
+                <span key={k} className="flex items-center gap-1 text-[9px] font-medium text-[var(--color-ink-400)]">
+                  <span className="size-1.5 rounded-full inline-block shrink-0" style={{ background: KIND_CFG[k].hex }} />
+                  {KIND_CFG[k].label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Selected day's events */}
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-[var(--color-ink-600)] mb-3">{format(new Date(selectedKey), "EEEE, d MMMM yyyy")}</p>
+          {dayEvents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 rounded-xl border border-dashed border-[var(--color-border)]">
+              <CalendarDays size={28} className="text-[var(--color-ink-300)]" />
+              <p className="text-xs text-[var(--color-ink-400)]">No activity on this date</p>
+            </div>
+          ) : (
+            <div className="pl-1">
+              {dayEvents.map((e, i) => {
+                const cfg = KIND_CFG[e.kind];
+                return (
+                  <div key={i} className="relative flex gap-3">
+                    <div className="flex flex-col items-center shrink-0">
+                      <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot} ring-2 ring-white shadow-sm mt-1.5 shrink-0`} />
+                      {i < dayEvents.length - 1 && <div className="w-px flex-1 bg-[var(--color-border)] mt-1" />}
+                    </div>
+                    <div className={`flex-1 min-w-0 mb-3 rounded-xl border border-[var(--color-border)] border-l-4 ${cfg.border} ${cfg.card} px-3 py-2.5`}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-micro sm:text-caption font-bold uppercase tracking-wide mb-0.5 ${cfg.badge}`}>{cfg.label}</span>
+                          <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{e.text}</p>
+                        </div>
+                        <span className="text-caption font-medium text-[var(--color-ink-400)] shrink-0 tabular-nums">{format(new Date(e.at), "h:mm a")}</span>
+                      </div>
+                      {e.detail && <p className="mt-1 text-caption text-[var(--color-ink-600)] break-words">{e.detail}</p>}
+                      {e.by && <p className="mt-1 text-caption text-[var(--color-ink-400)]">{e.by}</p>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
