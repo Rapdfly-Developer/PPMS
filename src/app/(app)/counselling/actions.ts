@@ -232,6 +232,7 @@ export async function saveAdvance(visitId: string, data: { advancePaid: number |
   const { user, rec } = await loadVisit(visitId, "counselling.edit");
   if (!rec?.fitForSurgery) return { error: "Advance is recorded after Fit for surgery." };
   if (rec.eligibleForSurgery) return { error: "Counselling is already complete." };
+  if (rec.reportsValidUntil && rec.reportsValidUntil < new Date()) return { error: "Reports have expired. Reopen counselling first." };
   if (data.advancePaid !== null && !(data.advancePaid >= 0)) return { error: "Invalid advance amount." };
 
   const patch = { advancePaid: data.advancePaid, advanceReceived: data.advanceReceived };

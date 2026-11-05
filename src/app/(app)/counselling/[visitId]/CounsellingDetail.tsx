@@ -1210,7 +1210,7 @@ export function CounsellingDetail({
           {/* ── G ─────────────────────────────────────────────────────── */}
           <SectionCard
             step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
-            locked={!rec.fitForSurgery} lockedText="Unlocks after Fit for Surgery"
+            locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Fit for Surgery"}
             right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
           >
             {rec.eligibleForSurgery ? (

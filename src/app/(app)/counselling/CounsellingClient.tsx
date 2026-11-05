@@ -135,7 +135,8 @@ const STAGES = ["Counselling", "Fit for Surgery", "Advance", "Eligible"];
 
 function ProgressDots({ r }: { r: CounsellingRow }) {
   const done = [true, r.fit, r.advanceDone, r.eligible];
-  const next = STAGES[done.findIndex((d) => !d)];
+  // Expired reports must be redone first, whatever stage was reached
+  const next = isExpired(r) ? "Reopen" : STAGES[done.findIndex((d) => !d)];
   return (
     <span className="inline-flex items-center gap-2" title={STAGES.map((s, i) => `${done[i] ? "✓" : "○"} ${s}`).join("\n")}>
       <span className="text-micro font-semibold text-[var(--color-ink-500)] whitespace-nowrap">
