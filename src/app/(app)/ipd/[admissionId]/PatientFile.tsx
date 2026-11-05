@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
+import { printInPlace } from "@/lib/print-in-place";
 import {
   ADMISSION_TYPE_LABEL, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
   formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry,
@@ -192,7 +193,7 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   // Print opens the saved summary, so the latest edits are saved first
   const printSummary = () => start(async () => {
     if (editable) { const err = await saveNow(value); if (err) { setError(err); return; } }
-    window.open(`/ipd-print/${d.id}`, "_blank");
+    printInPlace(`/ipd-print/${d.id}`);
   });
   const freeze = () => start(async () => {
     setConfirmFreeze(false);
@@ -238,7 +239,7 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           {editable && touched && <SaveIndicator state={saveState} />}
           {keyName === "discharge" && (
-            <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print / PDF</button>
+            <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print</button>
           )}
           {frozen ? (
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">

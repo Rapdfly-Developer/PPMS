@@ -7,6 +7,7 @@ import {
   ShieldCheck, Trash2, X,
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
+import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SelectWithCustom } from "./customOptions";
 import { EducationSetPicker, LoadOtTemplate, ManageMine, SaveAsMine, type PickableSet, type SavedTemplate } from "./templatesUi";
 import { searchMedications } from "@/lib/ophthalmic-medications";
@@ -309,7 +310,7 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
   });
   const print = (c: ConsentItem) => start(async () => {
     if (editable) { const err = await saveNow(v); if (err) { setError(err); return; } }
-    window.open(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`, "_blank");
+    printInPlace(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`);
   });
   const proc = [f.ctx.eye, f.ctx.surgery].filter(Boolean).join(" ") || "—";
 

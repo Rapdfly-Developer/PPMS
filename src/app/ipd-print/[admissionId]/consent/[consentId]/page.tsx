@@ -3,7 +3,7 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
 import { IpdPrintHeader } from "../../../IpdPrintHeader";
-import { CONSENT_DECLARATION, defaultConsents, eyeName, isV2, type ConsentsData, type FormContext } from "@/lib/ipd-forms";
+import { CONSENT_DECLARATION, defaultConsents, isV2, type ConsentsData, type FormContext } from "@/lib/ipd-forms";
 import { PrintBar } from "../../PrintBar";
 
 export const metadata = { title: "Consent Form" };
@@ -68,7 +68,6 @@ export default async function ConsentPrintPage({ params, searchParams }: {
               ["Phone", v.patient.mobile],
               ["Hospital No. / IP No.", [pid, a.fileNo].filter(Boolean).join(" / ")],
               ["Procedure", [ctx.eye, ctx.surgery].filter(Boolean).join(" ")],
-              ["Eye", eyeName(ctx.eye)],
               ["Surgeon", `Dr. ${ctx.doctor}`],
               ["Anaesthesia", ctx.anaesthesia ?? ""],
             ]}
