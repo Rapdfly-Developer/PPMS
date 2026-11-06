@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { format } from "date-fns";
 import {
-  ArrowDown, ArrowUp, Check, CheckCircle2, ClipboardCheck, FileText, Loader2, Plus, Printer, RotateCcw, Search,
+  Check, CheckCircle2, ClipboardCheck, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw, Search,
   Trash2, X,
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
@@ -801,11 +801,29 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
 export function OtNotesForm({ value: v, change, editable, template, f }: FormProps<OtNotesData> & { template: string[] }) {
   const set = (k: keyof OtNotesData, x: string) => change({ ...v, [k]: x });
   const setStep = (i: number, x: string) => change({ ...v, steps: v.steps.map((s, j) => (j === i ? x : s)) });
-  const move = (i: number, d: -1 | 1) => {
-    const steps = [...v.steps]; const j = i + d;
-    if (j < 0 || j >= steps.length) return;
-    [steps[i], steps[j]] = [steps[j], steps[i]];
-    change({ ...v, steps });
+  // Drag a step by its handle (pointer events, so it works with mouse and touch)
+  const [drag, setDragState] = useState<{ from: number; to: number } | null>(null);
+  const dragRef = useRef<{ from: number; to: number } | null>(null);
+  const setDrag = (d: { from: number; to: number } | null) => { dragRef.current = d; setDragState(d); };
+  const overIndex = (x: number, y: number) => {
+    const li = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-step]");
+    return li ? Number(li.dataset.step) : null;
+  };
+  const moveTo = (x: number, y: number) => {
+    const d = dragRef.current; if (!d) return;
+    const t = overIndex(x, y);
+    if (t !== null && t !== d.to) setDrag({ ...d, to: t });
+  };
+  const dropStep = (x: number, y: number) => {
+    moveTo(x, y);
+    const drag = dragRef.current;
+    if (drag && drag.from !== drag.to) {
+      const steps = [...v.steps];
+      const [s] = steps.splice(drag.from, 1);
+      steps.splice(drag.to, 0, s);
+      change({ ...v, steps });
+    }
+    setDrag(null);
   };
   return (
     <div className="space-y-3">
@@ -833,14 +851,23 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
         )}>
         <ol className="space-y-1.5">
           {v.steps.map((s, i) => (
-            <li key={i} className="flex items-start gap-2">
+            <li key={i} data-step={i}
+              className={`flex items-start gap-2 rounded-lg transition-colors ${drag?.from === i ? "opacity-50" : ""} ${drag && drag.to === i && drag.from !== i ? "bg-[var(--color-primary-50)] ring-1 ring-[var(--color-primary-300)]" : ""}`}>
+              {editable && (
+                <span role="button" tabIndex={-1} aria-label="Drag to reorder" title="Drag to reorder"
+                  onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ from: i, to: i }); }}
+                  onPointerMove={(e) => moveTo(e.clientX, e.clientY)}
+                  onPointerUp={(e) => dropStep(e.clientX, e.clientY)}
+                  onPointerCancel={() => setDrag(null)}
+                  className="mt-1.5 h-6 shrink-0 flex items-center cursor-grab active:cursor-grabbing touch-none text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
+                  <GripVertical size={16} />
+                </span>
+              )}
               <span className="mt-1.5 w-6 h-6 shrink-0 rounded-md bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-bold flex items-center justify-center">{i + 1}</span>
               {editable ? (
                 <>
                   <textarea value={s} onChange={(e) => setStep(i, e.target.value)} rows={1} className={`${inp} resize-y`} />
                   <span className="flex shrink-0 mt-1">
-                    <button type="button" onClick={() => move(i, -1)} className="p-1 text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]" aria-label="Move up"><ArrowUp size={14} /></button>
-                    <button type="button" onClick={() => move(i, 1)} className="p-1 text-[var(--color-ink-300)] hover:text-[var(--color-ink-700)]" aria-label="Move down"><ArrowDown size={14} /></button>
                     <button type="button" onClick={() => change({ ...v, steps: v.steps.filter((_, j) => j !== i) })} className="p-1 text-[var(--color-ink-300)] hover:text-red-600" aria-label="Remove step"><Trash2 size={14} /></button>
                   </span>
                 </>
