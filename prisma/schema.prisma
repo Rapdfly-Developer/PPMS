@@ -1577,6 +1577,7 @@ model IpdAdmission {
   expectedDischarge  DateTime?
   ward               String?
   floor              String?
+  wardType           String?   // MALE | FEMALE | OTHER
   fileNo             String?
   admittedByName     String?
 

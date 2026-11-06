@@ -813,7 +813,7 @@ export async function saveAdmission(
   udid: string,
   data: {
     type: string; other: string; reason: string; importCounselling: boolean;
-    admittedOn: string; expectedDischarge: string; ward: string; floor: string; fileNo: string;
+    admittedOn: string; admittedTime: string; expectedDischarge: string; ward: string; wardType: string; floor: string; fileNo: string;
   },
 ): Promise<{ error?: string }> {
   const user = await requireVisitPerm(visitId, "ipd.admit");
@@ -823,6 +823,8 @@ export async function saveAdmission(
   if (data.type === "OTHERS" && !data.other.trim()) return { error: "Describe the type of admission." };
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRe.test(data.admittedOn)) return { error: "Enter the date of admission." };
+  if (data.admittedTime && !/^\d{2}:\d{2}$/.test(data.admittedTime)) return { error: "Invalid time of admission." };
+  if (data.wardType && !["MALE", "FEMALE", "OTHER"].includes(data.wardType)) return { error: "Invalid ward type." };
   if (data.expectedDischarge && !dateRe.test(data.expectedDischarge)) return { error: "Invalid expected discharge date." };
   if (data.expectedDischarge && data.expectedDischarge < data.admittedOn) return { error: "Expected discharge can't be before the date of admission." };
 
@@ -844,9 +846,11 @@ export async function saveAdmission(
     admissionType: data.type,
     admissionTypeOther: data.type === "OTHERS" ? data.other.trim() : null,
     admissionReason: data.reason.trim().slice(0, 2000),
-    admittedOn: istDayRange(data.admittedOn).dayStart,
+    // Date and time of admission (IST); date only when no time is given
+    admittedOn: data.admittedTime ? new Date(`${data.admittedOn}T${data.admittedTime}:00+05:30`) : istDayRange(data.admittedOn).dayStart,
     expectedDischarge: data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null,
     ward: data.ward.trim() || null,
+    wardType: data.wardType || null,
     floor: data.floor.trim() || null,
     fileNo: data.fileNo.trim() || null,
     admittedByName: user.name,

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
-import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, type IpdStatus } from "@/lib/ipd";
+import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, wardTypeText, type IpdStatus } from "@/lib/ipd";
 import { UpcomingList, type UpcomingRow } from "./UpcomingList";
 
 export interface IpdRow {
@@ -31,6 +31,7 @@ export interface IpdRow {
   expectedDischarge: string | null;
   dischargedAt: string | null;
   ward: string | null;
+  wardType: string | null;
   floor: string | null;
   fileNo: string | null;
   status: string;
@@ -140,7 +141,7 @@ function PatientCell({ r }: { r: IpdRow }) {
 }
 
 function wardText(r: IpdRow) {
-  return [r.ward && `Ward ${r.ward}`, r.floor && `Floor ${r.floor}`, r.fileNo && `File ${r.fileNo}`].filter(Boolean).join(" · ");
+  return [r.ward && `Ward ${r.ward}`, wardTypeText(r.wardType), r.floor && `Floor ${r.floor}`, r.fileNo && `File ${r.fileNo}`].filter(Boolean).join(" · ");
 }
 
 const profileHref = (r: IpdRow) => `/patients/${r.patient.udid}?source=ipd&returnTo=${encodeURIComponent("/ipd")}`;

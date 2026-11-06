@@ -49,15 +49,17 @@ function knownKey(key: string, forms: { key: string }[]) {
 /* ── Admission details ─────────────────────────────────────────────────── */
 
 export async function updateAdmissionDetails(admissionId: string, data: {
-  ward: string; floor: string; fileNo: string; expectedDischarge: string;
+  ward: string; wardType: string; floor: string; fileNo: string; expectedDischarge: string;
 }): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
   if (admission.status === "DISCHARGED") return { error: "The patient is discharged; the file is read-only." };
   if (data.expectedDischarge && !/^\d{4}-\d{2}-\d{2}$/.test(data.expectedDischarge)) return { error: "Invalid expected discharge date." };
   const expectedDischarge = data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null;
   if (expectedDischarge && expectedDischarge < admission.admittedOn) return { error: "Expected discharge can't be before the date of admission." };
+  if (data.wardType && !["MALE", "FEMALE", "OTHER"].includes(data.wardType)) return { error: "Invalid ward type." };
   const patch = {
     ward: data.ward.trim() || null,
+    wardType: data.wardType || null,
     floor: data.floor.trim() || null,
     fileNo: data.fileNo.trim() || null,
     expectedDischarge,

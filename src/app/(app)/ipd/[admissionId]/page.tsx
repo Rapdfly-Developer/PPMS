@@ -209,6 +209,7 @@ export default async function IpdFilePage({
     admittedOn: a.admittedOn.toISOString(),
     expectedDischarge: a.expectedDischarge?.toISOString() ?? null,
     ward: a.ward,
+    wardType: a.wardType,
     floor: a.floor,
     fileNo: a.fileNo,
     status: a.status,

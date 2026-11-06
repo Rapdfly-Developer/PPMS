@@ -45,6 +45,7 @@ export default async function IpdPage() {
     expectedDischarge: a.expectedDischarge?.toISOString() ?? null,
     dischargedAt: a.dischargedAt?.toISOString() ?? null,
     ward: a.ward,
+    wardType: a.wardType,
     floor: a.floor,
     fileNo: a.fileNo,
     status: a.status,

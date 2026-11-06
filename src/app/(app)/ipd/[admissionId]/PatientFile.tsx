@@ -13,8 +13,7 @@ import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
 import {
   ADMISSION_TYPE_LABEL, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry,
-} from "@/lib/ipd";
+  formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
 import {
   isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
   type OtNotesData, type PostOpData, type TreatmentData,
@@ -64,6 +63,7 @@ export interface FileData {
   admittedOn: string;
   expectedDischarge: string | null;
   ward: string | null;
+  wardType: string | null;
   floor: string | null;
   fileNo: string | null;
   status: string;
@@ -508,13 +508,14 @@ function ActivityLog({ d }: { d: FileData }) {
 
 function DetailsDialog({ d, onClose, onDone }: { d: FileData; onClose: () => void; onDone: () => void }) {
   const [ward, setWard] = useState(d.ward ?? "");
+  const [wardType, setWardType] = useState(d.wardType ?? "");
   const [floor, setFloor] = useState(d.floor ?? "");
   const [fileNo, setFileNo] = useState(d.fileNo ?? "");
   const [edd, setEdd] = useState(istInput(d.expectedDischarge));
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const save = () => start(async () => {
-    const r = await updateAdmissionDetails(d.id, { ward, floor, fileNo, expectedDischarge: edd });
+    const r = await updateAdmissionDetails(d.id, { ward, wardType, floor, fileNo, expectedDischarge: edd });
     if (r.error) setError(r.error); else onDone();
   });
   return (
@@ -524,6 +525,15 @@ function DetailsDialog({ d, onClose, onDone }: { d: FileData; onClose: () => voi
         <div><label className={labelCls}>Floor No.</label><input value={floor} onChange={(e) => setFloor(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>File No.</label><input value={fileNo} onChange={(e) => setFileNo(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>Expected Discharge</label><input type="date" value={edd} min={istInput(d.admittedOn)} onChange={(e) => setEdd(e.target.value)} className={inputCls} /></div>
+        <div className="col-span-2">
+          <label className={labelCls}>Ward Type</label>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(WARD_TYPE_LABEL).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setWardType(wardType === k ? "" : k)}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${wardType === k ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)]"}`}>{l}</button>
+            ))}
+          </div>
+        </div>
       </div>
       <div className="mt-4 space-y-3">
         <ErrorLine text={error} />
@@ -723,7 +733,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
               </p>
               <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-0.5">{title}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
-                <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b></span>
+                <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b>{d.wardType ? ` (${wardTypeText(d.wardType)})` : ""}</span>
                 <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "-"}</b></span>
                 <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "-"}</b></span>
                 {can.edit && status !== "DISCHARGED" && (

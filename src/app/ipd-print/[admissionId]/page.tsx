@@ -56,7 +56,7 @@ export default async function DischargePrintPage({ params, searchParams }: { par
               hospital: v.hospital.name, address: v.hospital.address, contact: v.hospital.contact, logoUrl: v.hospital.logoUrl, email: v.hospital.email,
               doctor: v.doctor.name, qualifications: v.doctor.qualifications, regNo: v.doctor.medicalRegNumber, specialty: v.doctor.specialty || null,
               patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? v.patient.udid ?? v.patient.id, mobile: v.patient.mobile },
-              fileNo: a.fileNo, ward: a.ward, floor: a.floor,
+              fileNo: a.fileNo, ward: a.ward, wardType: a.wardType, floor: a.floor,
               type: a.admissionType, typeOther: a.admissionTypeOther,
               admittedOn: a.admittedOn.toISOString(),
               signed: a.status === "DISCHARGED" && a.dischargedBy ? { by: a.dischargedBy, at: (form.frozenAt ?? a.dischargedAt ?? new Date()).toISOString() } : null,

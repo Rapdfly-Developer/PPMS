@@ -4,6 +4,10 @@
 export type AdmissionType = "CONSERVATIVE" | "PRE_OP" | "OTHERS";
 export type IpdStatus = "ADMITTED" | "IN_OT" | "POST_OP" | "DISCHARGED";
 
+/** Ward type chosen at admission. */
+export const WARD_TYPE_LABEL: Record<string, string> = { MALE: "Male ward", FEMALE: "Female ward", OTHER: "Other ward" };
+export const wardTypeText = (t: string | null | undefined) => (t ? WARD_TYPE_LABEL[t] ?? t : "");
+
 export const ADMISSION_TYPE_LABEL: Record<AdmissionType, string> = {
   CONSERVATIVE: "Conservative Management",
   PRE_OP: "Pre-op",
