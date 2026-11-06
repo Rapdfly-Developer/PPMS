@@ -12,6 +12,7 @@ import {
 import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
 import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, type IpdStatus } from "@/lib/ipd";
+import { UpcomingList, type UpcomingRow } from "./UpcomingList";
 
 export interface IpdRow {
   id: string;
@@ -37,7 +38,7 @@ export interface IpdRow {
   total: number;
 }
 
-type Card = "TODAY" | "OVERALL";
+type Card = "TODAY" | "UPCOMING" | "OVERALL";
 const TABS = ["Pre-op", "Post-op", "Non-op"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -267,7 +268,7 @@ function Calendar({ rows, month, onMonth, selected, onSelect }: {
   );
 }
 
-export function IpdClient({ rows }: { rows: IpdRow[] }) {
+export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow[]; upcoming: UpcomingRow[]; canViewCounselling: boolean }) {
   const router = useRouter();
   const [card, setCard]               = useState<Card>("TODAY");
   const [pickedTab, setTab]           = useState<Tab | null>(null);
@@ -313,6 +314,13 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
     });
   }, [filtered, calDay, month]);
 
+  // Upcoming: counselling partially completed, not yet admitted (search filter only)
+  const upcomingList = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return upcoming;
+    return upcoming.filter((u) => [u.patient.name, u.patient.udid, u.patient.uhid ?? "", u.surgery ?? "", u.doctor].join(" ").toLowerCase().includes(q));
+  }, [upcoming, search]);
+
   const filtersActive = !!(search || typeFilter !== "ALL" || statusFilter !== "ALL" || dateFrom || dateTo);
   const dateInputCls = "px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
   const open = (r: IpdRow) => router.push(profileHref(r));
@@ -353,16 +361,11 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
           icon={<Clock size={17} className="text-sky-600" />} accent="text-sky-700" iconBg="bg-sky-50"
           onClick={() => setCard("TODAY")} active={card === "TODAY"}
         />
-        {/* Upcoming: placeholder only, as the requirements ask */}
-        <div className="flex flex-col items-center justify-center gap-1 px-2 py-3 rounded-xl border-2 border-dashed border-[var(--color-border)] text-center sm:flex-row sm:gap-3 sm:px-4 sm:py-4 sm:text-left" aria-disabled>
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 border border-dashed border-[var(--color-border)]">
-            <CalendarDays size={17} className="text-[var(--color-ink-300)]" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-[var(--color-ink-300)] leading-none">Upcoming</p>
-            <p className="text-micro sm:text-xs text-[var(--color-ink-300)] mt-0.5 leading-tight">Coming soon</p>
-          </div>
-        </div>
+        <StatCard
+          label="Upcoming · counselling partial" count={upcomingList.length}
+          icon={<CalendarDays size={17} className="text-amber-600" />} accent="text-amber-700" iconBg="bg-amber-50"
+          onClick={() => setCard("UPCOMING")} active={card === "UPCOMING"}
+        />
         <StatCard
           label="Overall · calendar" count={filtered.length}
           icon={<Layers size={17} className="text-[var(--color-primary-600)]" />} accent="text-[var(--color-primary-700)]" iconBg="bg-[var(--color-primary-50)]"
@@ -408,6 +411,14 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
 
       {card === "OVERALL" && <Calendar rows={filtered} month={month} onMonth={(d) => { setMonth(d); setCalDay(null); }} selected={calDay} onSelect={setCalDay} />}
 
+      {card === "UPCOMING" ? (
+        <>
+          <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
+            Counselling partially completed, not yet admitted · showing {upcomingList.length}
+          </p>
+          <UpcomingList list={upcomingList} canView={canViewCounselling} />
+        </>
+      ) : (<>
       <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
         {card === "TODAY"
           ? `${inHouse.length} in the hospital`
@@ -459,6 +470,7 @@ export function IpdClient({ rows }: { rows: IpdRow[] }) {
           </div>
         </>
       )}
+      </>)}
     </div>
   );
 }
