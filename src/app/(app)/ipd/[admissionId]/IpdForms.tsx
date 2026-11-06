@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { format } from "date-fns";
 import {
   ArrowDown, ArrowUp, Check, CheckCircle2, ClipboardCheck, FileText, Loader2, Plus, Printer, RotateCcw, Search,
-  ShieldCheck, Trash2, X,
+  Trash2, X,
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
@@ -256,57 +256,12 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
 
 /* ── 3. Consents ───────────────────────────────────────────────────────── */
 
-function SignPanel({ item, f, onSave, onCancel }: { item: ConsentItem; f: FileInfo; onSave: (c: ConsentItem) => void; onCancel: () => void }) {
-  const [kind, setKind] = useState<"PATIENT" | "RELATIVE">("PATIENT");
-  const [name, setName] = useState(f.ctx.patientName);
-  const [relation, setRelation] = useState("");
-  const [witness, setWitness] = useState("");
-  const [language, setLanguage] = useState("English");
-  const [explainedBy, setExplainedBy] = useState(f.ctx.doctor);
-  const ok = name.trim() && witness.trim() && (kind === "PATIENT" || relation.trim());
-  return (
-    <div className="mt-3 rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/50 p-3 space-y-3">
-      <p className="text-xs font-bold text-[var(--color-primary-800)]">Record signature (after the patient / relative signs the printed form)</p>
-      <div className="flex flex-wrap items-end gap-3">
-        <div className={rowIn}><label className={lblIn}>Signed by</label>
-          <Seg options={[{ value: "PATIENT", label: "Patient" }, { value: "RELATIVE", label: "Relative / guardian" }] as const} value={kind}
-            onChange={(k) => { setKind(k); setName(k === "PATIENT" ? f.ctx.patientName : ""); }} />
-        </div>
-        <Field label="Name" value={name} onChange={setName} className="flex-1 min-w-[180px]" />
-        {kind === "RELATIVE" && <Field label="Relationship" value={relation} onChange={setRelation} placeholder="e.g. Son" className="w-40" />}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <Field label="Witness" value={witness} onChange={setWitness} placeholder="Witness name" />
-        <div className={rowIn}><label className={lblIn}>Explained in</label>
-          <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={language} onChange={setLanguage} className={inp} />
-        </div>
-        <Field label="Explained by (doctor)" value={explainedBy} onChange={setExplainedBy} />
-      </div>
-      <div className="flex gap-2">
-        <button type="button" disabled={!ok} onClick={() => onSave({
-          ...item, signed: true, signer: { kind, name: name.trim(), relation: relation.trim() }, witness: witness.trim(),
-          language, explainedBy: explainedBy.trim(), signedAt: new Date().toISOString(), recordedBy: f.me,
-        })} className={btnP}><ShieldCheck size={13} /> Confirm signed</button>
-        <button type="button" onClick={onCancel} className={btnG}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
 export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormProps<ConsentsData>) {
-  const [signing, setSigning] = useState<string | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const items = v.items ?? [];
   const setItem = (c: ConsentItem) => change({ ...v, items: items.map((x) => (x.id === c.id ? c : x)) });
-  const signedCount = items.filter((c) => c.signed).length;
-  const commit = (c: ConsentItem) => start(async () => {
-    const next = { ...v, items: items.map((x) => (x.id === c.id ? c : x)) };
-    change(next);
-    const err = await saveNow(next);
-    if (err) setError(err); else { setSigning(null); setError(""); }
-  });
   const print = (c: ConsentItem) => start(async () => {
     if (editable) { const err = await saveNow(v); if (err) { setError(err); return; } }
     printInPlace(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`);
@@ -314,47 +269,15 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border ${signedCount === items.length && items.length ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
-          {signedCount} of {items.length} signed
-        </span>
-        <span className="text-caption text-[var(--color-ink-400)]">Print each consent, get it signed, then record the signature here. A signed consent can&apos;t be edited.</span>
-      </div>
       <ErrorText text={error} />
       {items.map((c) => (
-        <Card key={c.id} title={c.title} tone={c.signed ? "ok" : undefined}
-          right={
-            <div className="flex items-center gap-2">
-              {c.signed
-                ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><ShieldCheck size={13} /> Signed</span>
-                : <span className="text-xs font-semibold text-amber-700">Awaiting signature</span>}
-              <button type="button" disabled={busy} onClick={() => print(c)} className={btnG}><Printer size={12} /> Print</button>
-            </div>
-          }>
-          {editable && !c.signed
+        <Card key={c.id} title={c.title}
+          right={<button type="button" disabled={busy} onClick={() => print(c)} className={btnG}><Printer size={12} /> Print</button>}>
+          {editable
             ? <Area value={c.text} onChange={(x) => setItem({ ...c, text: x })} rows={Math.min(14, Math.max(4, c.text.split("\n").length + 2))} placeholder="Consent wording…" />
             : <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">{c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</div>}
           <p className="mt-3 text-xs italic text-[var(--color-ink-500)]">{CONSENT_DECLARATION}</p>
 
-          {c.signed ? (
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              {[
-                [c.signer?.kind === "RELATIVE" ? `Relative (${c.signer.relation})` : "Patient", c.signer?.name ?? c.signedBy ?? "-"],
-                ["Witness", c.witness || "-"],
-                ["Explained by", c.explainedBy ? `Dr. ${c.explainedBy.replace(/^Dr\.?\s*/i, "")}${c.language ? ` (in ${c.language})` : ""}` : "-"],
-              ].map(([k, x]) => (
-                <div key={k} className="rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 py-2">
-                  <p className="text-[10.5px] font-bold uppercase tracking-wider text-emerald-700">{k}</p>
-                  <p className="font-semibold text-[var(--color-ink-800)]">{x}</p>
-                </div>
-              ))}
-              <p className="sm:col-span-3 text-[11px] text-[var(--color-ink-400)]">Recorded by {c.recordedBy ?? "-"}{c.signedAt ? ` · ${dateTime(c.signedAt)}` : ""}</p>
-            </div>
-          ) : signing === c.id ? (
-            <SignPanel item={c} f={f} onSave={commit} onCancel={() => setSigning(null)} />
-          ) : editable ? (
-            <button type="button" onClick={() => setSigning(c.id)} className={`${btnP} mt-3`}><ShieldCheck size={13} /> Record signature</button>
-          ) : null}
         </Card>
       ))}
       {editable && (

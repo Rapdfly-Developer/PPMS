@@ -9,8 +9,6 @@ import { PrintBar } from "../../PrintBar";
 export const metadata = { title: "Consent Form" };
 
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
-const dateTime = (d: string) =>
-  new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 
 /** One consent, printed for the patient / relative and witness to sign. */
 export default async function ConsentPrintPage({ params, searchParams }: {
@@ -61,7 +59,7 @@ export default async function ConsentPrintPage({ params, searchParams }: {
             specialty={v.doctor.specialty || null}
             kicker="Informed Consent"
             title={c.title}
-            dateText={c.signedAt ? dateTime(c.signedAt) : "Date: ____________"}
+            dateText="Date: ____________"
             boxes={[
               ["Patient", ctx.patientName],
               ["Age / Gender", `${ctx.age} yrs / ${SEX[ctx.sex] ?? ctx.sex}`],
@@ -77,26 +75,25 @@ export default async function ConsentPrintPage({ params, searchParams }: {
             {c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
           </div>
           <p className="mt-4 text-[12px] font-semibold italic">{CONSENT_DECLARATION}</p>
-          <p className="mt-2 text-[12px]">Explained in: {c.language ?? "______________"}</p>
+          <p className="mt-2 text-[12px]">Explained in: ______________</p>
 
           <div className="mt-6 grid grid-cols-3 gap-8 text-[11.5px] break-inside-avoid">
             <div>
               <p className={line}><b>Signature of patient / relative</b></p>
-              <p>Name: {c.signer?.name ?? "____________________"}</p>
-              <p>Relationship: {c.signer ? (c.signer.kind === "PATIENT" ? "Self" : c.signer.relation) : "______________"}</p>
+              <p>Name: ____________________</p>
+              <p>Relationship: ______________</p>
             </div>
             <div>
               <p className={line}><b>Signature of witness</b></p>
-              <p>Name: {c.witness ?? "____________________"}</p>
+              <p>Name: ____________________</p>
             </div>
             <div>
               <p className={line}><b>Signature of doctor</b></p>
-              <p>Dr. {(c.explainedBy ?? ctx.doctor).replace(/^Dr\.?\s*/i, "")}</p>
+              <p>Dr. {ctx.doctor.replace(/^Dr\.?\s*/i, "")}</p>
               {v.doctor.qualifications && <p>{v.doctor.qualifications}</p>}
             </div>
           </div>
-          <p className="mt-6 text-[11px]">Date & time: {c.signedAt ? dateTime(c.signedAt) : "______________________"}</p>
-          {c.signed && <p className="mt-1 text-[10px] text-gray-500">Signature recorded in the patient file by {c.recordedBy ?? "-"}.</p>}
+          <p className="mt-6 text-[11px]">Date & time: ______________________</p>
         </div>
       </div>
     </main>

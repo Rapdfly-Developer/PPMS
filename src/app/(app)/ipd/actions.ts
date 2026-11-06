@@ -111,16 +111,6 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
       const prev = JSON.parse(row.data);
       const incoming = JSON.parse(json);
       if (Array.isArray(prev?.log)) { incoming.log = prev.log; next = JSON.stringify(incoming); }
-      // A consent is locked once the patient has signed it
-      if (key === "consents" && Array.isArray(prev?.items)) {
-        const signed = (prev.items as { id: string; signed?: boolean }[]).filter((c) => c.signed);
-        const items = Array.isArray(incoming.items) ? (incoming.items as { id: string }[]) : [];
-        incoming.items = [
-          ...items.map((c) => signed.find((s) => s.id === c.id) ?? c),
-          ...signed.filter((s) => !items.some((c) => c.id === s.id)),
-        ];
-        next = JSON.stringify(incoming);
-      }
     } catch { /* stored data unreadable: overwrite */ }
   }
   await prisma.ipdForm.upsert({
