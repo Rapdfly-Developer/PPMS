@@ -34,6 +34,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   deletionOtps       AccountDeletionOtp[]
   deletionRequests   AccountDeletionRequest[]
+  assistantChatMessages AssistantChatMessage[]
 }
 
 model Doctor {
@@ -441,6 +442,7 @@ model Patient {
   insurancePolicies  PatientInsurance[]
   surgerySchedules   SurgerySchedule[]
   consents           PatientConsent[]
+  assistantChatMessages AssistantChatMessage[]
   dataRightsRequests DataRightsRequest[]
   referralPatient      Patient?  @relation("PatientReferrals", fields: [referralPatientId], references: [id])
   referredPatients     Patient[] @relation("PatientReferrals")
@@ -1779,4 +1781,25 @@ model DemoRequest {
 
   @@index([createdAt])
   @@index([status, createdAt])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// AI Chat (EMR chatbot)
+// One running conversation per user and patient. The patient's identity is
+// never sent to the AI provider; rows here hold the chat as the user typed it.
+// ──────────────────────────────────────────────────────────────────────────
+
+model AssistantChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  role      String   // user | assistant
+  content   String
+  provider  String?  // groq | gemini, set on assistant rows
+  createdAt DateTime @default(now())
+
+  @@index([userId, patientId, createdAt])
+  @@index([patientId])
 }

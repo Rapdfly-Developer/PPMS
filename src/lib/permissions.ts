@@ -78,6 +78,9 @@ export const P = {
   // EMR — AI Clinical Copilot
   EMR_COPILOT_VIEW:        "emr.copilot.view",
 
+  // EMR: AI Chat (in-built chatbot)
+  EMR_CHATBOT_VIEW:        "emr.chatbot.view",
+
   // EMR — Lab Reports / Investigation Results
   EMR_LAB_REPORTS_UPLOAD:  "emr.labReports.upload",
   EMR_LAB_REPORTS_EDIT:    "emr.labReports.edit",

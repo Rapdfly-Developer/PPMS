@@ -69,6 +69,7 @@ export const PERMISSION_GROUPS: {
       { key: "emr.edit",   label: "Edit EMR (Full)",    description: "Edit all sections of the EMR; overrides section-level restrictions" },
       { key: "emr.print",  label: "Print / Export EMR", description: "Generate and download prescription and summary PDFs" },
       { key: "emr.copilot.view", label: "AI Copilot",  description: "Access the AI clinical copilot tab in the EMR" },
+      { key: "emr.chatbot.view", label: "AI Chat",     description: "Ask the AI chatbot medical questions and questions about the open patient's record" },
     ],
   },
 
