@@ -32,7 +32,7 @@ import {
 } from "@/lib/assistant/llm";
 import { buildDeidentifiedRecord, makeScrubber } from "@/lib/assistant/patient-record";
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 const MAX_MESSAGE_LENGTH = 4_000;
 const HISTORY_FOR_MODEL = 12;
