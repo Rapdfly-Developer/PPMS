@@ -7,15 +7,17 @@ import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
+import { addInvestigationOrder, updateInvestigationStatus, attachResult, removeResult, addExtraResult, removeExtraResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
+import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { INV_IN_VIEW_OF_DEFAULTS, INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { useAutoSave } from "@/lib/useAutoSave";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import {
   Paperclip, ExternalLink, Upload, Download, Eye, Clock,
   CheckCircle2, XCircle, FlaskConical, Plus, History,
-  X, Search, Trash2,
+  X, Search, Trash2, Lock,
 } from "lucide-react";
 
 const FAVES_KEY   = "ppms_inv_favorites";
@@ -31,6 +33,7 @@ export function InvestigationsTab({
   udid,
   readOnly,
   canOrder = true,
+  resultUploadedAt = {},
 }: {
   visit: any;
   priorVisits: any[];
@@ -38,6 +41,8 @@ export function InvestigationsTab({
   readOnly: boolean;
   /** investigations.create — hides the order form when off. */
   canOrder?: boolean;
+  /** Order id to the time its report was last uploaded. */
+  resultUploadedAt?: Record<string, string>;
 }) {
   const todayStr = format(new Date(), "yyyy-MM-dd");
 
@@ -92,7 +97,7 @@ export function InvestigationsTab({
 
       {/* In overview mode show all orders regardless of active sub-tab */}
       {(overview || activeTab === "previous") && (
-        <PreviousInvestigations orders={previousOrders} udid={udid} readOnly={readOnly} />
+        <PreviousInvestigations orders={previousOrders} udid={udid} readOnly={readOnly} resultUploadedAt={resultUploadedAt} />
       )}
       {/* Render NewInvestigations in overview even on read-only visits so today's
           orders are visible; the order-entry form is hidden by data-overview-hide */}
@@ -108,7 +113,7 @@ export function InvestigationsTab({
 
 // ── Previous Investigations (timeline) ───────────────────────────────────
 
-function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udid: string; readOnly: boolean }) {
+function PreviousInvestigations({ orders, udid, readOnly, resultUploadedAt }: { orders: any[]; udid: string; readOnly: boolean; resultUploadedAt: Record<string, string> }) {
   const [viewUrl, setViewUrl] = useState<string | null>(null);
 
   if (orders.length === 0) {
@@ -169,11 +174,12 @@ function PreviousInvestigations({ orders, udid, readOnly }: { orders: any[]; udi
 
             <div className="flex flex-col gap-3">
               {dayOrders.map((order) => (
-                <InvestigationCard
+                <PreviousInvestigationCard
                   key={order.id}
                   order={order}
                   udid={udid}
                   readOnly={readOnly}
+                  uploadedAt={resultUploadedAt[order.id]}
                   onView={setViewUrl}
                 />
               ))}
@@ -312,7 +318,235 @@ function InvestigationCard({
   );
 }
 
-function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
+/** An investigation is frozen 2 months after it was ordered: no more changes. */
+const FREEZE_MONTHS = 2;
+
+/** Read-only box for a value set when the test was ordered. */
+function InfoBox({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`min-w-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-label leading-snug ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function PreviousInvestigationCard({
+  order, udid, readOnly, uploadedAt, onView,
+}: {
+  order: any; udid: string; readOnly: boolean; uploadedAt?: string; onView: (url: string) => void;
+}) {
+  const isImage = order.resultRef && /\.(jpg|jpeg|png|webp)$/i.test(order.resultRef);
+  const frozen = new Date() > addMonths(new Date(order.createdAt), FREEZE_MONTHS);
+  const locked = readOnly || frozen;
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [busy, startBusy] = useTransition();
+  const [error, setError] = useState("");
+
+  const [doctorNotes, setDoctorNotes] = useState<string>(order.doctorNotes ?? "");
+  const { savePaused } = useEMRSaveContext();
+  useAutoSave(doctorNotes, async (v) => {
+    if (locked) return;
+    await updateInvestigationDoctorNotes(order.id, udid, v);
+  }, undefined, { flushOnUnmount: true, paused: savePaused });
+
+  const handleDeleteOrder = () => {
+    if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
+    startBusy(async () => { await deleteInvestigationOrder(order.id, udid); });
+  };
+  const handleRemoveFile = () => {
+    if (!confirmRemove) { setConfirmRemove(true); setTimeout(() => setConfirmRemove(false), 3500); return; }
+    setError("");
+    startBusy(async () => {
+      const r = await removeResult(order.id, udid);
+      if (r?.error) setError(r.error);
+      setConfirmRemove(false);
+    });
+  };
+
+  const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
+  const orderedAt = format(new Date(order.createdAt), "dd MMM yyyy, h:mm a");
+
+  const lateralityBadge = (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
+      {order.laterality ?? ""}
+    </span>
+  );
+  const nameBox = <InfoBox className="font-semibold text-[var(--color-ink-900)]">{order.testName}</InfoBox>;
+  const inViewOfBox = (
+    <InfoBox className="text-[var(--color-ink-600)]">
+      <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
+    </InfoBox>
+  );
+  const orderedAtLabel = (
+    <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+      <Clock size={10} />Ordered {orderedAt}
+    </span>
+  );
+  const frozenNote = frozen && (
+    <p className="mt-2 flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
+      <Lock size={10} /> Frozen: ordered more than {FREEZE_MONTHS} months ago, no changes can be made.
+    </p>
+  );
+
+  // Report not uploaded: one bar
+  if (!order.resultRef) {
+    return (
+      <Card className="px-3 py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {lateralityBadge}
+          <div className="min-w-[8rem] flex-1">{nameBox}</div>
+          <div className="min-w-[8rem] flex-1">{inViewOfBox}</div>
+          <PriorityPill priority={order.priority} />
+          {orderedAtLabel}
+          <div className="ml-auto flex items-center gap-1 shrink-0">
+            {!locked ? (
+              <span data-overview-hide className="contents">
+                <UploadButton orderId={order.id} udid={udid} label="Upload" />
+                <button
+                  type="button"
+                  onClick={handleDeleteOrder}
+                  disabled={busy}
+                  className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                    confirmDelete
+                      ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                      : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+                  }`}
+                >
+                  <Trash2 size={12} />
+                  {confirmDelete ? "Sure?" : ""}
+                </button>
+              </span>
+            ) : (
+              <span className="text-caption text-[var(--color-ink-400)]">Pending</span>
+            )}
+          </div>
+        </div>
+        {frozenNote}
+      </Card>
+    );
+  }
+
+  // Report uploaded: details on top, uploaded file below
+  const fileUrl = fileHref(order.resultRef)!;
+  const isPdf = /\.pdf$/i.test(order.resultRef);
+  const extraFiles = parseExtraResults(order.extraResultRefs);
+  return (
+    <Card className="px-3 py-2.5">
+      <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
+        {lateralityBadge}
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+          <div className="w-full">{nameBox}</div>
+          <PriorityPill priority={order.priority} />
+        </div>
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+          <div className="w-full">{inViewOfBox}</div>
+          {orderedAtLabel}
+        </div>
+        <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
+          <div className="w-full">
+            {!locked ? (
+              <KeywordInput
+                fieldKey={`inv_doctor_notes:${order.testName}`}
+                value={doctorNotes}
+                onChange={setDoctorNotes}
+                builtIns={INV_DOCTOR_NOTE_DEFAULTS[order.testName]}
+                placeholder="Doctor's notes"
+              />
+            ) : (
+              <InfoBox className="text-[var(--color-ink-700)] whitespace-pre-wrap">
+                <span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{order.doctorNotes ?? ""}
+              </InfoBox>
+            )}
+          </div>
+          {uploadedAt && (
+            <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+              <Clock size={10} />Uploaded {format(new Date(uploadedAt), "dd MMM yyyy, h:mm a")}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onView(fileUrl)}
+              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
+            >
+              <Eye size={12} /> View
+            </button>
+            <a
+              href={fileUrl}
+              download
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
+            >
+              <Download size={12} />
+            </a>
+          </div>
+          {!locked && (
+            <div data-overview-hide className="flex items-center gap-1">
+              <UploadButton orderId={order.id} udid={udid} label="Re-upload" />
+              <UploadButton orderId={order.id} udid={udid} label="Add more" addMore />
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                disabled={busy}
+                className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                  confirmRemove
+                    ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                    : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+                }`}
+              >
+                <Trash2 size={12} />
+                {confirmRemove ? "Sure?" : "Delete"}
+              </button>
+            </div>
+          )}
+          {error && <p className="text-caption text-red-600">{error}</p>}
+        </div>
+      </div>
+
+      {/* Uploaded file(s) */}
+      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
+        {isImage ? (
+          <img
+            src={fileUrl}
+            alt={`${order.testName} result`}
+            className="max-h-52 rounded-lg cursor-pointer object-contain"
+            onClick={() => onView(fileUrl)}
+          />
+        ) : isPdf ? (
+          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <iframe src={`${fileUrl}#toolbar=0&navpanes=0`} title={`${order.testName} result`} className="h-full w-full pointer-events-none" />
+            <button type="button" onClick={() => onView(fileUrl)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
+          </div>
+        ) : (
+          <button
+            onClick={() => onView(fileUrl)}
+            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
+          >
+            <Paperclip size={13} /> {order.testName} result file, click to view
+          </button>
+        )}
+        {extraFiles.map((file) => (
+          <ExtraResultPreview
+            key={file.ref}
+            file={file}
+            label={`${order.testName} result`}
+            onOpen={() => onView(fileHref(file.ref)!)}
+            onRemove={locked ? undefined : () => startBusy(async () => {
+              const r = await removeExtraResult(order.id, udid, file.ref);
+              if (r?.error) setError(r.error);
+            })}
+          />
+        ))}
+      </div>
+      {frozenNote}
+    </Card>
+  );
+}
+
+function UploadButton({ orderId, udid, label = "File", addMore = false }: { orderId: string; udid: string; label?: string; /** Keep the current file and attach this one as well. */ addMore?: boolean }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
@@ -330,7 +564,7 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       startTransition(async () => {
-        const result = await attachResult(orderId, udid, json.url);
+        const result = addMore ? await addExtraResult(orderId, udid, json.url) : await attachResult(orderId, udid, json.url);
         if (result?.error) setError(result.error);
       });
     } catch (err: any) {
@@ -351,7 +585,7 @@ function UploadButton({ orderId, udid }: { orderId: string; udid: string }) {
         className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
       >
         {uploading ? <Upload size={12} className="animate-pulse" /> : <Upload size={12} />}
-        {uploading ? "…" : "File"}
+        {uploading ? "…" : label}
       </button>
       {error && <p className="text-caption text-red-600">{error}</p>}
     </div>

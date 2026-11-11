@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition, useMemo, useRef } from "react";
 import { useEmrOverview, useOphthalmicSub } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { Trash2, Plus, X, Copy, Loader2, History, ImagePlus, ExternalLink, CheckCheck } from "lucide-react";
-import { KeywordInput, KeywordTextarea } from "@/components/emr/KeywordField";
+import { KeywordInput, KeywordTextarea, newKeywordFromText } from "@/components/emr/KeywordField";
 import { Card } from "@/components/ui/Card";
 import { Tabs } from "@/components/ui/Tabs";
 import { SingleChipSelect } from "@/components/ui/Chip";
@@ -1519,9 +1519,10 @@ function GonioFindingsInput({
     localStorage.setItem(`kw_${fk}`, JSON.stringify(kws));
   }
   function addKeyword() {
-    const raw = value.trim();
-    if (!raw) return;
     const kws = loadKws(fieldKey);
+    // Only the newly typed words are saved, not the keywords already in front of them
+    const raw = newKeywordFromText(value, [...ALL_GONIO_KW, ...kws]);
+    if (!raw) return;
     if (!kws.includes(raw)) saveKws(fieldKey, [...kws, raw]);
     setTick((t) => t + 1);
   }

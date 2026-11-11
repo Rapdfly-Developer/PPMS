@@ -236,6 +236,17 @@ export default async function PatientDetailedEMR({
         v.anteriorSegment ||
         v.posteriorSegment)
   );
+  // When each investigation report was last uploaded (taken from the audit trail)
+  const uploadedOrderIds = patient.visits.flatMap((v) => v.investigationOrders).filter((o) => o.resultRef).map((o) => o.id);
+  const uploadAudits = uploadedOrderIds.length
+    ? await prisma.auditLog.findMany({
+        where: { entityType: "InvestigationOrder", action: "RESULT_ATTACHED", entityId: { in: uploadedOrderIds } },
+        select: { entityId: true, timestamp: true },
+        orderBy: { timestamp: "asc" },
+      })
+    : [];
+  const resultUploadedAt: Record<string, string> = {};
+  for (const audit of uploadAudits) resultUploadedAt[audit.entityId] = audit.timestamp.toISOString();
   const latestDiagnosis = patient.visits.flatMap((v) => v.diagnoses)[0];
   // Header "Dx:" shows every diagnosis of the most recent visit that has any.
   const latestDiagnoses = patient.visits.find((v) => v.diagnoses.length > 0)?.diagnoses ?? [];
@@ -715,7 +726,7 @@ export default async function PatientDetailedEMR({
                   : undefined,
                 content: canViewInvestigationsTab ? (
                   <div className="flex flex-col gap-4">
-                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={!canEditInvestigationsTab} canOrder={canOrderInvestigations} />
+                    <InvestigationsTab visit={activeVisit} priorVisits={priorVisits} udid={udid} readOnly={!canEditInvestigationsTab} canOrder={canOrderInvestigations} resultUploadedAt={resultUploadedAt} />
                   </div>
                 ) : null,
               },

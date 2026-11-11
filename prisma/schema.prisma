@@ -771,6 +771,7 @@ model InvestigationOrder {
   status     String        @default("ORDERED")
   resultRef  String?
   resultAt   DateTime?     // when the current result file was uploaded
+  extraResultRefs String?  // Further report files added with "Add more": JSON list of { ref, at }
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
