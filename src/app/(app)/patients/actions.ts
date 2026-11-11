@@ -473,7 +473,7 @@ export async function getPatientInvestigations(patientId: string) {
       date: true,
       hospital: { select: { name: true } },
       investigationOrders: {
-        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, doctorNotes: true, resultRef: true, createdAt: true },
+        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, doctorNotes: true, resultRef: true, extraResultRefs: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       },
     },

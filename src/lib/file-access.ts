@@ -36,7 +36,7 @@ async function patientsReferencing(ref: string): Promise<string[]> {
   const [photos, past, results, refraction, cards, claimDocs] = await Promise.all([
     prisma.patient.findMany({ where: { OR: [{ photoUrl: ref }, { aadhaarPhotoUrl: ref }] }, select: { id: true } }),
     prisma.pastExternalVisit.findMany({ where: { scanFileRef: ref }, select: { patientId: true } }),
-    prisma.investigationOrder.findMany({ where: { resultRef: ref }, select: { visit: { select: { patientId: true } } } }),
+    prisma.investigationOrder.findMany({ where: { OR: [{ resultRef: ref }, { extraResultRefs: { contains: ref } }] }, select: { visit: { select: { patientId: true } } } }),
     // AR slips are stored inside the refraction JSON columns.
     prisma.refractiveCorrection.findMany({
       where: { OR: [{ re: { contains: ref } }, { le: { contains: ref } }, { extraCorrections: { contains: ref } }] },

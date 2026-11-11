@@ -7,7 +7,9 @@ import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult, removeResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
+import { addInvestigationOrder, updateInvestigationStatus, attachResult, removeResult, addExtraResult, removeExtraResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
+import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { INV_IN_VIEW_OF_DEFAULTS, INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { useAutoSave } from "@/lib/useAutoSave";
@@ -428,6 +430,7 @@ function PreviousInvestigationCard({
   // Report uploaded: details on top, uploaded file below
   const fileUrl = fileHref(order.resultRef)!;
   const isPdf = /\.pdf$/i.test(order.resultRef);
+  const extraFiles = parseExtraResults(order.extraResultRefs);
   return (
     <Card className="px-3 py-2.5">
       <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
@@ -483,6 +486,7 @@ function PreviousInvestigationCard({
           {!locked && (
             <div data-overview-hide className="flex items-center gap-1">
               <UploadButton orderId={order.id} udid={udid} label="Re-upload" />
+              <UploadButton orderId={order.id} udid={udid} label="Add more" addMore />
               <button
                 type="button"
                 onClick={handleRemoveFile}
@@ -502,8 +506,8 @@ function PreviousInvestigationCard({
         </div>
       </div>
 
-      {/* Uploaded file */}
-      <div className="mt-3 rounded-xl border border-[var(--color-border)] p-2">
+      {/* Uploaded file(s) */}
+      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
         {isImage ? (
           <img
             src={fileUrl}
@@ -524,13 +528,25 @@ function PreviousInvestigationCard({
             <Paperclip size={13} /> {order.testName} result file, click to view
           </button>
         )}
+        {extraFiles.map((file) => (
+          <ExtraResultPreview
+            key={file.ref}
+            file={file}
+            label={`${order.testName} result`}
+            onOpen={() => onView(fileHref(file.ref)!)}
+            onRemove={locked ? undefined : () => startBusy(async () => {
+              const r = await removeExtraResult(order.id, udid, file.ref);
+              if (r?.error) setError(r.error);
+            })}
+          />
+        ))}
       </div>
       {frozenNote}
     </Card>
   );
 }
 
-function UploadButton({ orderId, udid, label = "File" }: { orderId: string; udid: string; label?: string }) {
+function UploadButton({ orderId, udid, label = "File", addMore = false }: { orderId: string; udid: string; label?: string; /** Keep the current file and attach this one as well. */ addMore?: boolean }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
@@ -548,7 +564,7 @@ function UploadButton({ orderId, udid, label = "File" }: { orderId: string; udid
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       startTransition(async () => {
-        const result = await attachResult(orderId, udid, json.url);
+        const result = addMore ? await addExtraResult(orderId, udid, json.url) : await attachResult(orderId, udid, json.url);
         if (result?.error) setError(result.error);
       });
     } catch (err: any) {

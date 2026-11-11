@@ -11,7 +11,9 @@ import {
   getPatientSpectacleHistory,
   getPatientNoShows,
 } from "../actions";
-import { attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes, removeResult } from "@/app/(app)/emr/[udid]/actions";
+import { attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes, removeResult, addExtraResult, removeExtraResult } from "@/app/(app)/emr/[udid]/actions";
+import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { parseExtraResults, type ExtraResult } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { fileHref } from "@/lib/file-href";
@@ -150,6 +152,8 @@ function InvOrderRow({ o, udid, onView, perms }: {
   const [confirmRemove, setConfirmRemove]   = useState(false);
   const [, startTx]                         = useTransition();
   const fileRef                             = useRef<HTMLInputElement>(null);
+  const addMoreRef                          = useRef<HTMLInputElement>(null);
+  const [extraFiles, setExtraFiles]         = useState<ExtraResult[]>(() => parseExtraResults(o.extraResultRefs));
 
   const hasFile = !!localResultRef;
   const frozen = new Date() > addMonths(new Date(o.createdAt), INV_FREEZE_MONTHS);
@@ -199,6 +203,34 @@ function InvOrderRow({ o, udid, onView, perms }: {
     }
   }
 
+  // "Add more": keep the current file and attach this one as well
+  async function addMoreFile(file: File) {
+    setUploading(true); setUploadError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res  = await fetch("/api/uploads", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      const r = await addExtraResult(o.id, udid, json.url);
+      if (r?.error) setUploadError(r.error);
+      else setExtraFiles((prev) => [...prev, { ref: json.url, at: new Date().toISOString() }]);
+    } catch (err: any) {
+      setUploadError(err.message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      if (addMoreRef.current) addMoreRef.current.value = "";
+    }
+  }
+
+  function removeExtraFile(ref: string) {
+    startRemove(async () => {
+      const r = await removeExtraResult(o.id, udid, ref);
+      if (r?.error) setUploadError(r.error);
+      else setExtraFiles((prev) => prev.filter((x) => x.ref !== ref));
+    });
+  }
+
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) void uploadFile(file);
@@ -206,9 +238,12 @@ function InvOrderRow({ o, udid, onView, perms }: {
 
   function doRemoveResult() {
     startRemove(async () => {
-      await removeResult(o.id, udid);
-      setLocalResultRef(null);
-      setLocalUploadedAt(null);
+      const r = await removeResult(o.id, udid);
+      if (r?.error) { setUploadError(r.error); setConfirmRemove(false); return; }
+      const [next, ...rest] = extraFiles;
+      setLocalResultRef(next ? next.ref : null);
+      setLocalUploadedAt(next ? next.at : null);
+      setExtraFiles(rest);
       setConfirmRemove(false);
     });
   }
@@ -322,6 +357,16 @@ function InvOrderRow({ o, udid, onView, perms }: {
                   {uploading ? "Uploading…" : "Re-upload"}
                 </button>
               )}
+              {canUpload && (
+                <>
+                  <input ref={addMoreRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void addMoreFile(f); }} />
+                  <button type="button" disabled={uploading} onClick={() => addMoreRef.current?.click()}
+                    className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
+                    <Upload size={12} /> Add more
+                  </button>
+                </>
+              )}
               {canRemove && (confirmRemove ? (
                 <>
                   <button onClick={doRemoveResult} disabled={removing}
@@ -345,8 +390,8 @@ function InvOrderRow({ o, udid, onView, perms }: {
         </div>
       </div>
 
-      {/* Uploaded file */}
-      <div className="mt-3 rounded-xl border border-[var(--color-border)] p-2">
+      {/* Uploaded file(s) */}
+      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
         {isImage ? (
           <img
             src={fileHref(localResultRef)!}
@@ -367,6 +412,15 @@ function InvOrderRow({ o, udid, onView, perms }: {
             <Paperclip size={13} /> {o.testName} result file, click to view
           </button>
         )}
+        {extraFiles.map((file) => (
+          <ExtraResultPreview
+            key={file.ref}
+            file={file}
+            label={`${o.testName} result`}
+            onOpen={() => onView(file.ref)}
+            onRemove={canRemove ? () => removeExtraFile(file.ref) : undefined}
+          />
+        ))}
       </div>
       {frozenNote}
     </div>

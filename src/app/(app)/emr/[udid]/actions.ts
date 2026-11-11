@@ -11,6 +11,7 @@ import { writeAudit } from "@/lib/audit";
 import { istTodayStr, istDayRange } from "@/lib/ist";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay, addMonths } from "date-fns";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { medicationLaterality } from "@/lib/medication-laterality";
@@ -553,11 +554,46 @@ export async function removeResult(id: string, udid: string): Promise<{ error?: 
   const order = await prisma.investigationOrder.findUnique({ where: { id } });
   if (!order) return { error: "Order not found." };
   if (await isInvestigationFrozen(id)) return { error: INV_FROZEN_ERROR };
+  // With more files attached, the next one takes the removed file's place
+  const [next, ...rest] = parseExtraResults(order.extraResultRefs);
   await prisma.investigationOrder.update({
     where: { id },
-    data: { resultRef: null, status: "PENDING" },
+    data: next
+      ? { resultRef: next.ref, extraResultRefs: rest.length ? JSON.stringify(rest) : null }
+      : { resultRef: null, status: "PENDING" },
   });
   await writeAudit(user.id, "InvestigationOrder", id, "RESULT_REMOVED", {});
+  revalidate(udid);
+  return {};
+}
+
+/** "Add more": attach a further report file to an investigation that already has one. */
+export async function addExtraResult(id: string, udid: string, resultRef: string): Promise<{ error?: string }> {
+  const user = await requireRowPerm("investigationOrder", id, "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
+  const order = await prisma.investigationOrder.findUnique({ where: { id } });
+  if (!order) return { error: "Order not found." };
+  if (await isInvestigationFrozen(id)) return { error: INV_FROZEN_ERROR };
+  if (!order.resultRef) {
+    await prisma.investigationOrder.update({ where: { id }, data: { resultRef, status: "RESULT_AVAILABLE" } });
+    await writeAudit(user.id, "InvestigationOrder", id, "RESULT_ATTACHED", { resultRef });
+  } else {
+    const extras = [...parseExtraResults(order.extraResultRefs), { ref: resultRef, at: new Date().toISOString() }];
+    await prisma.investigationOrder.update({ where: { id }, data: { extraResultRefs: JSON.stringify(extras) } });
+    await writeAudit(user.id, "InvestigationOrder", id, "RESULT_ADDED", { resultRef });
+  }
+  revalidate(udid);
+  return {};
+}
+
+/** Remove one file that was added with "Add more". */
+export async function removeExtraResult(id: string, udid: string, resultRef: string): Promise<{ error?: string }> {
+  const user = await requireRowPerm("investigationOrder", id, "emr.labReports.edit", "investigations.edit");
+  const order = await prisma.investigationOrder.findUnique({ where: { id } });
+  if (!order) return { error: "Order not found." };
+  if (await isInvestigationFrozen(id)) return { error: INV_FROZEN_ERROR };
+  const extras = parseExtraResults(order.extraResultRefs).filter((x) => x.ref !== resultRef);
+  await prisma.investigationOrder.update({ where: { id }, data: { extraResultRefs: extras.length ? JSON.stringify(extras) : null } });
+  await writeAudit(user.id, "InvestigationOrder", id, "EXTRA_RESULT_REMOVED", { resultRef });
   revalidate(udid);
   return {};
 }
