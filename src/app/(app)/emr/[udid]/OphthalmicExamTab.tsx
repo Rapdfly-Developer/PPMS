@@ -14,6 +14,7 @@ import { parseJSON } from "@/lib/json";
 import { DiplopiaGrid, HessGrid } from "@/components/emr/Grid9Position";
 import { HIDE_DIPLOPIA_HESS } from "@/lib/constants";
 import { chipMatcher, CHIP_MATCH_CLASS, dropTypedTerm, dropTypedWord } from "@/lib/chip-match";
+import { TypeSelect } from "@/components/ui/TypeSelect";
 import { duochromeValue } from "@/lib/duochrome";
 import {
   VA_TEST_METHODS,
@@ -730,14 +731,14 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
           >
             {sign}
           </button>
-          <select
+          <TypeSelect
             disabled={!editable}
             value={mag}
-            onChange={(e) => onChange(e.target.value ? `${sign}${e.target.value}` : sign)}
-            className={`w-full min-w-0 ${SEL}`}
-          >
-            {mags.map((m) => <option key={m} value={m}>{m || "—"}</option>)}
-          </select>
+            options={mags}
+            onChange={(m) => onChange(m ? `${sign}${m}` : sign)}
+            onSign={(ns) => { if (ns !== sign) onChange(mag ? `${ns}${mag}` : ns); }}
+            className={SEL}
+          />
         </div>
       </div>
     );
@@ -746,14 +747,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const axisSelect = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5 min-w-0">
       <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select
+      <TypeSelect
         disabled={!editable}
         value={parseSignedVal(value).mag}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full min-w-0 ${SEL}`}
-      >
-        {AXIS_OPTS.map((a) => <option key={a} value={a}>{a || "—"}</option>)}
-      </select>
+        options={AXIS_OPTS}
+        onChange={onChange}
+        className={SEL}
+      />
     </div>
   );
 
@@ -764,14 +764,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
       <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
         <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
         <div className="flex items-center gap-1 min-w-0">
-          <select
+          <TypeSelect
             disabled={!editable}
             value={(dist ? base : value) || "-"}
-            onChange={(e) => onChange(dist ? joinVa(e.target.value, partial) : e.target.value)}
-            className={`w-full min-w-0 ${SEL}`}
-          >
-            {options.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
+            options={options}
+            onChange={(v) => onChange(dist ? joinVa(v, partial) : v)}
+            className={SEL}
+          />
           {dist && <PartialToggle value={value ?? ""} onChange={onChange} disabled={!editable} />}
         </div>
       </div>
@@ -786,14 +785,13 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
   const kInput = (label: string, value: string, onChange: (v: string) => void) => (
     <div className="flex flex-col gap-0.5 min-w-0">
       <label className="text-micro sm:text-caption text-[var(--color-ink-400)] font-medium">{label}</label>
-      <select
+      <TypeSelect
         disabled={!editable}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full min-w-0 ${SEL} tabular-nums`}
-      >
-        {K_OPTS.map((k) => <option key={k} value={k}>{k || "—"}</option>)}
-      </select>
+        options={K_OPTS}
+        onChange={onChange}
+        className={`${SEL} tabular-nums`}
+      />
     </div>
   );
   const deltaK = (k1?: string, k2?: string) => {
