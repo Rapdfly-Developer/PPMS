@@ -473,18 +473,29 @@ export async function getPatientInvestigations(patientId: string) {
       date: true,
       hospital: { select: { name: true } },
       investigationOrders: {
-        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, resultRef: true, createdAt: true },
+        select: { id: true, category: true, testName: true, laterality: true, priority: true, status: true, notes: true, doctorNotes: true, resultRef: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       },
     },
   });
+  // When each report was last uploaded (taken from the audit trail)
+  const uploadedIds = visits.flatMap((v) => v.investigationOrders).filter((o) => o.resultRef).map((o) => o.id);
+  const uploadAudits = uploadedIds.length
+    ? await prisma.auditLog.findMany({
+        where: { entityType: "InvestigationOrder", action: "RESULT_ATTACHED", entityId: { in: uploadedIds } },
+        select: { entityId: true, timestamp: true },
+        orderBy: { timestamp: "asc" },
+      })
+    : [];
+  const uploadedAt: Record<string, string> = {};
+  for (const audit of uploadAudits) uploadedAt[audit.entityId] = audit.timestamp.toISOString();
   return visits
     .filter((v) => v.investigationOrders.length > 0)
     .map((v) => ({
       visitId: v.id,
       date: v.date.toISOString(),
       hospitalName: v.hospital?.name ?? null,
-      orders: v.investigationOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString() })),
+      orders: v.investigationOrders.map((o) => ({ ...o, createdAt: o.createdAt.toISOString(), uploadedAt: uploadedAt[o.id] ?? null })),
     }));
 }
 

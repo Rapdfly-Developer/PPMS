@@ -2,8 +2,8 @@
 
 import { NO_SHOW_KIND_LABEL } from "@/lib/noShowKinds";
 import { useState, useTransition, useRef, useEffect } from "react";
-import { format } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Pencil, Trash2, UserX, Calendar, Building2 } from "lucide-react";
+import { format, addMonths } from "date-fns";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Trash2, UserX, Calendar, Building2, Clock, Lock, Paperclip } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
@@ -11,7 +11,9 @@ import {
   getPatientSpectacleHistory,
   getPatientNoShows,
 } from "../actions";
-import { attachResult, deleteInvestigationOrder, updateInvestigationNotes, removeResult } from "@/app/(app)/emr/[udid]/actions";
+import { attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes, removeResult } from "@/app/(app)/emr/[udid]/actions";
+import { KeywordInput } from "@/components/emr/KeywordField";
+import { INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { fileHref } from "@/lib/file-href";
 import { TimeStampButton } from "./PatientTimeline";
 import { medicationLaterality } from "@/lib/medication-laterality";
@@ -25,6 +27,7 @@ function Drawer({
   children,
   wide = false,
   mid = false,
+  xwide = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -33,9 +36,10 @@ function Drawer({
   children: React.ReactNode;
   wide?: boolean;
   mid?: boolean;
+  xwide?: boolean;
 }) {
   if (!open) return null;
-  const widthCls = wide ? "sm:max-w-2xl" : mid ? "sm:max-w-xl" : "sm:max-w-lg";
+  const widthCls = xwide ? "sm:max-w-5xl" : wide ? "sm:max-w-2xl" : mid ? "sm:max-w-xl" : "sm:max-w-lg";
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -117,22 +121,61 @@ type InvOrder = InvVisit["orders"][number];
 export type InvPerms = { view: boolean; upload: boolean; remove: boolean; notes: boolean };
 const ALL_INV_PERMS: InvPerms = { view: true, upload: true, remove: true, notes: true };
 
-function InvOrderRow({ o, idx, udid, onView, perms }: {
+/** An investigation is frozen 2 months after it was ordered: no more changes. */
+const INV_FREEZE_MONTHS = 2;
+
+const INV_PRIORITY_CLS: Record<string, string> = {
+  ROUTINE: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
+  URGENT:  "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
+  STAT:    "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
+};
+
+/** Read-only box for a value set when the test was ordered. */
+function InvInfoBox({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`min-w-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-label leading-snug ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function InvOrderRow({ o, udid, onView, perms }: {
   o: InvOrder; idx: number; udid: string; onView: (ref: string) => void; perms: InvPerms;
 }) {
-  const [localNotes, setLocalNotes]         = useState(o.notes ?? "");
   const [localResultRef, setLocalResultRef] = useState(o.resultRef ?? null);
+  const [localUploadedAt, setLocalUploadedAt] = useState<string | null>(o.uploadedAt ?? null);
   const [uploading, setUploading]           = useState(false);
   const [uploadError, setUploadError]       = useState("");
-  const [editing, setEditing]               = useState(false);
-  const [editNotes, setEditNotes]           = useState(o.notes ?? "");
-  const [saving, startSave]                 = useTransition();
   const [removing, startRemove]             = useTransition();
   const [confirmRemove, setConfirmRemove]   = useState(false);
   const [, startTx]                         = useTransition();
   const fileRef                             = useRef<HTMLInputElement>(null);
 
   const hasFile = !!localResultRef;
+  const frozen = new Date() > addMonths(new Date(o.createdAt), INV_FREEZE_MONTHS);
+  const canUpload = perms.upload && !frozen;
+  const canRemove = perms.remove && !frozen;
+  const canNote   = perms.notes && !frozen;
+
+  // Doctor's notes save on their own shortly after typing stops
+  const [doctorNotes, setDoctorNotes] = useState(o.doctorNotes ?? "");
+  const savedNotes = useRef(o.doctorNotes ?? "");
+  const latestNotes = useRef(doctorNotes);
+  latestNotes.current = doctorNotes;
+  useEffect(() => {
+    if (!canNote || doctorNotes === savedNotes.current) return;
+    const timer = setTimeout(() => {
+      savedNotes.current = doctorNotes;
+      void updateInvestigationDoctorNotes(o.id, udid, doctorNotes);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [doctorNotes, canNote, o.id, udid]);
+  useEffect(() => () => {
+    if (canNote && latestNotes.current !== savedNotes.current) {
+      void updateInvestigationDoctorNotes(o.id, udid, latestNotes.current);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function uploadFile(file: File) {
     setUploading(true); setUploadError("");
@@ -143,6 +186,7 @@ function InvOrderRow({ o, idx, udid, onView, perms }: {
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       setLocalResultRef(json.url);
+      setLocalUploadedAt(new Date().toISOString());
       startTx(async () => {
         const r = await attachResult(o.id, udid, json.url);
         if (r?.error) setUploadError(r.error);
@@ -160,126 +204,171 @@ function InvOrderRow({ o, idx, udid, onView, perms }: {
     if (file) void uploadFile(file);
   }
 
-  function saveNotes() {
-    startSave(async () => {
-      await updateInvestigationNotes(o.id, udid, editNotes);
-      setLocalNotes(editNotes);
-      setEditing(false);
-    });
-  }
-
   function doRemoveResult() {
     startRemove(async () => {
       await removeResult(o.id, udid);
       setLocalResultRef(null);
+      setLocalUploadedAt(null);
       setConfirmRemove(false);
     });
   }
 
-  const iconBtn = "p-1.5 rounded-md border transition-colors";
+  const inViewOf = o.notes ? o.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
+  const btn = "flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50";
 
-  return (
-    <div className="flex items-start gap-2.5 py-2.5 border-b border-[var(--color-border)] last:border-0">
-      <span className="text-caption text-[var(--color-ink-300)] tabular-nums w-4 shrink-0 mt-0.5">{idx + 1}.</span>
-      <div className="flex-1 min-w-0">
+  const fileInput = <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFileChange} />;
+  const lateralityBadge = (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
+      {o.laterality ?? ""}
+    </span>
+  );
+  const nameBox = <InvInfoBox className="font-semibold text-[var(--color-ink-900)]">{o.testName}</InvInfoBox>;
+  const inViewOfBox = (
+    <InvInfoBox className="text-[var(--color-ink-600)]">
+      <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
+    </InvInfoBox>
+  );
+  const urgency = o.priority ? (
+    <span className={`text-caption font-medium px-2 py-0.5 rounded-full ${INV_PRIORITY_CLS[o.priority] ?? INV_PRIORITY_CLS.ROUTINE}`}>{o.priority}</span>
+  ) : null;
+  const orderedAtLabel = (
+    <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+      <Clock size={10} />Ordered {format(new Date(o.createdAt), "dd MMM yyyy, h:mm a")}
+    </span>
+  );
+  const frozenNote = frozen && (
+    <p className="mt-2 flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
+      <Lock size={10} /> Frozen: ordered more than {INV_FREEZE_MONTHS} months ago, no changes can be made.
+    </p>
+  );
+  const cardCls = "rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5";
 
-        {/* Top row: test name + notes + actions */}
-        <div className="flex items-start gap-2">
-          {/* Test name */}
-          <p className="text-sm font-semibold text-[var(--color-ink-800)] leading-snug shrink-0">
-            {o.laterality && (
-              <span className="font-bold text-[var(--color-primary-700)] mr-1.5">{o.laterality}</span>
-            )}
-            {o.testName}
-          </p>
-
-          {/* In view of — fills the empty space */}
-          {localNotes && !editing && (
-            <span className="flex-1 min-w-0 text-caption text-[var(--color-ink-400)] italic truncate mt-0.5">
-              {localNotes}
-            </span>
-          )}
-          {!localNotes && !editing && <span className="flex-1" />}
-
-          {/* Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFileChange} />
-
-            {!hasFile ? (
-              /* No file yet — show Add File only */
-              perms.upload && <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-md border border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
-                {uploading ? <Upload size={11} className="animate-pulse" /> : <Upload size={11} />}
-                {uploading ? "Uploading…" : "Add File"}
+  // Report not uploaded: one bar
+  if (!hasFile) {
+    return (
+      <div className={cardCls}>
+        <div className="flex flex-wrap items-center gap-2">
+          {lateralityBadge}
+          <div className="min-w-[8rem] flex-1">{nameBox}</div>
+          <div className="min-w-[8rem] flex-1">{inViewOfBox}</div>
+          {urgency}
+          {orderedAtLabel}
+          <div className="ml-auto shrink-0">
+            {fileInput}
+            {canUpload && (
+              <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+                className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
+                <Upload size={12} className={uploading ? "animate-pulse" : ""} />
+                {uploading ? "Uploading…" : "Upload"}
               </button>
-            ) : confirmRemove ? (
-              /* Confirm remove file */
-              <div className="flex items-center gap-1">
-                <button onClick={doRemoveResult} disabled={removing}
-                  className="text-caption font-semibold px-2 py-1 rounded-md bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors">
-                  {removing ? "…" : "Remove"}
-                </button>
-                <button onClick={() => setConfirmRemove(false)}
-                  className="text-caption font-semibold px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              /* File exists — show 3 icons */
-              <>
-                {/* View */}
-                <button onClick={() => onView(localResultRef!)} title="View report"
-                  className={`${iconBtn} border-teal-200 text-teal-700 hover:bg-teal-50`}>
-                  <Eye size={13} />
-                </button>
-                {/* Edit / re-upload */}
-                {perms.upload && <button
-                  onClick={() => uploading ? undefined : fileRef.current?.click()}
-                  disabled={uploading}
-                  title="Replace report file"
-                  className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-[var(--color-primary-600)] hover:border-[var(--color-primary-300)] disabled:opacity-50`}>
-                  {uploading ? <Upload size={13} className="animate-pulse" /> : <Pencil size={13} />}
-                </button>}
-                {/* Delete file reference */}
-                {perms.remove && <button onClick={() => setConfirmRemove(true)} title="Remove report"
-                  className={`${iconBtn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:text-red-500 hover:border-red-300`}>
-                  <Trash2 size={13} />
-                </button>}
-              </>
             )}
           </div>
         </div>
+        {uploadError && <p className="text-caption text-red-600 mt-1">{uploadError}</p>}
+        {frozenNote}
+      </div>
+    );
+  }
 
-        {/* Upload error */}
-        {uploadError && <p className="text-caption text-red-600 mt-0.5">{uploadError}</p>}
+  // Report uploaded: details on top, uploaded file below
+  const isImage = /\.(jpg|jpeg|png|webp)$/i.test(localResultRef!);
+  const isPdf = /\.pdf$/i.test(localResultRef!);
+  return (
+    <div className={cardCls}>
+      <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
+        {lateralityBadge}
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+          <div className="w-full">{nameBox}</div>
+          {urgency}
+        </div>
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+          <div className="w-full">{inViewOfBox}</div>
+          {orderedAtLabel}
+        </div>
+        <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
+          <div className="w-full">
+            {canNote ? (
+              <KeywordInput
+                fieldKey={`inv_doctor_notes:${o.testName}`}
+                value={doctorNotes}
+                onChange={setDoctorNotes}
+                builtIns={INV_DOCTOR_NOTE_DEFAULTS[o.testName]}
+                placeholder="Doctor's notes"
+              />
+            ) : (
+              <InvInfoBox className="text-[var(--color-ink-700)] whitespace-pre-wrap">
+                <span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{doctorNotes}
+              </InvInfoBox>
+            )}
+          </div>
+          {localUploadedAt && (
+            <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+              <Clock size={10} />Uploaded {format(new Date(localUploadedAt), "dd MMM yyyy, h:mm a")}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {fileInput}
+          <button onClick={() => onView(localResultRef!)}
+            className={`${btn} border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]`}>
+            <Eye size={12} /> View
+          </button>
+          {(canUpload || canRemove) && (
+            <div className="flex items-center gap-1">
+              {canUpload && (
+                <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+                  className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
+                  <Upload size={12} className={uploading ? "animate-pulse" : ""} />
+                  {uploading ? "Uploading…" : "Re-upload"}
+                </button>
+              )}
+              {canRemove && (confirmRemove ? (
+                <>
+                  <button onClick={doRemoveResult} disabled={removing}
+                    className="text-caption font-semibold px-2 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors">
+                    {removing ? "…" : "Remove"}
+                  </button>
+                  <button onClick={() => setConfirmRemove(false)}
+                    className="text-caption font-semibold px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => setConfirmRemove(true)}
+                  className={`${btn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50`}>
+                  <Trash2 size={12} /> Delete
+                </button>
+              ))}
+            </div>
+          )}
+          {uploadError && <p className="text-caption text-red-600">{uploadError}</p>}
+        </div>
+      </div>
 
-        {/* Second line: priority · time. Edit notes inline. */}
-        {editing ? (
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <input autoFocus value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
-              placeholder="In view of…"
-              className="flex-1 min-w-0 text-caption border border-[var(--color-primary-300)] rounded-md px-2 py-1 outline-none focus:border-[var(--color-primary-500)]" />
-            <button onClick={saveNotes} disabled={saving}
-              className="text-caption font-semibold px-2 py-1 rounded-md bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors">
-              {saving ? "…" : "Save"}
-            </button>
-            <button onClick={() => setEditing(false)}
-              className="text-caption font-semibold px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-              Cancel
-            </button>
+      {/* Uploaded file */}
+      <div className="mt-3 rounded-xl border border-[var(--color-border)] p-2">
+        {isImage ? (
+          <img
+            src={fileHref(localResultRef)!}
+            alt={`${o.testName} result`}
+            className="max-h-52 rounded-lg cursor-pointer object-contain"
+            onClick={() => onView(localResultRef!)}
+          />
+        ) : isPdf ? (
+          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <iframe src={`${fileHref(localResultRef)!}#toolbar=0&navpanes=0`} title={`${o.testName} result`} className="h-full w-full pointer-events-none" />
+            <button type="button" onClick={() => onView(localResultRef!)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
           </div>
         ) : (
-          <p
-            className={`text-caption text-[var(--color-ink-400)] mt-0.5 ${perms.notes ? "cursor-pointer hover:text-[var(--color-ink-600)]" : ""}`}
-            title={perms.notes ? "Click to edit 'in view of' note" : undefined}
-            onClick={() => { if (!perms.notes) return; setEditNotes(localNotes); setEditing(true); }}
+          <button
+            onClick={() => onView(localResultRef!)}
+            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
           >
-            {o.priority && <span>{o.priority}</span>}
-            {o.priority && <span className="mx-1">·</span>}
-            <span>{format(new Date(o.createdAt), "h:mm a")}</span>
-          </p>
+            <Paperclip size={13} /> {o.testName} result file, click to view
+          </button>
         )}
       </div>
+      {frozenNote}
     </div>
   );
 }
@@ -301,7 +390,7 @@ function InvestigationsDrawer({
 
   return (
     <>
-      <Drawer open={open} onClose={onClose} title="Previous Investigation Orders" icon={<FlaskConical size={16} />}>
+      <Drawer open={open} onClose={onClose} title="Previous Investigation Orders" icon={<FlaskConical size={16} />} xwide>
         {isPending && (
           <div className="flex justify-center py-10">
             <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
@@ -321,8 +410,8 @@ function InvestigationsDrawer({
               <div className="flex-1 h-px bg-[var(--color-border)]" />
             </div>
 
-            {/* Orders — plain numbered list */}
-            <div className="space-y-0">
+            {/* Orders */}
+            <div className="space-y-2">
               {v.orders.map((o, idx) => (
                 <InvOrderRow
                   key={o.id}

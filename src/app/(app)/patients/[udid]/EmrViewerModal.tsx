@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { FileText, Building2, Stethoscope, Calendar, Loader2, Paperclip, Camera, Printer, Download, CheckCircle2, Activity, FlaskConical, Pill, ClipboardList, CalendarClock, Scissors, BookOpen, AlertCircle, Eye } from "lucide-react";
 import { attachResult } from "@/app/(app)/emr/[udid]/actions";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
 import { openPdfNative, isNativeShell } from "@/lib/open-pdf";
@@ -303,6 +303,8 @@ function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
             {inv.map((o: any) => {
               const resultUrl = localResults[o.id] ?? o.resultRef ?? null;
               const isImage = resultUrl && /\.(jpg|jpeg|png|webp)$/i.test(resultUrl);
+              // Frozen 2 months after it was ordered: no more changes
+              const frozen = !!o.createdAt && new Date() > addMonths(new Date(o.createdAt), 2);
               return (
                 <li key={o.id} className="flex flex-col gap-1.5">
                   <div className="flex items-center gap-2 text-sm">
@@ -323,7 +325,8 @@ function EmrContent({ visit, udid, localResults, onAttach, viewOnly = false }: {
                         </>
                       ) : (
                         <>
-                          {!viewOnly && <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />}
+                          {!viewOnly && !frozen && <InvUploadButton orderId={o.id} udid={udid} onDone={(url) => onAttach(o.id, url)} />}
+                          {frozen && <span className="text-caption text-[var(--color-ink-400)]">Frozen: ordered more than 2 months ago</span>}
                           <span className={`text-caption px-2 py-0.5 rounded-full font-semibold ${
                             o.status === "COMPLETED" ? "bg-emerald-50 text-emerald-700"
                             : o.status === "ORDERED" ? "bg-teal-50 text-teal-700"
