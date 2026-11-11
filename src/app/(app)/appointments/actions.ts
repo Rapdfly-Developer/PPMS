@@ -313,7 +313,7 @@ export async function undoPartialDispense(appointmentId: string): Promise<void> 
 
   await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { status: "CONFIRMED", partialDispenseReason: null },
+    data: { status: "CONFIRMED", partialDispenseReason: null, partialDispenseEndedAt: new Date(), partialDispenseEndedBy: "QUEUE" },
   });
 
   writeAudit(userId, "Appointment", appointmentId, "APPOINTMENT_CONFIRMED",

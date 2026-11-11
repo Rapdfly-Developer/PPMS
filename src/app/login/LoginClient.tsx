@@ -944,7 +944,7 @@ export default function LoginPage() {
             style={{ background: "#FFFFFF", borderLeft: `1px solid ${T.border}` }}>
 
             {/* Back to Home */}
-            <div className="absolute left-4 z-10 sm:left-6" style={{ top: "calc(env(safe-area-inset-top, 24px) + 16px)" }}>
+            <div className="rf-native-hide absolute left-4 z-10 sm:left-6" style={{ top: "calc(env(safe-area-inset-top, 24px) + 16px)" }}>
               <Link
                 href="/"
                 className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors duration-150"

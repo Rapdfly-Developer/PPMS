@@ -318,7 +318,7 @@ export function EmrActionBar({
     ? isSameDay(new Date(visit.finalizedAt), new Date())
     : false;
   const autoClosed = closed && !!visit.finalizedBy?.startsWith("SYSTEM");
-  const sessionIncomplete = autoClosed && !!visit.finalizedBy?.includes("end of session");
+  const sessionIncomplete = autoClosed && (!!visit.finalizedBy?.includes("end of session") || !!visit.finalizedBy?.includes("patient unavailable"));
 
 
   const desktopSidebarOffset = collapsed

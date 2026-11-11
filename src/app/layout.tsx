@@ -42,7 +42,7 @@ export default function RootLayout({
         <div
           hidden
           dangerouslySetInnerHTML={{
-            __html: `<script>if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}else if(location.pathname==="/"){location.replace("/login")}</script>`,
+            __html: `<script>if(!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){var s=document.createElement("style");s.textContent=".rf-splash{display:none!important}";document.head.appendChild(s)}else{var n=document.createElement("style");n.textContent=".rf-native-hide{display:none!important}";document.head.appendChild(n);if(location.pathname==="/"){location.replace("/login")}}</script>`,
           }}
         />
         <SplashOverlay />

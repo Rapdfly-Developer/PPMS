@@ -87,7 +87,7 @@ export default async function PatientDetailedEMR({
           dispense: true,
           // createdAt = when the appointment was booked; arrivedAt = when the
           // patient reached the clinic. Both feed the header's visit timeline.
-          appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true } },
+          appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true, partialDispenseAt: true, partialDispenseEndedAt: true } },
         },
       },
       pastExternalVisits: { orderBy: { createdAt: "desc" } },
@@ -386,7 +386,9 @@ export default async function PatientDetailedEMR({
           <Lock size={14} className="shrink-0 mt-0.5" />
           <span>
             {autoClosed
-              ? (sessionIncomplete
+              ? (activeVisit.finalizedBy?.includes("patient unavailable")
+                  ? "The patient was marked unavailable, so this visit was marked incomplete and moved to the No Show Registry. The EMR is permanently read-only."
+                  : sessionIncomplete
                   ? "This consultation was not finalized before the end of the doctor's session and was marked incomplete. The EMR is permanently read-only."
                   : "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only.")
               : finalizedToday
@@ -556,6 +558,9 @@ export default async function PatientDetailedEMR({
                       refractionStartedAtIso={activeVisit.refractionStartedAt?.toISOString() ?? null}
                       refractionCompletedAtIso={activeVisit.refractionCompletedAt?.toISOString() ?? null}
                       refractionPassedOverAtIso={activeVisit.refractionPassedOverAt?.toISOString() ?? null}
+                      partialDispenseTime={fmtStamp(activeVisit.appointment?.partialDispenseAt)}
+                      partialDispenseAtIso={activeVisit.appointment?.partialDispenseAt?.toISOString() ?? null}
+                      partialDispenseEndedAtIso={activeVisit.appointment?.partialDispenseEndedAt?.toISOString() ?? null}
                       timingRole={user.role === "DOCTOR" || user.role === "REFRACTIONIST" ? user.role : null}
                       visitClosed={activeVisit.status !== "IN_PROGRESS"}
                     />
@@ -577,6 +582,8 @@ export default async function PatientDetailedEMR({
           <EmrBannerNavButtons
             priorRecordsCount={patient.pastExternalVisits.length}
             visitId={activeVisit.id}
+            udid={udid}
+            canMarkUnavailable={activeVisit.status === "IN_PROGRESS" && !viewOnlySource && (userCan(user, "emr.create") || canPartialDispense)}
             canUseCopilot={canUseCopilot}
             canUseChat={canUseChat}
             chatGreetingName={user.role === "DOCTOR" ? "Doctor" : user.name.split(" ")[0] || "there"}

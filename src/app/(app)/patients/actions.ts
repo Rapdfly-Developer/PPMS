@@ -77,6 +77,8 @@ export async function undoDispense(appointmentId: string): Promise<UndoDispenseR
         completedBy: null,
         partialDispenseReason: null,
         partialDispenseAt: null,
+        partialDispenseEndedAt: null,
+        partialDispenseEndedBy: null,
       },
     }),
     prisma.visit.update({
@@ -155,6 +157,8 @@ export type TimelineEvent = {
     refractionCompletedAt?: string | null;
     refractionPassedOverAt?: string | null;
     partialDispenseAt?: string | null;  // Appointment.partialDispenseAt
+    partialDispenseEndedAt?: string | null; // left Partial Dispense
+    partialDispenseEndedBy?: string | null; // QUEUE | FINALIZED
     finalizedAt?: string | null;        // Visit.finalizedAt (dispensed)
     // INVESTIGATION
     orders?: { id: string; testName: string; category: string; status: string; laterality?: string | null; priority: string; resultRef?: string | null; orderedAt?: string | null; reportUpdatedAt?: string | null }[];
@@ -201,7 +205,7 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         medications:        { select: { drugName: true, dosage: true, frequency: true, duration: true } },
         investigationOrders:{ select: { id: true, testName: true, category: true, status: true, laterality: true, priority: true, resultRef: true, resultAt: true, createdAt: true, updatedAt: true }, orderBy: { createdAt: "asc" } },
         dispense:           { select: { shortSummary: true } },
-        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, isWalkIn: true, status: true, consultationStatus: true } },
+        appointment:        { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, partialDispenseEndedAt: true, partialDispenseEndedBy: true, isWalkIn: true, status: true, consultationStatus: true } },
         counsellingRecord:  true,
         ipdAdmission:       true,
       },
@@ -258,6 +262,8 @@ export async function getPatientTimeline(patientId: string): Promise<TimelineEve
         refractionCompletedAt:   v.refractionCompletedAt?.toISOString()      ?? null,
         refractionPassedOverAt:  v.refractionPassedOverAt?.toISOString()     ?? null,
         partialDispenseAt: v.appointment?.partialDispenseAt?.toISOString() ?? null,
+        partialDispenseEndedAt: v.appointment?.partialDispenseEndedAt?.toISOString() ?? null,
+        partialDispenseEndedBy: v.appointment?.partialDispenseEndedBy ?? null,
         finalizedAt:       v.finalizedAt?.toISOString()                     ?? null,
       },
     });

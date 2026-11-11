@@ -3,7 +3,7 @@
 import { NO_SHOW_KIND_LABEL } from "@/lib/noShowKinds";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format, addMonths } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Eye, Trash2, UserX, Calendar, Building2, Clock, Lock, Paperclip } from "lucide-react";
+import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Trash2, UserX, Calendar, Building2, Clock, Lock, Paperclip } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
@@ -259,7 +259,7 @@ function InvOrderRow({ o, udid, onView, perms }: {
   );
   const nameBox = <InvInfoBox className="font-semibold text-[var(--color-ink-900)]">{o.testName}</InvInfoBox>;
   const inViewOfBox = (
-    <InvInfoBox className="text-[var(--color-ink-600)]">
+    <InvInfoBox className="border-dashed italic text-[var(--color-ink-600)]">
       <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
     </InvInfoBox>
   );
@@ -316,9 +316,11 @@ function InvOrderRow({ o, udid, onView, perms }: {
           <div className="w-full">{nameBox}</div>
           {urgency}
         </div>
-        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5 overflow-hidden">
           <div className="w-full">{inViewOfBox}</div>
-          {orderedAtLabel}
+          <span className="inline-flex items-start gap-1 text-caption text-[var(--color-ink-500)]">
+            <Clock size={10} className="mt-0.5 shrink-0" />Ordered {format(new Date(o.createdAt), "dd MMM yyyy, h:mm a")}
+          </span>
         </div>
         <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
           <div className="w-full">
@@ -344,10 +346,6 @@ function InvOrderRow({ o, udid, onView, perms }: {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           {fileInput}
-          <button onClick={() => onView(localResultRef!)}
-            className={`${btn} border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)]`}>
-            <Eye size={12} /> View
-          </button>
           {(canUpload || canRemove) && (
             <div className="flex items-center gap-1">
               {canUpload && (

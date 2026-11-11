@@ -12,6 +12,7 @@ import { istTodayStr, istDayRange } from "@/lib/ist";
 import { syncVisit } from "@/lib/integration/engine";
 import { isSameDay, addMonths } from "date-fns";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
+import { markAppointmentsIncomplete, PATIENT_UNAVAILABLE_FINALIZED_BY } from "@/lib/sessionClose";
 import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { medicationLaterality } from "@/lib/medication-laterality";
@@ -997,9 +998,14 @@ export async function closeVisit(visitId: string, udid: string) {
   }
 
   if (appointmentId) {
+    const before = await prisma.appointment.findUnique({ where: { id: appointmentId }, select: { status: true } });
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "DISPENSED" },
+      data: {
+        status: "DISPENSED",
+        // Finalized straight from Partial Dispense, without going back to the OPD queue
+        ...(before?.status === "PARTIAL_DISPENSE" ? { partialDispenseEndedAt: now, partialDispenseEndedBy: "FINALIZED" } : {}),
+      },
     });
     const completedBy = visit.doctor?.name ?? user.name;
     await prisma.$executeRaw`
@@ -1051,6 +1057,33 @@ export async function closeVisit(visitId: string, udid: string) {
   revalidatePath(`/patients/${udid}/visits`);
 }
 
+/**
+ * "Patient unavailable": the patient left before the consultation could be finished.
+ * The visit is marked incomplete (read-only, with everything entered so far kept) and
+ * shows in the No Show Registry, the same as a visit left open at the end of a session.
+ */
+export async function markPatientUnavailable(visitId: string, udid: string): Promise<{ error?: string }> {
+  const user = await requireAnyPermission("emr.create", "opd.partialDispense");
+  await assertVisitOwner(visitId);
+
+  const visit = await prisma.visit.findUnique({
+    where: { id: visitId },
+    select: { id: true, status: true, appointmentId: true },
+  });
+  if (!visit) return { error: "Visit not found." };
+  if (visit.status !== "IN_PROGRESS") return { error: "This visit is already closed." };
+  if (!visit.appointmentId) return { error: "This visit has no appointment, so it cannot be moved to the No Show Registry." };
+
+  const changed = await markAppointmentsIncomplete([visit.appointmentId], PATIENT_UNAVAILABLE_FINALIZED_BY);
+  if (changed === 0) return { error: "This patient is not in the queue or in Partial Dispense, so the visit cannot be marked incomplete." };
+
+  await writeAudit(user.id, "Appointment", visit.appointmentId, "PATIENT_UNAVAILABLE", { visitId });
+  revalidate(udid);
+  revalidatePath("/dashboard");
+  revalidatePath("/appointments");
+  return {};
+}
+
 export async function markPartialDispense(visitId: string, udid: string, reason?: string) {
   const user = await requireAnyPermission("opd.partialDispense");
   await assertVisitOwner(visitId);
@@ -1081,7 +1114,7 @@ export async function markPartialDispense(visitId: string, udid: string, reason?
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null, partialDispenseAt: new Date() } as any,
+      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null, partialDispenseAt: new Date(), partialDispenseEndedAt: null, partialDispenseEndedBy: null },
     });
   }
 

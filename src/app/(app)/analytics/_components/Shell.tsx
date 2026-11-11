@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BarChart3, ChevronDown, Download, FileSpreadsheet, FileText, Printer, RefreshCw, RotateCcw, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { TABS, type TabId } from "@/lib/analytics/definitions";
 import { COMPARE_OPTIONS, FILTER_KEYS, PRESETS, buildQuery, type AnalyticsFilters } from "@/lib/analytics/filters";
+import { cardMeta, type CardId } from "@/lib/analytics/cards";
 import { download, sheetsFromData, toCsv, toExcel, type ExportMeta } from "./export";
 
 interface Option { id: string; name: string }
@@ -23,6 +23,8 @@ export interface ShellProps {
   statuses: { value: string; label: string }[];
   canExport: boolean;
   exportData: unknown;
+  /** The open card; null on the landing page with the five cards. */
+  card: CardId | null;
   children: ReactNode;
 }
 
@@ -57,7 +59,7 @@ function useRelativeTime(iso: string) {
 }
 
 export function AnalyticsShell(props: ShellProps) {
-  const { filters: f, params, tabs } = props;
+  const { filters: f, params, tabs, card } = props;
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -83,7 +85,7 @@ export function AnalyticsShell(props: ShellProps) {
     if (hasFilters) return;
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && saved !== "?") router.replace(`${pathname}${saved}${saved.includes("?") ? "&" : "?"}tab=${f.tab}`);
+      if (saved && saved !== "?") router.replace(`${pathname}${saved}${card ? `${saved.includes("?") ? "&" : "?"}card=${card}` : ""}`);
     } catch { /* storage unavailable */ }
     // Only on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,7 +103,7 @@ export function AnalyticsShell(props: ShellProps) {
   function navigate(next: Record<string, string | undefined>) {
     const filterOnly = Object.fromEntries(FILTER_KEYS.map((k) => [k, next[k]]));
     try { localStorage.setItem(STORAGE_KEY, buildQuery(filterOnly)); } catch { /* ignore */ }
-    start(() => router.push(`${pathname}${buildQuery(next, { tab: f.tab === "overview" ? undefined : f.tab })}`, { scroll: false }));
+    start(() => router.push(`${pathname}${buildQuery(next, { card: card ?? undefined })}`, { scroll: false }));
   }
 
   function apply() {
@@ -118,6 +120,8 @@ export function AnalyticsShell(props: ShellProps) {
   }
 
   const set = (k: string, v: string) => setDraft((d) => ({ ...d, [k]: v || undefined }));
+  // How many filters differ from the defaults (shown on the Filters button)
+  const activeFilters = Object.values(params).filter(Boolean).length;
   const hospitalName = props.hospitals.find((h) => h.id === f.hospitalId)?.name ?? "All hospitals";
   const doctorName = props.doctors.find((d) => d.id === f.doctorId)?.name ?? (props.showDoctorFilter ? "All doctors" : props.doctors[0]?.name ?? "—");
 
@@ -129,8 +133,8 @@ export function AnalyticsShell(props: ShellProps) {
     doctor: doctorName,
     generatedAt: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }),
   });
-  const tabLabel = TABS.find((t) => t.id === f.tab)?.label ?? "Analytics";
-  const fileBase = `rf-health-analytics-${f.tab}-${f.start}-to-${f.end}`;
+  const tabLabel = card ? cardMeta(card).label : "Overview";
+  const fileBase = `rf-health-analytics-${card ?? "overview"}-${f.start}-to-${f.end}`;
 
   function exportAs(kind: "csv" | "xls") {
     const sheets = sheetsFromData(tabLabel, props.exportData);
@@ -144,28 +148,25 @@ export function AnalyticsShell(props: ShellProps) {
     `/analytics/report${buildQuery({ ...params, ...extra }, { sections: sections.join(",") })}`;
 
   return (
-    <div className="flex flex-col gap-4 pb-12">
+    <div className="flex flex-col gap-3 pb-12">
       {/* Progress bar during filter / tab navigation */}
       <div aria-hidden="true" className={`fixed left-0 right-0 top-0 z-50 h-0.5 origin-left bg-[var(--color-primary-600)] transition-transform duration-700 ${pending ? "scale-x-75" : "scale-x-0"}`} />
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
-        <div className="min-w-0">
-          <nav aria-label="Breadcrumb" className="mb-3 flex items-center gap-1.5 text-caption text-[var(--color-ink-400)]">
-            <Link href="/dashboard" className="transition-colors hover:text-[var(--color-primary-700)]">Dashboard</Link>
-            <span aria-hidden="true" className="text-[var(--color-ink-300)]">/</span>
-            <span className="font-medium text-[var(--color-ink-700)]">Analytics</span>
-          </nav>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-700)] text-white shadow-[0_6px_16px_-6px_rgba(17,94,89,0.55)]" aria-hidden="true">
-              <BarChart3 size={20} strokeWidth={1.9} />
-            </span>
-            <div className="min-w-0">
-              <h1 className="text-heading-lg sm:text-[28px] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--color-ink-900)]">Analytics &amp; Intelligence</h1>
-              <p className="mt-1 max-w-2xl text-label leading-snug text-[var(--color-ink-500)]">
-                Monitor clinical activity, patient care, appointments and operations across {props.scopeLabel}.
-              </p>
-            </div>
+      <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-primary-700)] text-white shadow-[0_6px_16px_-6px_rgba(17,94,89,0.55)]" aria-hidden="true">
+            <BarChart3 size={18} strokeWidth={1.9} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-bold leading-[1.15] tracking-[-0.02em] text-[var(--color-ink-900)]">Analytics &amp; Intelligence</h1>
+            {/* What is being shown: period, hospital, doctor, comparison */}
+            <p className="mt-0.5 text-caption leading-snug text-[var(--color-ink-500)]">
+              <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span>
+              <span className="text-[var(--color-ink-300)]"> · </span>{hospitalName}
+              {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{(doctorName === "All doctors" || doctorName === "—") ? doctorName : `Dr. ${doctorName}`}</> : null}
+              <span className="text-[var(--color-ink-300)]"> · </span>vs {f.compareLabel}
+            </p>
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -175,9 +176,15 @@ export function AnalyticsShell(props: ShellProps) {
           <button
             type="button"
             onClick={() => start(() => router.refresh())}
-            className={btnSecondary}
+            title="Refresh"
+            className={`${btnSecondary} h-9 px-2.5`}
           >
-            <RefreshCw size={14} className={pending ? "animate-spin" : ""} /> <span className="sr-only sm:not-sr-only">Refresh</span>
+            <RefreshCw size={14} className={pending ? "animate-spin" : ""} /> <span className="sr-only">Refresh</span>
+          </button>
+          <button type="button" onClick={() => setShowFilters((open) => !open)} aria-expanded={showFilters} className={`${btnSecondary} h-9`}>
+            <SlidersHorizontal size={13} /> Filters
+            {activeFilters > 0 && <span className="rounded-full bg-[var(--color-primary-600)] px-1.5 py-0.5 text-micro font-bold leading-none text-white tabular-nums">{activeFilters}</span>}
+            <ChevronDown size={13} className={`text-[var(--color-ink-400)] transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`} />
           </button>
           {props.canExport && (
             <>
@@ -187,7 +194,7 @@ export function AnalyticsShell(props: ShellProps) {
                   aria-haspopup="menu"
                   aria-expanded={exportOpen}
                   onClick={() => setExportOpen((o) => !o)}
-                  className={btnSecondary}
+                  className={`${btnSecondary} h-9`}
                 >
                   <Download size={14} /> Export <ChevronDown size={13} className={`text-[var(--color-ink-400)] transition-transform duration-200 ${exportOpen ? "rotate-180" : ""}`} />
                 </button>
@@ -196,7 +203,7 @@ export function AnalyticsShell(props: ShellProps) {
                     <p className="px-2.5 pb-1.5 pt-1.5 text-caption font-semibold text-[var(--color-ink-400)]">Current view: {tabLabel}</p>
                     <button role="menuitem" type="button" onClick={() => exportAs("csv")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> CSV</button>
                     <button role="menuitem" type="button" onClick={() => exportAs("xls")} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileSpreadsheet size={14} /> Excel workbook</button>
-                    <a role="menuitem" href={reportHref([f.tab])} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><Printer size={14} /> PDF (print)</a>
+                    {card && card !== "surgery" && <a role="menuitem" href={`/analytics/report${buildQuery(params, { card })}`} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><Printer size={14} /> One-page summary (print)</a>}
                     <div className="my-1 h-px bg-[var(--color-border)]" />
                     <a role="menuitem" href={reportHref(tabs)} target="_blank" rel="noopener" onClick={() => setExportOpen(false)} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-label text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"><FileText size={14} /> Complete analytics report</a>
                   </div>
@@ -205,7 +212,7 @@ export function AnalyticsShell(props: ShellProps) {
               <button
                 type="button"
                 onClick={() => setBuilderOpen(true)}
-                className={btnPrimary}
+                className={`${btnPrimary} h-9`}
               >
                 <Sparkles size={14} /> Generate report
               </button>
@@ -215,14 +222,8 @@ export function AnalyticsShell(props: ShellProps) {
       </header>
 
       {/* ── Filters ─────────────────────────────────────────────────────── */}
-      <section aria-label="Analytics filters" className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-        <div className="flex items-center justify-between gap-2 md:hidden">
-          <p className="min-w-0 truncate text-label text-[var(--color-ink-700)]"><span className="font-semibold text-[var(--color-ink-900)]">{PRESETS.find((p) => p.id === f.preset)?.label}</span> · {hospitalName}</p>
-          <button type="button" onClick={() => setShowFilters((s) => !s)} aria-expanded={showFilters} className={`${btnSecondary} h-9 shrink-0`}>
-            <SlidersHorizontal size={13} /> Filters
-          </button>
-        </div>
-        <div className={`${showFilters ? "flex" : "hidden"} md:flex mt-4 md:mt-0 flex-col md:flex-row md:flex-wrap md:items-end gap-3`}>
+      <section aria-label="Analytics filters" className={showFilters ? "" : "hidden"}>
+        <div className={`${showFilters ? "flex" : "hidden"} flex-col md:flex-row md:flex-wrap md:items-end gap-3 rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)]`}>
           <Field label="Date range">
             <SelectBox value={draft.range ?? "30d"} onChange={(e) => set("range", e.target.value)}>
               {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
@@ -265,7 +266,7 @@ export function AnalyticsShell(props: ShellProps) {
               <option value="returning">Returning only</option>
             </SelectBox>
           </Field>
-          {f.tab === "appointments" && (
+          {card === "pulse" && (
             <Field label="Status">
               <SelectBox value={draft.status ?? ""} onChange={(e) => set("status", e.target.value)}>
                 <option value="">All statuses</option>
@@ -289,38 +290,6 @@ export function AnalyticsShell(props: ShellProps) {
         </div>
       </section>
 
-      <p className="-mt-1 px-1 text-label text-[var(--color-ink-500)]">
-        Showing <span className="font-semibold text-[var(--color-ink-800)]">{f.periodLabel}</span>
-        <span className="text-[var(--color-ink-300)]"> · </span>{hospitalName}
-        {props.showDoctorFilter ? <><span className="text-[var(--color-ink-300)]"> · </span>{(doctorName === "All doctors" || doctorName === "—") ? doctorName : `Dr. ${doctorName}`}</> : null}
-        <span className="text-[var(--color-ink-300)]"> · </span>compared with {f.compareLabel}
-      </p>
-
-      {/* ── Tabs ────────────────────────────────────────────────────────── */}
-      <nav aria-label="Analytics sections" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0 scrollbar-thin">
-        <ul className="inline-flex min-w-max gap-0.5 rounded-xl border border-[var(--color-border)] bg-white p-1 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
-          {TABS.filter((t) => tabs.includes(t.id)).map((t) => {
-            const active = t.id === f.tab;
-            return (
-              <li key={t.id}>
-                <Link
-                  href={`${pathname}${buildQuery(params, { tab: t.id === "overview" ? undefined : t.id })}`}
-                  scroll={false}
-                  aria-current={active ? "page" : undefined}
-                  onClick={(e) => { if (!active) { e.preventDefault(); start(() => router.push(`${pathname}${buildQuery(params, { tab: t.id === "overview" ? undefined : t.id })}`, { scroll: false })); } }}
-                  className={`inline-flex h-9 items-center rounded-lg px-3.5 text-label whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] ${
-                    active
-                      ? "bg-[var(--color-primary-50)] font-semibold text-[var(--color-primary-800)] shadow-[inset_0_0_0_1px_rgba(21,122,115,0.18)]"
-                      : "font-medium text-[var(--color-ink-500)] hover:bg-[#F2F5F6] hover:text-[var(--color-ink-900)]"
-                  }`}
-                >
-                  {t.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
 
       <div className={`transition-opacity duration-200 ${pending ? "opacity-50 pointer-events-none" : ""}`} aria-busy={pending}>
         {props.children}

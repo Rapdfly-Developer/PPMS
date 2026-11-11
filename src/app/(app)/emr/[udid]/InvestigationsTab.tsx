@@ -374,7 +374,7 @@ function PreviousInvestigationCard({
   );
   const nameBox = <InfoBox className="font-semibold text-[var(--color-ink-900)]">{order.testName}</InfoBox>;
   const inViewOfBox = (
-    <InfoBox className="text-[var(--color-ink-600)]">
+    <InfoBox className="border-dashed italic text-[var(--color-ink-600)]">
       <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
     </InfoBox>
   );
@@ -439,9 +439,11 @@ function PreviousInvestigationCard({
           <div className="w-full">{nameBox}</div>
           <PriorityPill priority={order.priority} />
         </div>
-        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5 overflow-hidden">
           <div className="w-full">{inViewOfBox}</div>
-          {orderedAtLabel}
+          <span className="inline-flex items-start gap-1 text-caption text-[var(--color-ink-500)]">
+            <Clock size={10} className="mt-0.5 shrink-0" />Ordered {orderedAt}
+          </span>
         </div>
         <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
           <div className="w-full">
@@ -467,12 +469,6 @@ function PreviousInvestigationCard({
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1">
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => onView(fileUrl)}
-              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
-            >
-              <Eye size={12} /> View
-            </button>
             <a
               href={fileUrl}
               download
