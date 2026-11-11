@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { FolderOpen, Sparkles } from "lucide-react";
+import { useState, useTransition, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { FolderOpen, Sparkles, UserX } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { markPatientUnavailable } from "./actions";
 import { useEmrTabs } from "./EmrTabsContext";
 import { CopilotDrawer } from "./CopilotDrawer";
 
@@ -10,14 +13,35 @@ export function EmrBannerNavButtons({
   visitId,
   canUseCopilot,
   decisionSupportSlot,
+  udid,
+  canMarkUnavailable = false,
 }: {
   priorRecordsCount: number;
   visitId: string;
   canUseCopilot: boolean;
   decisionSupportSlot?: ReactNode;
+  udid: string;
+  /** Shows the "Patient unavailable" button (open visit, and the role may close it). */
+  canMarkUnavailable?: boolean;
 }) {
   const { setActiveTab } = useEmrTabs();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
+  const [confirmUnavailable, setConfirmUnavailable] = useState(false);
+  const [unavailableError, setUnavailableError] = useState("");
+  const [marking, startMarking] = useTransition();
+
+  const markUnavailable = () => {
+    setConfirmUnavailable(false);
+    setUnavailableError("");
+    startMarking(async () => {
+      // Give anything just typed a moment to auto-save before the visit is locked
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const result = await markPatientUnavailable(visitId, udid);
+      if (result?.error) { setUnavailableError(result.error); return; }
+      router.push("/opd");
+    });
+  };
 
   return (
     <>
@@ -43,7 +67,28 @@ export function EmrBannerNavButtons({
             Co-pilot Assistance
           </button>
         )}
+        {canMarkUnavailable && (
+          <button
+            onClick={() => setConfirmUnavailable(true)}
+            disabled={marking}
+            className="ml-auto self-center flex items-center gap-1 text-micro font-medium px-2 py-0.5 rounded-md bg-transparent hover:bg-white/15 active:bg-white/20 text-white/60 hover:text-white/90 border border-white/15 transition-colors disabled:opacity-60"
+          >
+            <UserX size={10} />
+            {marking ? "Marking…" : "Patient unavailable"}
+          </button>
+        )}
+        {unavailableError && <span className="self-center text-caption text-red-200">{unavailableError}</span>}
       </div>
+      {confirmUnavailable && (
+        <ConfirmDialog
+          title="Patient unavailable"
+          message="On confirming, this patient will be marked as incomplete and moved to the No Show Registry. The data entered in the EMR will be saved."
+          confirmLabel="Confirm"
+          cancelLabel="Cancel"
+          onConfirm={markUnavailable}
+          onCancel={() => setConfirmUnavailable(false)}
+        />
+      )}
       {drawerOpen && (
         <CopilotDrawer
           visitId={visitId}

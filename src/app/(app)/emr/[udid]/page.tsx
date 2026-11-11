@@ -377,7 +377,9 @@ export default async function PatientDetailedEMR({
           <Lock size={14} className="shrink-0 mt-0.5" />
           <span>
             {autoClosed
-              ? (sessionIncomplete
+              ? (activeVisit.finalizedBy?.includes("patient unavailable")
+                  ? "The patient was marked unavailable, so this visit was marked incomplete and moved to the No Show Registry. The EMR is permanently read-only."
+                  : sessionIncomplete
                   ? "This consultation was not finalized before the end of the doctor's session and was marked incomplete. The EMR is permanently read-only."
                   : "This consultation was left open past end of day and closed automatically. The EMR is permanently read-only.")
               : finalizedToday
@@ -571,6 +573,8 @@ export default async function PatientDetailedEMR({
           <EmrBannerNavButtons
             priorRecordsCount={patient.pastExternalVisits.length}
             visitId={activeVisit.id}
+            udid={udid}
+            canMarkUnavailable={activeVisit.status === "IN_PROGRESS" && !viewOnlySource && (userCan(user, "emr.create") || canPartialDispense)}
             canUseCopilot={canUseCopilot}
             decisionSupportSlot={
               canUseCopilot && activeVisit.status !== "CLOSED"

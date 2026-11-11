@@ -12,6 +12,8 @@ import { getDoctorSessions, sessionAt, dateOnlyWindow, SESSION_CLOSED_TYPE, type
  */
 
 export const INCOMPLETE_FINALIZED_BY = "SYSTEM (incomplete at end of session)";
+/** Marked from the EMR with the "Patient unavailable" button. */
+export const PATIENT_UNAVAILABLE_FINALIZED_BY = "SYSTEM (incomplete: patient unavailable)";
 export const SESSION_INCOMPLETE_NOTIFICATION = "SESSION_INCOMPLETE";
 
 const OPEN_STATUSES = ["CONFIRMED", "PARTIAL_DISPENSE"];
@@ -102,7 +104,7 @@ export function sameSession(a: DoctorSession, b: DoctorSession) {
 }
 
 /** Mark the given open appointments INCOMPLETE and lock their visits. Returns how many changed. */
-export async function markAppointmentsIncomplete(appointmentIds: string[]): Promise<number> {
+export async function markAppointmentsIncomplete(appointmentIds: string[], finalizedBy: string = INCOMPLETE_FINALIZED_BY): Promise<number> {
   if (appointmentIds.length === 0) return 0;
   const open = await prisma.appointment.findMany({
     where: {
@@ -118,7 +120,7 @@ export async function markAppointmentsIncomplete(appointmentIds: string[]): Prom
     prisma.appointment.updateMany({ where: { id: { in: ids } }, data: { status: "INCOMPLETE" } }),
     prisma.visit.updateMany({
       where: { appointmentId: { in: ids }, status: "IN_PROGRESS" },
-      data:  { status: "CLOSED", finalizedBy: INCOMPLETE_FINALIZED_BY },
+      data:  { status: "CLOSED", finalizedBy },
     }),
   ]);
   return ids.length;
