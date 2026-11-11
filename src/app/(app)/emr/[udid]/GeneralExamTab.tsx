@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import { convertNotesToCC, parseComplaintItems } from "@/lib/appointment-cc";
-import { ChevronDown, AlertTriangle, Plus, X, Tag } from "lucide-react";
+import { ChevronDown, AlertTriangle, Plus, X } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { FieldWithHistory } from "@/components/ui/HistoryToggle";
 import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES, CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
@@ -195,79 +195,6 @@ function numWarning(value: string, range: { min: number; max: number }, label: s
   return "";
 }
 
-function ComplaintKeywordButton({
-  idx,
-  open,
-  onToggle,
-  onClose,
-  getValue,
-  onAppend,
-  onRemoveFromText,
-}: {
-  idx: number;
-  open: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-  getValue: () => string;
-  onAppend: (kw: string) => void;
-  onRemoveFromText: (kw: string) => void;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const popoverId = `cc-kw-popover-${idx}`;
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, onClose]);
-
-  return (
-    <div ref={ref} className="relative shrink-0" data-overview-hide>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={popoverId}
-        aria-label="Keyword suggestions for this complaint"
-        title="Keyword suggestions"
-        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-caption font-medium transition-colors whitespace-nowrap ${
-          open
-            ? "border-[var(--color-primary-400)] bg-[var(--color-primary-100)] text-[var(--color-primary-700)]"
-            : "border-[var(--color-border)] bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
-        }`}
-      >
-        <Tag size={10} strokeWidth={2} />
-        Keywords
-      </button>
-      {open && (
-        <div
-          id={popoverId}
-          role="dialog"
-          aria-label="Keyword suggestions"
-          className="absolute z-50 top-full mt-1.5 left-0 w-72 max-w-[min(18rem,calc(100vw-1rem))] bg-white border border-[var(--color-border)] rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-3"
-        >
-          <KeywordChipsRow
-            fieldKey={CHIEF_COMPLAINT_FIELD_KEY}
-            builtIns={OPHTHALMIC_COMPLAINTS}
-            legacyKeys={CHIEF_COMPLAINT_LEGACY_KEYS}
-            getValue={getValue}
-            onAppend={(kw) => { onAppend(kw); onClose(); }}
-            onRemoveFromText={(kw) => { onRemoveFromText(kw); onClose(); }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; patient?: { age?: number | null; sex?: string | null; occupation?: string | null } }) {
   const ge = visit.generalExam;
   // Vitals and the cards other than Chief Complaint start closed, like the Plan tab's
@@ -278,7 +205,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const [temperature, setTemperature] = useState(ge?.temperature ?? "");
   const [weight, setWeight] = useState(ge?.weight ?? "");
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
-  const [openKwIdx, setOpenKwIdx] = useState<number | null>(null);
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
   // Structured HPI selections (dropdowns) and whether the box shows raw text for editing.
   const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
@@ -424,7 +350,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const patchComplaint = (i: number, patch: Partial<Complaint>) =>
     setComplaints((prev) => prev.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
   const removeComplaint = (i: number) => {
-    setOpenKwIdx(null);
     setComplaints((prev) => (prev.length === 1 ? [emptyComplaint()] : prev.filter((_, idx) => idx !== i)));
   };
 
@@ -522,19 +447,6 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                     className="grow basis-full sm:basis-0 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
                   />
 
-                  {/* Keyword popover trigger */}
-                  {!readOnly && (
-                    <ComplaintKeywordButton
-                      idx={i}
-                      open={openKwIdx === i}
-                      onToggle={() => setOpenKwIdx(openKwIdx === i ? null : i)}
-                      onClose={() => setOpenKwIdx(null)}
-                      getValue={() => c.text}
-                      onAppend={(kw) => patchComplaint(i, { text: appendComplaintKeyword(c.text, kw) })}
-                      onRemoveFromText={(kw) => patchComplaint(i, { text: removeKeywordFromText(c.text, kw) })}
-                    />
-                  )}
-
                   {/* Since */}
                   <span
                     className="text-caption font-semibold text-[var(--color-ink-400)] shrink-0"
@@ -578,7 +490,19 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   )}
                 </div>
 
-
+                {/* Keywords shown under the box, like the other keyword fields */}
+                {!readOnly && (
+                  <div className="mt-2">
+                    <KeywordChipsRow
+                      fieldKey={CHIEF_COMPLAINT_FIELD_KEY}
+                      builtIns={OPHTHALMIC_COMPLAINTS}
+                      legacyKeys={CHIEF_COMPLAINT_LEGACY_KEYS}
+                      getValue={() => c.text}
+                      onAppend={(kw) => patchComplaint(i, { text: appendComplaintKeyword(c.text, kw) })}
+                      onRemoveFromText={(kw) => patchComplaint(i, { text: removeKeywordFromText(c.text, kw) })}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>

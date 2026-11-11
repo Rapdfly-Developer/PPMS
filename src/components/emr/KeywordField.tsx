@@ -66,6 +66,40 @@ export function appendKeywordAsBullet(text: string, keyword: string): string {
   return items.map((item) => `• ${item}`).join("\n");
 }
 
+/**
+ * The keyword to save from a field with "+ Keyword": the last point typed,
+ * without any keywords already known that sit in front of it. With
+ * "Blurred Vision Irritation" and "Blurred Vision" known, only "Irritation"
+ * is new. Text that is only a known keyword is returned whole.
+ */
+export function newKeywordFromText(text: string, known: readonly string[]): string {
+  const last = (keywordEntries(text).at(-1) ?? "").trim();
+  if (!last) return "";
+  const sorted = [...known].map((k) => k.trim()).filter(Boolean).sort((a, b) => b.length - a.length);
+  let rest = last;
+  for (;;) {
+    const lc = rest.toLowerCase();
+    const hit = sorted.find((k) => {
+      const kl = k.toLowerCase();
+      return lc.startsWith(kl) && (lc.length === kl.length || /[\s,;/]/.test(lc[kl.length]));
+    });
+    if (!hit) break;
+    const after = rest.slice(hit.length).replace(/^[\s,;/]+/, "");
+    if (!after) return last;
+    // "Pain in eye" is one keyword that only starts with "Pain": keep it whole
+    if (JOINING_WORDS.has(after.split(/\s+/)[0].toLowerCase())) break;
+    rest = after;
+  }
+  return rest;
+}
+
+/** Words that continue a phrase, so what follows belongs to the keyword before it. */
+const JOINING_WORDS = new Set([
+  "in", "on", "of", "at", "with", "without", "while", "when", "during", "after", "before",
+  "for", "to", "from", "and", "or", "since", "due", "around", "behind", "near", "over",
+  "under", "by", "than", "like", "as", "into", "upon", "within", "along", "across",
+]);
+
 function keywordRows(value: string, minimum: number): number {
   return Math.max(minimum, Math.min(8, value.replace(/\r/g, "").split("\n").length));
 }
@@ -284,17 +318,20 @@ function AddKeywordButton({
   getValue,
   fieldKey,
   onRefresh,
+  builtIns = [],
 }: {
   getValue: () => string;
   fieldKey: string;
   onRefresh: () => void;
+  builtIns?: readonly string[];
 }) {
   const add = () => {
-    const entries = keywordEntries(getValue());
-    const raw = entries.at(-1)?.trim() ?? "";
-    if (!raw) return;
     // Adding a default keyword that was deleted brings it back
     const hidden = loadHidden(fieldKey);
+    const shownBuiltIns = builtIns.filter((b) => !hidden.some((h) => h.toLowerCase() === b.toLowerCase()));
+    // Only the newly typed words are saved, not the keywords already in front of them
+    const raw = newKeywordFromText(getValue(), [...shownBuiltIns, ...loadKws(fieldKey)]);
+    if (!raw) return;
     const unhidden = hidden.filter((h) => h.toLowerCase() !== raw.toLowerCase());
     if (unhidden.length !== hidden.length) saveHidden(fieldKey, unhidden);
     const kws = loadKws(fieldKey);
@@ -374,7 +411,7 @@ export function KeywordChipsRow({
   const [tick, setTick] = useState(0);
   return (
     <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
-      <AddKeywordButton getValue={getValue} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
+      <AddKeywordButton getValue={getValue} fieldKey={fieldKey} builtIns={builtIns} onRefresh={() => setTick((t) => t + 1)} />
       <KeywordChips
         key={tick}
         fieldKey={fieldKey}
@@ -431,7 +468,7 @@ export function KeywordInput({
       />
       {!disabled && (
         <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
-          <AddKeywordButton getValue={() => value} fieldKey={fieldKey} onRefresh={() => setTick((t) => t + 1)} />
+          <AddKeywordButton getValue={() => value} fieldKey={fieldKey} builtIns={builtIns} onRefresh={() => setTick((t) => t + 1)} />
           <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} typed={value} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
         </div>
       )}
@@ -523,7 +560,7 @@ function KeywordTextareaControls({
 }) {
   return (
     <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
-      <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} onRefresh={onRefresh} />
+      <AddKeywordButton getValue={() => value.trim()} fieldKey={fieldKey} builtIns={builtIns} onRefresh={onRefresh} />
       <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} typed={value} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />
       {afterButtons}
     </div>

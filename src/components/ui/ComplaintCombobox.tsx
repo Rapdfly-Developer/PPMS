@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, KeyboardEvent, ReactNode } from "react";
 import { Plus, X } from "lucide-react";
 import { CHIEF_COMPLAINT_FIELD_KEY, CHIEF_COMPLAINT_LEGACY_KEYS } from "@/lib/constants";
-import { appendKeywordAsBullet, keywordEntries, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, keywordEntries, newKeywordFromText, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { chipMatcher, CHIP_MATCH_CLASS, type ChipMatch } from "@/lib/chip-match";
 
 export const OPHTHALMIC_COMPLAINTS = [
@@ -195,9 +195,8 @@ export function ComplaintCombobox({
 
   // Add current input value as a new custom keyword chip
   function addCustom() {
-    const trimmed = keywordMode === "bullet"
-      ? (keywordEntries(value).at(-1) ?? "").trim()
-      : value.trim();
+    // Only the newly typed words are saved, not the keywords already in front of them
+    const trimmed = newKeywordFromText(value, [...allStandard, ...customKeywords]);
     if (!trimmed) return;
     const exists = [...allStandard, ...customKeywords].some(
       (k) => k.toLowerCase() === trimmed.toLowerCase()
