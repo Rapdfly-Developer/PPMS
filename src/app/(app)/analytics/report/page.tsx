@@ -7,6 +7,9 @@ import { resolveScope } from "@/lib/analytics/scope";
 import { loadSection } from "@/lib/analytics/sections";
 import { SectionView } from "../_components/SectionView";
 import { ReportToolbar } from "../_components/ReportToolbar";
+import { cardMeta, isCardId } from "@/lib/analytics/cards";
+import { loadCard } from "@/lib/analytics/cards-data";
+import { CardView } from "../_components/dashboards";
 
 export default async function AnalyticsReportPage({
   searchParams,
@@ -20,6 +23,11 @@ export default async function AnalyticsReportPage({
 
   const sp = await searchParams;
   const filters = parseFilters(sp, istTodayStr());
+  // One-page summary of a single card
+  const cardRaw = Array.isArray(sp.card) ? sp.card[0] : sp.card;
+  const card = isCardId(cardRaw) && cardRaw !== "surgery" && !(cardRaw === "clinical" && !scope.canViewClinical) ? cardRaw : null;
+  const cardSection = card ? await loadCard(card, scope, filters) : null;
+
   const requested = String(Array.isArray(sp.sections) ? sp.sections[0] : sp.sections ?? "overview").split(",");
   const sections = TABS.map((t) => t.id).filter((id): id is TabId => requested.includes(id) && scope.tabs.includes(id));
   if (sections.length === 0) sections.push("overview");
@@ -30,7 +38,7 @@ export default async function AnalyticsReportPage({
   const doctor = scope.doctors.find((d) => d.id === filters.doctorId)?.name
     ?? (scope.kind === "hospital" && scope.doctors.length > 1 ? "All doctors" : scope.doctors[0]?.name ?? "—");
   const generated = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
-  const title = sections.length === scope.tabs.length ? "Complete healthcare analytics report" : `${sections.map((s) => TABS.find((t) => t.id === s)!.label).join(", ")} report`;
+  const title = card ? `${cardMeta(card).label} summary` : sections.length === scope.tabs.length ? "Complete healthcare analytics report" : `${sections.map((s) => TABS.find((t) => t.id === s)!.label).join(", ")} report`;
   const params = filterParams(filters);
 
   return (
@@ -59,7 +67,13 @@ export default async function AnalyticsReportPage({
         </dl>
       </div>
 
-      {sections.map((tab, i) => (
+      {card && cardSection && (
+        <section className="pt-6">
+          <CardView card={card} section={cardSection} ctx={{ params, compareLabel: filters.compareLabel, canPrint: false, print: true }} />
+        </section>
+      )}
+
+      {!card && sections.map((tab, i) => (
         <section key={tab} className={`pt-6 ${i > 0 ? "break-before-page" : ""}`}>
           <h2 className="mb-4 text-heading-md font-semibold tracking-tight text-[var(--color-ink-900)]">
             {TABS.find((t) => t.id === tab)!.label}

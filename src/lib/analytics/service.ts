@@ -1526,3 +1526,11 @@ export function getActivity(scope: AnalyticsScope, f: AnalyticsFilters): Promise
     };
   });
 }
+
+/* ═══ Shared helpers for the card dashboards (./cards-data.ts) ═════════════ */
+
+export const analyticsHelpers = {
+  rangeOf, bucketsOf, bucketKey, makeSeries, bump, sparkOf, round1, pct, mean, countBy, toCats, titleCase, safe,
+  scopedHospital, scopedDoctor, hospitalName, doctorName, apptWhere, visitWhere, patientWhere,
+  istKey, istHour, istWeekday, loadFollowUps, followUpCounts, DAY_MS,
+};
