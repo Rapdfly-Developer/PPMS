@@ -374,7 +374,7 @@ function PreviousInvestigationCard({
   );
   const nameBox = <InfoBox className="font-semibold text-[var(--color-ink-900)]">{order.testName}</InfoBox>;
   const inViewOfBox = (
-    <InfoBox className="text-[var(--color-ink-600)]">
+    <InfoBox className="border-dashed italic text-[var(--color-ink-600)]">
       <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
     </InfoBox>
   );

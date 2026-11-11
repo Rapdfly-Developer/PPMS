@@ -1467,6 +1467,11 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
       for (const med of medsToDelete) {
         await removeMedication(med.id, udid);
       }
+      // The advice this protocol added goes too; anything else typed in Advise Notes stays
+      const oldAdviceLines = new Set(oldPresets.flatMap((p) => (p.advice ?? "").split("\n").map((l) => l.trim()).filter(Boolean)));
+      if (oldAdviceLines.size) {
+        setAdviseNotes((prev) => prev.split("\n").filter((l) => !oldAdviceLines.has(l.trim())).join("\n"));
+      }
       const updated = appliedPresets.filter((a) => a.diagnosisDesc !== diagnosisDesc);
       setApplied(visit.id, updated);
       setAppliedPresets(updated);
