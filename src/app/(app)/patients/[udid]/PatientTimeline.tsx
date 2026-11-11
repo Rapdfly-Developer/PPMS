@@ -97,6 +97,12 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
       ? Math.max(0, Math.round((refractionPassedOverAt.getTime() - refractionStartedAt.getTime()) / 60000))
       : null;
     const fmtDur = (m: number) => m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`;
+    // Partial Dispense: when the patient left it, how (queue or finalized directly), and for how long
+    const partialStartAt = d.partialDispenseAt ? new Date(d.partialDispenseAt) : null;
+    const partialEndAt   = d.partialDispenseEndedAt ? new Date(d.partialDispenseEndedAt) : null;
+    const partialMins = partialStartAt && partialEndAt
+      ? Math.max(0, Math.round((partialEndAt.getTime() - partialStartAt.getTime()) / 60000))
+      : null;
     // Finalize & Sign stamps the consultation's completion and the visit's end together, so one
     // "Consultation End" row carries both the consultation length and the whole visit's duration.
     const endAt = finalizedAt ?? consultationCompletedAt;
@@ -121,6 +127,7 @@ function EventDetail({ ev }: { ev: TimelineEvent }) {
                 refractionStartedAt && { at: refractionStartedAt, icon: <Clock size={10} />,   label: "Refraction Started",    time: timeOnly(refractionStartedAt),    color: "text-cyan-600", bg: "" },
                 refractionPassedOverAt && { at: refractionPassedOverAt, icon: <CheckCircle2 size={10} />, label: "Passed to Doctor", time: timeOnly(refractionPassedOverAt), color: "text-cyan-700", bg: "", note: refractionMins !== null ? fmtDur(refractionMins) : null, noteColor: "text-[var(--color-ink-400)]" },
                 d.partialDispenseAt && { at: new Date(d.partialDispenseAt), icon: <AlertCircle size={10} />, label: "Partial Dispense",  time: timeOnly(new Date(d.partialDispenseAt)), color: "text-amber-600", bg: "bg-amber-50/60" },
+                partialEndAt && { at: partialEndAt, icon: <AlertCircle size={10} />, label: d.partialDispenseEndedBy === "FINALIZED" ? "Finalized from Partial Dispense" : "Moved Back to OPD Queue", time: timeOnly(partialEndAt), color: "text-amber-600", bg: "bg-amber-50/60", note: partialMins !== null ? `${fmtDur(partialMins)} in partial dispense` : null, noteColor: "text-[var(--color-ink-400)]" },
                 endAt          && { at: endAt, icon: <CheckCircle2 size={10} />, label: "Consultation End",       time: timeOnly(endAt),                  color: "text-emerald-600", bg: "bg-emerald-50/50", note: endNote, noteColor: "text-[var(--color-ink-400)]" },
               ].filter(Boolean)
                 // In time order, like Previous Visits; ties keep the order listed above

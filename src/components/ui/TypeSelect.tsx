@@ -30,7 +30,7 @@ export function TypeSelect({
   const [text, setText] = useState(value);
   const [active, setActive] = useState(0);
   const listRef = useRef<HTMLUListElement>(null);
-  const numeric = options.every((o) => o === "" || /^d+(.d+)?$/.test(o));
+  const numeric = options.every((o) => o === "" || /^\d+(\.\d+)?$/.test(o));
 
   // Follow the saved value whenever the field is not being typed in
   useEffect(() => { if (!open) setText(value); }, [value, open]);

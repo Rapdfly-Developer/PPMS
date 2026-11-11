@@ -472,6 +472,8 @@ model Appointment {
   notes              String?
   partialDispenseReason String?
   partialDispenseAt     DateTime?  // set when status → PARTIAL_DISPENSE
+  partialDispenseEndedAt DateTime? // set when the patient leaves Partial Dispense
+  partialDispenseEndedBy String?   // QUEUE (moved back to the OPD queue) | FINALIZED (finalized directly)
   createdAt          DateTime @default(now())
   arrivedAt          DateTime?   // set when status → CONFIRMED (patient reached the clinic)
 

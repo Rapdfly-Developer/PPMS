@@ -196,7 +196,8 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
 // wraps within the column rather than forcing the pair apart.
 /* Distance VA can carry a "P" (partial: only part of the line was read), saved as e.g. "6/9P".
    P only applies to Snellen line values (6/6 … 5/60), not CF / HM / PL. */
-const isVaLine = (v: string) => /^\d+\/\d+$/.test(v);
+// Near vision lines (N6, N8 ...) can be marked partial too.
+const isVaLine = (v: string) => /^(\d+\/\d+|N\d+)$/.test(v);
 function splitVa(v?: string | null) {
   const s = v ?? "";
   return s.endsWith("P") && isVaLine(s.slice(0, -1)) ? { base: s.slice(0, -1), partial: true } : { base: s, partial: false };
@@ -375,12 +376,13 @@ function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: 
       <div className="inline-flex items-center gap-0.5 justify-center">
         <select
           disabled={!editable}
-          value={eye[key] ?? "-"}
-          onChange={(e) => setEye({ ...eye, [key]: e.target.value })}
+          value={splitVa(eye[key]).base || "-"}
+          onChange={(e) => setEye({ ...eye, [key]: joinVa(e.target.value, splitVa(eye[key]).partial) })}
           className="rounded border border-[var(--color-border)] bg-white px-1.5 py-1 text-xs disabled:bg-[var(--color-surface-sunken)] w-20"
         >
           {VA_NEAR_VALUES.map((v) => <option key={v} value={v}>{v}</option>)}
         </select>
+        <PartialToggle value={eye[key] ?? ""} onChange={(v) => setEye({ ...eye, [key]: v })} disabled={!editable} />
         {histBtn("near", eyeKey, key)}
       </div>
       {vaInlineHist("near", eyeKey, key, setEye)}

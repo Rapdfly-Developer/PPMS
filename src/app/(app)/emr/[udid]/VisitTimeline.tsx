@@ -39,6 +39,9 @@ export function VisitTimeline({
   refractionStartedAtIso,
   refractionCompletedAtIso,
   refractionPassedOverAtIso,
+  partialDispenseTime = null,
+  partialDispenseAtIso = null,
+  partialDispenseEndedAtIso = null,
   timingRole,
   visitClosed,
 }: {
@@ -53,6 +56,10 @@ export function VisitTimeline({
   refractionStartedAtIso: string | null;
   refractionCompletedAtIso: string | null;
   refractionPassedOverAtIso: string | null;
+  /** Partial Dispense: when it began (formatted and ISO) and when the patient left it. */
+  partialDispenseTime?: string | null;
+  partialDispenseAtIso?: string | null;
+  partialDispenseEndedAtIso?: string | null;
   timingRole: TimingRole;
   visitClosed: boolean;
 }) {
@@ -113,6 +120,12 @@ export function VisitTimeline({
   const visitDuration = arrivedMs && visitEndMs ? elapsed(arrivedMs, visitEndMs) : null;
   const visitDurationLive = !!visitDuration && !visitClosed;
 
+  // Time spent in Partial Dispense: still counting while the patient is in it
+  const partialStartMs = asMs(partialDispenseAtIso);
+  const partialEndedMs = asMs(partialDispenseEndedAtIso);
+  const partialEndMs = partialEndedMs ?? (!visitClosed ? now : null);
+  const inPartial = partialStartMs && partialEndMs ? elapsed(partialStartMs, partialEndMs) : null;
+
   type Cell = { label: string; value: string; live?: boolean } | null;
   const pairs: [Cell, Cell][] = [
     [
@@ -129,6 +142,12 @@ export function VisitTimeline({
     ],
     ...(refracting
       ? [[{ label: "Refraction", value: refracting, live: !refractionEndMs && !visitClosed }, null] as [Cell, Cell]]
+      : []),
+    ...(partialDispenseTime
+      ? [[
+          { label: "Partial", value: partialDispenseTime },
+          inPartial ? { label: "In Partial", value: inPartial, live: !partialEndedMs && !visitClosed } : null,
+        ] as [Cell, Cell]]
       : []),
   ];
 

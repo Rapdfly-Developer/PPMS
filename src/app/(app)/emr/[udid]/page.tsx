@@ -83,7 +83,7 @@ export default async function PatientDetailedEMR({
           dispense: true,
           // createdAt = when the appointment was booked; arrivedAt = when the
           // patient reached the clinic. Both feed the header's visit timeline.
-          appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true } },
+          appointment: { select: { dateTime: true, createdAt: true, arrivedAt: true, partialDispenseAt: true, partialDispenseEndedAt: true } },
         },
       },
       pastExternalVisits: { orderBy: { createdAt: "desc" } },
@@ -547,6 +547,9 @@ export default async function PatientDetailedEMR({
                       refractionStartedAtIso={activeVisit.refractionStartedAt?.toISOString() ?? null}
                       refractionCompletedAtIso={activeVisit.refractionCompletedAt?.toISOString() ?? null}
                       refractionPassedOverAtIso={activeVisit.refractionPassedOverAt?.toISOString() ?? null}
+                      partialDispenseTime={fmtStamp(activeVisit.appointment?.partialDispenseAt)}
+                      partialDispenseAtIso={activeVisit.appointment?.partialDispenseAt?.toISOString() ?? null}
+                      partialDispenseEndedAtIso={activeVisit.appointment?.partialDispenseEndedAt?.toISOString() ?? null}
                       timingRole={user.role === "DOCTOR" || user.role === "REFRACTIONIST" ? user.role : null}
                       visitClosed={activeVisit.status !== "IN_PROGRESS"}
                     />

@@ -24,6 +24,10 @@ export interface VisitTimestamps {
   refractionCompletedAt:   string | null;
   refractionPassedOverAt:  string | null;
   partialDispenseAt:       string | null;
+  /** When the patient left Partial Dispense. */
+  partialDispenseEndedAt:  string | null;
+  /** How they left it: "QUEUE" (back to the OPD queue) or "FINALIZED" (finalized directly). */
+  partialDispenseEndedBy:  string | null;
   finalizedAt:             string | null;
   dispensedAt:             string | null;
 }
@@ -232,6 +236,7 @@ const TS_STEPS: TsStep[] = [
   { key: "investigationOrderedAt",  label: "Inv. Ordered",      group: "clinical" },
   { key: "reportUploadedAt",        label: "Report Upload",     group: "clinical" },
   { key: "partialDispenseAt",       label: "Partial Dispense",  group: "dispense" },
+  { key: "partialDispenseEndedAt",  label: "Back to Queue",     group: "dispense" },
   { key: "consultationCompletedAt", label: "Consult. End",      group: "clinical" },
 ];
 
@@ -255,6 +260,7 @@ const DURATION_METRICS: { label: string; from: keyof VisitTimestamps; to: keyof 
   { label: "Refraction",      from: "refractionStartedAt", to: "refractionCompletedAt"   },
   // Partial dispense: how long the consultation ran before it, and how long until the visit was finalized after it.
   { label: "Before Partial Dispense", from: "seenAt",            to: "partialDispenseAt" },
+  { label: "In Partial Dispense",     from: "partialDispenseAt", to: "partialDispenseEndedAt" },
   { label: "After Partial Dispense",  from: "partialDispenseAt", to: "finalizedAt"       },
   { label: "Total Visit",     from: "arrivedAt",           to: "finalizedAt"             },
 ];
@@ -268,7 +274,10 @@ function TimestampSection({ ts: raw, isWalkIn }: { ts: VisitTimestamps; isWalkIn
     .filter((s) => isWalkIn ? s.group !== "booking" : true)
     .map((s) => ({
       ...s,
-      label: isWalkIn && s.key === "arrivedAt" ? "Walk-in Time" : s.label,
+      label: isWalkIn && s.key === "arrivedAt" ? "Walk-in Time"
+        // Finalized & signed straight from Partial Dispense, without going back to the queue
+        : s.key === "partialDispenseEndedAt" && raw.partialDispenseEndedBy === "FINALIZED" ? "Finalized (Partial)"
+        : s.label,
     }))
     .sort((a, b) => new Date(ts[a.key]!).getTime() - new Date(ts[b.key]!).getTime());
   if (active.length === 0) return null;

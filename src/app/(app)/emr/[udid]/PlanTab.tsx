@@ -25,112 +25,63 @@ import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
-/* ── Preset types & storage ──────────────────────────────────────────────── */
+/* ── ProtocolPanel: every protocol, with custom add ─────────────────────── */
 
-const PRESET_KEY = "rx_presets_v1";
+interface ProtocolFormDrug { drugName: string; dosage: string; frequency: string; duration: string; }
+const blankProtocolDrug = (): ProtocolFormDrug => ({ drugName: "", dosage: "", frequency: "", duration: "" });
 
-interface PresetDrug { drugName: string; dosage?: string; frequency?: string; duration?: string; }
-interface Preset { id: string; category: string; name: string; drugs: PresetDrug[]; }
-
-const DEFAULT_PRESETS: Preset[] = [
-  {
-    id: "default-1", category: "Primary Open-Angle Glaucoma (POAG)", name: "Standard",
-    drugs: [
-      { drugName: "Timolol 0.5%",      dosage: "1 drop", frequency: "BD (Twice daily)" },
-      { drugName: "Latanoprost 0.005%", dosage: "1 drop", frequency: "OD (Once daily)" },
-    ],
-  },
-  {
-    id: "default-2", category: "Primary Open-Angle Glaucoma (POAG)", name: "Maximum Medical Therapy",
-    drugs: [
-      { drugName: "Timolol 0.5%",      dosage: "1 drop", frequency: "BD (Twice daily)" },
-      { drugName: "Latanoprost 0.005%", dosage: "1 drop", frequency: "OD (Once daily)" },
-      { drugName: "Brimonidine 0.2%",   dosage: "1 drop", frequency: "TID (Three times daily)" },
-      { drugName: "Dorzolamide 2%",     dosage: "1 drop", frequency: "TID (Three times daily)" },
-    ],
-  },
-  {
-    id: "default-3", category: "Post Cataract Surgery", name: "Standard Post-op",
-    drugs: [
-      { drugName: "Prednisolone 1%",   dosage: "1 drop", frequency: "QID (Four times daily)" },
-      { drugName: "Moxifloxacin 0.5%", dosage: "1 drop", frequency: "QID (Four times daily)" },
-      { drugName: "Ketorolac 0.5%",    dosage: "1 drop", frequency: "TID (Three times daily)" },
-    ],
-  },
-  {
-    id: "default-4", category: "Dry Eye", name: "Standard",
-    drugs: [
-      { drugName: "Sodium hyaluronate",      dosage: "1 drop", frequency: "QID (Four times daily)" },
-      { drugName: "Carboxymethylcellulose",  dosage: "1 drop", frequency: "QID (Four times daily)" },
-    ],
-  },
-  {
-    id: "default-5", category: "Allergic Conjunctivitis", name: "Standard",
-    drugs: [
-      { drugName: "Olopatadine 0.1%",    dosage: "1 drop", frequency: "BD (Twice daily)" },
-      { drugName: "Ketotifen 0.025%",    dosage: "1 drop", frequency: "BD (Twice daily)" },
-    ],
-  },
-];
-
-function loadPresets(): Preset[] {
-  try {
-    const stored = localStorage.getItem(PRESET_KEY);
-    if (!stored) return DEFAULT_PRESETS;
-    const parsed = JSON.parse(stored);
-    return parsed.length > 0 ? parsed : DEFAULT_PRESETS;
-  } catch { return DEFAULT_PRESETS; }
-}
-function savePresets(presets: Preset[]) {
-  localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
-}
-
-/* ── PresetPanel ─────────────────────────────────────────────────────────── */
-
-function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => void; onClose: () => void }) {
-  const [presets, setPresets] = useState<Preset[]>([]);
+function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPreset) => void; onClose: () => void }) {
+  const [protocols, setProtocols] = useState<TreatmentPreset[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [formCategory, setFormCategory] = useState("");
-  const [formName, setFormName]         = useState("");
-  const [formDrugs, setFormDrugs]       = useState<PresetDrug[]>([{ drugName: "", dosage: "", frequency: "", duration: "" }]);
+  const [formName, setFormName]           = useState("");
+  const [formDiagnosis, setFormDiagnosis] = useState("");
+  const [formAdvice, setFormAdvice]       = useState("");
+  const [formDrugs, setFormDrugs]         = useState<ProtocolFormDrug[]>([blankProtocolDrug()]);
 
-  useEffect(() => { setPresets(loadPresets()); }, []);
+  useEffect(() => { setProtocols(getTreatmentPresets()); }, []);
 
-  const grouped = presets.reduce<Record<string, Preset[]>>((acc, p) => {
-    (acc[p.category] = acc[p.category] ?? []).push(p);
-    return acc;
-  }, {});
+  const resetForm = () => {
+    setFormName(""); setFormDiagnosis(""); setFormAdvice(""); setFormDrugs([blankProtocolDrug()]);
+    setEditId(null); setShowForm(false);
+  };
 
-  const resetForm = () => { setFormCategory(""); setFormName(""); setFormDrugs([{ drugName: "", dosage: "", frequency: "", duration: "" }]); setEditId(null); setShowForm(false); };
-
-  const openEdit = (p: Preset) => {
-    setFormCategory(p.category); setFormName(p.name); setFormDrugs(p.drugs.map((d) => ({ ...d })));
-    setEditId(p.id); setShowForm(true);
+  const openEdit = (protocol: TreatmentPreset) => {
+    setFormName(protocol.name);
+    setFormDiagnosis(protocol.diagnosisKeywords.join(", "));
+    setFormAdvice(protocol.advice ?? "");
+    setFormDrugs(protocol.medications.length
+      ? protocol.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" }))
+      : [blankProtocolDrug()]);
+    setEditId(protocol.id); setShowForm(true);
   };
 
   const saveForm = () => {
     const drugs = formDrugs.filter((d) => d.drugName.trim());
-    if (!formName.trim() || !formCategory.trim() || !drugs.length) return;
+    if (!formName.trim() || !drugs.length) return;
     drugs.forEach((drug) => saveCustomMedication({ name: drug.drugName, defaultDose: drug.dosage }));
-    let updated: Preset[];
-    if (editId) {
-      updated = presets.map((p) => p.id === editId ? { id: editId, category: formCategory.trim(), name: formName.trim(), drugs } : p);
-    } else {
-      updated = [...presets, { id: Date.now().toString(), category: formCategory.trim(), name: formName.trim(), drugs }];
-    }
-    setPresets(updated); savePresets(updated); resetForm();
+    const all = getTreatmentPresets();
+    const existing = editId ? all.find((x) => x.id === editId) : undefined;
+    const saved: TreatmentPreset = {
+      ...(existing ?? { id: `custom-tx-${Date.now()}`, diagnosisCodes: [], createdAt: new Date().toISOString() }),
+      name: formName.trim(),
+      diagnosisKeywords: formDiagnosis.split(",").map((k) => k.trim()).filter(Boolean),
+      medications: drugs.map((d) => ({ drugName: d.drugName.trim(), dosage: d.dosage || undefined, frequency: d.frequency || undefined, duration: d.duration || undefined })),
+      advice: formAdvice.trim() || undefined,
+      isDefault: false,
+    };
+    saveTreatmentPresets(existing ? all.map((x) => (x.id === saved.id ? saved : x)) : [...all, saved]);
+    setProtocols(getTreatmentPresets());
+    resetForm();
   };
 
-  const deletePreset = (id: string) => {
-    const updated = presets.filter((p) => p.id !== id);
-    setPresets(updated); savePresets(updated);
+  const deleteProtocol = (id: string) => {
+    saveTreatmentPresets(getTreatmentPresets().filter((x) => x.id !== id));
+    setProtocols(getTreatmentPresets());
   };
 
-  const setDrugField = (i: number, field: keyof PresetDrug, val: string) => {
-    const next = formDrugs.map((d, idx) => idx === i ? { ...d, [field]: val } : d);
-    setFormDrugs(next);
-  };
+  const setDrugField = (i: number, field: keyof ProtocolFormDrug, val: string) =>
+    setFormDrugs(formDrugs.map((d, idx) => (idx === i ? { ...d, [field]: val } : d)));
 
   // Shown as a pop-up over the page; Esc or a click outside closes it.
   useEffect(() => {
@@ -144,83 +95,130 @@ function PresetPanel({ onApply, onClose }: { onApply: (drugs: PresetDrug[]) => v
     <div className="w-full max-w-3xl max-h-[85vh] flex flex-col border border-[var(--color-border)] rounded-2xl bg-white shadow-2xl overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
-        <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Medication Presets</p>
+        <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Protocols</p>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
             className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors"
           >
-            <Plus size={12} /> New Preset
+            <Plus size={12} /> New Protocol
           </button>
           <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={16} /></button>
         </div>
       </div>
 
       {/* New / Edit form */}
-      {showForm && (
-        <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] shrink-0 max-h-[45vh] overflow-y-auto">
-          <p className="text-xs font-semibold text-[var(--color-ink-600)] mb-2">{editId ? "Edit Preset" : "New Preset"}</p>
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <input value={formCategory} onChange={(e) => setFormCategory(e.target.value)} placeholder="Category (e.g. Glaucoma)" className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs" />
-            <input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Preset name" className="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs" />
-          </div>
-          <div className="overflow-x-auto">
-          {formDrugs.map((d, i) => (
-            <div key={i} className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-1.5 mb-1.5 min-w-[400px]">
-              <input value={d.drugName}  onChange={(e) => setDrugField(i, "drugName",  e.target.value)} placeholder="Drug name"  className="rounded border border-[var(--color-border)] px-2 py-1 text-xs" />
-              <input value={d.dosage}    onChange={(e) => setDrugField(i, "dosage",    e.target.value)} placeholder="Dosage"     className="rounded border border-[var(--color-border)] px-2 py-1 text-xs" />
-              <input value={d.frequency} onChange={(e) => setDrugField(i, "frequency", e.target.value)} placeholder="Frequency"  className="rounded border border-[var(--color-border)] px-2 py-1 text-xs" />
-              <input value={d.duration}  onChange={(e) => setDrugField(i, "duration",  e.target.value)} placeholder="Duration"   className="rounded border border-[var(--color-border)] px-2 py-1 text-xs" />
-              <button onClick={() => setFormDrugs(formDrugs.filter((_, idx) => idx !== i))} className="text-[var(--color-ink-400)] hover:text-red-500"><X size={12} /></button>
-            </div>
-          ))}
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button onClick={() => setFormDrugs([...formDrugs, { drugName: "", dosage: "", frequency: "", duration: "" }])} className="text-xs text-[var(--color-primary-700)] hover:underline">+ Add drug row</button>
-            <div className="ml-auto flex gap-2 shrink-0">
-              <button onClick={resetForm} className="text-xs px-3 py-1 rounded-lg border border-[var(--color-border)] hover:bg-white">Cancel</button>
-              <button onClick={saveForm} className="text-xs px-3 py-1 rounded-lg bg-[var(--color-primary-600)] text-white font-medium hover:bg-[var(--color-primary-700)]">Save Preset</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showForm && (() => {
+        const fieldCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-500)] focus:border-[var(--color-primary-500)]";
+        const labelCls = "mb-1 block text-caption font-semibold text-[var(--color-ink-500)]";
+        const canSave = !!formName.trim() && formDrugs.some((d) => d.drugName.trim());
+        return (
+          <div className="shrink-0 max-h-[55vh] overflow-y-auto border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-4">
+            <div className="rounded-xl border border-[var(--color-border)] bg-white p-4">
+              <p className="mb-3 text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{editId ? "Edit Protocol" : "New Protocol"}</p>
 
-      {/* Preset list */}
-      <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
-        {Object.keys(grouped).length === 0 ? (
-          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No presets yet. Click &quot;+ New Preset&quot; to create one.</p>
-        ) : (
-          Object.entries(grouped).map(([cat, items]) => (
-            <div key={cat} className="mb-5">
-              <p className="text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">{cat}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {items.map((p) => (
-                  <div key={p.id} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <p className="text-xs font-semibold text-[var(--color-ink-700)]">{p.name}</p>
-                      <div className="flex gap-1.5">
-                        <button onClick={() => openEdit(p)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><Pencil size={12} /></button>
-                        <button onClick={() => deletePreset(p.id)} className="text-[var(--color-ink-400)] hover:text-red-500"><Trash2 size={12} /></button>
-                      </div>
+                <div>
+                  <label className={labelCls}>Protocol name <span className="text-red-500">*</span></label>
+                  <input autoFocus value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="e.g. Post-op Standard" className={fieldCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Diagnosis it is for <span className="font-normal text-[var(--color-ink-400)]">(optional)</span></label>
+                  <input value={formDiagnosis} onChange={(e) => setFormDiagnosis(e.target.value)} placeholder="e.g. Corneal ulcer" className={fieldCls} />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className={labelCls}>Medications <span className="text-red-500">*</span></label>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[440px]">
+                    <div className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] gap-1.5 px-0.5 pb-1 text-micro sm:text-caption font-medium text-[var(--color-ink-400)]">
+                      <span />
+                      <span>Drug name</span>
+                      <span>Dosage</span>
+                      <span>Frequency</span>
+                      <span>Duration</span>
+                      <span />
                     </div>
-                    <ul className="mb-3 space-y-0.5">
-                      {p.drugs.map((d, i) => (
-                        <li key={i} className="text-caption text-[var(--color-ink-500)]">
-                          · {d.drugName}{d.dosage ? ` ${d.dosage}` : ""}{d.frequency ? ` ${d.frequency}` : ""}{d.duration ? ` ${d.duration}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={() => onApply(p.drugs)}
-                      className="w-full py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
-                    >
-                      Apply ({p.drugs.length} drug{p.drugs.length !== 1 ? "s" : ""})
-                    </button>
+                    {formDrugs.map((d, i) => (
+                      <div key={i} className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] items-center gap-1.5 mb-1.5">
+                        <span className="text-caption text-[var(--color-ink-400)] tabular-nums text-right">{i + 1}.</span>
+                        <input value={d.drugName}  onChange={(e) => setDrugField(i, "drugName",  e.target.value)} placeholder="Drug name"   className={fieldCls} />
+                        <input value={d.dosage}    onChange={(e) => setDrugField(i, "dosage",    e.target.value)} placeholder="1 drop"      className={fieldCls} />
+                        <input value={d.frequency} onChange={(e) => setDrugField(i, "frequency", e.target.value)} placeholder="QID"         className={fieldCls} />
+                        <input value={d.duration}  onChange={(e) => setDrugField(i, "duration",  e.target.value)} placeholder="2 weeks"     className={fieldCls} />
+                        <button
+                          type="button"
+                          onClick={() => setFormDrugs(formDrugs.length > 1 ? formDrugs.filter((_, idx) => idx !== i) : [blankProtocolDrug()])}
+                          title="Remove this drug"
+                          aria-label={`Remove drug ${i + 1}`}
+                          className="grid h-6 w-6 place-items-center rounded-md text-[var(--color-ink-400)] hover:bg-red-50 hover:text-red-500 transition-colors"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormDrugs([...formDrugs, blankProtocolDrug()])}
+                  className="mt-1 inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--color-primary-300)] px-2.5 py-1 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
+                >
+                  <Plus size={12} /> Add drug
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <label className={labelCls}>Advice <span className="font-normal text-[var(--color-ink-400)]">(optional)</span></label>
+                <textarea value={formAdvice} onChange={(e) => setFormAdvice(e.target.value)} placeholder="Advice added to Advise Notes when this protocol is applied" rows={2} className={`${fieldCls} resize-none`} />
+              </div>
+
+              <div className="mt-4 flex items-center justify-end gap-2 border-t border-[var(--color-border)] pt-3">
+                <button type="button" onClick={resetForm} className="rounded-lg border border-[var(--color-border)] px-3.5 py-1.5 text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)] transition-colors">Cancel</button>
+                <button type="button" onClick={saveForm} disabled={!canSave} className="rounded-lg bg-[var(--color-primary-600)] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                  {editId ? "Save changes" : "Save Protocol"}
+                </button>
               </div>
             </div>
-          ))
+          </div>
+        );
+      })()}
+
+      {/* Protocol list */}
+      <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
+        {protocols.length === 0 ? (
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No protocols yet. Click &quot;+ New Protocol&quot; to create one.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {protocols.map((protocol) => (
+              <div key={protocol.id} className="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3">
+                <div className="flex items-start justify-between mb-2">
+                  <p className="text-xs font-semibold text-[var(--color-ink-700)]">{protocol.name}</p>
+                  {/* Built-in protocols stay as they are; ones added here can be edited or deleted */}
+                  {!protocol.isDefault && (
+                    <div className="flex gap-1.5">
+                      <button onClick={() => openEdit(protocol)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><Pencil size={12} /></button>
+                      <button onClick={() => deleteProtocol(protocol.id)} className="text-[var(--color-ink-400)] hover:text-red-500"><Trash2 size={12} /></button>
+                    </div>
+                  )}
+                </div>
+                <ul className="mb-3 space-y-0.5">
+                  {protocol.medications.map((d, i) => (
+                    <li key={i} className="text-caption text-[var(--color-ink-500)]">
+                      · {d.drugName}{d.dosage ? ` ${d.dosage}` : ""}{d.frequency ? ` ${d.frequency}` : ""}{d.duration ? ` ${d.duration}` : ""}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => onApply(protocol)}
+                  className="mt-auto w-full py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
+                >
+                  Apply ({protocol.medications.length} drug{protocol.medications.length !== 1 ? "s" : ""})
+                </button>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -1479,6 +1477,8 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
       removeDismissedDiagDesc(visit.id, diagnosisDesc);
       const diagMatches = presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc);
       const diag = diagnoses.find((d) => d.description === diagnosisDesc);
+      // Applied from the Protocols pop-up (not tied to a diagnosis): nothing to prompt for
+      if (!diag) return;
       setPendingDiagPrompts((prev) =>
         prev.some((p) => p.diagnosisDesc === diagnosisDesc)
           ? prev
@@ -2098,16 +2098,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
     setInstructions("");
   };
 
-  const applyPreset = (drugs: PresetDrug[]) => {
-    startTransition(async () => {
-      for (const d of drugs) {
-        saveCustomMedication({ name: d.drugName, defaultDose: d.dosage });
-        await addMedication(visit.id, udid, d);
-      }
-      setShowPresets(false);
-    });
-  };
-
   const startEdit = (m: any) => {
     const split = splitTaper(m.instructions, m.duration);
     setEditingId(m.id);
@@ -2184,11 +2174,13 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
           key={diagnosisDesc}
           applied={diagApplied}
           presetMatches={presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc)}
-          diagnosisLabel={diagnosisDesc}
+          diagnosisLabel={diagApplied.every((a) => a.presetName === diagnosisDesc) ? "Protocol" : diagnosisDesc}
           visitId={visit.id}
           udid={udid}
           onRemove={() => onRemoveApplied(diagnosisDesc)}
-          onChange={() => onChangeProtocol(diagnosisDesc, presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc))}
+          onChange={() => diagApplied.every((a) => a.presetName === diagnosisDesc)
+            ? setShowPresets(true)
+            : onChangeProtocol(diagnosisDesc, presetMatches.filter((m) => m.diagnosisDesc === diagnosisDesc))}
         />
       ))}
 
@@ -2225,7 +2217,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
               onClick={() => setShowPresets((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] transition-colors"
             >
-              <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Presets
+              <ChevronDown size={13} className={showPresets ? "rotate-180 transition-transform" : "transition-transform"} /> Protocols
             </button>
           </div>
         )}
@@ -2246,7 +2238,7 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         </div>
       )}
 
-      {showPresets && <PresetPanel onApply={applyPreset} onClose={() => setShowPresets(false)} />}
+      {showPresets && <ProtocolPanel onApply={(protocol) => { onApplyProtocol([protocol], protocol.name, false); setShowPresets(false); }} onClose={() => setShowPresets(false)} />}
 
       {/* Add medication — route first, then the whole row on one line (like Current Medications) */}
       {!readOnly && (

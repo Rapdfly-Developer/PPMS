@@ -13,7 +13,7 @@ const VISIT_INCLUDE = {
   doctor:               { select: { name: true } },
   generalExam:          { select: { chiefComplaint: true } },
   diagnoses:            { select: { description: true, laterality: true, status: true } },
-  appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, completedAt: true, isWalkIn: true } },
+  appointment:          { select: { createdAt: true, dateTime: true, arrivedAt: true, partialDispenseAt: true, partialDispenseEndedAt: true, partialDispenseEndedBy: true, completedAt: true, isWalkIn: true } },
   investigationOrders:  { select: { createdAt: true, updatedAt: true, resultRef: true }, orderBy: { createdAt: "asc" as const } },
 } as const;
 
@@ -102,6 +102,8 @@ export default async function PatientVisitsPage({
       refractionCompletedAt:   (v as any).refractionCompletedAt?.toISOString()              ?? null,
       refractionPassedOverAt:  (v as any).refractionPassedOverAt?.toISOString()             ?? null,
       partialDispenseAt:       v.appointment?.partialDispenseAt?.toISOString()              ?? null,
+      partialDispenseEndedAt:  v.appointment?.partialDispenseEndedAt?.toISOString()         ?? null,
+      partialDispenseEndedBy:  v.appointment?.partialDispenseEndedBy                        ?? null,
       dispensedAt:             v.appointment?.completedAt?.toISOString()                   ?? null,
       finalizedAt:             (v as any).finalizedAt?.toISOString()                        ?? null,
     },

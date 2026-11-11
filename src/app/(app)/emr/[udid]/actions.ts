@@ -861,9 +861,14 @@ export async function closeVisit(visitId: string, udid: string) {
   }
 
   if (appointmentId) {
+    const before = await prisma.appointment.findUnique({ where: { id: appointmentId }, select: { status: true } });
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "DISPENSED" },
+      data: {
+        status: "DISPENSED",
+        // Finalized straight from Partial Dispense, without going back to the OPD queue
+        ...(before?.status === "PARTIAL_DISPENSE" ? { partialDispenseEndedAt: now, partialDispenseEndedBy: "FINALIZED" } : {}),
+      },
     });
     const completedBy = visit.doctor?.name ?? user.name;
     await prisma.$executeRaw`
@@ -945,7 +950,7 @@ export async function markPartialDispense(visitId: string, udid: string, reason?
   if (appointmentId) {
     await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null, partialDispenseAt: new Date() } as any,
+      data: { status: "PARTIAL_DISPENSE", partialDispenseReason: reason || null, partialDispenseAt: new Date(), partialDispenseEndedAt: null, partialDispenseEndedBy: null },
     });
   }
 
