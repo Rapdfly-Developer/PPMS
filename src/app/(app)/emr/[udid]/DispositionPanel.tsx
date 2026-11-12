@@ -9,7 +9,7 @@ import { useEmrOverview } from "./EmrOverviewContext";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { istTodayStr } from "@/lib/ist";
-import { ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS, rescheduledSurgeryDate } from "@/lib/counselling";
+import { ALL_IMPLANTS, ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS, implantSuggestions, rescheduledSurgeryDate } from "@/lib/counselling";
 import { admissionTypeText } from "@/lib/ipd";
 import type { CounsellingSheet } from "@/lib/ipd-server";
 
@@ -340,6 +340,8 @@ export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
 const SURGERY_LIBRARY_KEY = "ppms_custom_surgery_v1";
 // Shared with the Minor Procedure card so custom anaesthesia types appear in both.
 const ANAESTHESIA_LIBRARY_KEY = "ppms_custom_anesthesia_v1";
+// Shared with the Counselling module so custom implants appear in both.
+const IMPLANT_LIBRARY_KEY = "ppms_counselling_implants";
 
 function readLibrary(key: string): string[] {
   try {
@@ -361,18 +363,42 @@ function rememberInLibrary(key: string, builtIns: readonly string[], value: stri
 }
 
 function SearchCombo({
-  value, onChange, options, libraryKey, placeholder,
+  value, onChange, options, libraryKey, placeholder, allowAdd = false, highlight = false,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: readonly string[];
   libraryKey: string;
   placeholder: string;
+  /** Show an "Add to library" row when the typed text is not in the list. */
+  allowAdd?: boolean;
+  /** Highlight the typed text inside each suggestion. */
+  highlight?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState<string[]>(() => (typeof window === "undefined" ? [] : readLibrary(libraryKey)));
   const q = value.trim().toLowerCase();
-  const matches = [...new Set([...options, ...custom])].filter((s) => !q || s.toLowerCase().includes(q));
+  const all = [...new Set([...options, ...custom])];
+  const matches = all.filter((s) => !q || s.toLowerCase().includes(q));
+  const canAdd = allowAdd && !!q && !all.some((s) => s.toLowerCase() === q);
+
+  const addToLibrary = () => {
+    setCustom(rememberInLibrary(libraryKey, options, value));
+    onChange(value.trim());
+    setOpen(false);
+  };
+
+  const label = (s: string) => {
+    const i = highlight && q ? s.toLowerCase().indexOf(q) : -1;
+    if (i < 0) return s;
+    return (
+      <>
+        {s.slice(0, i)}
+        <span className="font-semibold text-[var(--color-primary-700)] bg-[var(--color-primary-100)] rounded-sm">{s.slice(i, i + q.length)}</span>
+        {s.slice(i + q.length)}
+      </>
+    );
+  };
 
   return (
     <div className="relative">
@@ -385,7 +411,7 @@ function SearchCombo({
         placeholder={placeholder}
         className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] pl-8 pr-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
       />
-      {open && matches.length > 0 && (
+      {open && (matches.length > 0 || canAdd) && (
         <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-lg py-1">
           {matches.map((s) => (
             <button
@@ -395,9 +421,20 @@ function SearchCombo({
               onClick={() => { onChange(s); setOpen(false); }}
               className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]"
             >
-              {s}
+              {label(s)}
             </button>
           ))}
+          {canAdd && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={addToLibrary}
+              className={`flex w-full items-center gap-1.5 text-left px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] ${matches.length > 0 ? "border-t border-[var(--color-border)]" : ""}`}
+            >
+              <Plus size={13} strokeWidth={2.5} className="shrink-0" />
+              <span className="truncate">Add &quot;{value.trim()}&quot; to library</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -409,6 +446,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
   const [eye, setEye]                 = useState<string>(visit.advisedSurgeryEye ?? "");
   const [name, setName]               = useState<string>(visit.advisedSurgeryName ?? "");
   const [anaesthesia, setAnaesthesia] = useState<string>(visit.advisedSurgeryAnaesthesia ?? "");
+  const [implant, setImplant]         = useState<string>(visit.advisedSurgeryImplant ?? "");
   const [date, setDate]               = useState<string>(toInputDate(visit.advisedSurgeryDate));
   const [notes, setNotes]             = useState<string>(visit.advisedSurgeryNotes ?? "");
   const [isSaved, setIsSaved]         = useState<boolean>(!!visit.surgeryAdvised);
@@ -423,16 +461,20 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
   const touch = () => { setSavedMsg(false); setError(""); };
   const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase block mb-1.5";
 
+  // Implants that fit the chosen surgery; every implant when none match
+  const matched = implantSuggestions(name);
+  const implantOptions = matched.length ? matched : ALL_IMPLANTS;
+
   const save = () =>
     startTransition(async () => {
-      const r = await saveSurgicalCounselling(visit.id, udid, { eye, name, anaesthesia, date, notes });
+      const r = await saveSurgicalCounselling(visit.id, udid, { eye, name, anaesthesia, implant, date, notes });
       if (r.error) { setError(r.error); return; }
       setIsSaved(true);
       setSavedMsg(true);
     });
 
   const resetFields = () => {
-    setEye(""); setName(""); setAnaesthesia(""); setDate(""); setNotes(""); touch();
+    setEye(""); setName(""); setAnaesthesia(""); setImplant(""); setDate(""); setNotes(""); touch();
   };
 
   // Cancel resets every field and removes what was saved for this visit.
@@ -456,7 +498,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
       <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-1">
         <p className={labelCls}>Surgical Counselling</p>
         <p className="text-label sm:text-sm text-[var(--color-ink-700)]">
-          {[visit.advisedSurgeryEye, visit.advisedSurgeryName, visit.advisedSurgeryAnaesthesia].filter(Boolean).join(" · ")}
+          {[visit.advisedSurgeryEye, visit.advisedSurgeryName, visit.advisedSurgeryAnaesthesia, visit.advisedSurgeryImplant].filter(Boolean).join(" · ")}
         </p>
         {visit.advisedSurgeryDate && (
           <p className="text-label sm:text-sm text-[var(--color-ink-500)]">
@@ -478,7 +520,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
       {/* Line 1 — laterality, surgery, anaesthesia */}
-      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr_1fr] gap-3 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_5fr_3fr] gap-3 items-start">
         <div className="shrink-0">
           <label className={labelCls}>Laterality</label>
           <div className="flex gap-1">
@@ -500,7 +542,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         </div>
         <div className="min-w-0">
           <label className={labelCls}>Name of Surgery</label>
-          <SearchCombo value={name} onChange={(v) => { setName(v); touch(); }} options={SURGERY_OPTIONS} libraryKey={SURGERY_LIBRARY_KEY} placeholder="Search or type a surgery…" />
+          <SearchCombo value={name} onChange={(v) => { setName(v); touch(); }} options={SURGERY_OPTIONS} libraryKey={SURGERY_LIBRARY_KEY} placeholder="Search or type a surgery…" allowAdd highlight />
         </div>
         <div className="min-w-0">
           <label className={labelCls}>Type of Anesthesia</label>
@@ -508,10 +550,10 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
         </div>
       </div>
 
-      {/* Line 2 — tentative date, notes */}
-      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-3 items-start">
+      {/* Line 2: tentative date, implant, notes */}
+      <div className="grid grid-cols-1 sm:grid-cols-[auto_2fr_3fr] gap-3 items-start">
         <div>
-          <label className={labelCls}>Tentative Date</label>
+          <label className={labelCls}>Tentative Date <span className="text-[var(--color-ink-300)] font-normal normal-case tracking-normal">(optional)</span></label>
           <input
             type="date"
             value={date}
@@ -528,7 +570,11 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
           )}
         </div>
         <div className="min-w-0">
-          <label className={labelCls}>Notes</label>
+          <label className={labelCls}>Implant <span className="text-[var(--color-ink-300)] font-normal normal-case tracking-normal">(optional)</span></label>
+          <SearchCombo value={implant} onChange={(v) => { setImplant(v); touch(); }} options={implantOptions} libraryKey={IMPLANT_LIBRARY_KEY} placeholder="Search or type an implant…" />
+        </div>
+        <div className="min-w-0">
+          <label className={labelCls}>Notes <span className="text-[var(--color-ink-300)] font-normal normal-case tracking-normal">(optional)</span></label>
           <KeywordTextarea
             fieldKey="surgical_counselling_notes"
             builtIns={SURGICAL_NOTE_KEYWORDS}
@@ -544,7 +590,7 @@ export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: st
 
       <div data-overview-hide className="flex items-center gap-3">
         <button
-          disabled={pending || !name.trim()}
+          disabled={pending || !eye || !name.trim() || !anaesthesia.trim()}
           onClick={save}
           className="text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors"
         >

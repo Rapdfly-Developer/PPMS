@@ -193,6 +193,9 @@ export function implantSuggestions(surgery: string): string[] {
   return [...new Set(out)];
 }
 
+/** Every starter implant, for when the surgery name matches no preset. */
+export const ALL_IMPLANTS: readonly string[] = [...new Set(IMPLANT_PRESETS.flatMap((p) => p.implants))];
+
 /**
  * The surgery date Counselling moved to, when it differs from the tentative
  * date signed in the EMR (null when unchanged). The signed date itself is

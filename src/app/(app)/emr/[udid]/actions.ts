@@ -827,7 +827,7 @@ export async function saveProcedureNotes(visitId: string, udid: string, value: s
 export async function saveSurgicalCounselling(
   visitId: string,
   udid: string,
-  data: { eye: string; name: string; anaesthesia: string; date: string; notes: string },
+  data: { eye: string; name: string; anaesthesia: string; implant: string; date: string; notes: string },
 ): Promise<{ error?: string }> {
   const user = await requireVisitPerm(visitId, "emr.plan.edit");
   const name = data.name.trim();
@@ -846,6 +846,7 @@ export async function saveSurgicalCounselling(
     advisedSurgeryName: name,
     advisedSurgeryEye: data.eye || null,
     advisedSurgeryAnaesthesia: data.anaesthesia.trim() || null,
+    advisedSurgeryImplant: data.implant.trim() || null,
     advisedSurgeryDate: data.date ? istDayRange(data.date).dayStart : null,
     advisedSurgeryNotes: data.notes.trim() || null,
   };
@@ -947,7 +948,7 @@ export async function clearSurgicalCounselling(visitId: string, udid: string): P
     where: { id: visitId },
     data: {
       surgeryAdvised: false, advisedSurgeryName: null, advisedSurgeryEye: null,
-      advisedSurgeryAnaesthesia: null, advisedSurgeryDate: null, advisedSurgeryNotes: null,
+      advisedSurgeryAnaesthesia: null, advisedSurgeryImplant: null, advisedSurgeryDate: null, advisedSurgeryNotes: null,
     },
   });
   await writeAudit(user.id, "Visit", visitId, "SURGICAL_COUNSELLING_CLEAR", {});
