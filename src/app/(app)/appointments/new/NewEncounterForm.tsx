@@ -17,6 +17,9 @@ import { TealSelect } from "@/components/ui/TealSelect";
 import { keywordEntries } from "@/components/emr/KeywordField";
 import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { chipMatcher, CHIP_MATCH_CLASS } from "@/lib/chip-match";
+
+const RELATIONSHIP_CHIPS = ["Brother", "Sister", "Parent", "Child", "Spouse", "Relative", "Friend", "Other"];
 
 function sinceToDays(sinceStr: string): number {
   const m = sinceStr.match(/(\d+)\s*(days?|weeks?|months?|years?)/i);
@@ -596,13 +599,16 @@ export function NewEncounterForm({
                     <div className="mt-3">
                       <FieldLabel>Relationship</FieldLabel>
                       <div className="flex flex-wrap gap-1.5 mt-1">
-                        {["Brother", "Sister", "Parent", "Child", "Spouse", "Relative", "Friend", "Other"].map((rel) => (
+                        {RELATIONSHIP_CHIPS.map((rel) => {
+                          // Chips matching what is being typed below are highlighted (the selected one keeps its own colour)
+                          const match = referralRelationship === rel ? null : chipMatcher(referralRelationship, RELATIONSHIP_CHIPS)(rel);
+                          return (
                           <button
                             key={rel}
                             type="button"
                             onClick={() => setReferralRelationship(referralRelationship === rel ? "" : rel)}
-                            className="px-3 py-1 rounded-full text-xs font-medium border transition-colors"
-                            style={referralRelationship === rel ? {
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${match ? CHIP_MATCH_CLASS[match] : ""}`}
+                            style={match ? undefined : referralRelationship === rel ? {
                               background: "var(--color-primary-700)", color: "#fff", borderColor: "var(--color-primary-700)",
                             } : {
                               background: "#fff", color: "var(--color-ink-600)", borderColor: "var(--color-border)",
@@ -610,7 +616,8 @@ export function NewEncounterForm({
                           >
                             {rel}
                           </button>
-                        ))}
+                          );
+                        })}
                       </div>
                       <input
                         type="text"

@@ -130,7 +130,7 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
 
               <div className="mt-4">
                 <label className={labelCls}>Medications <span className="text-red-500">*</span></label>
-                <div className="overflow-x-auto">
+                <div>
                   <div className="min-w-[440px]">
                     <div className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] gap-1.5 px-0.5 pb-1 text-micro sm:text-caption font-medium text-[var(--color-ink-400)]">
                       <span />
@@ -143,10 +143,15 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
                     {formDrugs.map((d, i) => (
                       <div key={i} className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] items-center gap-1.5 mb-1.5">
                         <span className="text-caption text-[var(--color-ink-400)] tabular-nums text-right">{i + 1}.</span>
-                        <input value={d.drugName}  onChange={(e) => setDrugField(i, "drugName",  e.target.value)} placeholder="Drug name"   className={fieldCls} />
-                        <input value={d.dosage}    onChange={(e) => setDrugField(i, "dosage",    e.target.value)} placeholder="1 drop"      className={fieldCls} />
-                        <input value={d.frequency} onChange={(e) => setDrugField(i, "frequency", e.target.value)} placeholder="QID"         className={fieldCls} />
-                        <input value={d.duration}  onChange={(e) => setDrugField(i, "duration",  e.target.value)} placeholder="2 weeks"     className={fieldCls} />
+                        {/* Same suggestion dropdowns as the other medication forms; picking a drug fills its usual dose */}
+                        <DrugNameInput
+                          value={d.drugName}
+                          onChange={(name, defaultDose) => setFormDrugs(formDrugs.map((x, idx) => (idx === i ? { ...x, drugName: name, ...(defaultDose ? { dosage: defaultDose } : {}) } : x)))}
+                          className={fieldCls}
+                        />
+                        <OptionsInput value={d.dosage}    onChange={(v) => setDrugField(i, "dosage", v)}    options={DOSE_OPTIONS}      placeholder="1 drop"  className={fieldCls} />
+                        <OptionsInput value={d.frequency} onChange={(v) => setDrugField(i, "frequency", v)} options={FREQUENCY_OPTIONS} placeholder="QID"     className={fieldCls} />
+                        <OptionsInput value={d.duration}  onChange={(v) => setDrugField(i, "duration", v)}  options={DURATION_OPTIONS}  placeholder="2 weeks" className={fieldCls} />
                         <button
                           type="button"
                           onClick={() => setFormDrugs(formDrugs.length > 1 ? formDrugs.filter((_, idx) => idx !== i) : [blankProtocolDrug()])}
@@ -190,29 +195,62 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
         {protocols.length === 0 ? (
           <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No protocols yet. Click &quot;+ New Protocol&quot; to create one.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {protocols.map((protocol) => (
-              <div key={protocol.id} className="flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3">
-                <div className="flex items-start justify-between mb-2">
-                  <p className="text-xs font-semibold text-[var(--color-ink-700)]">{protocol.name}</p>
-                  {/* Built-in protocols stay as they are; ones added here can be edited or deleted */}
-                  {!protocol.isDefault && (
-                    <div className="flex gap-1.5">
-                      <button onClick={() => openEdit(protocol)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><Pencil size={12} /></button>
-                      <button onClick={() => deleteProtocol(protocol.id)} className="text-[var(--color-ink-400)] hover:text-red-500"><Trash2 size={12} /></button>
-                    </div>
-                  )}
+          <div className="flex flex-col gap-3">
+            {protocols.map((protocol, idx) => (
+              <div key={protocol.id} className="p-4 rounded-xl border border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40 transition-colors">
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-caption font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
+                      Protocol {idx + 1}
+                    </span>
+                    <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{protocol.name}</p>
+                    {!protocol.isDefault && (
+                      <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {protocol.followUpDays && (
+                      <span className="text-caption font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA]">
+                        F/U {protocol.followUpDays}d
+                      </span>
+                    )}
+                    {/* Every protocol can be edited; editing a built-in one saves it as an override under the same id */}
+                    <button onClick={() => openEdit(protocol)} title="Edit protocol" className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"><Pencil size={11} /></button>
+                    <button onClick={() => deleteProtocol(protocol.id)} title="Delete protocol" className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={11} /></button>
+                  </div>
                 </div>
-                <ul className="mb-3 space-y-0.5">
+
+                {/* Medications */}
+                <ul className="flex flex-col gap-1.5 mb-2">
                   {protocol.medications.map((d, i) => (
-                    <li key={i} className="text-caption text-[var(--color-ink-500)]">
-                      · {d.drugName}{d.dosage ? ` ${d.dosage}` : ""}{d.frequency ? ` ${d.frequency}` : ""}{d.duration ? ` ${d.duration}` : ""}
+                    <li key={i} className="flex items-baseline gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0 mt-1.5" />
+                      <span className="text-xs font-medium text-[var(--color-ink-800)]">{d.drugName}</span>
+                      {(d.dosage || d.frequency || d.duration) && (
+                        <span className="text-caption text-[var(--color-ink-400)]">
+                          {[d.dosage, d.frequency, d.duration].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
+
+                {/* Extras */}
+                {protocol.investigations && protocol.investigations.length > 0 && (
+                  <p className="text-caption text-[var(--color-ink-400)] mt-1">
+                    <span className="font-semibold">Investigations:</span> {protocol.investigations.join(", ")}
+                  </p>
+                )}
+                {protocol.advice && (
+                  <p className="text-caption text-[var(--color-ink-400)] italic mt-0.5">
+                    <span className="font-semibold not-italic">Advice:</span> {protocol.advice}
+                  </p>
+                )}
+
                 <button
                   onClick={() => onApply(protocol)}
-                  className="mt-auto w-full py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
+                  className="mt-3 w-full py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
                 >
                   Apply ({protocol.medications.length} drug{protocol.medications.length !== 1 ? "s" : ""})
                 </button>
