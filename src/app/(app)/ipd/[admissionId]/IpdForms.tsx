@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
-import { ChipRow, SelectWithCustom } from "./customOptions";
+import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
 import { EducationSetPicker, LoadOtTemplate, ManageMine, SaveAsMine, type PickableSet, type SavedTemplate } from "./templatesUi";
 import { searchMedications } from "@/lib/ophthalmic-medications";
 import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
@@ -69,15 +69,15 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function Card({ title, sub, right, children, tone }: { title: string; sub?: string; right?: React.ReactNode; children: React.ReactNode; tone?: "warn" | "ok" }) {
   return (
-    <section className={`rounded-xl border bg-white overflow-hidden ${tone === "warn" ? "border-amber-300" : tone === "ok" ? "border-emerald-300" : "border-[var(--color-border)]"}`}>
-      <div className={`flex flex-wrap items-center justify-between gap-2 px-3.5 py-2 border-b ${tone === "ok" ? "bg-emerald-50 border-emerald-200" : tone === "warn" ? "bg-amber-50 border-amber-200" : "bg-[var(--color-surface-sunken)]/70 border-[var(--color-border)]"}`}>
+    <section className={`rounded-lg border bg-white overflow-hidden ${tone === "warn" ? "border-amber-300" : tone === "ok" ? "border-emerald-300" : "border-[var(--color-border)]"}`}>
+      <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 border-b ${tone === "ok" ? "bg-emerald-50 border-emerald-200" : tone === "warn" ? "bg-amber-50 border-amber-200" : "bg-[var(--color-surface-sunken)]/70 border-[var(--color-border)]"}`}>
         <div className="min-w-0">
-          <h3 className="text-[12px] font-bold uppercase tracking-wider text-[var(--color-ink-800)]">{title}</h3>
+          <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-800)]">{title}</h3>
           {sub && <p className="text-caption text-[var(--color-ink-500)]">{sub}</p>}
         </div>
         {right}
       </div>
-      <div className="p-3.5">{children}</div>
+      <div className="p-3">{children}</div>
     </section>
   );
 }
@@ -769,7 +769,9 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
               </div>
             </div>
             <ChipRow storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} isOn={(c) => note.includes(c)} onPick={toggleChip} />
-            <Area value={note} onChange={setNote} rows={2} placeholder="Note" />
+            <SuggestField storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} value={note} onChange={setNote}>
+              {(sp) => <textarea {...sp} value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Note (type for suggestions)" className={`${inp} resize-y`} />}
+            </SuggestField>
             <button type="button" disabled={pending || !note.trim()}
               onClick={() => run({ text: note.trim(), kind: "note", meta: { shift, ordersFollowed: orders } }, () => setNote(""))}
               className={btnP}><Plus size={13} /> Add note</button>
@@ -883,7 +885,9 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
           <div>
             <div className={rowIn}>
               <label className={lblIn}>Complications</label>
-              <input value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} flex-1`} />
+              <SuggestField storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} value={v.complications} onChange={(x) => set("complications", x)} disabled={!editable} className="relative flex-1 min-w-0">
+                {(sp) => <input {...sp} value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} w-full`} />}
+              </SuggestField>
             </div>
             {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
           </div>
@@ -973,7 +977,9 @@ export function DoctorNoteComposer({ onAdd, pending }: { onAdd: (text: string) =
                   {DOCTOR_NOTE_CHIPS[fl.key] && (
                     <div className="mb-1.5"><ChipRow storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key]} prefix="+ " onPick={(c) => chip(fl.key, c)} /></div>
                   )}
-                  <textarea value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />
+                  <SuggestField storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key] ?? []} value={vals[fl.key] ?? ""} onChange={(x) => set(fl.key, x)}>
+                    {(sp) => <textarea {...sp} value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />}
+                  </SuggestField>
                 </div>
               </div>
             )}

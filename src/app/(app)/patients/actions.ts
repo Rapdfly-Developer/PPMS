@@ -461,6 +461,9 @@ export async function deletePatient(patientId: string): Promise<{ error?: string
       await tx.insurancePreAuthorization.deleteMany({ where: { patientInsuranceId: { in: insuranceIds } } });
       await tx.patientInsurance.deleteMany({ where: { id: { in: insuranceIds } } });
 
+      // IPD admissions (forms, doctor's notes and OT case go with them)
+      await tx.ipdAdmission.deleteMany(byVisit);
+
       // EMR
       await tx.generalExamination.deleteMany(byVisit);
       await tx.medication.deleteMany(byVisit);

@@ -1608,6 +1608,7 @@ model IpdAdmission {
 
   forms              IpdForm[]
   doctorNotes        IpdDoctorNote[]
+  otCase             OtCase?
 
   @@index([patientId])
   @@index([status])
@@ -1643,6 +1644,50 @@ model IpdTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([doctorId, kind])
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// OT schedule (Phase 2) - one case per IPD admission. Created when the file is
+// arranged in Upcoming or reaches OT; the file returns to the ward from here.
+// ──────────────────────────────────────────────────────────────────────────
+model OtCase {
+  id                     String       @id @default(cuid())
+  admissionId            String       @unique
+  admission              IpdAdmission @relation(fields: [admissionId], references: [id], onDelete: Cascade)
+  sequence               Int          @default(0) // custom order in Today / Upcoming
+  verified               String       @default("{}") // JSON: { [formKey]: { by, at } }
+  confirmedAt            DateTime?
+  confirmedBy            String?
+  begunAt                DateTime?
+  begunBy                String?
+  anaesthesiaAt          DateTime?
+  anaesthesiaBy          String?
+  anaesthesiaDelayReason String?
+  endedAt                DateTime?
+  endedBy                String?
+  abortedAt              DateTime?
+  abortedBy              String?
+  abortReason            String?
+  abortStep              String?
+  outcomeSavedAt         DateTime?
+  eventful               Boolean      @default(false)
+  eventReason            String?
+  eventStep              String?
+  intraOpManagement      String?
+  postOpManagement       String?
+  otNotesChoice          String?      // NOW | LATER
+  wardNotesChoice        String?      // NOW | LATER (post-op notes / discharge summary)
+  otNotes                String?      // JSON (OtNotesData + abort / event lines); the OT module's copy
+  otNotesSavedAt         DateTime?
+  otNotesSavedBy         String?
+  shiftedToWardAt        DateTime?
+  shiftedToWardBy        String?
+  shiftDelayReason       String?
+  dischargedFromOt       Boolean      @default(false)
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  @@index([sequence])
 }
 
 model IpdDoctorNote {

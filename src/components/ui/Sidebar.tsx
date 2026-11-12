@@ -7,7 +7,7 @@ import {
   Stethoscope, CalendarDays, Users,
   Settings, X,
   CalendarClock, BarChart2, Lock,
-  Puzzle, LayoutGrid, Building2, ClipboardCheck, BedDouble,
+  Puzzle, LayoutGrid, Building2, ClipboardCheck, BedDouble, Scissors,
 } from "lucide-react";
 import clsx from "clsx";
 import type { Role } from "@/lib/constants";
@@ -32,6 +32,7 @@ const ALL_NAV: NavEntry[] = [
   { href: "/follow-ups",       label: "Follow Ups",       icon: CalendarClock, permission: "followups.view"                              },
   { href: "/counselling",      label: "Counselling",      icon: ClipboardCheck, permission: "counselling.view"                          },
   { href: "/ipd",              label: "IPD",              icon: BedDouble,    permission: "ipd.view"                                     },
+  { href: "/ot",               label: "OT",               icon: Scissors,     permission: "ot.view"                                      },
   { href: "/patients",         label: "Patient Library",  icon: Users,        permission: "patients.view"                                },
   { href: "/hospital-manager", label: "Hospital Manager", icon: Building2,    permission: "hospital.manage", roles: ["DOCTOR"]           },
   { href: "/analytics",        label: "Analytics",        icon: BarChart2,    permission: "reports.view"                                 },
@@ -151,6 +152,7 @@ export function Sidebar({
     if (source === "follow-ups"   || returnTo === "/follow-ups")   return "/follow-ups";
     if (source === "counselling"  || returnTo.startsWith("/counselling")) return "/counselling";
     if (source === "ipd"          || returnTo.startsWith("/ipd"))         return "/ipd";
+    if (source === "ot"           || returnTo.startsWith("/ot"))          return "/ot";
     if (returnTo === "/dashboard")                                  return "/dashboard";
     return pathname; // default → Patient Library
   })();

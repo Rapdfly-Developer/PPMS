@@ -9,7 +9,7 @@ import { PAST_MEDICAL_HISTORY_CHIPS, VITAL_RANGES, CHIEF_COMPLAINT_FIELD_KEY, CH
 import { appendComplaintKeyword, OPHTHALMIC_COMPLAINTS } from "@/components/ui/ComplaintCombobox";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { KeywordTextarea, KeywordChipsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { KeywordTextarea, KeywordChipsRow, KeywordSuggest, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { chipMatcher } from "@/lib/chip-match";
 import { saveGeneralExam } from "./actions";
 import { HpiBuilder } from "./HpiBuilder";
@@ -438,14 +438,20 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                   </div>
 
                   {/* Complaint text — multiple selected keywords stay in this field as bullets */}
-                  <textarea
-                    value={c.text}
-                    onChange={(e) => patchComplaint(i, { text: e.target.value.replace(/\|/g, "/") })}
-                    disabled={readOnly}
-                    placeholder="Complaint…"
-                    rows={Math.max(1, Math.min(5, c.text.split("\n").length))}
-                    className="grow basis-full sm:basis-0 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
-                  />
+                  <div className="grow basis-full sm:basis-0 min-w-0 flex">
+                  <KeywordSuggest fieldKey={CHIEF_COMPLAINT_FIELD_KEY} builtIns={OPHTHALMIC_COMPLAINTS} value={c.text} disabled={readOnly}
+                    onChange={(v) => patchComplaint(i, { text: v })} apply={appendComplaintKeyword}>
+                    {(sp) => <textarea
+                      {...sp}
+                      value={c.text}
+                      onChange={(e) => patchComplaint(i, { text: e.target.value.replace(/\|/g, "/") })}
+                      disabled={readOnly}
+                      placeholder="Complaint…"
+                      rows={Math.max(1, Math.min(5, c.text.split("\n").length))}
+                      className="w-full min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-sm leading-5 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"
+                    />}
+                  </KeywordSuggest>
+                  </div>
 
                   {/* Since */}
                   <span

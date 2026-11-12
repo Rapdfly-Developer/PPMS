@@ -123,6 +123,14 @@ export const P = {
   IPD_SHIFT_OT:            "ipd.shiftOt",
   IPD_DISCHARGE:           "ipd.discharge",
 
+  // OT schedule
+  OT_VIEW:                 "ot.view",
+  OT_ARRANGE:              "ot.arrange",
+  OT_VERIFY:               "ot.verify",
+  OT_OPERATE:              "ot.operate",
+  OT_NOTES:                "ot.notes",
+  OT_SHIFT_WARD:           "ot.shiftWard",
+
   // Settings — Plugins & Hospital
   PLUGINS_MANAGE:          "plugins.manage",
   HOSPITAL_MANAGE:         "hospital.manage",
@@ -179,6 +187,10 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     P.IPD_VIEW,
     P.IPD_EDIT,
     P.IPD_SHIFT_OT,
+    P.OT_VIEW,
+    P.OT_ARRANGE,
+    P.OT_VERIFY,
+    P.OT_SHIFT_WARD,
     P.SETTINGS_VIEW,
   ],
 

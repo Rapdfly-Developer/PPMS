@@ -84,10 +84,10 @@ export interface CounsellingDetailData {
 const SEX_LABEL: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
 const IMPLANT_LIBRARY_KEY = "ppms_counselling_implants";
 
-const inputCls = "w-full h-9 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)] disabled:text-[var(--color-ink-600)]";
+const inputCls = "w-full h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)] disabled:text-[var(--color-ink-600)]";
 const labelCls = "text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider block mb-1";
-const btnPrimary = "h-9 inline-flex items-center justify-center gap-1.5 px-4 text-sm font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
-const btnOutline = "h-9 inline-flex items-center justify-center gap-1.5 px-3.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
+const btnPrimary = "h-8 inline-flex items-center justify-center gap-1.5 px-3 text-xs sm:text-sm font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
+const btnOutline = "h-8 inline-flex items-center justify-center gap-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
 
 const IN_VIEW_OF_SUGGESTIONS = [
   "Physician fitness for surgery",
@@ -567,8 +567,8 @@ function SectionCard({
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
-    <section id={id} className={`scroll-mt-4 rounded-2xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
-      <header className={`h-11 flex items-center gap-2.5 px-4 sm:px-5 ${locked ? "" : "border-b border-[var(--color-border)]"}`}>
+    <section id={id} className={`scroll-mt-4 rounded-xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
+      <header className={`h-10 flex items-center gap-2.5 px-4 ${locked ? "" : "border-b border-[var(--color-border)]"}`}>
         <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>
           {icon}
         </span>
@@ -579,7 +579,7 @@ function SectionCard({
           ? <span className="inline-flex items-center gap-1 text-caption font-medium text-[var(--color-ink-400)]"><Lock size={12} /> <span className="hidden sm:inline">{lockedText}</span></span>
           : right}
       </header>
-      {!locked && <div className="px-4 sm:px-5 py-3.5">{children}</div>}
+      {!locked && <div className="px-4 py-3">{children}</div>}
     </section>
   );
 }
@@ -670,7 +670,7 @@ function ReportViewer({ order, onClose }: { order: CounsellingOrder; onClose: ()
 
 function SummaryBlock({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <div className="min-w-0 px-4 sm:px-5 py-3 space-y-2">
+    <div className="min-w-0 px-4 py-2.5 space-y-1.5">
       <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{icon} {title}</p>
       {children}
     </div>
@@ -708,7 +708,7 @@ function Banner({ tone, icon, action, children }: { tone: "emerald" | "orange" |
       ? "border-orange-200 bg-orange-50 text-orange-800"
       : "border-red-200 bg-red-50 text-red-800";
   return (
-    <div className={`mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border px-4 py-2 text-sm ${cls}`}>
+    <div className={`mt-2.5 flex flex-wrap items-center gap-2.5 rounded-lg border px-3 py-1.5 text-sm ${cls}`}>
       <span className="shrink-0">{icon}</span>
       <span className="flex-1 min-w-0">{children}</span>
       {action}
@@ -823,13 +823,13 @@ export function CounsellingDetail({
     <div className="fade-in pb-24">
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
-      <section className="relative rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white px-4 py-3.5">
+      <section className="relative rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
         {/* Line 1 — patient details */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden ring-2 ring-white shadow-sm bg-gradient-to-br from-[var(--color-primary-400)] to-[var(--color-primary-600)] flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden bg-[var(--color-primary-100)] flex items-center justify-center">
             {data.patient.photoUrl
               ? <img src={fileHref(data.patient.photoUrl)!} alt={data.patient.name} className="w-full h-full object-cover" />
-              : <span className="text-sm font-bold text-white">{initials(data.patient.name)}</span>}
+              : <span className="text-xs font-bold text-[var(--color-primary-700)]">{initials(data.patient.name)}</span>}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
@@ -985,7 +985,7 @@ export function CounsellingDetail({
       {error && !modal && <Banner tone="red" icon={<AlertTriangle size={15} />}>{error}</Banner>}
 
       {/* ── Summary strip ─────────────────────────────────────────────── */}
-      <section className="mt-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+      <section className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
         <div className="flex items-center gap-2 px-4 sm:px-5 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
           <ClipboardList size={14} className="text-[var(--color-primary-700)]" />
           <p className="flex-1 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
@@ -1048,8 +1048,8 @@ export function CounsellingDetail({
         </div>
       </section>
 
-      <div className="mt-4">
-        <div className="flex flex-col gap-3.5">
+      <div className="mt-3">
+        <div className="flex flex-col gap-3">
           {/* ── A & B ─────────────────────────────────────────────────── */}
           <SectionCard
             step={1} icon={<Package size={15} />} title="Surgery Details"
@@ -1096,7 +1096,7 @@ export function CounsellingDetail({
                     return (
                       <button key={m.value} type="button" disabled={!editable}
                         onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
-                        className={`h-9 w-32 inline-flex items-center justify-center gap-2 rounded-lg border text-sm font-semibold transition-colors disabled:cursor-default ${
+                        className={`h-8 w-28 inline-flex items-center justify-center gap-2 rounded-lg border text-xs sm:text-sm font-semibold transition-colors disabled:cursor-default ${
                           active
                             ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
                             : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"

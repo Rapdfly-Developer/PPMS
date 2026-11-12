@@ -161,4 +161,31 @@ export interface PulseCard extends CardCommon {
   tables: TableData[];
 }
 
-export type CardData = ClinicalCard | SocialCard | FinancialCard | PulseCard;
+/** One step from surgery advised to discharge; `days` is the average wait since the step before. */
+export interface SurgeryStep {
+  label: string;
+  count: number;
+  days: number | null;
+}
+
+export interface SurgeryCard extends CardCommon {
+  operated: number;
+  inOt: number;
+  outcome: Cat[];
+  bySurgery: Cat[];
+  eventReasons: Cat[];
+  abortSteps: Cat[];
+  abortReasons: Cat[];
+  delays: {
+    anaesthesia: { avg: number | null; over: number; total: number; limit: number };
+    shift: { avg: number | null; over: number; total: number; limit: number };
+    opTime: number | null;
+  };
+  delayReasons: Cat[];
+  stageTimes: Cat[];
+  journey: SurgeryStep[];
+  trend: SeriesPoint[];
+  tables: TableData[];
+}
+
+export type CardData = ClinicalCard | SocialCard | FinancialCard | PulseCard | SurgeryCard;

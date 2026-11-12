@@ -69,7 +69,7 @@ function CardWave({ values, height }: { values: number[]; height: number }) {
 function LandingCard({ summary: s, href, compact, active, dimmed }: { summary: CardSummary; href: string; compact: boolean; active: boolean; dimmed: boolean }) {
   const m = cardMeta(s.id);
   const Icon = CARD_ICON[s.id];
-  const soon = s.id === "surgery";
+  const soon = false;
   const Arrow = s.changePct === null ? null : s.changePct > 0 ? ArrowUpRight : s.changePct < 0 ? ArrowDownRight : Minus;
   const chip = s.locked ? (
     <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2 py-0.5 text-micro font-semibold"><Lock size={10} /> No access</span>
@@ -142,7 +142,7 @@ export function DashHeader({ card, params, canPrint, print }: { card: CardId; pa
       </div>
       {!print && (
         <div className="flex items-center gap-2">
-          {canPrint && card !== "surgery" && (
+          {canPrint && (
             <a
               href={`/analytics/report${buildQuery(params, { card })}`}
               target="_blank"

@@ -16,7 +16,7 @@ import {
   getClinical, getInvestigations, getFollowUps, getPatients, getAppointments, getOperations, getHospitals, getActivity,
 } from "./service";
 import type {
-  AttentionItem, CardId, CardSummary, ClinicalCard, DrillData, FinancialCard, JourneyStep, OutcomeRow, PulseCard, SocialCard, Tile,
+  AttentionItem, CardId, CardSummary, ClinicalCard, DrillData, FinancialCard, JourneyStep, OutcomeRow, PulseCard, SocialCard, SurgeryCard, Tile,
 } from "./cards";
 
 /* ═══ Small helpers ════════════════════════════════════════════════════════ */
@@ -693,6 +693,219 @@ export function getPulseCard(scope: AnalyticsScope, f: AnalyticsFilters, drillKe
   });
 }
 
+/* ═══ Surgery (OT, counselling and IPD) ════════════════════════════════════ */
+
+const ANAES_LIMIT = 5;
+const SHIFT_LIMIT = 2;
+const dayGap = (a: Date | null | undefined, b: Date | null | undefined) => {
+  if (!a || !b) return null;
+  const d = (b.getTime() - a.getTime()) / H.DAY_MS;
+  return d >= 0 && d <= 365 ? d : null;
+};
+const minGap = (a: Date | null | undefined, b: Date | null | undefined) => {
+  if (!a || !b) return null;
+  const m = (b.getTime() - a.getTime()) / 60000;
+  return m >= 0 && m <= 12 * 60 ? m : null;
+};
+const days1 = (d: number | null) => (d === null ? "No data" : d < 1 ? "Same day" : `${Math.round(d * 10) / 10} days`);
+/** "a, b; c" -> ["a", "b", "c"] for counting keyword reasons. */
+const parts = (s: string | null | undefined) => (s ?? "").split(/[,;\n•]/).map((x) => clean(x)).filter(Boolean);
+const tally = (values: string[], color: string, n = 8): Cat[] =>
+  [...H.countBy(values, (v) => v.toLowerCase()).entries()]
+    .map(([k, value]) => ({ label: H.titleCase(values.find((v) => v.toLowerCase() === k) ?? k), value, color }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, n);
+
+/** OT cases whose file reached OT in the period, in the user's scope. */
+function otCaseWhere(scope: AnalyticsScope, f: AnalyticsFilters, range: { gte: Date; lte: Date }): Prisma.OtCaseWhereInput {
+  return { admission: { shiftedToOtAt: range, visit: H.visitWhere(scope, f, null, range.gte) } };
+}
+
+const OT_SELECT = {
+  begunAt: true, anaesthesiaAt: true, endedAt: true, abortedAt: true, shiftedToWardAt: true,
+  eventful: true, eventReason: true, eventStep: true, abortReason: true, abortStep: true,
+  anaesthesiaDelayReason: true, shiftDelayReason: true, otNotesChoice: true, otNotesSavedAt: true, dischargedFromOt: true,
+  admission: {
+    select: {
+      surgery: true, laterality: true, shiftedToOtAt: true,
+      visit: { select: { patient: { select: { name: true, udid: true } } } },
+    },
+  },
+} as const;
+
+export function getSurgeryCard(scope: AnalyticsScope, f: AnalyticsFilters, drillKey?: string): Promise<Section<SurgeryCard>> {
+  return H.safe("surgery-card", async () => {
+    const cur = H.rangeOf(f.start, f.end);
+    const prev = H.rangeOf(f.prevStart, f.prevEnd);
+    const [cases, prevOperated, advised, drill] = await Promise.all([
+      prisma.otCase.findMany({ where: otCaseWhere(scope, f, cur), select: OT_SELECT }),
+      prisma.otCase.count({ where: { ...otCaseWhere(scope, f, prev), endedAt: { not: null } } }),
+      prisma.visit.findMany({
+        where: { ...H.visitWhere(scope, f, cur, cur.gte), surgeryAdvised: true },
+        select: {
+          id: true, date: true, patientId: true,
+          counsellingRecord: { select: { createdAt: true, fitForSurgery: true, eligibleForSurgery: true, doctorReviewedAt: true, confirmedAt: true } },
+        },
+      }),
+      drillKey ? getDrill(scope, f, "surgery", drillKey) : Promise.resolve(null),
+    ]);
+
+    const operated = cases.filter((c) => c.endedAt && !c.abortedAt);
+    const aborted = cases.filter((c) => c.abortedAt);
+    const eventful = operated.filter((c) => c.eventful);
+    const inOt = cases.filter((c) => !c.endedAt && !c.abortedAt);
+    const closed = operated.length + aborted.length;
+    const pctOf = (x: number) => (closed ? Math.round((x / closed) * 100) : 0);
+
+    // Delays the document asks a reason for
+    const anaes = cases.map((c) => minGap(c.begunAt, c.anaesthesiaAt)).filter((x): x is number => x !== null);
+    const shift = cases.filter((c) => !c.abortedAt && !c.dischargedFromOt).map((c) => minGap(c.endedAt, c.shiftedToWardAt)).filter((x): x is number => x !== null);
+    const opTimes = operated.map((c) => minGap(c.begunAt, c.endedAt)).filter((x): x is number => x !== null);
+    const anaesOver = cases.filter((c) => (minGap(c.begunAt, c.anaesthesiaAt) ?? 0) > ANAES_LIMIT);
+    const shiftOver = cases.filter((c) => (minGap(c.endedAt, c.shiftedToWardAt) ?? 0) > SHIFT_LIMIT && !c.dischargedFromOt);
+    const notesLater = cases.filter((c) => c.otNotesChoice === "LATER" && c.shiftedToWardAt && (!c.otNotesSavedAt || c.otNotesSavedAt.getTime() - c.shiftedToWardAt.getTime() < 60_000));
+
+    const outcome: Cat[] = withDrill([
+      { label: "Uneventful", value: operated.length - eventful.length, color: COLORS.completed },
+      { label: "Eventful", value: eventful.length, color: COLORS.pending },
+      { label: "Aborted", value: aborted.length, color: COLORS.cancelled },
+      { label: "Still in OT", value: inOt.length, color: COLORS.neutral },
+    ].filter((x) => x.value > 0), f, "surgery", "res");
+
+    const surgeryName = (c: (typeof cases)[number]) => clean(c.admission.surgery) || "Not recorded";
+    const bySurgery = withDrill(tally(cases.map(surgeryName), COLORS.secondary, 10), f, "surgery", "sx");
+    const eventReasons = tally(eventful.flatMap((c) => parts(c.eventReason)), COLORS.pending);
+    const abortSteps = tally(aborted.map((c) => clean(c.abortStep)).filter(Boolean), COLORS.cancelled);
+    const abortReasons = tally(aborted.flatMap((c) => parts(c.abortReason)), COLORS.cancelled);
+    const delayReasons = tally([...cases.flatMap((c) => parts(c.anaesthesiaDelayReason)), ...cases.flatMap((c) => parts(c.shiftDelayReason))], COLORS.info);
+    const stageTimes: Cat[] = [
+      { label: "Begin to anaesthesia", value: Math.round(avgOf(anaes) ?? 0), color: COLORS.info },
+      { label: "Operation (begin to end)", value: Math.round(avgOf(opTimes) ?? 0), color: COLORS.secondary },
+      { label: "End to shift to ward", value: Math.round(avgOf(shift) ?? 0), color: COLORS.primary },
+    ].filter((x) => x.value > 0);
+
+    // From surgery advised to discharge (patients advised surgery in the period)
+    const admissions = advised.length
+      ? await prisma.ipdAdmission.findMany({
+          where: { patientId: { in: [...new Set(advised.map((v) => v.patientId))] }, admissionType: "PRE_OP" },
+          select: { patientId: true, admittedOn: true, dischargedAt: true, counsellingVisitId: true, otCase: { select: { endedAt: true, abortedAt: true } } },
+          orderBy: { admittedOn: "asc" },
+        })
+      : [];
+    const paths = advised.map((v) => {
+      const r = v.counsellingRecord;
+      const adm = admissions.find((a) => a.counsellingVisitId === v.id) ?? admissions.find((a) => a.patientId === v.patientId && a.admittedOn >= new Date(v.date.getTime() - H.DAY_MS));
+      const opAt = adm?.otCase?.endedAt && !adm.otCase.abortedAt ? adm.otCase.endedAt : null;
+      return {
+        advised: v.date,
+        counselled: r ? r.createdAt : null,
+        fit: r && (r.fitForSurgery || r.eligibleForSurgery) ? (r.doctorReviewedAt ?? r.createdAt) : null,
+        eligible: r?.eligibleForSurgery ? (r.confirmedAt ?? r.doctorReviewedAt ?? r.createdAt) : null,
+        admitted: adm?.admittedOn ?? null,
+        operated: opAt,
+        discharged: opAt ? adm?.dischargedAt ?? null : null,
+      };
+    });
+    const STEP_KEYS = ["advised", "counselled", "fit", "eligible", "admitted", "operated", "discharged"] as const;
+    const STEP_LABELS = ["Surgery advised", "Counselled", "Fit for surgery", "Eligible", "Admitted", "Operated", "Discharged"];
+    const journey = STEP_KEYS.map((k, i) => {
+      const reached = paths.filter((p) => p[k]);
+      const waits = i === 0 ? [] : reached.map((p) => dayGap(p[STEP_KEYS[i - 1]], p[k])).filter((x): x is number => x !== null);
+      return { label: STEP_LABELS[i], count: reached.length, days: i === 0 ? null : avgOf(waits) };
+    });
+    const toSurgery = avgOf(paths.map((p) => dayGap(p.advised, p.operated)).filter((x): x is number => x !== null));
+
+    // Operations over time
+    const buckets = H.bucketsOf(f);
+    const series = H.makeSeries(buckets, ["operated", "eventful", "aborted"]);
+    for (const c of operated) H.bump(series.at, H.bucketKey(c.endedAt!, f), "operated");
+    for (const c of eventful) H.bump(series.at, H.bucketKey(c.endedAt!, f), "eventful");
+    for (const c of aborted) H.bump(series.at, H.bucketKey(c.abortedAt!, f), "aborted");
+
+    const tiles: Tile[] = [
+      { label: "Operations done", value: num(operated.length), changePct: changePct(operated.length, prevOperated), upIsGood: true, spark: H.sparkOf(series.points, "operated"), hint: inOt.length ? `${num(inOt.length)} in OT now` : undefined },
+      { label: "Eventful", value: closed ? `${pctOf(eventful.length)}%` : "No data", hint: `${plural(eventful.length, "operation")}`, upIsGood: false, href: eventful.length ? drillHref(f, "surgery", "res:Eventful") : undefined },
+      { label: "Aborted", value: closed ? `${pctOf(aborted.length)}%` : "No data", hint: `${plural(aborted.length, "operation")}`, upIsGood: false, href: aborted.length ? drillHref(f, "surgery", "res:Aborted") : undefined },
+      { label: "Advised to surgery", value: days1(toSurgery), hint: "Average days" },
+      { label: "Operation time", value: mins(avgOf(opTimes)), hint: "Begin to end, average" },
+      { label: "Anaesthesia delays", value: num(anaesOver.length), hint: `Over ${ANAES_LIMIT} min after begin`, upIsGood: false, href: anaesOver.length ? drillHref(f, "surgery", "delay:anaesthesia") : undefined },
+    ];
+
+    const attention: AttentionItem[] = [];
+    if (aborted.length) attention.push({ severity: "high", text: `${plural(aborted.length, "operation")} aborted`, detail: abortReasons[0] ? `Most often: ${abortReasons[0].label.toLowerCase()}.` : undefined, href: drillHref(f, "surgery", "res:Aborted") });
+    if (anaesOver.length) attention.push({ severity: "medium", text: `${plural(anaesOver.length, "operation")} took over ${ANAES_LIMIT} min from begin to anaesthesia`, href: drillHref(f, "surgery", "delay:anaesthesia") });
+    if (shiftOver.length) attention.push({ severity: "medium", text: `${plural(shiftOver.length, "patient")} waited over ${SHIFT_LIMIT} min to be shifted to the ward`, href: drillHref(f, "surgery", "delay:shift") });
+    if (notesLater.length) attention.push({ severity: "low", text: `${plural(notesLater.length, "file")} left OT with OT notes marked "later"`, detail: "They were filled from the draft; check and complete them.", href: drillHref(f, "surgery", "notes:later") });
+
+    const takeaways: string[] = [];
+    takeaways.push(cases.length === 0 ? "No files reached OT in this period." : `${plural(cases.length, "file")} reached OT; ${num(operated.length)} operated, ${num(aborted.length)} aborted.`);
+    if (closed) takeaways.push(`${pctOf(operated.length - eventful.length)}% of operations were uneventful.`);
+    if (eventReasons[0]) takeaways.push(`The most common eventful reason was ${eventReasons[0].label.toLowerCase()}.`);
+    if (toSurgery !== null) takeaways.push(`From surgery advised to the operation took ${days1(toSurgery).toLowerCase()} on average.`);
+    if (anaes.length) takeaways.push(`Anaesthesia followed the start of the operation after ${mins(avgOf(anaes))} on average.`);
+
+    const tables: TableData[] = [{
+      title: "Operations in this period",
+      columns: [
+        { key: "patient", label: "Patient" }, { key: "pid", label: "Patient ID" }, { key: "date", label: "Date" },
+        { key: "surgery", label: "Surgery" }, { key: "result", label: "Result" }, { key: "time", label: "Operation time" },
+      ],
+      rows: cases.map((c) => ({
+        patient: c.admission.visit.patient.name, pid: c.admission.visit.patient.udid ?? "", date: dateStr(c.begunAt ?? c.admission.shiftedToOtAt),
+        surgery: [c.admission.laterality, c.admission.surgery].filter(Boolean).join(" "),
+        result: c.abortedAt ? "Aborted" : c.endedAt ? (c.eventful ? "Eventful" : "Uneventful") : "In OT",
+        time: mins(minGap(c.begunAt, c.endedAt ?? c.abortedAt)),
+      })),
+      links: cases.map((c) => (c.admission.visit.patient.udid ? `/patients/${c.admission.visit.patient.udid}` : null)),
+    }];
+
+    return {
+      takeaways, attention, tiles, drill,
+      operated: operated.length, inOt: inOt.length,
+      outcome, bySurgery, eventReasons, abortSteps, abortReasons,
+      delays: {
+        anaesthesia: { avg: avgOf(anaes), over: anaesOver.length, total: anaes.length, limit: ANAES_LIMIT },
+        shift: { avg: avgOf(shift), over: shiftOver.length, total: shift.length, limit: SHIFT_LIMIT },
+        opTime: avgOf(opTimes),
+      },
+      delayReasons, stageTimes, journey,
+      trend: series.points,
+      tables,
+    };
+  });
+}
+
+/** The OT cases behind a Surgery chart bar or attention item. */
+async function surgeryDrill(scope: AnalyticsScope, f: AnalyticsFilters, kind: string, value: string): Promise<DrillData | null> {
+  const cur = H.rangeOf(f.start, f.end);
+  const cases = await prisma.otCase.findMany({ where: otCaseWhere(scope, f, cur), select: OT_SELECT, take: 1000 });
+  const name = (c: (typeof cases)[number]) => clean(c.admission.surgery) || "Not recorded";
+  const pick =
+    kind === "res" ? cases.filter((c) => (value === "Aborted" ? !!c.abortedAt : value === "Still in OT" ? !c.endedAt && !c.abortedAt : !!c.endedAt && !c.abortedAt && (value === "Eventful") === c.eventful))
+      : kind === "sx" ? cases.filter((c) => name(c).toLowerCase() === value.toLowerCase())
+      : kind === "delay" ? cases.filter((c) => value === "anaesthesia" ? (minGap(c.begunAt, c.anaesthesiaAt) ?? 0) > ANAES_LIMIT : (minGap(c.endedAt, c.shiftedToWardAt) ?? 0) > SHIFT_LIMIT && !c.dischargedFromOt)
+      : kind === "notes" ? cases.filter((c) => c.otNotesChoice === "LATER" && !!c.shiftedToWardAt)
+      : null;
+  if (!pick) return null;
+  const title =
+    kind === "res" ? `Operations: ${value}` : kind === "sx" ? `Operations: ${value}`
+      : kind === "delay" ? (value === "anaesthesia" ? `Over ${ANAES_LIMIT} min from begin to anaesthesia` : `Over ${SHIFT_LIMIT} min from end to shift to ward`)
+      : "OT notes marked \"later\"";
+  const detail = (c: (typeof cases)[number]) => {
+    if (kind === "delay") {
+      const m = value === "anaesthesia" ? minGap(c.begunAt, c.anaesthesiaAt) : minGap(c.endedAt, c.shiftedToWardAt);
+      return `${mins(m)}${value === "anaesthesia" ? (c.anaesthesiaDelayReason ? `: ${c.anaesthesiaDelayReason}` : "") : (c.shiftDelayReason ? `: ${c.shiftDelayReason}` : "")}`;
+    }
+    if (c.abortedAt) return `Aborted at ${c.abortStep ?? "-"}: ${c.abortReason ?? "-"}`;
+    if (c.eventful) return `${c.eventReason ?? "Eventful"}${c.eventStep ? ` (at ${c.eventStep})` : ""}`;
+    return [c.admission.laterality, c.admission.surgery].filter(Boolean).join(" ");
+  };
+  return {
+    title, subtitle: "Files that reached OT in the selected period",
+    table: patientTable(title, pick.map((c) => ({ who: c.admission.visit.patient, date: c.begunAt ?? c.admission.shiftedToOtAt, detail: detail(c) }))),
+  };
+}
+
 /* ═══ The patients behind a chart or an attention item ═════════════════════ */
 
 const eq = (v: string) => ({ equals: v, mode: "insensitive" as const });
@@ -710,6 +923,7 @@ async function getDrill(scope: AnalyticsScope, f: AnalyticsFilters, card: CardId
     ({ title, subtitle, table: patientTable(title, rows) });
 
   try {
+    if (card === "surgery") return await surgeryDrill(scope, f, kind, value);
     if (card === "clinical") {
       if (kind === "dx") {
         const rows = await prisma.diagnosis.findMany({ where: { icd10Code: value, visit: vCur }, select: { description: true, laterality: true, visit: { select: { date: true, patient: who } } }, orderBy: { createdAt: "desc" }, take: 500 });
@@ -792,17 +1006,20 @@ export function getLanding(scope: AnalyticsScope, f: AnalyticsFilters): Promise<
     const cur = H.rangeOf(f.start, f.end);
     const prev = H.rangeOf(f.prevStart, f.prevEnd);
     const cWhere = claimWhere(scope, f);
-    const [visits, prevVisits, prevSeen, appts, prevAppts, claims] = await Promise.all([
+    const [visits, prevVisits, prevSeen, appts, prevAppts, claims, ops, prevOps, inOtNow] = await Promise.all([
       prisma.visit.findMany({ where: H.visitWhere(scope, f, cur, cur.gte), select: { date: true, patientId: true, patient: { select: { createdAt: true } } } }),
       prisma.visit.count({ where: H.visitWhere(scope, f, prev, prev.gte) }),
       prisma.visit.findMany({ where: H.visitWhere(scope, f, prev, prev.gte), select: { patientId: true }, distinct: ["patientId"] }),
       prisma.appointment.findMany({ where: H.apptWhere(scope, f, cur), select: { dateTime: true, status: true } }),
       prisma.appointment.count({ where: H.apptWhere(scope, f, prev) }),
       prisma.insuranceClaim.findMany({ where: { ...cWhere, createdAt: cur }, select: { createdAt: true, totalBillAmount: true, payments: { select: { amount: true } } } }),
+      prisma.otCase.findMany({ where: { ...otCaseWhere(scope, f, cur), endedAt: { not: null }, abortedAt: null }, select: { endedAt: true, eventful: true } }),
+      prisma.otCase.count({ where: { ...otCaseWhere(scope, f, prev), endedAt: { not: null }, abortedAt: null } }),
+      prisma.otCase.count({ where: { admission: { status: "IN_OT", visit: H.visitWhere(scope, f, null, cur.gte) } } }),
     ]);
 
     const buckets = H.bucketsOf(f);
-    const series = H.makeSeries(buckets, ["visits", "patients", "appts", "billed"]);
+    const series = H.makeSeries(buckets, ["visits", "patients", "appts", "billed", "ops"]);
     const perBucket = new Map<string, Set<string>>();
     for (const v of visits) {
       const k = H.bucketKey(v.date, f);
@@ -813,6 +1030,8 @@ export function getLanding(scope: AnalyticsScope, f: AnalyticsFilters): Promise<
     for (const [k, s] of perBucket) H.bump(series.at, k, "patients", s.size);
     for (const x of appts) H.bump(series.at, H.bucketKey(x.dateTime, f), "appts");
     for (const c of claims) H.bump(series.at, H.bucketKey(c.createdAt, f), "billed", Math.round(c.totalBillAmount));
+    for (const o of ops) H.bump(series.at, H.bucketKey(o.endedAt!, f), "ops");
+    const eventfulOps = ops.filter((o) => o.eventful).length;
     const spark = (k: string) => H.sparkOf(series.points, k);
 
     const people = new Map<string, Date>();
@@ -833,7 +1052,12 @@ export function getLanding(scope: AnalyticsScope, f: AnalyticsFilters): Promise<
         line: visits.length ? `${vs(visits.length, prevVisits)}.` : "No consultations in this period.",
         spark: spark("visits"), changePct: changePct(visits.length, prevVisits),
       },
-      { id: "surgery", headline: "Phase 2", headlineLabel: "", line: "Arrives once the surgery module is complete.", spark: [], changePct: null },
+      {
+        id: "surgery",
+        headline: num(ops.length), headlineLabel: "operations",
+        line: ops.length ? `${Math.round(((ops.length - eventfulOps) / ops.length) * 100)}% uneventful.${inOtNow ? ` ${num(inOtNow)} in OT now.` : ""}` : inOtNow ? `${num(inOtNow)} in OT now.` : "No operations in this period.",
+        spark: spark("ops"), changePct: changePct(ops.length, prevOps),
+      },
       {
         id: "social",
         headline: num(people.size), headlineLabel: "patients seen",
@@ -863,6 +1087,7 @@ export function loadCard(card: CardId, scope: AnalyticsScope, f: AnalyticsFilter
     case "social":    return getSocialCard(scope, f, drillKey);
     case "financial": return getFinancialCard(scope, f, drillKey);
     case "pulse":     return getPulseCard(scope, f, drillKey);
+    case "surgery":   return getSurgeryCard(scope, f, drillKey);
     default:          return Promise.resolve({ ok: true as const, data: null });
   }
 }

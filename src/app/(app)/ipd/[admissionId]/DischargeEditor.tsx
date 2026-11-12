@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
-import { ChipRow } from "./customOptions";
+import { ChipRow, SuggestField } from "./customOptions";
 import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
@@ -38,15 +38,15 @@ const FOLLOW_PICKS = ["Post-operative review", "IOP check", "Suture removal", "R
 
 function Block({ n, title, action, children }: { n: number; title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-      <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
+    <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center justify-between gap-2 px-3 pt-2.5 pb-1.5">
         <h3 className="flex items-baseline gap-2 text-sm font-bold text-[var(--color-ink-900)]">
           <span className="text-xs font-semibold text-[var(--color-ink-300)] tabular-nums">{String(n).padStart(2, "0")}</span>
           {title}
         </h3>
         {action}
       </div>
-      <div className="px-4 pb-4">{children}</div>
+      <div className="px-3 pb-3">{children}</div>
     </section>
   );
 }
@@ -68,6 +68,23 @@ function Area({ label, value, onChange, editable, placeholder, min }: { label?: 
       {label && <label className={`${labelIn} pt-2`}>{label}</label>}
       <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
     </div>
+  );
+}
+
+/** A field with type-ahead suggestions and quick-pick buttons; "+ Custom" adds your own. */
+function PickField({ label, storeKey, options, value, onChange, editable, placeholder }: {
+  label: string; storeKey: string; options: string[]; value: string; onChange: (v: string) => void; editable: boolean; placeholder?: string;
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-2 min-w-0">
+        <label className={labelIn}>{label}</label>
+        <SuggestField storeKey={storeKey} builtIns={options} value={value} onChange={onChange} apply={(_, pick) => pick} disabled={!editable} className="relative flex-1 min-w-0">
+          {(sp) => <input {...sp} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "-"} className={`${inputCls} w-full`} />}
+        </SuggestField>
+      </div>
+      <Picks storeKey={storeKey} options={options} value={value} onPick={onChange} editable={editable} />
+    </>
   );
 }
 
@@ -193,8 +210,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
           <div className="space-y-3">
             <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={editable} placeholder="Medical / surgical / family history" />
             <div>
-              <Field label="Allergies" value={s.allergies} onChange={(v) => set("allergies", v)} editable={editable} placeholder="Drug / other allergies" />
-              <Picks storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onPick={(v) => set("allergies", v)} editable={editable} />
+              <PickField label="Allergies" storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onChange={(v) => set("allergies", v)} editable={editable} placeholder="Drug / other allergies" />
             </div>
           </div>
         </div>
@@ -279,8 +295,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
             <Field label="Surgeon" value={s.procedure.surgeon} onChange={(v) => setIn("procedure", "surgeon", v)} editable={editable} />
           </div>
           <div className="mt-3">
-            <Field label="Intra-operative events" value={s.procedure.events} onChange={(v) => setIn("procedure", "events", v)} editable={editable} />
-            <Picks storeKey="dc_intraop" options={["Uneventful", "PC rent, managed", "Vitreous loss, anterior vitrectomy done"]} value={s.procedure.events} onPick={(v) => setIn("procedure", "events", v)} editable={editable} />
+            <PickField label="Intra-operative events" storeKey="dc_intraop" options={["Uneventful", "PC rent, managed", "Vitreous loss, anterior vitrectomy done"]} value={s.procedure.events} onChange={(v) => setIn("procedure", "events", v)} editable={editable} />
           </div>
         </Block>
       )}
@@ -297,12 +312,10 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
       <Block n={next()} title="Condition at discharge">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <Field label="General condition" value={s.condition.general} onChange={(v) => setIn("condition", "general", v)} editable={editable} />
-            <Picks storeKey="dc_condition" options={CONDITION_PICKS} value={s.condition.general} onPick={(v) => setIn("condition", "general", v)} editable={editable} />
+            <PickField label="General condition" storeKey="dc_condition" options={CONDITION_PICKS} value={s.condition.general} onChange={(v) => setIn("condition", "general", v)} editable={editable} />
           </div>
           <div>
-            <Field label="Operated / affected eye" value={s.condition.eye} onChange={(v) => setIn("condition", "eye", v)} editable={editable} />
-            <Picks storeKey="dc_eye" options={EYE_PICKS} value={s.condition.eye} onPick={(v) => setIn("condition", "eye", v)} editable={editable} />
+            <PickField label="Operated / affected eye" storeKey="dc_eye" options={EYE_PICKS} value={s.condition.eye} onChange={(v) => setIn("condition", "eye", v)} editable={editable} />
           </div>
         </div>
         <div className="mt-3">
@@ -382,8 +395,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
             )}
           </div>
           <div>
-            <Field label="In view of" value={s.followUpNote} onChange={(v) => set("followUpNote", v)} editable={editable} placeholder="Reason for review" />
-            <Picks storeKey="dc_follow" options={FOLLOW_PICKS} value={s.followUpNote} onPick={(v) => set("followUpNote", v)} editable={editable} />
+            <PickField label="In view of" storeKey="dc_follow" options={FOLLOW_PICKS} value={s.followUpNote} onChange={(v) => set("followUpNote", v)} editable={editable} placeholder="Reason for review" />
           </div>
         </div>
       </Block>

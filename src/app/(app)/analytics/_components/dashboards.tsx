@@ -6,11 +6,11 @@ import {
 } from "lucide-react";
 import { COLORS, type Section, type SeriesDef, type TableData } from "@/lib/analytics/definitions";
 import { buildQuery } from "@/lib/analytics/filters";
-import { cardMeta, type CardCommon, type CardId, type ClinicalCard, type FinancialCard, type PulseCard, type SocialCard } from "@/lib/analytics/cards";
+import { cardMeta, type CardCommon, type CardId, type ClinicalCard, type FinancialCard, type PulseCard, type SocialCard, type SurgeryCard, type SurgeryStep } from "@/lib/analytics/cards";
 import { BarList, ChartEmpty, ColumnChart, Donut, Heatmap, TrendChart } from "./charts";
 import { DataTable, Grid2, Grid3, Panel, SectionError } from "./ui";
 import {
-  AttentionStrip, DashHeader, DrillPanel, JourneyFlow, MoneyFlow, OutcomeBars, Squares, StoryHero, SurgeryPlaceholder, Takeaways, TileGrid, TopicTabs, ValueBars, type Lead, type TopicDef,
+  AttentionStrip, DashHeader, DrillPanel, JourneyFlow, MoneyFlow, OutcomeBars, Squares, StoryHero, Takeaways, TileGrid, TopicTabs, ValueBars, type Lead, type TopicDef,
 } from "./cards-ui";
 
 export interface CardCtx {
@@ -37,8 +37,8 @@ export function CardView({ card, section, ctx }: { card: CardId; section: Sectio
   return (
     <div id="dashboard" className="flex scroll-mt-24 flex-col gap-3">
       <DashHeader card={card} params={ctx.params} canPrint={ctx.canPrint} print={ctx.print} />
-      {card === "surgery" ? <SurgeryPlaceholder />
-        : !section.ok ? <SectionError message={section.error} />
+      {!section.ok ? <SectionError message={section.error} />
+        : card === "surgery" ? <Surgery d={section.data as SurgeryCard} ctx={ctx} />
         : card === "clinical" ? <Clinical d={section.data as ClinicalCard} ctx={ctx} />
         : card === "social" ? <Social d={section.data as SocialCard} ctx={ctx} />
         : card === "financial" ? <Financial d={section.data as FinancialCard} ctx={ctx} />
@@ -588,4 +588,111 @@ function Pulse({ d, ctx }: { d: PulseCard; ctx: CardCtx }) {
   ];
 
   return <Board card="pulse" d={d} ctx={ctx} topics={topics} />;
+}
+
+/* ═══ Surgery ══════════════════════════════════════════════════════════════ */
+
+const fmtDays = (d: number | null) => (d === null ? "-" : d < 1 ? "Same day" : `${Math.round(d * 10) / 10} days`);
+
+/** From surgery advised to discharge: how many reach each step and the average wait before it. */
+function SurgeryJourney({ steps, color }: { steps: SurgeryStep[]; color: string }) {
+  const start = Math.max(1, steps[0]?.count ?? 1);
+  return (
+    <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+      {steps.map((st, i) => {
+        const pctReached = Math.round((st.count / start) * 100);
+        return (
+          <li key={st.label} className="flex flex-col rounded-xl border border-[var(--color-border)] bg-white p-3">
+            <p className="text-micro font-semibold uppercase tracking-wide text-[var(--color-ink-500)]">{i + 1}. {st.label}</p>
+            <p className="mt-1 text-[22px] font-bold leading-none tabular-nums text-[var(--color-ink-900)]">{st.count.toLocaleString("en-IN")}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-surface-sunken)]">
+              <div className="h-full rounded-full" style={{ width: `${pctReached}%`, background: color }} />
+            </div>
+            <p className="mt-1.5 text-micro text-[var(--color-ink-400)]">{i === 0 ? "Everyone advised surgery" : `${pctReached}% reached · ${fmtDays(st.days)} wait`}</p>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function Surgery({ d, ctx }: { d: SurgeryCard; ctx: CardCtx }) {
+  const m = cardMeta("surgery");
+  const closed = sum(d.outcome.filter((o) => o.label !== "Still in OT"));
+  const uneventful = d.outcome.find((o) => o.label === "Uneventful")?.value ?? 0;
+  const outcomeLead: Lead = closed
+    ? {
+        headline: `[[${share(uneventful, closed)}%]] of ${n(closed)} operations were uneventful.`,
+        facts: d.outcome.filter((o) => o.label !== "Uneventful").map((o) => ({ value: n(o.value), label: o.label.toLowerCase() })),
+        note: d.eventReasons[0] ? `Most common eventful reason: ${d.eventReasons[0].label.toLowerCase()}.` : undefined,
+      }
+    : { headline: d.inOt ? `${n(d.inOt)} in OT now; no operations finished in this period yet.` : "No operations in this period." };
+
+  const an = d.delays.anaesthesia, sh = d.delays.shift;
+  const delayLead: Lead = an.total || sh.total
+    ? {
+        headline: `Anaesthesia followed the start after [[${fmtMin(an.avg)}]] on average; patients left OT [[${fmtMin(sh.avg)}]] after the end.`,
+        facts: [
+          { value: n(an.over), label: `over ${an.limit} min to anaesthesia` },
+          { value: n(sh.over), label: `over ${sh.limit} min to shift` },
+          { value: fmtMin(d.delays.opTime), label: "average operation" },
+        ],
+        note: "A reason is recorded every time these limits are crossed; the most common ones are listed below.",
+      }
+    : { headline: "No operation timings recorded in this period." };
+
+  const reached = d.journey[0]?.count ?? 0;
+  const operatedStep = d.journey.find((j) => j.label === "Operated");
+  const journeyLead: Lead = reached
+    ? {
+        headline: `Of [[${n(reached)}]] patients advised surgery, [[${n(operatedStep?.count ?? 0)}]] have been operated.`,
+        facts: d.journey.slice(1).filter((j) => j.days !== null).slice(0, 3).map((j) => ({ value: fmtDays(j.days), label: `to ${j.label.toLowerCase()}` })),
+      }
+    : { headline: "No patients were advised surgery in this period." };
+
+  const topics: TopicDef[] = [
+    {
+      id: "outcomes", label: "Outcomes", title: "How did the operations go?", icon: ShieldCheck, summary: true, lead: outcomeLead,
+      content: (
+        <>
+          <Grid3>
+            <Panel title="Result" subtitle="Click a slice to see the patients"><Donut data={d.outcome} title="Operation result" centerLabel="Files" /></Panel>
+            <Panel title="Which surgeries?" subtitle="Files that reached OT"><BarList data={d.bySurgery} color={m.from} limit={8} /></Panel>
+            <Panel title="Why eventful?">{d.eventReasons.length ? <BarList data={d.eventReasons} color={COLORS.pending} showShare={false} /> : <ChartEmpty height={120} message="No eventful operations" />}</Panel>
+          </Grid3>
+          {(d.abortSteps.length > 0 || d.abortReasons.length > 0) && (
+            <Grid2>
+              <Panel title="At which step were operations aborted?"><BarList data={d.abortSteps} color={COLORS.cancelled} showShare={false} /></Panel>
+              <Panel title="Why were they aborted?"><BarList data={d.abortReasons} color={COLORS.cancelled} showShare={false} /></Panel>
+            </Grid2>
+          )}
+          {!ctx.print && (
+            <Panel title="Operations over time" icon={LineChart}>
+              <TrendChart title="Operations" points={d.trend} series={[s("operated", "Operated", m.from), s("eventful", "Eventful", COLORS.pending), s("aborted", "Aborted", COLORS.cancelled)]} height={CHART_H} />
+            </Panel>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "delays", label: "OT times", title: "Where does time go in OT?", icon: Clock, summary: true, lead: delayLead,
+      content: (
+        <Grid2>
+          <Panel title="Average time at each stage" icon={Clock}>
+            {d.stageTimes.length ? <ValueBars data={d.stageTimes} format={minutes} /> : <ChartEmpty height={120} message="No timings recorded" />}
+          </Panel>
+          <Panel title="Reasons given for delays" subtitle="Anaesthesia and shift to ward">
+            {d.delayReasons.length ? <BarList data={d.delayReasons} color={COLORS.info} showShare={false} /> : <ChartEmpty height={120} message="No delays needed a reason" />}
+          </Panel>
+        </Grid2>
+      ),
+    },
+    {
+      id: "journey", label: "Advised to discharge", title: "How long from surgery advised to discharge?", icon: Route, lead: journeyLead,
+      content: <SurgeryJourney steps={d.journey} color={m.from} />,
+    },
+    ...tablesTopic(d.tables),
+  ];
+
+  return <Board card="surgery" d={d} ctx={ctx} topics={topics} />;
 }

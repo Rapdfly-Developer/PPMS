@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
@@ -29,6 +29,8 @@ import {
 } from "../actions";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
+import { OtNotesView } from "./OtNotesView";
+import type { OtNotesCopy } from "@/lib/ot";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -36,7 +38,7 @@ interface Attachment { ref: string; name: string; at: string; by: string }
 // Form JSON: the shape depends on the form (see the data shapes in lib/ipd)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type FormJson = Record<string, any>;
-interface FormRow {
+export interface FormRow {
   key: string; title: string; data: FormJson; attachments: Attachment[];
   frozen: boolean; frozenAt: string | null; frozenBy: string | null;
 }
@@ -84,25 +86,25 @@ export interface FileData {
   emrMeds: FileInfo["emrMeds"];
 }
 
-interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean }
+export interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean; ot?: boolean }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
 const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "-");
 const fmtTime = (iso: string) => format(new Date(iso), "d MMM yyyy, h:mm a");
 const istInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "");
 
-const inputCls = "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-75 disabled:cursor-not-allowed";
-const labelCls = "text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase block mb-1.5";
-const btnPrimary = "inline-flex items-center gap-1.5 text-label sm:text-sm font-medium px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors";
-const btnGhost = "inline-flex items-center gap-1.5 text-label sm:text-sm font-medium px-4 py-2 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-60 transition-colors";
+const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-75 disabled:cursor-not-allowed";
+const labelCls = "text-[10.5px] font-bold tracking-wider text-[var(--color-ink-500)] uppercase block mb-1";
+const btnPrimary = "inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60 transition-colors";
+const btnGhost = "inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-60 transition-colors";
 
 /* ── Small pieces ──────────────────────────────────────────────────────── */
 
-function Modal({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      <div className={`relative w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[90vh] overflow-y-auto rounded-2xl p-6 shadow-2xl bg-white`} onClick={(e) => e.stopPropagation()}>
+      <div className={`relative w-full ${wide ? "max-w-3xl" : "max-w-md"} max-h-[90vh] overflow-y-auto rounded-xl p-5 shadow-2xl bg-white`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 mb-4">
           <p className="text-base font-bold text-[var(--color-ink-900)]">{title}</p>
           <button onClick={onClose} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]" aria-label="Close"><X size={16} /></button>
@@ -113,14 +115,14 @@ function Modal({ title, children, onClose, wide }: { title: string; children: Re
   );
 }
 
-function ErrorLine({ text }: { text: string }) {
+export function ErrorLine({ text }: { text: string }) {
   if (!text) return null;
   return <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} className="shrink-0" /> {text}</p>;
 }
 
 /* ── Form bodies ───────────────────────────────────────────────────────── */
 
-function LongSummary({ visitId, complaint, diagnoses }: { visitId: string; complaint: string | null; diagnoses: FileData["diagnoses"] }) {
+export function LongSummary({ visitId, complaint, diagnoses }: { visitId: string; complaint: string | null; diagnoses: FileData["diagnoses"] }) {
   const s = useVisitSummaryState(visitId, { autoGenerateAI: false });
   return (
     <VisitSummaryTabBody
@@ -142,7 +144,7 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
 
 const STRUCTURED = new Set(["implant", "consents", "checklist", "education", "treatment", "nurse", "otNotes", "postOpNotes"]);
 
-function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
+export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
 }) {
   const defaults = (d.defaults[keyName] ?? { text: "" }) as FormJson;
@@ -198,6 +200,7 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
 
   let body: React.ReactNode;
   switch (keyName) {
+    case "otFinal": body = <OtNotesView value={row?.data as OtNotesCopy} f={info} />; break;
     case "summary": body = <LongSummary visitId={d.visitId} complaint={d.complaint} diagnoses={d.diagnoses} />; break;
     case "investigations": body = <InvestigationsForm f={info} />; break;
     case "implant": body = <ImplantForm {...props} value={value as ImplantData} change={change} saveNow={saveNow} />; break;
@@ -221,13 +224,20 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">{title}</h2>
+        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{title}</h2>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           {editable && touched && <SaveIndicator state={saveState} />}
+          {keyName === "otFinal" && (
+            <button type="button" onClick={() => printInPlace(`/ipd-print/${d.id}/ot-notes`)} className={btnGhost}><Printer size={14} /> Print</button>
+          )}
           {keyName === "discharge" && (
             <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print</button>
           )}
-          {frozen ? (
+          {keyName === "otFinal" ? (
+            <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+              <Scissors size={12} /> From OT · saved by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
+            </span>
+          ) : frozen ? (
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
             </span>
@@ -247,7 +257,7 @@ function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
       {body}
 
       <ErrorLine text={error} />
-      <Photos d={d} keyName={keyName} list={row?.attachments ?? []} canAdd={can.edit && attachOpen(d.status)} onRefresh={onRefresh} />
+      {keyName !== "otFinal" && <Photos d={d} keyName={keyName} list={row?.attachments ?? []} canAdd={can.edit && attachOpen(d.status)} onRefresh={onRefresh} />}
 
       {confirmFreeze && (
         <ConfirmDialog
@@ -338,7 +348,7 @@ function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
+        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
         <p className="text-caption text-[var(--color-ink-400)]">Ward rounds until the patient is fit for discharge. Each note is labelled with its time.</p>
       </div>
       {canAdd && <DoctorNoteComposer onAdd={add} pending={pending} />}
@@ -400,7 +410,7 @@ function ActivityLog({ d }: { d: FileData }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="text-base sm:text-lg font-bold text-[var(--color-ink-900)]">Activity</h2>
+        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Activity</h2>
         <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{events.length} event{events.length === 1 ? "" : "s"}</span>
       </div>
 
@@ -638,7 +648,7 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
 }
 
 /** What the discharge editor shows besides the summary itself. */
-function dischargeCtx(d: FileData): DischargeContext {
+export function dischargeCtx(d: FileData): DischargeContext {
   const t = d.forms.find((f) => f.key === "treatment")?.data;
   const discharge = d.forms.find((f) => f.key === "discharge");
   return {
@@ -672,7 +682,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
 
   const [picked, setSel] = useState<string>(items[0]?.key ?? "summary");
   // A form hidden by a type change falls back to the first form
-  const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || picked === "activity" ? picked : (items[0]?.key ?? "summary");
+  const otFinal = rowOf("otFinal");
+  const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || picked === "activity" || (picked === "otFinal" && !!otFinal) ? picked : (items[0]?.key ?? "summary");
   const [dialog, setDialog] = useState<null | "details" | "type" | "ot" | "discharge" | "addForm">(null);
   const [newForm, setNewForm] = useState("");
   const [error, setError] = useState("");
@@ -680,7 +691,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
 
   const status = d.status as IpdStatus;
   const title = d.surgery
-    ? [d.laterality, d.surgery].filter(Boolean).join(" ") + (d.implant ? ` + ${d.implant}` : "") + (d.anaesthesia ? ` · ${d.anaesthesia}` : "")
+    ? [d.laterality, d.surgery].filter(Boolean).join(" ") + (d.implant && !/^(none|nil|na|-)$/i.test(d.implant.trim()) ? ` + ${d.implant}` : "") + (d.anaesthesia ? ` · ${d.anaesthesia}` : "")
     : admissionTypeText(d.type, d.typeOther);
   const showOt = canGoToOt(d.type) && status === "ADMITTED" && can.shiftOt;
   const showDischarge = can.discharge && canDischargeNow(d.type, status);
@@ -700,19 +711,32 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
     refresh();
   });
 
-  const listBtn = (key: string, label: React.ReactNode, icon: React.ReactNode, extra?: React.ReactNode) => (
-    <button key={key} onClick={() => setSel(key)}
-      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-label sm:text-sm transition-colors ${sel === key ? "bg-[var(--color-primary-50)] text-[var(--color-primary-800)] font-semibold ring-1 ring-[var(--color-primary-200)]" : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"}`}>
-      {icon}<span className="flex-1 min-w-0">{label}</span>{extra}
-    </button>
-  );
+  // Chrome-style tabs: the selected tab joins the form panel below it
+  const tabsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabsRef.current?.querySelector<HTMLElement>(`[data-tab="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [sel]);
+  const tabBtn = (key: string, label: React.ReactNode, icon: React.ReactNode, extra?: React.ReactNode) => {
+    const on = sel === key;
+    return (
+      <button key={key} type="button" role="tab" aria-selected={on} data-tab={key} onClick={() => setSel(key)}
+        style={on ? undefined : { borderColor: "transparent" }}
+        className={`shrink-0 inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
+          on
+            ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
+            : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"
+        }`}>
+        {icon}<span>{label}</span>{extra}
+      </button>
+    );
+  };
 
   const selItem = items.find((i) => i.key === sel);
 
   return (
     <div className="fade-in pb-24">
       {/* Top bar */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <Link href={d.returnTo} className="inline-flex items-center gap-1.5 text-label sm:text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)]"><ArrowLeft size={15} /> Back</Link>
         {can.profile && (
           <Link href={`/patients/${d.udid}?source=ipd&returnTo=${encodeURIComponent("/ipd")}`} className={btnGhost}><User size={14} /> Patient Profile</Link>
@@ -720,11 +744,11 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
       </div>
 
       {/* Header: laterality + surgery + implant + anaesthesia, ward / file / floor */}
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5 mb-4">
+      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 mb-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
-              {d.patient.photoUrl ? <img src={fileHref(d.patient.photoUrl)!} alt={d.patient.name} className="w-full h-full object-cover" /> : <User size={20} className="text-[var(--color-primary-700)]" />}
+            <div className="w-9 h-9 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
+              {d.patient.photoUrl ? <img src={fileHref(d.patient.photoUrl)!} alt={d.patient.name} className="w-full h-full object-cover" /> : <User size={16} className="text-[var(--color-primary-700)]" />}
             </div>
             <div className="min-w-0">
               {/* Patient first; then the document's title (eye + surgery + implant + anaesthesia), ward / file / floor, admission type */}
@@ -732,7 +756,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                 <span className="font-semibold text-[var(--color-ink-900)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
               </p>
               <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-0.5">{title}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
                 <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b>{d.wardType ? ` (${wardTypeText(d.wardType)})` : ""}</span>
                 <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "-"}</b></span>
                 <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "-"}</b></span>
@@ -740,8 +764,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                   <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-700)] hover:underline"><Pencil size={11} /> Edit</button>
                 )}
               </div>
-              {d.reason && <p className="mt-0.5 text-sm text-[var(--color-ink-500)]">Reason <b className="text-[var(--color-ink-800)] font-semibold">{d.reason}</b></p>}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-0.5 text-sm text-[var(--color-ink-500)]">
+              {d.reason && <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">Reason <b className="text-[var(--color-ink-800)] font-semibold">{d.reason}</b></p>}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
                 <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
                 {d.type === "PRE_OP" && <span>DOS <b className="text-[var(--color-ink-800)]">{fmtDay(d.surgeryDate)}</b></span>}
                 {d.dischargedAt
@@ -758,27 +782,27 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           </div>
 
           <div className="flex flex-col items-end gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-sm font-semibold px-2.5 py-0.5 rounded-full ${
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
               status === "IN_OT" ? "bg-violet-50 text-violet-700 border border-violet-200"
                 : status === "POST_OP" ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                 : status === "DISCHARGED" ? "bg-slate-100 text-slate-600 border border-slate-200"
                 : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
               <BedDouble size={12} /> {IPD_STATUS_LABEL[status] ?? status}
             </span>
-            <span className="text-sm font-semibold text-[var(--color-ink-500)] tabular-nums">Forms frozen {frozenCount}/{required.length}</span>
+            <span className="text-xs font-semibold text-[var(--color-ink-500)] tabular-nums">Forms frozen {frozenCount}/{required.length}</span>
             <div className="flex flex-wrap justify-end gap-2">
               {showOt && (
                 <button
                   disabled={!allFrozen || pending}
                   onClick={() => setDialog("ot")}
                   title={allFrozen ? "Shift the file to OT" : "Freeze every form to unlock"}
-                  className={`inline-flex items-center gap-1.5 text-label sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors ${allFrozen ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"}`}
+                  className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${allFrozen ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"}`}
                 >
                   {allFrozen ? <Scissors size={14} /> : <Lock size={14} />} Shift to OT
                 </button>
               )}
               {showDischarge && (
-                <button onClick={() => setDialog("discharge")} className="inline-flex items-center gap-1.5 text-label sm:text-sm font-semibold px-4 py-2 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]">
+                <button onClick={() => setDialog("discharge")} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]">
                   <LogOut size={14} /> Discharge
                 </button>
               )}
@@ -786,12 +810,13 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           </div>
         </div>
         {status === "IN_OT" && (
-          <div className="mt-4 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/40 px-4 py-3 text-sm text-violet-800">
+          <div className="mt-2.5 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2 text-sm text-[var(--color-ink-700)]">
             In OT since {d.shiftedToOtAt ? fmtTime(d.shiftedToOtAt) : "-"}. The file returns to the post-op ward from the OT module.
+            {can.ot && <Link href={`/ot/${d.id}`} className="ml-2 font-semibold underline">Open in OT</Link>}
           </div>
         )}
         {status === "DISCHARGED" && (
-          <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <div className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             Discharged by {d.dischargedBy} on {d.dischargedAt ? fmtTime(d.dischargedAt) : "-"} · summary signed with OTP. The file is read-only.
             {d.dischargeNotes && <span className="block mt-1 text-slate-600">Notes: {d.dischargeNotes}</span>}
           </div>
@@ -799,33 +824,38 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
         {error && <div className="mt-3"><ErrorLine text={error} /></div>}
       </div>
 
-      {/* Forms list | selected form */}
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] gap-4 items-start">
-        <nav className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 lg:sticky lg:top-4 space-y-0.5">
+      {/* Forms as tabs | selected form */}
+      <div>
+        <div ref={tabsRef} role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex items-end gap-1 overflow-x-auto px-1 pt-1 -mb-px bg-[var(--color-bg)] [scrollbar-width:thin]">
           {items.map((i) => {
             const r = rowOf(i.key);
-            return listBtn(
+            return tabBtn(
               i.key,
               <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
-              r?.frozen ? <CheckCircle2 size={16} className="shrink-0 text-emerald-600" /> : <Circle size={16} className="shrink-0 text-[var(--color-ink-300)]" />,
+              r?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
               (r?.attachments?.length ?? 0) > 0 ? <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" /> : undefined,
             );
           })}
           {can.edit && status === "ADMITTED" && (
-            <button onClick={() => { setDialog("addForm"); setError(""); }} className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-label sm:text-sm font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
-              <Plus size={16} /> Add custom form
+            <button type="button" onClick={() => { setDialog("addForm"); setError(""); }} title="Add custom form" aria-label="Add custom form"
+              className="shrink-0 mb-1 w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
+              <Plus size={16} />
             </button>
           )}
-          <div className="my-1.5 border-t border-[var(--color-border)]" />
-          {listBtn("doctorNotes", "Doctor's Notes", <Stethoscope size={16} className="shrink-0 text-[var(--color-primary-600)]" />,
+          <span className="shrink-0 self-center mx-1 h-5 w-px bg-[var(--color-border)]" />
+          {otFinal && tabBtn("otFinal", "OT Notes", <Scissors size={14} className="shrink-0 text-violet-600" />,
+            <span className="text-micro font-bold rounded px-1 py-px bg-violet-50 text-violet-700 border border-violet-200">OT</span>)}
+          {tabBtn("doctorNotes", "Doctor's Notes", <Stethoscope size={14} className="shrink-0 text-[var(--color-primary-600)]" />,
             d.doctorNotes.length ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.length}</span> : undefined)}
-          {listBtn("activity", "Activity", <History size={16} className="shrink-0 text-[var(--color-ink-400)]" />)}
-        </nav>
+          {tabBtn("activity", "Activity", <History size={14} className="shrink-0 text-[var(--color-ink-400)]" />)}
+        </div>
 
-        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5 min-w-0">
+        <section className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:p-4 min-w-0 ${sel === items[0]?.key ? "rounded-tl-none" : ""}`}>
           {sel === "doctorNotes" ? <DoctorNotes d={d} can={can} onRefresh={refresh} />
             : sel === "activity" ? <ActivityLog d={d} />
-            : selItem ? (
+            : sel === "otFinal" && otFinal ? (
+              <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
+            ) : selItem ? (
               <FormPanel key={`${selItem.key}-${rowOf(selItem.key)?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.key} title={selItem.title} display={selItem.display} row={rowOf(selItem.key)} can={can} onRefresh={refresh} />
             ) : null}
         </section>

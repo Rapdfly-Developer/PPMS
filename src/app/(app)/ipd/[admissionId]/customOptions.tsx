@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { Plus, X } from "lucide-react";
+import { bumpUse, byUse, useFold, useLoadCounts, useSuggest } from "@/components/ui/Suggest";
 
 const PREFIX = "ppms_ipd_opts_";
 
@@ -86,25 +87,71 @@ export function RemoveCustom({ onRemove, label }: { onRemove: () => void; label:
 const chipBase = "inline-flex items-center rounded-full border text-xs font-medium transition-colors";
 
 /** A row of option chips (built-in + custom) with "+ Custom". */
-export function ChipRow({ storeKey, builtIns, isOn, onPick, editable = true, prefix = "", tone }: {
+export function ChipRow({ storeKey, builtIns, isOn, onPick, editable = true, prefix = "", tone, limit = 8 }: {
   storeKey: string; builtIns: readonly string[]; isOn?: (v: string) => boolean; onPick: (v: string) => void;
   editable?: boolean; prefix?: string; tone?: (v: string) => string | undefined;
+  /** How many chips show before "+ n more". */
+  limit?: number;
 }) {
   const o = useCustomOptions(storeKey, builtIns);
+  // Most used first (as of page load, so chips don't move while clicking); folded to 8, selected ones always shown
+  const counts = useLoadCounts(ns(storeKey));
+  const ordered = byUse(o.all, counts);
+  const { shown, toggle } = useFold(ordered, limit, (c) => isOn?.(c) ?? false);
+  const pick = (c: string) => { bumpUse(ns(storeKey), c); onPick(c); };
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {o.all.map((c) => {
+      {shown.map((c) => {
         const on = isOn?.(c) ?? false;
         return (
           <span key={c} className={`${chipBase} ${on ? (tone?.(c) ?? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white") : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}>
-            <button type="button" disabled={!editable} onClick={() => onPick(c)} className="px-2.5 py-1 disabled:cursor-default">{prefix}{c}</button>
+            <button type="button" disabled={!editable} onClick={() => pick(c)} className="px-2.5 py-1 disabled:cursor-default">{prefix}{c}</button>
             {editable && o.isCustom(c) && <span className="pr-1.5"><RemoveCustom label={c} onRemove={() => o.remove(c)} /></span>}
           </span>
         );
       })}
-      {editable && <AddCustom onAdd={(v) => { const t = o.add(v); if (t) onPick(t); }} />}
+      {toggle}
+      {editable && <AddCustom onAdd={(v) => { const t = o.add(v); if (t) pick(t); }} />}
     </div>
   );
+}
+
+const ns = (storeKey: string) => `ipd_${storeKey}`;
+
+/**
+ * Adds the type-ahead list to a field that has a ChipRow: the same options
+ * (built-in + custom), most used first. `apply` puts a pick into the text;
+ * "Save as keyword" adds the typed text to the options.
+ */
+export function SuggestField({ storeKey, builtIns, value, onChange, apply, disabled, className = "relative", children }: {
+  storeKey: string; builtIns: readonly string[]; value: string; onChange: (v: string) => void;
+  /** Default: replaces the text being typed after the last "," / ";" / line break with the pick. */
+  apply?: (value: string, pick: string) => string;
+  disabled?: boolean; className?: string;
+  children: (input: { onFocus: () => void; onBlur: () => void; onKeyDown: (e: React.KeyboardEvent) => void; autoComplete: string }) => React.ReactNode;
+}) {
+  const o = useCustomOptions(storeKey, builtIns);
+  const term = (value.split(/[,;\n•]/).pop() ?? "").trim();
+  const put = apply ?? replaceTail;
+  const s = useSuggest({
+    ns: ns(storeKey), term, options: o.all,
+    onPick: (x) => onChange(put(value, x)),
+    onAddNew: (x) => { const t = o.add(x); if (t) onChange(put(value, t)); },
+  });
+  return (
+    <div className={className}>
+      {children(s.inputProps)}
+      {!disabled && s.menu}
+    </div>
+  );
+}
+
+/** "a, b, wh" + "White" → "a, b, White" (keeps the separator style in use). */
+export function replaceTail(value: string, pick: string): string {
+  const cut = Math.max(value.lastIndexOf(","), value.lastIndexOf(";"), value.lastIndexOf("\n"), value.lastIndexOf("•"));
+  if (cut < 0) return pick;
+  const head = value.slice(0, cut + 1);
+  return `${head}${head.endsWith("\n") ? "" : " "}${pick}`;
 }
 
 /** A drop-down whose options can be extended with "+ Custom" (the new option is selected). */

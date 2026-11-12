@@ -6,7 +6,7 @@ import { WARDS } from "@/lib/constants";
 import { saveDispense, saveFollowUp, saveSurgicalCounselling, clearSurgicalCounselling, saveAdmission, clearAdmission } from "./actions";
 import { AlertTriangle, History, Plus, Search, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
-import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
+import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordSuggest, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { istTodayStr } from "@/lib/ist";
 import { ALL_IMPLANTS, ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, SURGICAL_NOTE_KEYWORDS, implantSuggestions, rescheduledSurgeryDate } from "@/lib/counselling";
@@ -169,14 +169,18 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
       <div>
         <div className="flex items-start gap-3">
           <p className="text-caption font-semibold tracking-widest text-[var(--color-ink-400)] uppercase shrink-0 pt-2.5 w-24">In View Of</p>
-          <textarea
+          <KeywordSuggest fieldKey="plan_in_view_of" builtIns={ALL_IN_VIEW_OF_KEYWORDS} value={inViewOf} onChange={(v) => { setInViewOf(v); setSaved(false); }}>
+          {(sp) => <textarea
+            {...sp}
             ref={inViewOfRef}
             value={inViewOf}
             onChange={(e) => { setInViewOf(e.target.value); setSaved(false); }}
+            onKeyDown={(e) => { sp.onKeyDown(e); if (e.key === "Enter") e.stopPropagation(); }}
             placeholder="e.g. Review of treatment response, IOP check…"
             rows={Math.max(1, Math.min(8, inViewOf.replace(/\r/g, "").split("\n").length))}
-            className="flex-1 min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
-          />
+            className="w-full min-w-0 resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent"
+          />}
+          </KeywordSuggest>
           <div data-overview-hide className="flex items-center gap-1.5 shrink-0 pt-1">
             <button
               onClick={() => setShowHistory((v) => !v)}

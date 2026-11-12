@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { chipMatcher, CHIP_MATCH_CLASS, dropTypedTerm, type ChipMatch } from "@/lib/chip-match";
+import { bumpUse, byUse, useFold, useLoadCounts, useSuggest } from "@/components/ui/Suggest";
 
 /**
  * Distinguishes single from double activation (click/touch/keyboard).
@@ -283,33 +284,29 @@ function KeywordChips({
   // A built-in the user also saved would otherwise render twice.
   const custom = kws.filter((k) => !builtIns.some((b) => same(b, k)));
   const matchOf = chipMatcher(typed, [...shownBuiltIns, ...custom]);
+  const counts = useLoadCounts(fieldKey);
+  const ordered = byUse([...shownBuiltIns, ...custom], counts);
+  const { shown, toggle } = useFold(ordered, 8);
 
-  if (disabled || (custom.length === 0 && shownBuiltIns.length === 0)) return null;
+  if (disabled || ordered.length === 0) return null;
 
   return (
     <>
-      {shownBuiltIns.map((kw) => (
-        <DeletableChip
-          key={`builtin-${kw}`}
-          kw={kw}
-          custom={false}
-          match={matchOf(kw)}
-          onSingle={() => onAppend(kw)}
-          onDouble={() => onRemoveFromText(kw)}
-          onDelete={() => remove(kw)}
-        />
-      ))}
-      {custom.map((kw) => (
-        <DeletableChip
-          key={kw}
-          kw={kw}
-          custom
-          match={matchOf(kw)}
-          onSingle={() => onAppend(kw)}
-          onDouble={() => onRemoveFromText(kw)}
-          onDelete={() => remove(kw)}
-        />
-      ))}
+      {shown.map((kw) => {
+        const isCustom = custom.includes(kw);
+        return (
+          <DeletableChip
+            key={isCustom ? kw : `builtin-${kw}`}
+            kw={kw}
+            custom={isCustom}
+            match={matchOf(kw)}
+            onSingle={() => { bumpUse(fieldKey, kw); onAppend(kw); }}
+            onDouble={() => onRemoveFromText(kw)}
+            onDelete={() => remove(kw)}
+          />
+        );
+      })}
+      {toggle}
     </>
   );
 }
@@ -389,6 +386,65 @@ export function removeKeywordFromText(text: string, kw: string): string {
     .replace(/^\s+|\s+$/g, "");
 }
 
+/* ── Autocomplete ─────────────────────────────────────────────────────────── */
+
+/** The point being typed, as typed (after the last bullet, comma or line break). */
+function typedTail(text: string): string {
+  return (text.split(/[•\n,]/).pop() ?? "").trim();
+}
+
+/**
+ * Type-ahead suggestions for a keyword field: the field's keywords (defaults
+ * not deleted + saved ones), most used first. Picking one adds it as a point;
+ * "Save as keyword" saves the typed text and adds it.
+ */
+function useKeywordSuggest({ fieldKey, value, onChange, builtIns = [], onSaved, apply = appendKeywordAsBullet }: {
+  fieldKey: string; value: string; onChange: (v: string) => void; builtIns?: readonly string[]; onSaved: () => void;
+  /** How a picked keyword goes into the text (default: as a bullet point). */
+  apply?: (value: string, kw: string) => string;
+}) {
+  const [version, setVersion] = useState(0);
+  const options = useMemo(() => {
+    void version;
+    const hidden = loadHidden(fieldKey).map((h) => h.toLowerCase());
+    return [...builtIns.filter((b) => !hidden.includes(b.toLowerCase())), ...loadKws(fieldKey)];
+  }, [fieldKey, builtIns, version]);
+  return useSuggest({
+    ns: fieldKey,
+    term: typedTail(value),
+    options,
+    onPick: (kw) => onChange(apply(value, kw)),
+    onAddNew: (text) => {
+      const kws = loadKws(fieldKey);
+      if (!kws.some((k) => k.toLowerCase() === text.toLowerCase())) saveKws(fieldKey, [...kws, text]);
+      const hidden = loadHidden(fieldKey);
+      const unhidden = hidden.filter((h) => h.toLowerCase() !== text.toLowerCase());
+      if (unhidden.length !== hidden.length) saveHidden(fieldKey, unhidden);
+      setVersion((x) => x + 1);
+      onChange(apply(value, text));
+      onSaved();
+    },
+  });
+}
+
+/**
+ * Adds the type-ahead list to a keyword field whose input is drawn by the
+ * caller (e.g. with its chips in a separate KeywordChipsRow).
+ */
+export function KeywordSuggest({ fieldKey, builtIns, value, onChange, apply, disabled, children }: {
+  fieldKey: string; builtIns?: readonly string[]; value: string; onChange: (v: string) => void;
+  apply?: (value: string, kw: string) => string; disabled?: boolean;
+  children: (input: { onFocus: () => void; onBlur: () => void; onKeyDown: (e: React.KeyboardEvent) => void; autoComplete: string }) => React.ReactNode;
+}) {
+  const suggest = useKeywordSuggest({ fieldKey, value, onChange, builtIns, apply, onSaved: () => {} });
+  return (
+    <div className="relative flex-1 min-w-0">
+      {children(suggest.inputProps)}
+      {!disabled && suggest.menu}
+    </div>
+  );
+}
+
 /* ── KeywordChipsRow ──────────────────────────────────────────────────────── */
 
 /** Renders only the Add-keyword button + keyword chips, with no input field.
@@ -450,14 +506,20 @@ export function KeywordInput({
   className?: string;
 }) {
   const [tick, setTick] = useState(0);
+  const suggest = useKeywordSuggest({ fieldKey, value, onChange, builtIns, onSaved: () => setTick((t) => t + 1) });
 
   return (
     <div className="flex flex-col gap-1.5">
+      <div className="relative">
       <textarea
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={suggest.inputProps.onFocus}
+        onBlur={suggest.inputProps.onBlur}
+        autoComplete="off"
         onKeyDown={(e) => {
+          suggest.inputProps.onKeyDown(e);
           if (e.key === "Enter") e.stopPropagation();
         }}
         placeholder={placeholder}
@@ -466,6 +528,8 @@ export function KeywordInput({
           `${className ?? "w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"} resize-none`
         }
       />
+      {!disabled && suggest.menu}
+      </div>
       {!disabled && (
         <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} builtIns={builtIns} onRefresh={() => setTick((t) => t + 1)} />
@@ -507,14 +571,20 @@ export function KeywordTextarea({
   afterButtons?: React.ReactNode;
 }) {
   const [tick, setTick] = useState(0);
+  const suggest = useKeywordSuggest({ fieldKey, value, onChange, builtIns, onSaved: () => setTick((t) => t + 1) });
 
   return (
     <div className="flex flex-col gap-1.5">
+      <div className="relative">
       <textarea
         disabled={disabled}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={suggest.inputProps.onFocus}
+        onBlur={suggest.inputProps.onBlur}
+        autoComplete="off"
         onKeyDown={(e) => {
+          suggest.inputProps.onKeyDown(e);
           if (e.key === "Enter") e.stopPropagation();
         }}
         placeholder={placeholder}
@@ -523,6 +593,8 @@ export function KeywordTextarea({
           `${className ?? "w-full rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)] disabled:bg-[var(--color-surface-sunken)]"} resize-none`
         }
       />
+      {!disabled && suggest.menu}
+      </div>
       {!disabled && showControls && (
         <KeywordTextareaControls
           fieldKey={fieldKey}

@@ -212,6 +212,19 @@ export const PERMISSION_GROUPS: {
     ],
   },
 
+  // ── OT ────────────────────────────────────────────────────────────────────
+  {
+    category: "OT",
+    permissions: [
+      { key: "ot.view",      label: "View OT",              description: "See the OT schedule (Today, Upcoming, Overall) and open the OT file" },
+      { key: "ot.arrange",   label: "Arrange OT Order",     description: "Set which patient goes first, second, third in Today and Upcoming" },
+      { key: "ot.verify",    label: "Verify Forms in OT",   description: "Verify and freeze each form again in OT and give the final confirmation" },
+      { key: "ot.operate",   label: "Run the Operation",    description: "Begin operation, anaesthesia administered, end operation, abort, and record the status" },
+      { key: "ot.notes",     label: "Complete OT Notes",    description: "Complete the OT notes, post-op notes and discharge summary from OT" },
+      { key: "ot.shiftWard", label: "Shift to Ward",        description: "Shift the file back to the IPD ward after the operation" },
+    ],
+  },
+
   // ── Reports & Analytics ───────────────────────────────────────────────────
   {
     category: "Reports & Analytics",

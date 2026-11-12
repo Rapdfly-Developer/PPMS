@@ -25,7 +25,7 @@ export default async function AnalyticsReportPage({
   const filters = parseFilters(sp, istTodayStr());
   // One-page summary of a single card
   const cardRaw = Array.isArray(sp.card) ? sp.card[0] : sp.card;
-  const card = isCardId(cardRaw) && cardRaw !== "surgery" && !(cardRaw === "clinical" && !scope.canViewClinical) ? cardRaw : null;
+  const card = isCardId(cardRaw) && !(cardRaw === "clinical" && !scope.canViewClinical) ? cardRaw : null;
   const cardSection = card ? await loadCard(card, scope, filters) : null;
 
   const requested = String(Array.isArray(sp.sections) ? sp.sections[0] : sp.sections ?? "overview").split(",");
