@@ -871,7 +871,6 @@ export async function saveAdmission(
 ): Promise<{ error?: string }> {
   const user = await requireVisitPerm(visitId, "ipd.admit");
   if (!userCan(user, "ipd.admit")) return { error: "You do not have permission to admit patients." };
-  if (!data.reason.trim()) return { error: "Enter the reason for admission." };
   if (!["CONSERVATIVE", "PRE_OP", "OTHERS"].includes(data.type)) return { error: "Select the type of admission." };
   if (data.type === "OTHERS" && !data.other.trim()) return { error: "Describe the type of admission." };
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
@@ -898,7 +897,7 @@ export async function saveAdmission(
   const fields = {
     admissionType: data.type,
     admissionTypeOther: data.type === "OTHERS" ? data.other.trim() : null,
-    admissionReason: data.reason.trim().slice(0, 2000),
+    admissionReason: data.reason.trim().slice(0, 2000) || null,
     // Date and time of admission (IST); date only when no time is given
     admittedOn: data.admittedTime ? new Date(`${data.admittedOn}T${data.admittedTime}:00+05:30`) : istDayRange(data.admittedOn).dayStart,
     expectedDischarge: data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null,

@@ -670,8 +670,11 @@ function AdmitModal({ title, children, onClose }: { title: string; children: Rea
   );
 }
 
-export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: { visit: any; udid: string; eligible: CounsellingSheet | null; canAdmit: boolean; onClose?: () => void }) {
+export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit, onClose }: { visit: any; udid: string; patientSex?: string; eligible: CounsellingSheet | null; canAdmit: boolean; onClose?: () => void }) {
   const a = visit.ipdAdmission;
+  // Ward type is not asked here: it follows the patient's gender and can be changed in the IPD patient file
+  const sex = (patientSex ?? "").toUpperCase();
+  const defaultWardType = sex === "MALE" ? "MALE" : sex === "FEMALE" ? "FEMALE" : "OTHER";
   const toInputDate = (d: string | Date | null | undefined) => (d ? istTodayStr(new Date(d)) : "");
   const nowTime = () => istTime(new Date());
   const [type, setType]           = useState<string>(a?.admissionType ?? "");
@@ -682,7 +685,7 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
   const [admitTime, setAdmitTime] = useState<string>(a ? istTime(a.admittedOn) : nowTime());
   const [expected, setExpected]   = useState<string>(toInputDate(a?.expectedDischarge));
   const [ward, setWard]           = useState<string>(a?.ward ?? "");
-  const [wardType, setWardType]   = useState<string>(a?.wardType ?? "");
+  const [wardType, setWardType]   = useState<string>(a?.wardType || defaultWardType);
   const [floor, setFloor]         = useState<string>(a?.floor ?? "");
   const [fileNo, setFileNo]       = useState<string>(a?.fileNo ?? "");
   const [isSaved, setIsSaved]     = useState<boolean>(!!a);
@@ -709,7 +712,7 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
     : importSheet ? sheet : null;
   const typeLabel = type === "OTHERS" ? other.trim() : ADMIT_TYPES.find((t) => t.value === type)?.label ?? "";
   const wardTypeLabel = WARD_TYPES.find((w) => w.value === wardType)?.label ?? "";
-  const canSubmit = !!type && !!reason.trim() && !!admittedOn && (type !== "OTHERS" || !!other.trim());
+  const canSubmit = !!type && !!admittedOn && (type !== "OTHERS" || !!other.trim());
 
   const save = () =>
     startTransition(async () => {
@@ -725,7 +728,7 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
 
   const resetFields = () => {
     setType(""); setOther(""); setReason(""); setImport(!!sheet); setAdmitted(istTodayStr()); setAdmitTime(nowTime());
-    setExpected(""); setWard(""); setWardType(""); setFloor(""); setFileNo(""); touch();
+    setExpected(""); setWard(""); setWardType(defaultWardType); setFloor(""); setFileNo(""); touch();
   };
   const cancel = () => { if (!isSaved) { resetFields(); onClose?.(); return; } setConfirmClear(true); };
   const doClear = () =>
@@ -769,11 +772,25 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
   );
 
   // The confirmation sentence: only the parts that are filled in
-  const wardPart = [ward && `Ward ${ward}`, wardTypeLabel && `(${wardTypeLabel})`].filter(Boolean).join(" ");
+  const wardPart = ward ? [`Ward ${ward}`, wardTypeLabel && `(${wardTypeLabel})`].filter(Boolean).join(" ") : wardTypeLabel;
   const placePart = [wardPart, floor && `Floor ${floor}`].filter(Boolean).join(", ");
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] p-4 flex flex-col gap-4">
+      {/* Reason for admission (not always surgery, e.g. IV treatment) */}
+      <div>
+        <label className={labelCls}>Reason for Admission <span className="text-[var(--color-ink-300)] font-normal normal-case tracking-normal">(optional)</span></label>
+        <KeywordTextarea
+          fieldKey="ipd_admit_reason"
+          builtIns={ADMIT_REASON_KEYWORDS}
+          value={reason}
+          onChange={(v) => { setReason(v); touch(); }}
+          rows={1}
+          placeholder="Select a keyword below or type the reason…"
+          disabled={locked}
+        />
+      </div>
+
       {/* Type of admission (Pre-op no longer needs Eligible for surgery) */}
       <div>
         <label className={labelCls}>Type of Admission</label>
@@ -796,27 +813,6 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
         </div>
       )}
 
-      {/* Reason for admission (not always surgery, e.g. IV treatment) */}
-      <div>
-        <label className={labelCls}>Reason for Admission</label>
-        <KeywordTextarea
-          fieldKey="ipd_admit_reason"
-          builtIns={ADMIT_REASON_KEYWORDS}
-          value={reason}
-          onChange={(v) => { setReason(v); touch(); }}
-          rows={1}
-          placeholder="Select a keyword below or type the reason…"
-          disabled={locked}
-        />
-      </div>
-
-      {/* Counselling sheet, when the patient has one */}
-      {sheet && !locked && (
-        <label className="flex items-start gap-2.5 rounded-xl border border-[var(--color-border)] px-3 py-2.5 cursor-pointer">
-          <input type="checkbox" checked={importSheet} onChange={() => { setImport(!importSheet); touch(); }} className="mt-0.5 w-4 h-4 accent-[var(--color-primary-600)]" />
-          <span className="text-sm text-[var(--color-ink-700)]"><b>Import counselling details</b><span className="block text-caption">{sheetLine}</span></span>
-        </label>
-      )}
       {imported && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
           <p className="text-caption font-semibold tracking-widest text-emerald-700 uppercase mb-1">From Counselling{imported.stage ? ` · ${imported.stage}` : ""}</p>
@@ -829,56 +825,24 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
         </div>
       )}
 
-      {/* Admission details */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div>
-          <label className={labelCls}>Date of Admission</label>
-          <input type="date" value={admittedOn} disabled={locked} onChange={(e) => { setAdmitted(e.target.value); touch(); }} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Time of Admission</label>
-          <input type="time" value={admitTime} disabled={locked} onChange={(e) => { setAdmitTime(e.target.value); touch(); }} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Expected Discharge</label>
-          <input type="date" value={expected} min={admittedOn} disabled={locked} onChange={(e) => { setExpected(e.target.value); touch(); }} className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Ward No.</label>
-          <input value={ward} disabled={locked} onChange={(e) => { setWard(e.target.value); touch(); }} placeholder="e.g. 3" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>Floor No.</label>
-          <input value={floor} disabled={locked} onChange={(e) => { setFloor(e.target.value); touch(); }} placeholder="e.g. 2" className={inputCls} />
-        </div>
-        <div>
-          <label className={labelCls}>File No.</label>
-          <input value={fileNo} disabled={locked} onChange={(e) => { setFileNo(e.target.value); touch(); }} placeholder="IP file no." className={inputCls} />
-        </div>
-      </div>
-      <div>
-        <label className={labelCls}>Ward Type</label>
-        <div className="flex flex-wrap gap-2">
-          {WARD_TYPES.map((w) => {
-            const on = wardType === w.value;
-            return (
-              <button key={w.value} type="button" disabled={locked} onClick={() => { setWardType(on ? "" : w.value); touch(); }} className={chip(on)}>
-                {w.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {error && <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} /> {error}</p>}
 
       {locked ? (
         visit.finalizedAt && a && <p className="text-caption text-[var(--color-ink-400)]">Admitted · changes are made in the IPD patient file.</p>
       ) : (
-        <div data-overview-hide className="flex items-center gap-3">
+        <div data-overview-hide className="flex flex-col gap-3">
+          {/* Counselling sheet, when the patient has one */}
+          {sheet && (
+            <label className="flex items-center gap-2 cursor-pointer text-caption text-[var(--color-ink-600)]">
+              <input type="checkbox" checked={importSheet} onChange={() => { setImport(!importSheet); touch(); }} className="w-3.5 h-3.5 accent-[var(--color-primary-600)]" />
+              <span>Import counselling details <span className="text-[var(--color-ink-400)]">({sheetLine})</span></span>
+            </label>
+          )}
+          <div className="flex items-center gap-3">
           <button disabled={pending || !canSubmit} onClick={() => setConfirmSave(true)} className={btnPrimary}>{isSaved ? "Update admission" : "Admit"}</button>
           <button disabled={pending} onClick={cancel} className={btnGhost}>Cancel</button>
           {savedMsg && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved · goes to IPD after Finalize &amp; Sign</span>}
+          </div>
         </div>
       )}
 
@@ -891,7 +855,7 @@ export function AdmitPanel({ visit, udid, eligible: sheet, canAdmit, onClose }: 
             {" "}on <b className="text-[var(--color-ink-900)]">{fmtDay(admittedOn)}{admitTime ? ` at ${time12(admitTime)}` : ""}</b>?
           </p>
           <dl className="mt-4 grid grid-cols-[130px_1fr] gap-x-3 gap-y-1.5 text-sm">
-            <dt className="text-[var(--color-ink-400)]">Reason</dt><dd className="text-[var(--color-ink-800)] whitespace-pre-line">{reason.trim()}</dd>
+            {reason.trim() && <><dt className="text-[var(--color-ink-400)]">Reason</dt><dd className="text-[var(--color-ink-800)] whitespace-pre-line">{reason.trim()}</dd></>}
             {fileNo.trim() && <><dt className="text-[var(--color-ink-400)]">File No.</dt><dd className="text-[var(--color-ink-800)]">{fileNo.trim()}</dd></>}
             {expected && <><dt className="text-[var(--color-ink-400)]">Expected discharge</dt><dd className="text-[var(--color-ink-800)]">{fmtDay(expected)}</dd></>}
             {sheet && <><dt className="text-[var(--color-ink-400)]">Counselling details</dt><dd className="text-[var(--color-ink-800)]">{importSheet ? <>Imported · {[sheet.laterality, sheet.surgery].filter(Boolean).join(" ")}</> : "Not imported"}</dd></>}
