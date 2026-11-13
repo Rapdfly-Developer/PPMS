@@ -115,6 +115,7 @@ export const P = {
   COUNSELLING_FIT:         "counselling.fit",
   COUNSELLING_ELIGIBLE:    "counselling.eligible",
   COUNSELLING_REPORTS:     "counselling.reports",
+  COUNSELLING_ADD_INV:     "counselling.addInvestigations",
 
   // IPD (in-patient)
   IPD_VIEW:                "ipd.view",

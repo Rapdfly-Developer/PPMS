@@ -50,6 +50,7 @@ const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
   "counselling.reports": ["counselling.view"],
   "counselling.fit": ["counselling.view"],
   "counselling.eligible": ["counselling.view"],
+  "counselling.addInvestigations": ["counselling.view"],
   "ipd.admit": ["ipd.view"],
   "ipd.edit": ["ipd.view"],
   "ipd.shiftOt": ["ipd.view"],

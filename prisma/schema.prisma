@@ -1561,6 +1561,11 @@ model CounsellingRecord {
   fitByName             String?
   eligibleByName        String?
   preOpAppointmentId    String?
+
+  // Counselling sheets (JSON, same shapes as the IPD forms; copied into the IPD file at Pre-op admission)
+  implantDetails        String    @default("{}") // { manufacturer, model, power, aConstant }
+  consents              String    @default("{}") // ConsentsData
+  education             String    @default("{}") // EducationData
 }
 
 // ──────────────────────────────────────────────────────────────────────────

@@ -57,6 +57,10 @@ export async function saveCounsellingDetails(visitId: string, data: {
   schemeName?: string;
   policyNumber?: string;
   estimateAmount?: number | null;
+  /** Sheets (JSON). Implant details freeze at Fit; consents and education stay editable until Eligible. */
+  implantDetails?: unknown;
+  consents?: unknown;
+  education?: unknown;
 }): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
   // Eligible for surgery finalizes counselling; after Fit only the date can change.
@@ -89,6 +93,25 @@ export async function saveCounsellingDetails(visitId: string, data: {
       patch.estimateAmount = data.estimateAmount;
     }
   }
+  const sheet = (x: unknown): string | null => {
+    const json = JSON.stringify(x ?? {});
+    return json.length > 200_000 ? null : json;
+  };
+  if (!dateOnly && data.implantDetails !== undefined) {
+    const s = sheet(data.implantDetails);
+    if (s === null) return { error: "The implant details are too large." };
+    patch.implantDetails = s;
+  }
+  if (data.consents !== undefined) {
+    const s = sheet(data.consents);
+    if (s === null) return { error: "The consents are too large." };
+    patch.consents = s;
+  }
+  if (data.education !== undefined) {
+    const s = sheet(data.education);
+    if (s === null) return { error: "The education & diet sheet is too large." };
+    patch.education = s;
+  }
 
   // The signed visit keeps the date the doctor wrote; Counselling's date is
   // stored here and shown beside it as "Rescheduled to …".
@@ -97,7 +120,9 @@ export async function saveCounsellingDetails(visitId: string, data: {
     create: { visitId, status: "PENDING", ...patch },
     update: patch,
   });
-  await writeAudit(user.id, "CounsellingRecord", visitId, "UPDATE", patch);
+  // The sheets are logged as "updated", not copied whole into the audit log
+  const logged = Object.fromEntries(Object.entries(patch).map(([k, x]) => [k, ["implantDetails", "consents", "education"].includes(k) ? "updated" : x]));
+  await writeAudit(user.id, "CounsellingRecord", visitId, "UPDATE", logged);
   if (dateChanged) {
     await writeAudit(user.id, "CounsellingRecord", visitId, "DATE_CHANGED", { from: currentDate, to: nextDate });
   }
@@ -166,7 +191,7 @@ function emrCategory(testName: string): string {
 }
 
 export async function addCounsellingInvestigations(visitId: string, tests: string[], inViewOf: string): Promise<Result> {
-  const { user, visit, rec } = await loadVisit(visitId, "counselling.fit");
+  const { user, visit, rec } = await loadVisit(visitId, "counselling.addInvestigations");
   if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked fit for surgery." };
 
   const norm = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();

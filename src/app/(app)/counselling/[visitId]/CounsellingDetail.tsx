@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
@@ -10,12 +10,19 @@ import {
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList, ChevronLeft,
+  Printer, Save, FileSignature, BookOpen,
 } from "lucide-react";
+import { Tabs } from "@/components/ui/Tabs";
+import { useSidebar } from "@/components/ui/SidebarContext";
+import { printInPlace } from "@/lib/print-in-place";
+import { CONSENT_DECLARATION, CONSENT_LANGUAGES, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
+import { hasCounsellingImplant, type CounsellingImplant } from "@/lib/counselling-sheets";
+import { EducationForm, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
+import type { SavedTemplate } from "../../ipd/[admissionId]/templatesUi";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import type { ActivityEvent, ActivityTone } from "@/lib/counselling-activity";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
-import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { fileHref } from "@/lib/file-href";
 import { istTodayStr } from "@/lib/ist";
 import {
@@ -80,6 +87,15 @@ export interface CounsellingDetailData {
   };
   preOp: { dateTime: string; status: string } | null;
   activity: ActivityEvent[];
+  /** Sheets: implant details, consents, education & diet (same shapes as the IPD forms). */
+  sheets: {
+    me: string;
+    ctx: FormContext;
+    templates: SavedTemplate[];
+    implant: CounsellingImplant;
+    consents: ConsentsData;
+    education: EducationData;
+  };
 }
 
 const SEX_LABEL: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
@@ -258,7 +274,8 @@ function UploadResult({ orderId, visitId, onDone }: { orderId: string; visitId: 
   );
 }
 
-function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: CounsellingDetailData; canUpload: boolean; onClose: () => void; onChanged: () => void }) {
+/** Investigations sheet: every order for the patient by date (like Previous Investigations in the EMR), with upload. */
+function InvestigationsPanel({ data, canUpload, onChanged, action }: { data: CounsellingDetailData; canUpload: boolean; onChanged: () => void; action?: React.ReactNode }) {
   const groups = useMemo(() => {
     const map = new Map<string, CounsellingOrder[]>();
     for (const o of data.orders) {
@@ -271,7 +288,11 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
   const done = current.filter((o) => o.resultRef).length;
 
   return (
-    <Modal title="Investigations History" onClose={onClose} wide>
+    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-800)]"><FlaskConical size={15} className="text-[var(--color-primary-600)]" /> Investigations</p>
+        {action}
+      </div>
       {current.length > 0 && (
         <div className="mb-4 flex items-center gap-3 rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2">
           <span className="text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap">For this surgery: {done}/{current.length} uploaded</span>
@@ -318,7 +339,7 @@ function InvestigationsModal({ data, canUpload, onClose, onChanged }: { data: Co
           ))}
         </div>
       )}
-    </Modal>
+    </section>
   );
 }
 
@@ -604,6 +625,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/** What is still to be filled on a sheet. A reminder only: nothing is blocked. */
+function MissingBox({ items, groups }: { items?: string[]; groups?: { title: string; items: string[] }[] }) {
+  const all = groups ? groups.filter((g) => g.items.length > 0) : [];
+  const count = (items?.length ?? 0) + all.reduce((n, g) => n + g.items.length, 0);
+  if (count === 0) {
+    return (
+      <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+        <CheckCircle2 size={13} /> All details filled
+      </p>
+    );
+  }
+  const chip = (t: string) => <span key={t} className="rounded-full bg-white border border-amber-200 px-2 py-0.5 text-caption font-medium text-amber-800">{t}</span>;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5">
+      <p className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 mb-1.5"><AlertTriangle size={13} /> Still to fill ({count})</p>
+      {items && items.length > 0 && <div className="flex flex-wrap gap-1.5">{items.map(chip)}</div>}
+      {all.map((g) => (
+        <div key={g.title} className="flex flex-wrap items-center gap-1.5 mt-1 first:mt-0">
+          <span className="text-caption font-semibold text-amber-900 mr-0.5">{g.title}:</span>
+          {g.items.map((t) => chip(t))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function LockedTag() {
   return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Frozen</span>;
 }
@@ -718,21 +765,29 @@ function Banner({ tone, icon, action, children }: { tone: "emerald" | "orange" |
 }
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
+type SheetId = "sheet" | "investigations" | "consents" | "education";
+
+/** Short sub-tab label for a consent (built-in ones by kind, custom ones by title). */
+const consentTabLabel = (c: ConsentItem) => (["General", "GVP", "Anaesthesia", "Negative"].includes(c.id) ? c.id : c.title);
+
 export function CounsellingDetail({
-  data, canEdit, canFit, canEligible, canUpload, canViewProfile,
+  data, canEdit, canFit, canAddInvestigations, canEligible, canUpload, canViewProfile,
 }: {
   data: CounsellingDetailData;
   canEdit: boolean;
   canFit: boolean;
+  /** Ordering more investigations has its own permission (not for counsellors unless the Super Admin ticks it). */
+  canAddInvestigations: boolean;
   canEligible: boolean;
   canUpload: boolean;
   canViewProfile: boolean;
 }) {
   const router = useRouter();
+  const { collapsed } = useSidebar();
   const [pending, startTransition] = useTransition();
   const { rec } = data;
 
-  // A–D form state (auto-saved until Fit for surgery freezes it)
+  // Counselling sheet (A-D): saved with the common Save button
   const [implant, setImplant]           = useState(rec.implant);
   const [dateOfSurgery, setDate]        = useState(rec.dateOfSurgery ? istTodayStr(new Date(rec.dateOfSurgery)) : "");
   const [paymentMode, setPaymentMode]   = useState(rec.paymentMode);
@@ -742,40 +797,69 @@ export function CounsellingDetail({
   const [estimate, setEstimate]         = useState(rec.estimateAmount != null ? String(rec.estimateAmount) : "");
   const [customImplants, setCustomImplants] = useState<string[]>(() => (typeof window === "undefined" ? [] : getCustomImplants()));
   const [implantOpen, setImplantOpen]   = useState(false);
+  const [implantInfo, setImplantInfo]   = useState<CounsellingImplant>(data.sheets.implant);
+
+  // Consents and education & diet sheets
+  const [consents, setConsents]         = useState<ConsentsData>(data.sheets.consents);
+  const [education, setEducation]       = useState<EducationData>(data.sheets.education);
+  const [consentTab, setConsentTab]     = useState<string>(data.sheets.consents.items[0]?.id ?? "");
+  const [newConsent, setNewConsent]     = useState("");
 
   // G. advance
   const [advance, setAdvance]           = useState(rec.advancePaid != null ? String(rec.advancePaid) : "");
   const [tickOnly, setTickOnly]         = useState(rec.advanceReceived && rec.advancePaid == null);
   const [advanceReceived, setAdvanceReceived] = useState(rec.advanceReceived);
 
-  const [modal, setModal] = useState<null | "investigations" | "fit" | "addInv" | "postpone" | "eligible">(null);
+  const [sheet, setSheet] = useState<SheetId>("sheet");
+  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "eligible">(null);
   const [showActivity, setShowActivity] = useState(false);
-  const [preview, setPreview] = useState<CounsellingOrder | null>(null);
   const [error, setError] = useState("");
+  const [savedFlash, setSavedFlash] = useState(false);
 
   const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
   const editable = canEdit && !frozen;
   // After Fit only the surgery date can still change, until Eligible finalizes counselling.
   const dateEditable = canEdit && !rec.eligibleForSurgery;
+  // Consents and education stay editable until Eligible
+  const sheetsEditable = canEdit && !rec.eligibleForSurgery;
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
-  // Stable object (auto-save treats every new reference as a change), and no
-  // save until something is actually edited, so opening the page writes nothing.
   const details = useMemo(
     () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, estimateAmount: estimate === "" ? null : Number(estimate) }),
     [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, estimate],
   );
-  // Saving starts on the first edit and stays on, so changing a value back
-  // to what it was on load is saved too.
-  const [initialDetails] = useState(() => JSON.stringify(details));
-  const [edited, setEdited] = useState(false);
-  if (!edited && JSON.stringify(details) !== initialDetails) setEdited(true);
-  const saveState = useAutoSave(
-    details,
-    async (d) => { const r = await saveCounsellingDetails(data.visitId, d); if (r.error) throw new Error(r.error); },
-    undefined,
-    { flushOnUnmount: true, paused: !dateEditable || !edited },
-  );
+
+  // What Save writes, and what was last saved (to know when there are unsaved changes)
+  const snapshot = JSON.stringify({ details, implantInfo, consents, education });
+  const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
+  const advanceNum = advance === "" ? null : Number(advance);
+  const advancePayload = tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 };
+  const advanceEditable = canEdit && rec.fitForSurgery && !rec.eligibleForSurgery && !expired;
+  const advanceDirty = advanceEditable && JSON.stringify(advancePayload) !== JSON.stringify({ advancePaid: rec.advancePaid, advanceReceived: rec.advanceReceived });
+  const sheetDirty = sheetsEditable && snapshot !== savedSnapshot;
+  const dirty = sheetDirty || advanceDirty;
+
+  // Leaving the page with unsaved changes asks first
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  /** Save everything entered on every sheet. Returns an error message, if any. */
+  async function saveAll(): Promise<string | undefined> {
+    if (sheetDirty) {
+      const r = await saveCounsellingDetails(data.visitId, { ...details, implantDetails: implantInfo, consents, education });
+      if (r.error) return r.error;
+      setSavedSnapshot(snapshot);
+    }
+    if (advanceDirty) {
+      const r = await saveAdvance(data.visitId, advancePayload);
+      if (r.error) return r.error;
+    }
+    return undefined;
+  }
 
   const currentOrders = data.orders.filter((o) => o.current);
   const invDone = currentOrders.filter((o) => o.resultRef).length;
@@ -791,8 +875,45 @@ export function CounsellingDetail({
 
   const cashless = CASHLESS_TYPES.find((t) => t.value === paymentType);
   const estimateNum = estimate === "" ? null : Number(estimate);
-  const advanceNum = advance === "" ? null : Number(advance);
   const advanceDone = rec.advanceReceived || (rec.advancePaid ?? 0) > 0;
+
+  // What is still to be filled on each sheet (shown as a checklist; nothing is blocked)
+  const sheetMissing = [
+    !implant.trim() && "Type of implant",
+    !dateOfSurgery && "Tentative date",
+    !implantInfo.manufacturer.trim() && "Implant manufacturer",
+    !implantInfo.model.trim() && "Implant model",
+    !implantInfo.power.trim() && "IOL power",
+    !implantInfo.aConstant.trim() && "A-constant",
+    !paymentMode && "Payment option",
+    paymentMode === "CASHLESS" && !paymentType && "Cashless: covered by",
+    paymentMode === "CASHLESS" && cashless && !schemeName.trim() && cashless.nameLabel,
+    paymentMode === "CASHLESS" && cashless && !policyNumber.trim() && cashless.idLabel,
+    rec.fitForSurgery && !advanceDone && "Advance payment",
+  ].filter((x): x is string => !!x);
+  const invMissing = invPending.map((o) => `${o.testName} report`);
+  const consentMissing = (c: ConsentItem) => [
+    !c.text.trim() && "Wording",
+    !c.language && "Explained in",
+    !c.explainedBy?.trim() && "Explained by",
+    !c.signer?.name.trim() && "Signed by",
+    c.signer?.kind === "RELATIVE" && !c.signer.relation.trim() && "Relationship",
+    !c.witness?.trim() && "Witness",
+    !c.signed && "Signature taken",
+  ].filter((x): x is string => !!x);
+  const nbm = education.dietTypes.includes("Nil by mouth");
+  const unexplained = education.points.filter((p) => !p.done).length;
+  const noDietMeals = education.meals.filter((m) => !m.diet.trim()).map((m) => m.meal);
+  const educationMissing = [
+    education.points.length === 0 && "Education points",
+    unexplained > 0 && `${unexplained} point${unexplained > 1 ? "s" : ""} not yet explained`,
+    !education.explainedTo && "Explained to",
+    !education.language && "Language",
+    !education.teachBack && "Understanding confirmed (teach-back)",
+    education.dietTypes.length === 0 && "Diet",
+    nbm && !education.nbmFrom && "Nil by mouth from",
+    !nbm && noDietMeals.length > 0 && `Diet for ${noDietMeals.join(", ")}`,
+  ].filter((x): x is string => !!x);
 
   function run(fn: () => Promise<{ error?: string } | void>, after?: () => void) {
     setError("");
@@ -808,7 +929,20 @@ export function CounsellingDetail({
     });
   }
 
-  const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" — ");
+  const save = () => run(async () => {
+    const err = await saveAll();
+    return err ? { error: err } : {};
+  }, () => { setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500); });
+
+  /** Save first (so the print shows what is on screen), then print. */
+  const printSaved = (href: string) => run(async () => {
+    const err = await saveAll();
+    if (err) return { error: err };
+    printInPlace(href);
+    return {};
+  });
+
+  const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" · ");
 
   const steps = [
     { label: "Counselling", icon: ClipboardList, done: true },
@@ -819,13 +953,470 @@ export function CounsellingDetail({
   const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
 
+  // The IPD forms take a file context; in Counselling it is this visit
+  const formFile: FileInfo = {
+    id: data.visitId, me: data.sheets.me, status: "ADMITTED", admittedOn: data.visitDate, surgeryDate: rec.dateOfSurgery,
+    shiftedToOtAt: null, ctx: data.sheets.ctx, orders: [], emrMeds: [], payment: null, templates: data.sheets.templates,
+  };
+
+  const activeConsent = consents.items.find((c) => c.id === consentTab) ?? consents.items[0];
+  const setConsentItem = (id: string, patch: Partial<ConsentItem>) => setConsents((v) => ({ ...v, items: v.items.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+  const setConsentText = (id: string, text: string) => setConsentItem(id, { text });
+  const addConsent = () => {
+    const title = newConsent.trim();
+    if (!title) return;
+    const id = `c-${Math.random().toString(36).slice(2, 10)}`;
+    setConsents((v) => ({ ...v, items: [...v.items, { id, title, text: "", signed: false }] }));
+    setConsentTab(id);
+    setNewConsent("");
+  };
+
+  const consentCard = (c: ConsentItem) => (
+    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
+        <p className="text-sm font-semibold text-[var(--color-ink-800)]">{c.title}</p>
+        <button type="button" className={btnOutline} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/consent/${encodeURIComponent(c.id)}`)}>
+          <Printer size={14} /> Print
+        </button>
+      </div>
+      <div className="p-4">
+        {sheetsEditable ? (
+          <textarea
+            value={c.text}
+            onChange={(e) => setConsentText(c.id, e.target.value)}
+            rows={Math.min(16, Math.max(5, c.text.split("\n").length + 3))}
+            placeholder="Consent wording…"
+            className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-y"
+          />
+        ) : (
+          <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">
+            {c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
+            {!c.text.trim() && <p className="italic text-[var(--color-ink-400)]">No wording entered.</p>}
+          </div>
+        )}
+        <p className="mt-3 text-xs italic text-[var(--color-ink-500)]">{CONSENT_DECLARATION}</p>
+
+        {/* Who explained it, who signed, the witness */}
+        <div className="mt-4 pt-3 border-t border-dashed border-[var(--color-border)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <Field label="Explained in">
+            <select value={c.language ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { language: e.target.value })} className={inputCls}>
+              <option value="">Select language</option>
+              {[...new Set([...CONSENT_LANGUAGES, ...(c.language ? [c.language] : [])])].map((l) => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="Explained by">
+            <div className="flex gap-1.5">
+              <input value={c.explainedBy ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { explainedBy: e.target.value })} placeholder={sheetsEditable ? "Counsellor / doctor name" : "-"} className={inputCls} />
+              {sheetsEditable && !c.explainedBy && <button type="button" className={btnOutline} onClick={() => setConsentItem(c.id, { explainedBy: data.sheets.me })}>Me</button>}
+            </div>
+          </Field>
+          <Field label="Signed by">
+            <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-white p-0.5 gap-0.5">
+              {(["PATIENT", "RELATIVE"] as const).map((k) => {
+                const on = (c.signer?.kind ?? "") === k;
+                return (
+                  <button key={k} type="button" disabled={!sheetsEditable}
+                    onClick={() => setConsentItem(c.id, { signer: { kind: k, name: k === "PATIENT" ? (c.signer?.kind === "PATIENT" && c.signer.name ? c.signer.name : data.patient.name) : (c.signer?.kind === "RELATIVE" ? c.signer.name : ""), relation: k === "RELATIVE" ? (c.signer?.relation ?? "") : "" } })}
+                    className={`h-7 px-3 rounded-md text-xs font-semibold transition-colors disabled:cursor-default ${on ? "bg-[var(--color-primary-600)] text-white" : "text-[var(--color-ink-600)] enabled:hover:bg-[var(--color-surface-sunken)]"}`}>
+                    {k === "PATIENT" ? "Patient" : "Relative"}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <Field label="Signer name">
+            <input value={c.signer?.name ?? ""} disabled={!sheetsEditable || !c.signer} onChange={(e) => setConsentItem(c.id, { signer: { kind: c.signer?.kind ?? "PATIENT", name: e.target.value, relation: c.signer?.relation ?? "" } })} placeholder={c.signer ? "Name" : "Choose Patient or Relative"} className={inputCls} />
+          </Field>
+          {c.signer?.kind === "RELATIVE" && (
+            <Field label="Relationship">
+              <input value={c.signer.relation} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { signer: { ...c.signer!, relation: e.target.value } })} placeholder="e.g. Son" className={inputCls} />
+            </Field>
+          )}
+          <Field label="Witness">
+            <input value={c.witness ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { witness: e.target.value })} placeholder={sheetsEditable ? "Witness name" : "-"} className={inputCls} />
+          </Field>
+        </div>
+        <label className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${c.signed ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-[var(--color-border)] text-[var(--color-ink-700)]"} ${sheetsEditable ? "cursor-pointer" : ""}`}>
+          <input type="checkbox" checked={c.signed} disabled={!sheetsEditable}
+            onChange={() => setConsentItem(c.id, c.signed ? { signed: false, signedAt: undefined, recordedBy: undefined } : { signed: true, signedAt: new Date().toISOString(), recordedBy: data.sheets.me })}
+            className="w-4 h-4 accent-emerald-600" />
+          Signed consent taken
+          {c.signed && c.signedAt && <span className="text-caption text-emerald-700">· {c.recordedBy ? `${c.recordedBy}, ` : ""}{fmtDateTime(c.signedAt)}</span>}
+        </label>
+      </div>
+    </section>
+  );
+
+  /* ── Sheet 1: Counselling sheet ───────────────────────────────────────── */
+  const counsellingSheet = (
+    <div className="flex flex-col gap-3">
+      {!rec.eligibleForSurgery && <MissingBox items={sheetMissing} />}
+      {/* ── A & B ─────────────────────────────────────────────────── */}
+      <SectionCard step={1} icon={<Scissors size={15} />} title="Surgery Details" right={frozen ? <LockedTag /> : null}>
+        <div className="flex flex-wrap items-center gap-1.5 mb-3">
+          <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
+            {data.laterality
+              ? <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{data.laterality}</span>
+              : <Scissors size={13} className="ml-1.5 text-[var(--color-primary-600)]" />}
+            <span className="font-semibold text-[var(--color-ink-900)] truncate">{data.surgery}</span>
+            {data.anaesthesia && <span className="text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
+          </span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
+          <InlineField label="Type of Implant" tight>
+            <div className="relative">
+              <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+              <input
+                value={implant}
+                disabled={!editable}
+                onChange={(e) => { setImplant(e.target.value); setImplantOpen(true); }}
+                onFocus={() => setImplantOpen(true)}
+                onBlur={() => { setCustomImplants(rememberImplant(implant)); setTimeout(() => setImplantOpen(false), 150); }}
+                placeholder="Search or type an implant…"
+                className={`${inputCls} pl-8`}
+              />
+              {implantOpen && editable && implants.length > 0 && (
+                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
+                  {implants.map((s) => (
+                    <button key={s} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
+                      className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
+                      <MatchHighlight text={s} term={implant} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </InlineField>
+          <InlineField label="Tentative Date" tight>
+            <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+          </InlineField>
+        </div>
+      </SectionCard>
+
+      {/* ── Implant details (as in the IPD Implant form) ──────────── */}
+      <SectionCard step={2} icon={<Package size={15} />} title="Implant Details" right={frozen ? <LockedTag /> : null}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {([
+            ["manufacturer", "Manufacturer", "e.g. Alcon"],
+            ["model", "Model", "e.g. AcrySof IQ"],
+            ["power", "IOL power (D)", "e.g. +21.5"],
+            ["aConstant", "A-constant", "e.g. 118.7"],
+          ] as const).map(([k, label, ph]) => (
+            <Field key={k} label={label}>
+              <input value={implantInfo[k]} disabled={!editable} onChange={(e) => setImplantInfo((v) => ({ ...v, [k]: e.target.value }))} placeholder={editable ? ph : "-"} className={inputCls} />
+            </Field>
+          ))}
+        </div>
+        <p className="mt-2 text-caption text-[var(--color-ink-400)]">Lot no., serial no., expiry and the implant checks are filled in the IPD file on the day of surgery.</p>
+      </SectionCard>
+
+      {/* ── C & D ─────────────────────────────────────────────────── */}
+      <SectionCard step={3} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
+        <div>
+          <InlineField label="Payment Option">
+            <div className="inline-flex gap-2">
+              {PAYMENT_MODES.map((m) => {
+                const active = paymentMode === m.value;
+                return (
+                  <button key={m.value} type="button" disabled={!editable}
+                    onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
+                    className={`h-8 w-28 inline-flex items-center justify-center gap-2 rounded-lg border text-xs sm:text-sm font-semibold transition-colors disabled:cursor-default ${
+                      active
+                        ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                        : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
+                    }`}>
+                    {m.value === "CASH" ? <Banknote size={15} /> : <CreditCard size={15} />}
+                    {m.value === "CASH" ? "Cash" : "Cashless"}
+                  </button>
+                );
+              })}
+            </div>
+          </InlineField>
+        </div>
+
+        <div className="mt-3">
+          <InlineField label="Estimate (optional)">
+            <div className="relative sm:w-48">
+              <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+              <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
+            </div>
+          </InlineField>
+        </div>
+
+        {paymentMode === "CASHLESS" && (
+          <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3 space-y-3">
+            <Field label="Covered By">
+              <div className="flex flex-wrap gap-1.5">
+                {CASHLESS_TYPES.map((t) => {
+                  const active = paymentType === t.value;
+                  return (
+                    <button key={t.value} type="button" disabled={!editable} onClick={() => { if (t.value !== paymentType) { setPaymentType(t.value); setSchemeName(""); setPolicyNumber(""); } }}
+                      className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-default ${
+                        active
+                          ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                          : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
+                      }`}>
+                      {CASHLESS_ICON[t.value]}{t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+            {cashless && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                <InlineField label={cashless.nameLabel} tight>
+                  <SuggestInput
+                    key={cashless.value}
+                    value={schemeName}
+                    onChange={setSchemeName}
+                    disabled={!editable}
+                    options={PAYER_SUGGESTIONS[cashless.value] ?? []}
+                    libraryKey={`ppms_counselling_payer_${cashless.value}`}
+                    placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
+                  />
+                </InlineField>
+                <InlineField label={cashless.idLabel} tight>
+                  <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />
+                </InlineField>
+              </div>
+            )}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── E & F ─────────────────────────────────────────────────── */}
+      <SectionCard
+        step={4} icon={<ShieldCheck size={15} />} title="Doctor Review"
+        right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
+      >
+        {rec.fitForSurgery ? (
+          <p className="text-sm text-[var(--color-ink-700)]">
+            Marked fit by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+            {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+              <ReadyItem ok={invPending.length === 0}>
+                {currentOrders.length === 0
+                  ? "No investigations ordered"
+                  : invPending.length === 0
+                    ? `All ${currentOrders.length} reports uploaded`
+                    : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
+              </ReadyItem>
+              <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
+            </div>
+            {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
+            {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
+
+            {canFit || canAddInvestigations ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {canFit && (
+                  <button className={btnPrimary} disabled={pending || rec.surgeryDeferred || invPending.length > 0 || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}>
+                    <ShieldCheck size={15} /> Fit for Surgery
+                  </button>
+                )}
+                {canFit && canAddInvestigations && <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />}
+                {canAddInvestigations && (
+                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
+                    <PlusCircle size={14} /> Add Investigations
+                  </button>
+                )}
+                {canFit && !rec.surgeryDeferred && (
+                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
+                    <PauseCircle size={14} /> Date Not Confirmed
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
+            )}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── G ─────────────────────────────────────────────────────── */}
+      <SectionCard
+        step={5} icon={<IndianRupee size={15} />} title="Advance Payment"
+        locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Fit for Surgery"}
+        right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
+      >
+        {rec.eligibleForSurgery ? (
+          rec.advancePaid != null
+            ? <AdvanceMeter estimate={rec.estimateAmount} paid={rec.advancePaid} />
+            : <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle2 size={16} /> Advance received</p>
+        ) : (
+          <div className="space-y-3">
+            {/* Mode */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-[var(--color-ink-500)]">How do you want to record the advance?</p>
+              <div className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-0.5">
+                {[{ v: false, l: "Enter amount", i: <IndianRupee size={12} /> }, { v: true, l: "Just mark received", i: <Check size={12} /> }].map((o) => (
+                  <button key={o.l} type="button" disabled={!canEdit}
+                    onClick={() => { setTickOnly(o.v); setAdvance(""); }}
+                    className={`h-7 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-semibold transition-colors ${tickOnly === o.v ? "bg-white text-[var(--color-primary-700)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}>
+                    {o.i}{o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {tickOnly ? (
+              <button type="button" disabled={!canEdit} onClick={() => setAdvanceReceived(!advanceReceived)}
+                className={`w-full flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-colors ${
+                  advanceReceived ? "border-emerald-400 bg-emerald-50" : "border-dashed border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
+                }`}>
+                <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${advanceReceived ? "bg-emerald-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]"}`}>
+                  <Check size={18} strokeWidth={3} />
+                </span>
+                <span>
+                  <span className="block text-sm font-bold text-[var(--color-ink-900)]">Advance amount received</span>
+                  <span className="block text-caption text-[var(--color-ink-500)]">{advanceReceived ? "Marked as received, amount not recorded" : "Tap to mark as received without entering the amount"}</span>
+                </span>
+              </button>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
+                <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5">
+                  <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Estimate</p>
+                  <p className="text-sm font-bold tabular-nums text-[var(--color-ink-700)]">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "-"}</p>
+                </div>
+                <div className="rounded-lg border-2 border-[var(--color-primary-300)] bg-white px-3 py-1 focus-within:border-[var(--color-primary-500)] transition-colors">
+                  <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-700)]">Advance received</p>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-bold text-[var(--color-ink-400)]">₹</span>
+                    <input type="number" min={0} inputMode="numeric" value={advance} disabled={!canEdit} onChange={(e) => setAdvance(e.target.value)} placeholder="0"
+                      className="w-full bg-transparent text-sm font-bold tabular-nums text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
+                  </div>
+                </div>
+                <div className={`rounded-lg border px-3 py-1.5 ${rec.estimateAmount != null && (advanceNum ?? 0) >= rec.estimateAmount ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                  <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">Pending</p>
+                  <p className="text-sm font-bold tabular-nums text-[var(--color-ink-900)]">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "-"}</p>
+                </div>
+                {rec.estimateAmount != null && rec.estimateAmount > 0 && (
+                  <div className="col-span-3">
+                    <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+                      <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-emerald-400 transition-all duration-500"
+                        style={{ width: `${Math.min(100, ((advanceNum ?? 0) / rec.estimateAmount) * 100)}%` }} />
+                    </div>
+                    <p className="text-micro text-[var(--color-ink-500)] mt-1 tabular-nums">
+                      {Math.min(100, Math.round(((advanceNum ?? 0) / rec.estimateAmount) * 100))}% of the estimate paid as advance
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {canEdit && <p className="text-caption text-[var(--color-ink-400)]">Saved with the Save button below.</p>}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── H ─────────────────────────────────────────────────────── */}
+      <SectionCard
+        step={6} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
+        locked={!(rec.fitForSurgery && advanceDone)} lockedText="Unlocks after the advance is recorded"
+        right={rec.eligibleForSurgery ? <DoneTag tone="emerald">Eligible</DoneTag> : null}
+      >
+        {rec.eligibleForSurgery ? (
+          <p className="text-sm text-[var(--color-ink-700)]">
+            Confirmed by <b>{rec.eligibleByName ?? "-"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
+          </p>
+        ) : canEligible ? (
+          <p className="text-caption sm:text-xs text-[var(--color-ink-500)]">Use <b>Finalize &amp; Sign</b> below: verify date, implant and surgery twice, then book the pre-op.</p>
+        ) : (
+          <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
+        )}
+      </SectionCard>
+    </div>
+  );
+
+  /* ── Sheet 2: Investigations ──────────────────────────────────────────── */
+  const investigationsSheet = (
+    <div className="flex flex-col gap-3">
+    {!rec.eligibleForSurgery && currentOrders.length > 0 && <MissingBox items={invMissing} />}
+    <InvestigationsPanel
+      data={data}
+      canUpload={canUpload && !rec.eligibleForSurgery}
+      onChanged={() => router.refresh()}
+      action={canAddInvestigations && !rec.fitForSurgery && !rec.eligibleForSurgery ? (
+        <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
+          <PlusCircle size={14} /> Add Investigations
+        </button>
+      ) : null}
+    />
+    </div>
+  );
+
+  /* ── Sheet 3: Consents (each consent on its own sub-tab) ──────────────── */
+  const consentsSheet = (
+    <div className="flex flex-col gap-3">
+      {!rec.eligibleForSurgery && <MissingBox groups={consents.items.map((c) => ({ title: consentTabLabel(c), items: consentMissing(c) }))} />}
+      {consents.items.length > 0 && activeConsent ? (
+        <Tabs
+          variant="sub"
+          activeTab={activeConsent.id}
+          onTabChange={setConsentTab}
+          tabs={consents.items.map((c) => ({ id: c.id, label: consentTabLabel(c), badge: rec.eligibleForSurgery ? undefined : consentMissing(c).length || undefined, content: consentCard(c) }))}
+        />
+      ) : (
+        <p className="text-sm italic text-[var(--color-ink-400)]">No consents.</p>
+      )}
+      {sheetsEditable && (
+        <div className="flex gap-2">
+          <input value={newConsent} onChange={(e) => setNewConsent(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addConsent(); } }}
+            placeholder="Add a custom consent, e.g. Consent for photography" className={inputCls} />
+          <button type="button" disabled={!newConsent.trim()} onClick={addConsent} className={btnOutline}><Plus size={13} /> Add consent</button>
+        </div>
+      )}
+    </div>
+  );
+
+  /* ── Sheet 4: Patient education & diet (one copy before the operation) ─ */
+  const educationSheet = (
+    <div className="flex flex-col gap-3">
+      {!rec.eligibleForSurgery && <MissingBox items={educationMissing} />}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
+        <p className="text-xs text-[var(--color-ink-500)]">Explain the points, set the diet, then print one copy for the patient before the operation.</p>
+        <button type="button" className={btnPrimary} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/education`)}>
+          <Printer size={14} /> Print copy for patient
+        </button>
+      </div>
+      <EducationForm
+        value={education}
+        change={setEducation}
+        saveNow={async (v) => {
+          const r = await saveCounsellingDetails(data.visitId, { education: v });
+          return r.error;
+        }}
+        editable={sheetsEditable}
+        canLog={false}
+        addLog={async () => undefined}
+        log={[]}
+        f={formFile}
+        planOnly
+      />
+    </div>
+  );
+
+  // Tab badges: how many details are still to fill on each sheet
+  const badge = (n: number) => (rec.eligibleForSurgery || n === 0 ? undefined : n);
+  const sheetTabs = [
+    { id: "sheet", label: "Counselling Sheet", icon: <ClipboardList size={14} />, badge: badge(sheetMissing.length), content: counsellingSheet },
+    { id: "investigations", label: "Investigations", icon: <FlaskConical size={14} />, badge: badge(invMissing.length), content: investigationsSheet },
+    { id: "consents", label: "Consents", icon: <FileSignature size={14} />, badge: badge(consents.items.reduce((n, c) => n + consentMissing(c).length, 0)), content: consentsSheet },
+    { id: "education", label: "Education & Diet", icon: <BookOpen size={14} />, badge: badge(educationMissing.length), content: educationSheet },
+  ];
+
+  const desktopSidebarOffset = collapsed
+    ? "min-[1025px]:left-16"
+    : "min-[1025px]:left-60 min-[1920px]:left-[268px] min-[2560px]:left-[288px] min-[3840px]:left-[312px]";
+  const showFinalize = canEligible && rec.fitForSurgery && advanceDone && !rec.eligibleForSurgery;
 
   return (
-    <div className="fade-in pb-24">
+    <div className="fade-in pb-28">
 
       {/* ── Title ─────────────────────────────────────────────────────── */}
       <section className="relative rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-        {/* Line 1 — patient details */}
+        {/* Line 1: patient details */}
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden bg-[var(--color-primary-100)] flex items-center justify-center">
             {data.patient.photoUrl
@@ -835,7 +1426,7 @@ export function CounsellingDetail({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
               <p className="text-[15px] sm:text-base font-bold leading-tight text-[var(--color-ink-900)] truncate">{data.patient.name}</p>
-              <StatusBadge status={data.status} expired={expired} />
+              <StatusBadge status={data.status} expired={expired} eligible={rec.eligibleForSurgery} />
             </div>
             <p className="text-caption text-[var(--color-ink-500)] mt-0.5 tabular-nums truncate">
               {data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex} · {data.patient.uhid ?? data.patient.udid}
@@ -859,7 +1450,7 @@ export function CounsellingDetail({
           </div>
         </div>
 
-        {/* Line 2 — surgery · tentative date · investigations */}
+        {/* Line 2: surgery · tentative date · investigations */}
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
             {data.laterality
@@ -875,7 +1466,7 @@ export function CounsellingDetail({
           </span>
           <button
             type="button"
-            onClick={() => setModal("investigations")}
+            onClick={() => setSheet("investigations")}
             className={`inline-flex items-center gap-1.5 rounded-full border pl-1.5 pr-2.5 py-1 text-xs font-semibold transition-colors ${
               invAllDone
                 ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -930,7 +1521,7 @@ export function CounsellingDetail({
           </div>
         )}
 
-        {/* Progress — icon steps on a smooth track (hover for the step name) */}
+        {/* Progress: icon steps on a smooth track (hover for the step name) */}
         <ol className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center px-1">
           {steps.map((st, i) => {
             const isCurrent = i === currentStep;
@@ -939,7 +1530,7 @@ export function CounsellingDetail({
             const segHalf = i < steps.length - 1 && !segDone && st.done;
             return (
               <Fragment key={st.label}>
-                <li className="relative shrink-0" title={`${st.label}${st.done ? " — done" : isCurrent ? " — current step" : ""}`}>
+                <li className="relative shrink-0" title={`${st.label}${st.done ? ": done" : isCurrent ? ": current step" : ""}`}>
                   {isCurrent && <span className="absolute inset-0 rounded-full bg-[var(--color-primary-300)] opacity-40 animate-ping" />}
                   <span className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                     st.done
@@ -985,346 +1576,52 @@ export function CounsellingDetail({
       )}
       {error && !modal && <Banner tone="red" icon={<AlertTriangle size={15} />}>{error}</Banner>}
 
-      {/* ── Summary strip ─────────────────────────────────────────────── */}
-      <section className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-        <div className="flex items-center gap-2 px-4 sm:px-5 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
-          <ClipboardList size={14} className="text-[var(--color-primary-700)]" />
-          <p className="flex-1 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-500)]">Summary</p>
-          {frozen ? <LockedTag /> : <span className="rounded-full bg-white border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]">{currentStep >= 0 ? steps[currentStep].label : "Complete"}</span>}
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] divide-y lg:divide-y-0 lg:divide-x divide-[var(--color-border)]">
-          {/* Surgery */}
-          <SummaryBlock icon={<Package size={13} />} title="Surgery">
-            <SummaryRow2 label="Implant" value={implant} />
-            <SummaryRow2 label="Date" value={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : ""}
-              note={validUntil ? `valid till ${fmtDate(validUntil)}` : undefined} inline />
-          </SummaryBlock>
-
-          {/* Payment */}
-          <SummaryBlock icon={<Wallet size={13} />} title="Payment">
-            <SummaryRow2 label="Option"
-              value={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : ""}
-              note={paymentMode === "CASHLESS" ? [schemeName, policyNumber].filter(Boolean).join(" · ") || undefined : undefined} inline />
-            <div className="grid grid-cols-3 gap-1.5 pt-0.5">
-              <MoneyChip label="Estimate" value={estimateNum != null ? rupees(estimateNum) : ""} />
-              <MoneyChip label="Advance" value={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : ""} />
-              <MoneyChip label="Pending" value={rec.advancePaid != null && rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - rec.advancePaid, 0)) : ""} />
-            </div>
-          </SummaryBlock>
-
-          {/* Reports / pre-op */}
-          <SummaryBlock icon={data.preOp ? <CalendarCheck size={13} /> : <FlaskConical size={13} />} title={data.preOp ? "Pre-op" : "Reports"}>
-            {data.preOp && <p className="text-sm font-semibold text-emerald-700">{fmtDateTime(data.preOp.dateTime)}</p>}
-            {!data.preOp && currentOrders.length === 0 && <p className="text-sm text-[var(--color-ink-400)]">None ordered</p>}
-            {!data.preOp && currentOrders.length > 0 && (
-              <ul className="space-y-1.5">
-                {currentOrders.map((o) => (
-                  <li key={o.id} className="flex items-center gap-2.5 min-w-0">
-                    {o.resultRef ? (
-                      <button type="button" onClick={() => setPreview(o)} title="View report"
-                        className="w-9 h-9 shrink-0 rounded-md border border-[var(--color-border)] bg-white overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-[var(--color-primary-300)] transition-shadow">
-                        {isImage(o.resultRef)
-                          ? <img src={fileHref(o.resultRef)!} alt={o.testName} className="w-full h-full object-cover" />
-                          : <FileText size={16} className="text-[var(--color-ink-500)]" />}
-                      </button>
-                    ) : (
-                      <span className="w-9 h-9 shrink-0 rounded-md border border-dashed border-[var(--color-border)] flex items-center justify-center text-[var(--color-ink-300)]"><FlaskConical size={14} /></span>
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-[var(--color-ink-900)] truncate">
-                        {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}{o.testName}
-                      </span>
-                      <span className={`block text-caption ${o.resultRef ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
-                        {o.resultRef ? `Uploaded ${fmtDate(o.resultAt)}` : "Pending"}
-                      </span>
-                    </span>
-                    {o.resultRef && (
-                      <button type="button" onClick={() => setPreview(o)} className="shrink-0 text-caption font-semibold text-[var(--color-primary-700)] hover:underline">View</button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SummaryBlock>
-        </div>
-      </section>
-
+      {/* ── Sheets (tabs like the EMR) ────────────────────────────────── */}
       <div className="mt-3">
-        <div className="flex flex-col gap-3">
-          {/* ── A & B ─────────────────────────────────────────────────── */}
-          <SectionCard
-            step={1} icon={<Package size={15} />} title="Surgery Details"
-            right={dateEditable ? <SaveIndicator state={saveState} /> : frozen ? <LockedTag /> : null}
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
-              <InlineField label="Type of Implant" tight>
-                <div className="relative">
-                  <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
-                  <input
-                    value={implant}
-                    disabled={!editable}
-                    onChange={(e) => { setImplant(e.target.value); setImplantOpen(true); }}
-                    onFocus={() => setImplantOpen(true)}
-                    onBlur={() => { setCustomImplants(rememberImplant(implant)); setTimeout(() => setImplantOpen(false), 150); }}
-                    placeholder="Search or type an implant…"
-                    className={`${inputCls} pl-8`}
-                  />
-                  {implantOpen && editable && implants.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
-                      {implants.map((s) => (
-                        <button key={s} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
-                          className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
-                          <MatchHighlight text={s} term={implant} />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </InlineField>
-              <InlineField label="Tentative Date" tight>
-                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
-              </InlineField>
-            </div>
-          </SectionCard>
+        <Tabs tabs={sheetTabs} activeTab={sheet} onTabChange={(id) => setSheet(id as SheetId)} keepMounted />
+      </div>
 
-          {/* ── C & D ─────────────────────────────────────────────────── */}
-          <SectionCard step={2} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
-            <div>
-              <InlineField label="Payment Option">
-                <div className="inline-flex gap-2">
-                  {PAYMENT_MODES.map((m) => {
-                    const active = paymentMode === m.value;
-                    return (
-                      <button key={m.value} type="button" disabled={!editable}
-                        onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
-                        className={`h-8 w-28 inline-flex items-center justify-center gap-2 rounded-lg border text-xs sm:text-sm font-semibold transition-colors disabled:cursor-default ${
-                          active
-                            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
-                            : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
-                        }`}>
-                        {m.value === "CASH" ? <Banknote size={15} /> : <CreditCard size={15} />}
-                        {m.value === "CASH" ? "Cash" : "Cashless"}
-                      </button>
-                    );
-                  })}
-                </div>
-              </InlineField>
-            </div>
-
-            <div className="mt-3">
-              <InlineField label="Estimate (optional)">
-                <div className="relative sm:w-48">
-                  <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
-                  <input type="number" min={0} inputMode="numeric" value={estimate} disabled={!editable} onChange={(e) => setEstimate(e.target.value)} placeholder="0" className={`${inputCls} pl-8 tabular-nums`} />
-                </div>
-              </InlineField>
-            </div>
-
-            {paymentMode === "CASHLESS" && (
-              <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3 space-y-3">
-                <Field label="Covered By">
-                  <div className="flex flex-wrap gap-1.5">
-                    {CASHLESS_TYPES.map((t) => {
-                      const active = paymentType === t.value;
-                      return (
-                        <button key={t.value} type="button" disabled={!editable} onClick={() => { if (t.value !== paymentType) { setPaymentType(t.value); setSchemeName(""); setPolicyNumber(""); } }}
-                          className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-default ${
-                            active
-                              ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
-                              : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
-                          }`}>
-                          {CASHLESS_ICON[t.value]}{t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </Field>
-                {cashless && (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    <InlineField label={cashless.nameLabel} tight>
-                      <SuggestInput
-                        key={cashless.value}
-                        value={schemeName}
-                        onChange={setSchemeName}
-                        disabled={!editable}
-                        options={PAYER_SUGGESTIONS[cashless.value] ?? []}
-                        libraryKey={`ppms_counselling_payer_${cashless.value}`}
-                        placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
-                      />
-                    </InlineField>
-                    <InlineField label={cashless.idLabel} tight>
-                      <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />
-                    </InlineField>
-                  </div>
-                )}
-              </div>
-            )}
-          </SectionCard>
-
-          {/* ── E & F ─────────────────────────────────────────────────── */}
-          <SectionCard
-            step={3} icon={<ShieldCheck size={15} />} title="Doctor Review"
-            right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
-          >
-            {rec.fitForSurgery ? (
-              <p className="text-sm text-[var(--color-ink-700)]">
-                Marked fit by <b>{rec.fitByName ?? "—"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
-                {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-                  <ReadyItem ok={invPending.length === 0}>
-                    {currentOrders.length === 0
-                      ? "No investigations ordered"
-                      : invPending.length === 0
-                        ? `All ${currentOrders.length} reports uploaded`
-                        : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
-                  </ReadyItem>
-                  <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
-                </div>
-                {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
-                {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
-
-                {canFit ? (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <button className={btnPrimary} disabled={pending || rec.surgeryDeferred || invPending.length > 0 || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}>
-                      <ShieldCheck size={15} /> Fit for Surgery
-                    </button>
-                    <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />
-                    <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
-                      <PlusCircle size={14} /> Add Investigations
-                    </button>
-                    {!rec.surgeryDeferred && (
-                      <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
-                        <PauseCircle size={14} /> Date Not Confirmed
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
-                )}
-              </div>
-            )}
-          </SectionCard>
-
-          {/* ── G ─────────────────────────────────────────────────────── */}
-          <SectionCard
-            step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
-            locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Fit for Surgery"}
-            right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
-          >
-            {rec.eligibleForSurgery ? (
-              rec.advancePaid != null
-                ? <AdvanceMeter estimate={rec.estimateAmount} paid={rec.advancePaid} />
-                : <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle2 size={16} /> Advance received</p>
-            ) : (
-              <div className="space-y-3">
-                {/* Mode */}
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-xs text-[var(--color-ink-500)]">How do you want to record the advance?</p>
-                  <div className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-0.5">
-                    {[{ v: false, l: "Enter amount", i: <IndianRupee size={12} /> }, { v: true, l: "Just mark received", i: <Check size={12} /> }].map((o) => (
-                      <button key={o.l} type="button" disabled={!canEdit}
-                        onClick={() => { setTickOnly(o.v); setAdvance(""); }}
-                        className={`h-7 inline-flex items-center gap-1.5 px-3 rounded-full text-xs font-semibold transition-colors ${tickOnly === o.v ? "bg-white text-[var(--color-primary-700)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"}`}>
-                        {o.i}{o.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {tickOnly ? (
-                  <button type="button" disabled={!canEdit} onClick={() => setAdvanceReceived(!advanceReceived)}
-                    className={`w-full flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition-colors ${
-                      advanceReceived ? "border-emerald-400 bg-emerald-50" : "border-dashed border-[var(--color-border)] hover:border-[var(--color-primary-300)]"
-                    }`}>
-                    <span className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${advanceReceived ? "bg-emerald-500 text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]"}`}>
-                      <Check size={18} strokeWidth={3} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-bold text-[var(--color-ink-900)]">Advance amount received</span>
-                      <span className="block text-caption text-[var(--color-ink-500)]">{advanceReceived ? "Marked as received — amount not recorded" : "Tap to mark as received without entering the amount"}</span>
-                    </span>
-                  </button>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2 sm:max-w-xl">
-                    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-1.5">
-                      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Estimate</p>
-                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-700)]">{rec.estimateAmount != null ? rupees(rec.estimateAmount) : "—"}</p>
-                    </div>
-                    <div className="rounded-lg border-2 border-[var(--color-primary-300)] bg-white px-3 py-1 focus-within:border-[var(--color-primary-500)] transition-colors">
-                      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-primary-700)]">Advance received</p>
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-bold text-[var(--color-ink-400)]">₹</span>
-                        <input type="number" min={0} inputMode="numeric" value={advance} disabled={!canEdit} onChange={(e) => setAdvance(e.target.value)} placeholder="0"
-                          className="w-full bg-transparent text-sm font-bold tabular-nums text-[var(--color-ink-900)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
-                      </div>
-                    </div>
-                    <div className={`rounded-lg border px-3 py-1.5 ${rec.estimateAmount != null && (advanceNum ?? 0) >= rec.estimateAmount ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                      <p className="text-micro font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">Pending</p>
-                      <p className="text-sm font-bold tabular-nums text-[var(--color-ink-900)]">{rec.estimateAmount != null ? rupees(Math.max(rec.estimateAmount - (advanceNum ?? 0), 0)) : "—"}</p>
-                    </div>
-                    {rec.estimateAmount != null && rec.estimateAmount > 0 && (
-                      <div className="col-span-3">
-                        <div className="h-1.5 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-                          <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-emerald-400 transition-all duration-500"
-                            style={{ width: `${Math.min(100, ((advanceNum ?? 0) / rec.estimateAmount) * 100)}%` }} />
-                        </div>
-                        <p className="text-micro text-[var(--color-ink-500)] mt-1 tabular-nums">
-                          {Math.min(100, Math.round(((advanceNum ?? 0) / rec.estimateAmount) * 100))}% of the estimate paid as advance
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {canEdit && (
-                  <div className="flex justify-end">
-                    <button className={btnPrimary} disabled={pending}
-                      onClick={() => run(() => saveAdvance(data.visitId, tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 }))}>
-                      <Check size={15} strokeWidth={3} /> Save Advance
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </SectionCard>
-
-          {/* ── H ─────────────────────────────────────────────────────── */}
-          <SectionCard
-            step={5} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
-            locked={!(rec.fitForSurgery && advanceDone)} lockedText="Unlocks after the advance is recorded"
-            right={rec.eligibleForSurgery ? <DoneTag tone="emerald">Eligible</DoneTag> : null}
-          >
-            {rec.eligibleForSurgery ? (
-              <p className="text-sm text-[var(--color-ink-700)]">
-                Confirmed by <b>{rec.eligibleByName ?? "—"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
-              </p>
-            ) : canEligible ? (
-              <div className="flex flex-wrap items-center gap-3">
-                <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || expired || rec.surgeryDeferred} onClick={() => { setError(""); setModal("eligible"); }}>
-                  <CheckCircle2 size={15} /> Eligible for Surgery
-                </button>
-                <p className="text-caption text-[var(--color-ink-500)]">Verify date, implant and surgery twice, then book the pre-op.</p>
-              </div>
-            ) : (
-              <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
-            )}
-          </SectionCard>
-
+      {/* ── Bottom bar: common Save, and Finalize & Sign once the advance is recorded ── */}
+      <div className={`fixed bottom-16 lg:bottom-0 short:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-3 md:px-8 py-3 flex flex-wrap items-center gap-2 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200`}>
+        <div className="mr-auto flex flex-wrap items-center gap-2 min-w-0">
+          {rec.eligibleForSurgery ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700"><Lock size={12} /> Finalized · read-only</span>
+          ) : (
+            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+              advanceDone ? "bg-emerald-50 border-emerald-200 text-emerald-700" : rec.fitForSurgery ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-500)]"
+            }`}>
+              <IndianRupee size={12} />
+              {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Fit for Surgery"}
+            </span>
+          )}
+          {!rec.eligibleForSurgery && canEdit && (
+            <span className={`text-xs font-medium ${dirty ? "text-amber-700" : savedFlash ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
+              {dirty ? "Unsaved changes" : savedFlash ? "Saved" : "All changes saved"}
+            </span>
+          )}
         </div>
-
+        {canEdit && !rec.eligibleForSurgery && (
+          <button type="button" onClick={save} disabled={pending || !dirty}
+            className="h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold border border-[var(--color-primary-300)] bg-white text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
+            <Save size={15} /> {pending ? "Saving…" : "Save"}
+          </button>
+        )}
+        {showFinalize && (
+          <button type="button" disabled={pending || expired || rec.surgeryDeferred}
+            onClick={() => run(async () => {
+              // Save first, so what is verified is what gets finalized
+              const err = await saveAll();
+              return err ? { error: err } : {};
+            }, () => setModal("eligible"))}
+            className="h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)] disabled:opacity-50 transition-colors">
+            <FileSignature size={15} /> Finalize &amp; Sign
+          </button>
+        )}
       </div>
 
       {showActivity && <ActivityDrawer data={data} onClose={() => setShowActivity(false)} />}
-      {preview?.resultRef && <ReportViewer order={preview} onClose={() => setPreview(null)} />}
 
       {/* Modals */}
-      {modal === "investigations" && (
-        <InvestigationsModal data={data} canUpload={canUpload && !rec.eligibleForSurgery} onClose={() => setModal(null)} onChanged={() => router.refresh()} />
-      )}
-
       {modal === "fit" && (
         <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)} wide>
           <div className="grid grid-cols-1 gap-3">
@@ -1334,13 +1631,16 @@ export function CounsellingDetail({
                 {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}{data.surgery}
               </ConfirmLine>
               {data.anaesthesia && <ConfirmLine inline label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
-              <ConfirmLine inline label="Implant">{implant || "—"}</ConfirmLine>
-              <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}</ConfirmLine>
+              <ConfirmLine inline label="Implant">{implant || "-"}</ConfirmLine>
+              {hasCounsellingImplant(implantInfo) && (
+                <ConfirmLine inline label="Implant details">{[implantInfo.manufacturer, implantInfo.model, implantInfo.power && `${implantInfo.power} D`, implantInfo.aConstant && `A ${implantInfo.aConstant}`].filter(Boolean).join(" · ")}</ConfirmLine>
+              )}
+              <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}</ConfirmLine>
             </ConfirmCard>
 
             {/* Payment */}
             <ConfirmCard icon={<Wallet size={13} />} title="Payment">
-              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}</ConfirmLine>
+              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}</ConfirmLine>
               {paymentMode === "CASHLESS" && schemeName && <ConfirmLine inline label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
               {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine inline label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
               <ConfirmLine inline label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
@@ -1377,7 +1677,7 @@ export function CounsellingDetail({
               <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, payment and estimate above will be <b>frozen</b>. Only the date can still be changed (within the reports&apos; validity) until Eligible for surgery.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
-                <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <> — on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
+                <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <>, on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
               </li>
               <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>After that the reports expire and the process must be redone.</span></li>
             </ul>
@@ -1388,8 +1688,8 @@ export function CounsellingDetail({
             <button className={btnOutline} onClick={() => setModal(null)}>Cancel</button>
             <button className={btnPrimary} disabled={pending}
               onClick={() => run(async () => {
-                const saved = await saveCounsellingDetails(data.visitId, details);
-                if (saved.error) return saved;
+                const err = await saveAll();
+                if (err) return { error: err };
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
               <ShieldCheck size={15} /> Confirm &amp; Freeze
@@ -1408,19 +1708,16 @@ export function CounsellingDetail({
         <EligibleModal
           pending={pending} error={error} onClose={() => setModal(null)}
           laterality={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia}
-          implant={implant || "—"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "—"}
-          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "—"}
+          implant={implant || "-"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}
+          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}
           payerLabel={cashless?.nameLabel ?? "Covered by"} payer={paymentMode === "CASHLESS" ? schemeName : ""}
           idLabel={cashless?.idLabel ?? "ID"} payerId={paymentMode === "CASHLESS" ? policyNumber : ""}
           estimate={rupees(estimateNum)}
-          advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "—"}
+          advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "-"}
           pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
           onSubmit={(time, notes) => run(async () => {
-            // Unsaved edits are saved first, so what was verified is what gets finalized
-            if (dateEditable && edited) {
-              const saved = await saveCounsellingDetails(data.visitId, details);
-              if (saved.error) return saved;
-            }
+            const err = await saveAll();
+            if (err) return { error: err };
             return markEligibleForSurgery(data.visitId, time, notes);
           }, () => setModal(null))}
         />

@@ -50,7 +50,7 @@ export const STATUS_META: Record<CounsellingStatus, { label: string; pill: strin
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
 
-export function StatusBadge({ status, expired }: { status: CounsellingStatus; expired?: boolean }) {
+export function StatusBadge({ status, expired, eligible = true }: { status: CounsellingStatus; expired?: boolean; eligible?: boolean }) {
   if (expired) {
     return (
       <span className="inline-flex items-center gap-1.5 text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap bg-red-50 text-red-700 border border-red-200">
@@ -63,13 +63,15 @@ export function StatusBadge({ status, expired }: { status: CounsellingStatus; ex
   return (
     <span className={`inline-flex items-center gap-1.5 text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
-      {m.label}
+      {status === "COMPLETED" && !eligible ? "Advance Paid" : m.label}
     </span>
   );
 }
 
-export function isExpired(r: { status: CounsellingStatus; reportsValidUntil: string | null }): boolean {
-  return r.status === "PARTIAL" && !!r.reportsValidUntil && new Date(r.reportsValidUntil) < new Date();
+export function isExpired(r: { status: CounsellingStatus; reportsValidUntil: string | null; eligible?: boolean }): boolean {
+  // Fit (with or without the advance) but not finalized, and the reports' month has passed
+  const open = r.status === "PARTIAL" || (r.status === "COMPLETED" && r.eligible === false);
+  return open && !!r.reportsValidUntil && new Date(r.reportsValidUntil) < new Date();
 }
 
 /** Status used by the cards and Status filter: expired reports must be redone, so they count as Pending. */
@@ -121,7 +123,7 @@ function DaysTag({ r }: { r: CounsellingRow }) {
 }
 
 function ExpiryTag({ r }: { r: CounsellingRow }) {
-  if (!r.reportsDue || r.status === "COMPLETED" || isExpired(r)) return null;
+  if (!r.reportsDue || r.eligible || isExpired(r)) return null;
   const d = daysFromToday(r.reportsDue);
   if (d < 0 || d > 7) return null;
   return (
@@ -281,7 +283,7 @@ function PatientRow({ r, onOpen }: { r: CounsellingRow; onOpen: () => void }) {
       <td className="px-4 py-3 whitespace-nowrap"><TentativeDate r={r} /></td>
       <td className="px-4 py-3">
         <div className="flex flex-col items-start gap-1.5">
-          <StatusBadge status={r.status} expired={isExpired(r)} />
+          <StatusBadge status={r.status} expired={isExpired(r)} eligible={r.eligible} />
           <ProgressDots r={r} />
           <ExpiryTag r={r} />
         </div>
@@ -311,7 +313,7 @@ function PatientCard({ r }: { r: CounsellingRow }) {
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <StatusBadge status={r.status} expired={isExpired(r)} />
+          <StatusBadge status={r.status} expired={isExpired(r)} eligible={r.eligible} />
           <ProgressDots r={r} />
         </div>
       </div>
@@ -434,7 +436,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
           onClick={() => toggleCard("PARTIAL")} active={card === "PARTIAL"}
         />
         <StatCard
-          label="Completed · Eligible" count={counts.COMPLETED}
+          label="Completed · Advance paid" count={counts.COMPLETED}
           icon={<CheckCircle2 size={17} className="text-emerald-600" />}
           accent="text-emerald-700" iconBg="bg-emerald-50"
           onClick={() => toggleCard("COMPLETED")} active={card === "COMPLETED"}
@@ -468,7 +470,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
               { value: "PENDING", label: "Pending" },
               { value: "POSTPONED", label: "Date Not Confirmed" },
               { value: "PARTIAL", label: "Fit for Surgery" },
-              { value: "COMPLETED", label: "Eligible for Surgery" },
+              { value: "COMPLETED", label: "Completed (advance paid)" },
             ]}
           />
           <div className="flex items-center gap-1.5">

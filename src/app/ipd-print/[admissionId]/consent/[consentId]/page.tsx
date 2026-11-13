@@ -5,6 +5,7 @@ import { visitRecordScope } from "@/lib/patient-access";
 import { IpdPrintHeader } from "../../../IpdPrintHeader";
 import { CONSENT_DECLARATION, defaultConsents, isV2, type ConsentsData, type FormContext } from "@/lib/ipd-forms";
 import { PrintBar } from "../../PrintBar";
+import { parseCounsellingConsents } from "@/lib/counselling-sheets";
 
 export const metadata = { title: "Consent Form" };
 
@@ -42,7 +43,11 @@ export default async function ConsentPrintPage({ params, searchParams }: {
   };
   let saved: unknown = null;
   try { saved = a.forms[0] ? JSON.parse(a.forms[0].data) : null; } catch { saved = null; }
-  const data: ConsentsData = isV2(saved) ? (saved as ConsentsData) : defaultConsents(ctx);
+  // Not saved in the ward yet: a Pre-op file starts from the consents filled at counselling
+  const fromCounselling = !isV2(saved) && a.counsellingVisitId
+    ? parseCounsellingConsents((await prisma.counsellingRecord.findUnique({ where: { visitId: a.counsellingVisitId }, select: { consents: true } }))?.consents)
+    : null;
+  const data: ConsentsData = isV2(saved) ? (saved as ConsentsData) : fromCounselling ?? defaultConsents(ctx);
   const c = data.items.find((x) => x.id === decodeURIComponent(consentId));
   if (!c) notFound();
 

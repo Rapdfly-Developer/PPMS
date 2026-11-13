@@ -378,7 +378,10 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
 
 /* ── 5. Patient education & diet chart ─────────────────────────────────── */
 
-export function EducationForm({ value: v, change, editable, canLog, addLog, log, f }: FormProps<EducationData>) {
+export function EducationForm({ value: v, change, editable, canLog, addLog, log, f, planOnly = false }: FormProps<EducationData> & {
+  /** Counselling: the plan only, without the ward's food intake record. */
+  planOnly?: boolean;
+}) {
   const [point, setPoint] = useState("");
   const { run, pending, error } = useLogger(addLog);
   const today = istDate();
@@ -451,7 +454,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
         </div>
         <div className="-mx-3.5 -mb-3.5 overflow-x-auto">
           <table className="w-full min-w-[560px]">
-            <thead><tr>{["Meal", "Time", "Diet", `Taken today (${format(new Date(), "d MMM")})`].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
+            <thead><tr>{["Meal", "Time", "Diet", ...(planOnly ? [] : [`Taken today (${format(new Date(), "d MMM")})`])].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {v.meals.map((m, i) => {
                 const rec = [...todayFood].reverse().find((e) => e.meta?.meal === m.meal);
@@ -471,7 +474,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
                     <td className={td}>
                       <input value={m.diet} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />
                     </td>
-                    <td className={`${td} whitespace-nowrap`}>
+                    {!planOnly && <td className={`${td} whitespace-nowrap`}>
                       {rec && <p className={`text-xs font-semibold ${rec.meta?.amount === "Refused" ? "text-red-600" : "text-emerald-700"}`}>{rec.meta?.amount} · {time(rec.at)} · {rec.by}</p>}
                       {canLog && !v.dietTypes.includes("Nil by mouth") && (
                         m.diet.trim() ? (
@@ -485,7 +488,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
                           <p className="text-[11px] text-[var(--color-ink-400)]">Enter the diet first</p>
                         )
                       )}
-                    </td>
+                    </td>}
                   </tr>
                 );
               })}
@@ -496,7 +499,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
         <ErrorText text={error} />
       </Card>
 
-      {log.filter((e) => e.kind === "food" || !e.kind).length > 0 && (
+      {!planOnly && log.filter((e) => e.kind === "food" || !e.kind).length > 0 && (
         <Card title="Food intake record">
           <ul className="space-y-1 max-h-56 overflow-y-auto text-sm">
             {[...log].filter((e) => e.kind === "food" || !e.kind).reverse().map((e, i) => (

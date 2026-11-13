@@ -16,10 +16,16 @@ export function counsellingStatus(rec: {
   eligibleForSurgery: boolean;
   fitForSurgery: boolean;
   surgeryDeferred: boolean;
+  advancePaid?: unknown;
+  advanceReceived?: boolean;
 } | null | undefined): CounsellingStatus {
+  // Pending: reports not uploaded or not yet reviewed by the doctor.
+  // Partial: the doctor reviewed the reports (Fit for surgery).
+  // Completed: the advance payment is recorded (or counselling is finalized).
   if (!rec) return "PENDING";
   if (rec.eligibleForSurgery) return "COMPLETED";
   if (rec.surgeryDeferred) return "POSTPONED";
+  if (rec.fitForSurgery && (rec.advanceReceived || Number(rec.advancePaid ?? 0) > 0)) return "COMPLETED";
   if (rec.fitForSurgery) return "PARTIAL";
   return "PENDING";
 }

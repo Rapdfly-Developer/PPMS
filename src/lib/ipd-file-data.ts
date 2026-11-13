@@ -8,6 +8,7 @@ import {
   defaultTreatment, educationAdvice, isV2, type EducationData, type FormContext,
 } from "@/lib/ipd-forms";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
+import { implantFromCounselling, parseCounsellingConsents, parseCounsellingEducation } from "@/lib/counselling-sheets";
 import type { FileData } from "@/app/(app)/ipd/[admissionId]/PatientFile";
 
 /** Category shown as the coloured badge, as on the patient Time Stamp. */
@@ -111,7 +112,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const counselling = a.counsellingVisitId
     ? await prisma.counsellingRecord.findUnique({
         where: { visitId: a.counsellingVisitId },
-        select: { paymentType: true, paymentMode: true, schemeName: true, policyNumber: true, eligibleByName: true, confirmedAt: true },
+        select: { paymentType: true, paymentMode: true, schemeName: true, policyNumber: true, eligibleByName: true, confirmedAt: true, implantDetails: true, consents: true, education: true },
       })
     : null;
 
@@ -157,10 +158,11 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     surgeryDate: a.surgeryDate?.toISOString() ?? null, type: a.admissionType,
   };
   const savedEducation = (() => { const t = a.forms.find((f) => f.key === "education"); const x = t ? parse(t.data) : null; return isV2(x) ? (x as EducationData) : null; })();
-  const education = savedEducation ?? defaultEducation(ctx);
+  // A Pre-op file starts from the sheets filled at counselling (until the ward saves its own)
+  const education = savedEducation ?? (counselling && parseCounsellingEducation(counselling.education)) ?? defaultEducation(ctx);
   const defaults: Record<string, unknown> = {
-    implant: defaultImplant(),
-    consents: defaultConsents(ctx),
+    implant: counselling ? implantFromCounselling(counselling.implantDetails) : defaultImplant(),
+    consents: (counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx),
     checklist: defaultChecklist(),
     education,
     treatment: defaultTreatment(),
