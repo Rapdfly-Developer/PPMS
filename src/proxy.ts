@@ -79,11 +79,11 @@ export default auth((req) => {
   const isSetupApi         = pathname.startsWith("/api/setup");
   const isCronApi          = pathname.startsWith("/api/cron");
   // Server-to-server and public endpoints that authenticate themselves (cron
-  // secret, Razorpay signature) or are meant for anonymous visitors (landing
+  // secret, Cashfree signature) or are meant for anonymous visitors (landing
   // demo form, DPDP grievance contact). Redirecting them to /login meant the
   // nightly jobs, payment webhooks and demo form never reached their handlers.
   const isSelfAuthedApi    = isCronApi
-    || pathname === "/api/razorpay/webhook"
+    || pathname === "/api/cashfree/webhook"
     || pathname === "/api/demo-request"
     || pathname === "/api/grievance-contact";
 

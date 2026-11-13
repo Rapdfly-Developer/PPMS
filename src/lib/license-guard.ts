@@ -255,7 +255,7 @@ export function isLicenseExemptPath(pathname: string): boolean {
     pathname.startsWith("/setup") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/license") ||
-    pathname.startsWith("/api/razorpay") ||
+    pathname.startsWith("/api/cashfree") ||
     pathname.startsWith("/api/setup") ||
     pathname.startsWith("/api/cron")
   );

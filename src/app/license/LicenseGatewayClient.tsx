@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { startTrial, activateLicenseKey, sendVerificationCode } from "./actions";
 import type { LicensePageData } from "./getLicenseData";
+import { payWithCashfree } from "@/lib/cashfree-client";
 
 /* ── Light theme palette ──────────────────────────────────────────────────────
    Matches the login page's ramp so the two entry screens read as one product.
@@ -1085,73 +1086,14 @@ function PlansModal({
   const [buying, setBuying] = useState<PlanKey | "">("");
   const [payError, setPayError] = useState("");
 
-  useEffect(() => {
-    if (document.querySelector('script[src*="checkout.razorpay.com"]')) return;
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.async = true;
-    document.head.appendChild(s);
-  }, []);
-
   async function handleBuy(planKey: PlanKey) {
     if (!doctorId) { setPayError("Doctor ID not found. Please refresh and try again."); return; }
     setPayError("");
     setBuying(planKey);
-    try {
-      const res = await fetch("/api/razorpay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planKey, doctorId }),
-      });
-      const orderData = await res.json() as {
-        orderId?: string; amount?: number; currency?: string; key?: string; error?: string;
-        prefill?: { name?: string; contact?: string };
-      };
-      if (!res.ok) throw new Error(orderData.error || "Failed to initiate payment.");
-
-      const planInfo = PLANS_LIST.find((p) => p.key === planKey);
-      const rzp = new (window as unknown as { Razorpay: new (opts: Record<string, unknown>) => { open(): void } }).Razorpay({
-        key:         orderData.key,
-        amount:      orderData.amount,
-        currency:    orderData.currency ?? "INR",
-        order_id:    orderData.orderId,
-        name:        "RF Health",
-        description: planInfo ? `${planInfo.name} Plan` : planKey,
-        image:       "/landing/logo-rf-health.webp",
-        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          try {
-            const vRes = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id:   response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature:  response.razorpay_signature,
-                doctorId,
-                plan: planKey,
-              }),
-            });
-            const vData = await vRes.json() as { success?: boolean };
-            if (vData.success) {
-              onSuccess();
-            } else {
-              setPayError("Payment verified but activation failed. Contact support@ppms.in.");
-            }
-          } catch {
-            setPayError("Network error during verification. Your payment may have been processed - contact support@ppms.in.");
-          } finally {
-            setBuying("");
-          }
-        },
-        prefill: orderData.prefill ?? {},
-        theme: { color: "#0D7A63" },
-        modal: { ondismiss: () => setBuying("") },
-      });
-      rzp.open();
-    } catch (e) {
-      setPayError(e instanceof Error ? e.message : "Payment initiation failed. Please try again.");
-      setBuying("");
-    }
+    const r = await payWithCashfree(planKey, doctorId);
+    setBuying("");
+    if (r.ok) onSuccess();
+    else setPayError(r.error);
   }
 
   return (
@@ -1170,7 +1112,7 @@ function PlansModal({
           <div className="flex items-start justify-between mb-6">
             <div>
               <h2 className="text-xl font-black" style={{ color: T.text }}>Choose your RF Health plan</h2>
-              <p className="text-sm mt-1" style={{ color: T.muted }}>Secure checkout via Razorpay · Cancel anytime.</p>
+              <p className="text-sm mt-1" style={{ color: T.muted }}>Secure checkout via Cashfree · Cancel anytime.</p>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-gray-100 transition-colors" style={{ color: T.faint }}>
               <XCircle size={20} />
@@ -1250,7 +1192,7 @@ function PlansModal({
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs" style={{ color: T.faint }}>
             <span className="flex items-center gap-1.5">
               <ShieldCheck size={13} style={{ color: T.accent }} />
-              Payments secured by Razorpay · 256-bit SSL
+              Payments secured by Cashfree · 256-bit SSL
             </span>
             <button onClick={onActivateKey} className="font-semibold hover:underline" style={{ color: T.accent }}>
               Already have a license key? Activate here →

@@ -147,7 +147,7 @@ export default function RefundPage() {
               LIMITED. Please read it carefully before subscribing.
             </P>
             <P>
-              All payments are processed securely through Razorpay. Refunds, where approved, are
+              All payments are processed securely through Cashfree. Refunds, where approved, are
               returned to the original payment method.
             </P>
             <Note>
@@ -240,7 +240,7 @@ export default function RefundPage() {
               <Li>Renewal charges for annual plans, which are treated as monthly subscriptions for refund purposes once renewed.</Li>
               <Li>Fees for periods during which you had full access to the platform but chose not to use it.</Li>
               <Li>Fees for accounts that were suspended due to a breach of our <a href="/terms" className="font-medium text-emerald-700 underline-offset-3 hover:underline">Terms of Service</a>.</Li>
-              <Li>Transaction fees or payment processing charges imposed by Razorpay, which are outside our control.</Li>
+              <Li>Transaction fees or payment processing charges imposed by Cashfree, which are outside our control.</Li>
             </Ul>
           </SectionCard>
 
@@ -291,7 +291,7 @@ export default function RefundPage() {
               receiving all required information.
             </P>
             <P>
-              If approved, refunds are processed through Razorpay back to the original payment
+              If approved, refunds are processed through Cashfree back to the original payment
               method. The time for funds to appear in your account depends on your bank and
               typically takes 5–10 business days after we initiate the refund.
             </P>

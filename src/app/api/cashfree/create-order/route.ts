@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import Razorpay from "razorpay";
+import { createCashfreeOrder, type PlanKey } from "@/lib/cashfree";
 
-type PlanKey = "MONTHLY" | "ENTERPRISE" | "YEARLY";
-
+// Amounts in paise, same as before. Cashfree takes rupees, converted below.
 const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
   MONTHLY:    { amount: 299900,  discountedAmount: 75000,  label: "Professional Monthly (₹2,999/month)" },
   ENTERPRISE: { amount: 129900,  discountedAmount: 32500,  label: "Enterprise Monthly (₹1,299/month)" },
@@ -34,7 +33,6 @@ export async function POST(req: Request) {
     if (!link) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Fetch doctor profile for Razorpay prefill and first-payment check
   const [existing, doctor] = await Promise.all([
     prisma.tenantLicense.findUnique({
       where: { doctorId },
@@ -48,44 +46,58 @@ export async function POST(req: Request) {
   const isFirstPayment = !existing?.subscriptionStartsAt || existing.paymentStatus !== "PAID";
 
   const planConfig = PLANS[plan];
-  const chargeAmount =
+  const chargePaise =
     isFirstPayment && planConfig.discountedAmount !== null
       ? planConfig.discountedAmount
       : planConfig.amount;
 
-  const razorpay = new Razorpay({
-    key_id:     process.env.RAZORPAY_KEY_ID!,
-    key_secret: process.env.RAZORPAY_KEY_SECRET!,
-  });
+  // Cashfree needs a 10-digit mobile number for the payer.
+  const phone = (doctor?.contact ?? "").replace(/\D/g, "").slice(-10);
+  if (phone.length !== 10) {
+    return NextResponse.json(
+      { error: "Add a 10-digit mobile number to the doctor profile before paying." },
+      { status: 400 },
+    );
+  }
 
-  const order = await razorpay.orders.create({
-    amount:   chargeAmount,
-    currency: "INR",
-    receipt:  `ppms_${doctorId.slice(-8)}_${Date.now()}`,
-    notes:    { doctorId, plan },
-  });
+  const orderId = `ppms_${doctorId.replace(/[^A-Za-z0-9]/g, "").slice(-8)}_${Date.now()}`;
 
-  // Store orderId on the license row so verify can cross-check
+  let order;
+  try {
+    order = await createCashfreeOrder({
+      orderId,
+      amountRupees: chargePaise / 100,
+      customerId: doctorId.replace(/[^A-Za-z0-9]/g, "").slice(0, 50),
+      customerName: doctor?.name,
+      customerPhone: phone,
+      note: planConfig.label.replace(/[^\x20-\x7E]/g, "").slice(0, 200) || "PPMS license",
+      tags: { doctorId, plan },
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Could not start the payment." },
+      { status: 502 },
+    );
+  }
+
+  // Store the order id on the license row so verify can cross-check.
+  // (The razorpayOrderId column now holds the Cashfree order id.)
   await prisma.tenantLicense.upsert({
     where: { doctorId },
-    update: { razorpayOrderId: order.id, paymentStatus: "PENDING" },
+    update: { razorpayOrderId: orderId, paymentStatus: "PENDING" },
     create: {
       doctorId,
       trialEndsAt: new Date(),
-      razorpayOrderId: order.id,
+      razorpayOrderId: orderId,
       paymentStatus: "PENDING",
     },
   });
 
   return NextResponse.json({
-    orderId:        order.id,
-    amount:         chargeAmount,
-    currency:       "INR",
-    key:            process.env.RAZORPAY_KEY_ID,
+    orderId,
+    paymentSessionId: order.payment_session_id,
+    mode: process.env.CASHFREE_ENV === "production" ? "production" : "sandbox",
+    amount: chargePaise,
     isFirstPayment,
-    prefill: {
-      name:    doctor?.name ?? undefined,
-      contact: doctor?.contact ?? undefined,
-    },
   });
 }

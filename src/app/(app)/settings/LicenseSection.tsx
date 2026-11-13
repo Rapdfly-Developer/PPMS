@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getLicenseFullDetails, type LicenseFullData } from "./actions";
 import { activateLicenseKey, reactivateLicense, verifyLicense } from "@/app/license/actions";
+import { payWithCashfree } from "@/lib/cashfree-client";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -359,7 +360,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
               </div>
             </div>
             <div className="px-5 pb-4 flex items-center gap-3 text-caption text-[var(--color-ink-400)]">
-              <span>Method: Razorpay</span>
+              <span>Method: Cashfree</span>
               <span>·</span>
               <span>Cycle: {planCfg.billingCycle}</span>
             </div>
@@ -494,7 +495,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             {expired ? "Restore access now" : "Upgrade to Professional"}
           </p>
           <p className="text-xs text-[var(--color-primary-600)] mt-0.5">
-            Starting at ₹1,299 / month, pay securely via Razorpay.
+            Starting at ₹1,299 / month, pay securely via Cashfree.
           </p>
         </div>
         <button
@@ -793,77 +794,29 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
   async function handleRazorpay(planKey: string, description: string) {
     setPayError(null);
     setPaying(true);
-    try {
-      if (!document.querySelector('script[src*="checkout.razorpay.com"]')) {
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement("script");
-          s.src = "https://checkout.razorpay.com/v1/checkout.js";
-          s.onload = () => resolve();
-          s.onerror = () => reject(new Error("Failed to load Razorpay"));
-          document.body.appendChild(s);
-        });
-      }
+    void description;
+    const doctorId = data.doctorId;
+    if (!doctorId) { setPayError("Doctor ID not found. Please refresh."); setPaying(false); return; }
 
-      const doctorId = data.doctorId;
-      if (!doctorId) { setPayError("Doctor ID not found. Please refresh."); setPaying(false); return; }
-
-      const res = await fetch("/api/razorpay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: planKey, doctorId }),
-      });
-      if (!res.ok) { const e = await res.json(); setPayError(e.error ?? "Order creation failed."); setPaying(false); return; }
-
-      const { orderId, amount, currency, key, prefill } = await res.json();
-
-      const rzp = new (window as unknown as { Razorpay: new (o: Record<string, unknown>) => { open(): void } }).Razorpay({
-        key,
-        amount,
-        currency,
-        order_id: orderId,
-        name: "PPMS Subscription",
-        description,
-        prefill: { name: prefill?.name ?? "", contact: prefill?.contact ?? "" },
-        theme: { color: "#0D7A63" },
-        modal: { ondismiss: () => setPaying(false) },
-        handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          try {
-            const vRes = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id:   response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature:  response.razorpay_signature,
-                doctorId,
-                plan: planKey,
-              }),
-            });
-            if (!vRes.ok) { const e = await vRes.json(); setPayError(e.error ?? "Payment verification failed."); }
-            else {
-              setPayOk(true);
-              setPaidPlanKey(planKey);
-              setPaidPaymentId(response.razorpay_payment_id);
-              setPaidOrderId(response.razorpay_order_id);
-              setPaidStartDate(new Date().toISOString());
-              onRefresh();
-            }
-          } catch { setPayError("Verification error. Contact support."); }
-          finally { setPaying(false); }
-        },
-      });
-      rzp.open();
-    } catch (e) {
-      setPayError(e instanceof Error ? e.message : "Something went wrong.");
-      setPaying(false);
+    const r = await payWithCashfree(planKey, doctorId);
+    if (r.ok) {
+      setPayOk(true);
+      setPaidPlanKey(planKey);
+      setPaidPaymentId(r.paymentId ?? r.orderId);
+      setPaidOrderId(r.orderId);
+      setPaidStartDate(new Date().toISOString());
+      onRefresh();
+    } else {
+      setPayError(r.error);
     }
+    setPaying(false);
   }
 
   return (
     <div className="space-y-5">
       <div>
         <p className="text-sm font-semibold text-[var(--color-ink-800)]">Subscription Plans</p>
-        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Pay securely via Razorpay.</p>
+        <p className="text-xs text-[var(--color-ink-500)] mt-0.5">Choose the plan that fits your practice. Pay securely via Cashfree.</p>
       </div>
 
       {payOk && paidPlanKey && (() => {
@@ -1074,7 +1027,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
 
       <div className="flex items-center justify-center gap-2 text-caption text-[var(--color-ink-400)]">
         <ShieldCheck size={12} className="text-emerald-500" />
-        Payments secured by Razorpay · 256-bit SSL encryption
+        Payments secured by Cashfree · 256-bit SSL encryption
       </div>
     </div>
   );

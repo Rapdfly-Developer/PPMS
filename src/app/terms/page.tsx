@@ -238,8 +238,8 @@ export default function TermsPage() {
             </P>
             <SubHead>Payment processing</SubHead>
             <P>
-              Payments are processed by Razorpay (Razorpay Software Private Limited), a
-              third-party payment gateway. By making a payment, you also agree to Razorpay&apos;s
+              Payments are processed by Cashfree Payments (Cashfree Payments India Private Limited), a
+              third-party payment gateway. By making a payment, you also agree to Cashfree&apos;s
               terms of service. We do not store payment card numbers. Payment failures may result
               in a temporary suspension of access to paid features until the payment is resolved.
             </P>
