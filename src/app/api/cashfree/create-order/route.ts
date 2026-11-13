@@ -46,18 +46,13 @@ export async function POST(req: Request) {
   const isFirstPayment = !existing?.subscriptionStartsAt || existing.paymentStatus !== "PAID";
 
   const planConfig = PLANS[plan];
-  let chargePaise =
+  const chargePaise =
     isFirstPayment && planConfig.discountedAmount !== null
       ? planConfig.discountedAmount
       : planConfig.amount;
 
   // Cashfree needs a 10-digit mobile number for the payer.
   const phone = (doctor?.contact ?? "").replace(/\D/g, "").slice(-10);
-
-  // Live-test switch: only when CASHFREE_TEST_PHONE is set in the environment,
-  // the doctor with that exact mobile number is charged Rs 1. Unset = no effect.
-  const testPhone = (process.env.CASHFREE_TEST_PHONE ?? "").replace(/\D/g, "").slice(-10);
-  if (testPhone.length === 10 && phone === testPhone) chargePaise = 100;
   if (phone.length !== 10) {
     return NextResponse.json(
       { error: "Add a 10-digit mobile number to the doctor profile before paying." },
