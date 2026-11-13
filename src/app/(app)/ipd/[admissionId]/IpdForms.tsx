@@ -11,6 +11,7 @@ import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
 import { EducationSetPicker, LoadOtTemplate, ManageMine, SaveAsMine, type PickableSet, type SavedTemplate } from "./templatesUi";
 import { searchMedications } from "@/lib/ophthalmic-medications";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
 import {
   CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, DOCTOR_NOTE_CHIPS, DOCTOR_NOTE_FIELDS, BUILTIN_EDUCATION_SETS, EYES,
@@ -536,7 +537,7 @@ function DrugSearch({ value, onChange, onPick }: { value: string; onChange: (v: 
             <button key={m.id} type="button" onMouseDown={(e) => e.preventDefault()}
               onClick={() => { onPick(m.strength && !m.name.includes(m.strength) ? `${m.name} ${m.strength}` : m.name, m.defaultDose, m.route); setOpen(false); }}
               className="block w-full text-left px-3 py-1.5 hover:bg-[var(--color-primary-50)]">
-              <span className="text-sm font-semibold text-[var(--color-ink-800)]">{m.name} {m.strength}</span>
+              <span className="text-sm font-semibold text-[var(--color-ink-800)]"><MatchHighlight text={m.name} term={value} /> {m.strength}</span>
               <span className="block text-[11px] text-[var(--color-ink-400)]">{m.generic} · {m.form} · {m.category}</span>
             </button>
           ))}

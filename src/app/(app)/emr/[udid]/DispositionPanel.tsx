@@ -367,7 +367,7 @@ function rememberInLibrary(key: string, builtIns: readonly string[], value: stri
 }
 
 function SearchCombo({
-  value, onChange, options, libraryKey, placeholder, allowAdd = false, highlight = false,
+  value, onChange, options, libraryKey, placeholder, allowAdd = false, highlight = true,
 }: {
   value: string;
   onChange: (v: string) => void;

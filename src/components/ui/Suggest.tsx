@@ -7,6 +7,7 @@
 
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { Plus } from "lucide-react";
+import { MatchHighlight } from "./MatchHighlight";
 
 /* ── Usage counts ─────────────────────────────────────────────────────── */
 
@@ -102,12 +103,7 @@ export function rankSuggestions(term: string, options: readonly string[], counts
 
 /* ── The dropdown ─────────────────────────────────────────────────────── */
 
-function Highlight({ text, term }: { text: string; term: string }) {
-  const t = term.trim();
-  const at = t ? text.toLowerCase().indexOf(t.toLowerCase()) : -1;
-  if (at < 0) return <>{text}</>;
-  return <>{text.slice(0, at)}<b className="font-semibold text-[var(--color-ink-900)]">{text.slice(at, at + t.length)}</b>{text.slice(at + t.length)}</>;
-}
+const Highlight = MatchHighlight;
 
 export interface SuggestOptions {
   /** The part of the field being typed (empty when nothing is being typed). */

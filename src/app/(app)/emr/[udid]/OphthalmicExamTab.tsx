@@ -470,6 +470,9 @@ function parseSignedVal(v: string): { sign: "+" | "-"; mag: string } {
   return v.startsWith("-") ? { sign: "-", mag: v.slice(1) } : { sign: "+", mag: v.replace(/^\+/, "") };
 }
 
+/** The AR slip upload is only for machine readings: Auto-Refraction and Cycloplegic. */
+const hasArSlip = (method: string) => method === "Auto-Refraction" || method === "Cycloplegic";
+
 function ArSlipUpload({
   url,
   editable,
@@ -896,12 +899,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               <CheckCheck size={12} /> Refraction by {visit.refractionByName}
             </span>
           )}
-          <ArSlipUpload
+          {hasArSlip(c1.activeMethod) && <ArSlipUpload
             url={activeEntry(c1).arSlipUrl}
             editable={editable}
             label="Refraction 1"
             onChange={(url) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
-          />
+          />}
           {priorRefractions.length > 0 && (
             <button
               data-overview-hide
@@ -953,12 +956,12 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
               </div>
             </div>
             <div className="ml-auto flex items-center gap-2 shrink-0 flex-wrap">
-              <ArSlipUpload
+              {hasArSlip(ex.activeMethod) && <ArSlipUpload
                 url={activeEntry(ex).arSlipUrl}
                 editable={editable}
                 label={(ex.label || "Refraction").replace(/^Correction/i, "Refraction")}
                 onChange={(url) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
-              />
+              />}
               {editable && (
                 <button
                   type="button"

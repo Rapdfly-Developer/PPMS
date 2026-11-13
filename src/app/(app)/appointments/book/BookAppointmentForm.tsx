@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import {
   Search, UserPlus,
   Calendar, Clock, FileText, ChevronRight,
@@ -583,15 +584,15 @@ export function BookAppointmentForm({
                               {p.name.charAt(0)}
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
+                              <p className="text-sm font-medium text-[var(--color-ink-900)]"><MatchHighlight text={p.name} term={search} /></p>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                <span title="UDID (Doctor ID)" className="font-mono text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded">{p.udid}</span>
+                                <span title="UDID (Doctor ID)" className="font-mono text-caption text-[#115E59] bg-[#F0F8F6] px-1.5 py-0.5 rounded"><MatchHighlight text={p.udid} term={search} /></span>
                                 {p.uhid && (
-                                  <span title="UHID (Hospital ID)" className="font-mono text-caption text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded">{p.uhid}</span>
+                                  <span title="UHID (Hospital ID)" className="font-mono text-caption text-[#1E4B8F] bg-[#F0F4FA] px-1.5 py-0.5 rounded"><MatchHighlight text={p.uhid} term={search} /></span>
                                 )}
                                 <span className="text-xs text-[var(--color-ink-400)]">{p.age ?? "?"}y {p.sex.charAt(0)}</span>
                                 <span className="text-[var(--color-ink-300)] text-xs">·</span>
-                                <span className="text-xs text-[var(--color-ink-400)]">{p.mobile}</span>
+                                <span className="text-xs text-[var(--color-ink-400)]">{p.mobile ? <MatchHighlight text={p.mobile} term={search} /> : p.mobile}</span>
                               </div>
                             </div>
                           </div>

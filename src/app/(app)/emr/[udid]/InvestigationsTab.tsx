@@ -23,6 +23,7 @@ import {
 const FAVES_KEY   = "ppms_inv_favorites";
 const SESSION_KEY = "ppms_inv_session_customs";
 import clsx from "clsx";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import { fileHref } from "@/lib/file-href";
 
 // ── Main export ───────────────────────────────────────────────────────────
@@ -673,7 +674,7 @@ function AddCustomTestModal({
                       onMouseDown={() => { setQuery(s); setShowSuggestions(false); }}
                       className="w-full text-left px-3.5 py-2 text-sm text-[var(--color-ink-700)] hover:bg-[#EEF8F7] hover:text-[#0F766E] transition-colors"
                     >
-                      {s}
+                      <MatchHighlight text={s} term={query} />
                     </button>
                   ))}
                 </div>

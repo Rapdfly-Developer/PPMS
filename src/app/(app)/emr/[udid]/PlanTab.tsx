@@ -21,28 +21,48 @@ import {
   saveTreatmentPresets,
 } from "./treatmentPresets";
 import { type MedEntry, searchMedications, saveCustomMedication } from "@/lib/ophthalmic-medications";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
+import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordTextarea, KeywordTextareaControlsRow, removeKeywordFromText } from "@/components/emr/KeywordField";
 
 /* ── ProtocolPanel: every protocol, with custom add ─────────────────────── */
 
-interface ProtocolFormDrug { drugName: string; dosage: string; frequency: string; duration: string; }
-const blankProtocolDrug = (): ProtocolFormDrug => ({ drugName: "", dosage: "", frequency: "", duration: "" });
+interface ProtocolFormDrug { drugName: string; dosage: string; frequency: string; duration: string; taperLevels: TaperLevel[]; }
+const blankProtocolDrug = (): ProtocolFormDrug => ({ drugName: "", dosage: "", frequency: "", duration: "", taperLevels: [] });
+
+/** The diagnosis a protocol is grouped under: its first "Diagnosis it is for" keyword, else its ICD code's name. */
+function protocolGroup(p: TreatmentPreset): string {
+  const kw = p.diagnosisKeywords[0]?.trim();
+  if (kw) return kw.charAt(0).toUpperCase() + kw.slice(1);
+  const code = p.diagnosisCodes[0];
+  if (code) {
+    const hit = ICD10_OPHTHALMOLOGY.find((d) => d.code === code) ?? ICD10_OPHTHALMOLOGY.find((d) => d.code.startsWith(code));
+    return hit ? hit.description : code;
+  }
+  return "General";
+}
 
 function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPreset) => void; onClose: () => void }) {
   const [protocols, setProtocols] = useState<TreatmentPreset[]>([]);
+  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [formName, setFormName]           = useState("");
   const [formDiagnosis, setFormDiagnosis] = useState("");
   const [formAdvice, setFormAdvice]       = useState("");
   const [formDrugs, setFormDrugs]         = useState<ProtocolFormDrug[]>([blankProtocolDrug()]);
+  const [formFollowUp, setFormFollowUp]   = useState("");
+  const [formInvestigations, setFormInvestigations] = useState<string[]>([]);
+  const [editingInvIndex, setEditingInvIndex] = useState<number | null>(null);
+  const [showInvPicker, setShowInvPicker] = useState(false);
 
   useEffect(() => { setProtocols(getTreatmentPresets()); }, []);
 
   const resetForm = () => {
     setFormName(""); setFormDiagnosis(""); setFormAdvice(""); setFormDrugs([blankProtocolDrug()]);
+    setFormFollowUp(""); setFormInvestigations([]); setEditingInvIndex(null);
     setEditId(null); setShowForm(false);
   };
 
@@ -51,10 +71,30 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
     setFormDiagnosis(protocol.diagnosisKeywords.join(", "));
     setFormAdvice(protocol.advice ?? "");
     setFormDrugs(protocol.medications.length
-      ? protocol.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "" }))
+      ? protocol.medications.map((m) => ({ drugName: m.drugName, dosage: m.dosage ?? "", frequency: m.frequency ?? "", duration: m.duration ?? "", taperLevels: [] }))
       : [blankProtocolDrug()]);
+    setFormFollowUp(protocol.followUpDays ? String(protocol.followUpDays) : "");
+    setFormInvestigations(protocol.investigations ?? []);
+    setEditingInvIndex(null);
     setEditId(protocol.id); setShowForm(true);
   };
+
+  const q = search.trim().toLowerCase();
+  const shownProtocols = protocols
+    .map((protocol, idx) => ({ protocol, idx }))
+    .filter(({ protocol }) => !q || protocol.name.toLowerCase().includes(q) || protocol.diagnosisKeywords.some((k) => k.toLowerCase().includes(q)) || protocolGroup(protocol).toLowerCase().includes(q));
+
+  // Grouped by diagnosis, groups in the order they first appear; "General" last
+  const groups: { label: string; items: typeof shownProtocols }[] = [];
+  for (const row of shownProtocols) {
+    const label = protocolGroup(row.protocol);
+    const g = groups.find((x) => x.label.toLowerCase() === label.toLowerCase());
+    if (g) g.items.push(row); else groups.push({ label, items: [row] });
+  }
+  groups.sort((a, b) => Number(a.label === "General") - Number(b.label === "General"));
+
+  const setTaper = (i: number, levels: TaperLevel[]) =>
+    setFormDrugs(formDrugs.map((d, idx) => (idx === i ? { ...d, taperLevels: levels } : d)));
 
   const saveForm = () => {
     const drugs = formDrugs.filter((d) => d.drugName.trim());
@@ -66,8 +106,14 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
       ...(existing ?? { id: `custom-tx-${Date.now()}`, diagnosisCodes: [], createdAt: new Date().toISOString() }),
       name: formName.trim(),
       diagnosisKeywords: formDiagnosis.split(",").map((k) => k.trim()).filter(Boolean),
-      medications: drugs.map((d) => ({ drugName: d.drugName.trim(), dosage: d.dosage || undefined, frequency: d.frequency || undefined, duration: d.duration || undefined })),
+      medications: drugs.map((d) => {
+        const tapParts = formatTaperSteps(d.taperLevels);
+        const tapStr   = tapParts.length ? ` → Taper: ${tapParts.join(" → ")}` : "";
+        return { drugName: d.drugName.trim(), dosage: d.dosage || undefined, frequency: d.frequency || undefined, duration: (d.duration + tapStr) || undefined };
+      }),
       advice: formAdvice.trim() || undefined,
+      investigations: formInvestigations.length ? formInvestigations : undefined,
+      followUpDays: formFollowUp ? Number(formFollowUp) : undefined,
       isDefault: false,
     };
     saveTreatmentPresets(existing ? all.map((x) => (x.id === saved.id ? saved : x)) : [...all, saved]);
@@ -94,16 +140,19 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-[1px]" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
     <div className="w-full max-w-3xl max-h-[85vh] flex flex-col border border-[var(--color-border)] rounded-2xl bg-white shadow-2xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] shrink-0">
-        <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-700)]">Protocols</p>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 shrink-0">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--color-ink-900)]">Protocols</p>
+          <p className="text-caption text-[var(--color-ink-400)]">{protocols.length} protocol{protocols.length !== 1 ? "s" : ""} · grouped by diagnosis</p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => { resetForm(); setShowForm(true); }}
-            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-sunken)] transition-colors"
+            className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
           >
-            <Plus size={12} /> New Protocol
+            <Plus size={13} /> New Protocol
           </button>
-          <button onClick={onClose} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"><X size={16} /></button>
+          <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"><X size={15} /></button>
         </div>
       </div>
 
@@ -141,7 +190,8 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
                       <span />
                     </div>
                     {formDrugs.map((d, i) => (
-                      <div key={i} className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] items-center gap-1.5 mb-1.5">
+                      <Fragment key={i}>
+                      <div className="grid grid-cols-[1.25rem_1.6fr_1fr_1fr_1fr_1.5rem] items-center gap-1.5 mb-1.5">
                         <span className="text-caption text-[var(--color-ink-400)] tabular-nums text-right">{i + 1}.</span>
                         {/* Same suggestion dropdowns as the other medication forms; picking a drug fills its usual dose */}
                         <DrugNameInput
@@ -162,6 +212,65 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
                           <X size={13} />
                         </button>
                       </div>
+
+                      {/* Tapering toggle (same as Edit Protocol in Select Treatment Preset) */}
+                      <div className="pl-7 mb-1.5">
+                        <label className="flex items-center gap-1.5 cursor-pointer w-fit">
+                          <input
+                            type="checkbox"
+                            checked={d.taperLevels.length > 0}
+                            onChange={(e) => setTaper(i, e.target.checked ? [blankTaper()] : [])}
+                            className="accent-[var(--color-primary-600)] w-3 h-3 rounded"
+                          />
+                          <span className="text-caption font-medium text-[var(--color-ink-500)]">Tapering dose</span>
+                        </label>
+                      </div>
+
+                      {/* Tapering levels */}
+                      {d.taperLevels.map((level, li) => {
+                        const setLevel = (patch: Partial<TaperLevel>) =>
+                          setTaper(i, d.taperLevels.map((t, k) => (k === li ? { ...t, ...patch } : t)));
+                        return (
+                          <div key={li} className="pl-4 mb-1.5 border-l-2 border-[var(--color-primary-300)]" style={{ marginLeft: `${li * 10 + 28}px` }}>
+                            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-primary-600)] mb-1">
+                              ↓ Taper{d.taperLevels.length > 1 ? ` ${li + 1}` : ""}
+                            </p>
+                            <div className="overflow-x-auto">
+                              <div className="grid gap-1 items-center min-w-[390px]" style={{ gridTemplateColumns: "80px 130px 50px 80px auto" }}>
+                                <OptionsInput value={level.dose} onChange={(v) => setLevel({ dose: v })} options={DOSE_OPTIONS} placeholder="Dose" className={fieldCls} />
+                                <select value={level.frequency} onChange={(e) => setLevel({ frequency: e.target.value })} className={fieldCls}>
+                                  <option value="">Frequency</option>
+                                  {FREQUENCY_OPTIONS.map((f) => <option key={f}>{f}</option>)}
+                                </select>
+                                <select value={level.durationNum} onChange={(e) => setLevel({ durationNum: e.target.value })} className={fieldCls}>
+                                  <option value="">-</option>
+                                  {Array.from({ length: 12 }, (_, k) => k + 1).map((v) => <option key={v} value={String(v)}>{v}</option>)}
+                                </select>
+                                <select value={level.durationUnit} onChange={(e) => setLevel({ durationUnit: e.target.value })} className={fieldCls}>
+                                  {["days", "weeks", "months"].map((u) => <option key={u}>{u}</option>)}
+                                </select>
+                                {li === d.taperLevels.length - 1 && li < 4 && (
+                                  <label className="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                                    <input
+                                      type="checkbox"
+                                      checked={false}
+                                      onChange={(e) => { if (e.target.checked) setTaper(i, [...d.taperLevels, blankTaper()]); }}
+                                      className="accent-[var(--color-primary-600)] w-3 h-3"
+                                    />
+                                    <span className="text-caption text-[var(--color-ink-500)]">+ Taper</span>
+                                  </label>
+                                )}
+                                {li < d.taperLevels.length - 1 && (
+                                  <button type="button" onClick={() => setTaper(i, d.taperLevels.filter((_, k) => k <= li))} className="text-[var(--color-ink-300)] hover:text-red-500 transition-colors">
+                                    <X size={11} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      </Fragment>
                     ))}
                   </div>
                 </div>
@@ -171,6 +280,46 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
                   className="mt-1 inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--color-primary-300)] px-2.5 py-1 text-xs font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"
                 >
                   <Plus size={12} /> Add drug
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <label className={labelCls}>Follow-up days</label>
+                <input type="number" min="1" value={formFollowUp} onChange={(e) => setFormFollowUp(e.target.value)} placeholder="e.g. 7" className={fieldCls} />
+              </div>
+
+              <div className="mt-4">
+                <label className={labelCls}>Investigations</label>
+                <div className="flex flex-col gap-1">
+                  {formInvestigations.map((inv, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0" />
+                      {editingInvIndex === i ? (
+                        <input
+                          autoFocus
+                          value={inv}
+                          onChange={(e) => setFormInvestigations(formInvestigations.map((x, j) => (j === i ? e.target.value : x)))}
+                          onBlur={() => setEditingInvIndex(null)}
+                          onKeyDown={(e) => { if (e.key === "Enter") setEditingInvIndex(null); }}
+                          className="flex-1 min-w-0 text-xs bg-transparent outline-none border-b border-[#0F766E]"
+                        />
+                      ) : (
+                        <span className="flex-1 min-w-0 text-xs text-[var(--color-ink-700)] truncate">{inv}</span>
+                      )}
+                      <button type="button" onClick={() => setEditingInvIndex(i)} title="Edit investigation" className="shrink-0 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-[#0F766E] hover:bg-[#DCF3F1] transition-colors">
+                        <Pencil size={11} />
+                      </button>
+                      <button type="button" onClick={() => { setFormInvestigations(formInvestigations.filter((_, j) => j !== i)); setEditingInvIndex(null); }} title="Remove investigation" className="shrink-0 p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ))}
+                  {formInvestigations.length === 0 && (
+                    <p className="text-caption text-[var(--color-ink-300)] italic px-0.5">No investigations added.</p>
+                  )}
+                </div>
+                <button type="button" onClick={() => setShowInvPicker(true)} className="mt-1.5 flex items-center gap-1 text-caption font-semibold text-[#0F766E] hover:underline">
+                  <Plus size={10} /> Add
                 </button>
               </div>
 
@@ -190,76 +339,122 @@ function ProtocolPanel({ onApply, onClose }: { onApply: (protocol: TreatmentPres
         );
       })()}
 
-      {/* Protocol list */}
-      <div className="px-4 py-3 flex-1 min-h-0 overflow-y-auto">
-        {protocols.length === 0 ? (
-          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-6">No protocols yet. Click &quot;+ New Protocol&quot; to create one.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {protocols.map((protocol, idx) => (
-              <div key={protocol.id} className="p-4 rounded-xl border border-[var(--color-border)] hover:border-[#B2DEDA] hover:bg-[#EEF8F7]/40 transition-colors">
-                {/* Header row */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-caption font-bold px-2 py-0.5 rounded-full bg-[#0F766E] text-white shrink-0">
-                      Protocol {idx + 1}
-                    </span>
-                    <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{protocol.name}</p>
-                    {!protocol.isDefault && (
-                      <span className="text-micro font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">CUSTOM</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {protocol.followUpDays && (
-                      <span className="text-caption font-medium px-2 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA]">
-                        F/U {protocol.followUpDays}d
-                      </span>
-                    )}
-                    {/* Every protocol can be edited; editing a built-in one saves it as an override under the same id */}
-                    <button onClick={() => openEdit(protocol)} title="Edit protocol" className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-[#0F766E] hover:bg-[#DCF3F1] transition-colors"><Pencil size={11} /></button>
-                    <button onClick={() => deleteProtocol(protocol.id)} title="Delete protocol" className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={11} /></button>
-                  </div>
-                </div>
-
-                {/* Medications */}
-                <ul className="flex flex-col gap-1.5 mb-2">
-                  {protocol.medications.map((d, i) => (
-                    <li key={i} className="flex items-baseline gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#0F766E]/50 shrink-0 mt-1.5" />
-                      <span className="text-xs font-medium text-[var(--color-ink-800)]">{d.drugName}</span>
-                      {(d.dosage || d.frequency || d.duration) && (
-                        <span className="text-caption text-[var(--color-ink-400)]">
-                          {[d.dosage, d.frequency, d.duration].filter(Boolean).join(" · ")}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Extras */}
-                {protocol.investigations && protocol.investigations.length > 0 && (
-                  <p className="text-caption text-[var(--color-ink-400)] mt-1">
-                    <span className="font-semibold">Investigations:</span> {protocol.investigations.join(", ")}
-                  </p>
-                )}
-                {protocol.advice && (
-                  <p className="text-caption text-[var(--color-ink-400)] italic mt-0.5">
-                    <span className="font-semibold not-italic">Advice:</span> {protocol.advice}
-                  </p>
-                )}
-
-                <button
-                  onClick={() => onApply(protocol)}
-                  className="mt-3 w-full py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-ink-600)] hover:bg-[var(--color-primary-50)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] transition-colors"
-                >
-                  Apply ({protocol.medications.length} drug{protocol.medications.length !== 1 ? "s" : ""})
-                </button>
-              </div>
-            ))}
+      {/* Search */}
+      {protocols.length > 0 && (
+        <div className="px-5 pb-3 border-b border-[var(--color-border)] shrink-0">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by protocol or diagnosis…"
+              className="w-full rounded-lg border border-transparent bg-[var(--color-surface-sunken)] pl-8 pr-7 py-2 text-xs text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:bg-white focus:border-[var(--color-primary-300)] focus:ring-2 focus:ring-[var(--color-primary-100)] transition-colors"
+            />
+            {search && (
+              <button type="button" onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] hover:text-[var(--color-ink-600)]">
+                <X size={12} />
+              </button>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Protocol list */}
+      <div className="px-5 pb-5 flex-1 min-h-0 overflow-y-auto bg-[var(--color-surface-sunken)]/40">
+        {protocols.length === 0 ? (
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-10">No protocols yet. Click &quot;+ New Protocol&quot; to create one.</p>
+        ) : shownProtocols.length === 0 ? (
+          <p className="text-label sm:text-sm text-[var(--color-ink-400)] text-center py-10">No matching protocols.</p>
+        ) : (
+          groups.map((group) => (
+            <section key={group.label} className="pt-4">
+              {/* Diagnosis group header */}
+              <div className="sticky top-0 z-[1] -mx-5 px-5 py-1.5 mb-2 flex items-center gap-2 bg-white/90 backdrop-blur-sm">
+                <span className="w-1 h-3.5 rounded-full bg-[var(--color-primary-500)]" />
+                <p className="text-caption font-semibold text-[var(--color-ink-700)] truncate">
+                  <MatchHighlight text={group.label} term={search} />
+                </p>
+                <span className="text-micro font-medium text-[var(--color-ink-400)] tabular-nums">{group.items.length}</span>
+                <span className="flex-1 h-px bg-[var(--color-border)]" />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {group.items.map(({ protocol }) => (
+                  <div key={protocol.id} className="group rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 hover:border-[var(--color-primary-200)] hover:shadow-[0_2px_10px_-4px_rgba(15,118,110,0.18)] transition-all">
+                    {/* Name row */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] truncate"><MatchHighlight text={protocol.name} term={search} /></p>
+                        {!protocol.isDefault && (
+                          <span className="text-micro font-semibold px-1.5 py-px rounded bg-amber-50 text-amber-700 shrink-0">Custom</span>
+                        )}
+                        {protocol.followUpDays && (
+                          <span className="text-micro font-medium text-[var(--color-ink-400)] shrink-0">· F/U {protocol.followUpDays}d</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {/* Every protocol can be edited; editing a built-in one saves it as an override under the same id */}
+                        <button onClick={() => openEdit(protocol)} title="Edit protocol" className="p-1.5 rounded-md text-[var(--color-ink-300)] hover:text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] transition-colors"><Pencil size={12} /></button>
+                        <button onClick={() => deleteProtocol(protocol.id)} title="Delete protocol" className="p-1.5 rounded-md text-[var(--color-ink-300)] hover:text-red-500 hover:bg-red-50 transition-colors"><Trash2 size={12} /></button>
+                        <button
+                          onClick={() => onApply(protocol)}
+                          className="ml-1 px-2.5 py-1 rounded-md text-xs font-semibold text-[var(--color-primary-700)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-600)] hover:text-white transition-colors"
+                        >
+                          Apply · {protocol.medications.length} drug{protocol.medications.length !== 1 ? "s" : ""}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Medications */}
+                    <ul className="mt-2 flex flex-col gap-1">
+                      {protocol.medications.map((d, i) => (
+                        <li key={i} className="flex items-baseline gap-2 min-w-0">
+                          <span className="w-1 h-1 rounded-full bg-[var(--color-primary-400)] shrink-0 translate-y-[-2px]" />
+                          <span className="text-xs text-[var(--color-ink-800)]">{d.drugName}</span>
+                          {(d.dosage || d.frequency || d.duration) && (
+                            <span className="text-caption text-[var(--color-ink-400)] truncate">
+                              {[d.dosage, d.frequency, d.duration].filter(Boolean).join(" · ")}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* Investigations and advice */}
+                    {((protocol.investigations && protocol.investigations.length > 0) || protocol.advice) && (
+                      <div className="mt-2 pt-2 border-t border-dashed border-[var(--color-border)] flex flex-col gap-0.5">
+                        {protocol.investigations && protocol.investigations.length > 0 && (
+                          <p className="text-caption text-[var(--color-ink-500)]">
+                            <span className="text-[var(--color-ink-400)]">Investigations </span>{protocol.investigations.join(", ")}
+                          </p>
+                        )}
+                        {protocol.advice && (
+                          <p className="text-caption text-[var(--color-ink-500)]">
+                            <span className="text-[var(--color-ink-400)]">Advice </span><span className="italic">{protocol.advice}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
         )}
       </div>
     </div>
+
+      {/* Investigation picker, same as Edit Protocol in Select Treatment Preset */}
+      {showInvPicker && (
+        <InvestigationPickerModal
+          existing={formInvestigations}
+          onAdd={(names) => {
+            setFormInvestigations((prev) => [...prev, ...names.filter((n) => !prev.includes(n))]);
+            setShowInvPicker(false);
+          }}
+          onClose={() => setShowInvPicker(false)}
+        />
+      )}
     </div>,
     document.body,
   );
@@ -430,7 +625,7 @@ function DrugNameInput({
               ].join(" ")}
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-[var(--color-ink-800)] break-words">{med.name}</p>
+                <p className="text-xs font-semibold text-[var(--color-ink-800)] break-words"><MatchHighlight text={med.name} term={value} /></p>
                 <p className="text-caption text-[var(--color-ink-400)] break-words">
                   {med.category}
                   {med.brand ? ` · ${med.brand}` : ""}
@@ -499,7 +694,7 @@ function OptionsInput({
                 opt !== filtered[filtered.length - 1] ? "border-b border-[var(--color-border)]" : "",
               ].join(" ")}
             >
-              {opt}
+              <MatchHighlight text={opt} term={value} />
             </button>
           ))}
         </div>
@@ -1244,7 +1439,7 @@ function InvestigationPickerModal({
                   onChange={() => toggle(item.name)}
                   className="accent-[#0F766E]"
                 />
-                {item.name}
+                <span><MatchHighlight text={item.name} term={query} /></span>
                 {item.isCustom && !alreadyAdded && (
                   <span className="ml-auto text-caption font-medium px-1.5 py-0.5 rounded-full bg-[#EEF8F7] text-[#0F766E] border border-[#B2DEDA] shrink-0">
                     Custom
@@ -1306,11 +1501,40 @@ export function ProtocolPromptCard({
   diagnosisDesc,
   onConfirm,
   onDismiss,
+  compact = false,
 }: {
   diagnosisDesc: string;
   onConfirm: () => void;
   onDismiss: () => void;
+  /** Small pill that sits in a heading row (Plan tab Medications). */
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-primary-100)] bg-[var(--color-primary-50)] pl-1 pr-0.5 py-0.5 animate-in fade-in zoom-in-95 duration-200">
+        <span className="w-4 h-4 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
+          <Stethoscope size={9} className="text-white" />
+        </span>
+        <p className="min-w-0 truncate text-[11px] text-[var(--color-primary-800)]" title={`Apply ${diagnosisDesc} protocol?`}>
+          Apply <span className="font-semibold">{diagnosisDesc}</span> protocol?
+        </p>
+        <button
+          type="button"
+          onClick={onDismiss}
+          className="shrink-0 text-[11px] font-medium px-1.5 py-px rounded-full text-[var(--color-ink-500)] hover:bg-white transition-colors"
+        >
+          No
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="shrink-0 text-[11px] font-semibold px-2 py-px rounded-full bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] transition-colors"
+        >
+          Confirm
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="rounded-xl border border-[var(--color-primary-100)] bg-[var(--color-primary-50)]/70 pl-2 pr-1.5 py-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
       <span className="w-5 h-5 rounded-full bg-[var(--color-primary-600)] flex items-center justify-center shrink-0">
@@ -1407,6 +1631,8 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
         }
         return true;
       })
+      // The same diagnosis entered twice (same eye) gets one prompt
+      .filter((d, i, all) => all.findIndex((x) => x.description === d.description && x.laterality === d.laterality) === i)
       .map((d) => ({
         diagnosisDesc: d.description,
         laterality: d.laterality,
@@ -1899,7 +2125,7 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
                       : "text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
                   }`}
                 >
-                  {kw}
+                  <span><MatchHighlight text={kw} term={anesthesia} /></span>
                   {anesthesia === kw && <Check size={13} className="shrink-0 text-[var(--color-primary-600)]" />}
                 </button>
               ))}
@@ -2235,7 +2461,21 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
       )}
 
       <div className={`flex items-center mb-2 gap-2 ${Object.keys(appliedByDiag).length > 0 ? "mt-3" : ""}`}>
-        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Medications</p>
+        <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] shrink-0">Medications</p>
+        {/* Per-diagnosis protocol prompts, as small pills beside the heading */}
+        {!readOnly && pendingDiagPrompts.length > 0 && (
+          <div className="flex-1 flex flex-wrap items-center justify-center gap-1.5 min-w-0">
+            {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
+              <ProtocolPromptCard
+                key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
+                compact
+                diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
+                onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
+                onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
+              />
+            ))}
+          </div>
+        )}
         {!readOnly && (
           <div data-overview-hide className="flex items-center gap-2 ml-auto shrink-0">
             {medications.length > 0 && (
@@ -2261,20 +2501,6 @@ function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", 
         )}
       </div>
 
-
-      {/* Per-diagnosis protocol prompt cards */}
-      {!readOnly && pendingDiagPrompts.length > 0 && (
-        <div className="flex flex-col gap-1 mb-2">
-          {pendingDiagPrompts.map(({ diagnosisDesc, laterality: diagLat, matches }, i) => (
-            <ProtocolPromptCard
-              key={`${diagnosisDesc}-${diagLat ?? "none"}-${i}`}
-              diagnosisDesc={diagLat ? `${diagnosisDesc} (${diagLat})` : diagnosisDesc}
-              onConfirm={() => onConfirmPrompt({ diagnosisDesc, laterality: diagLat, matches })}
-              onDismiss={() => onDismissPrompt(diagnosisDesc, matches)}
-            />
-          ))}
-        </div>
-      )}
 
       {showPresets && <ProtocolPanel onApply={(protocol) => { onApplyProtocol([protocol], protocol.name, false); setShowPresets(false); }} onClose={() => setShowPresets(false)} />}
 

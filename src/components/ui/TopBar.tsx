@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSidebar } from "./SidebarContext";
+import { MatchHighlight } from "./MatchHighlight";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Bell, Search, LogOut, ArrowLeft, Menu } from "lucide-react";
 import Link from "next/link";
@@ -419,8 +420,8 @@ export function TopBar({ name, role }: { name: string; role: string }) {
                       }`}
                     >
                       <span className="flex items-center gap-2 min-w-0">
-                        <span className="text-caption sm:text-sm font-semibold text-[var(--color-ink-800)] truncate">{r.name}</span>
-                        <span className="text-caption sm:text-xs text-[var(--color-ink-400)] shrink-0">{r.udid}</span>
+                        <span className="text-caption sm:text-sm font-semibold text-[var(--color-ink-800)] truncate"><MatchHighlight text={r.name} term={q} /></span>
+                        <span className="text-caption sm:text-xs text-[var(--color-ink-400)] shrink-0"><MatchHighlight text={r.udid} term={q} /></span>
                         <span className="text-caption sm:text-xs text-[var(--color-ink-400)] shrink-0 hidden sm:inline">{r.mobile}</span>
                       </span>
                       {r.matchText && (r.matchType === "complaint" || r.matchType === "diagnosis") && (

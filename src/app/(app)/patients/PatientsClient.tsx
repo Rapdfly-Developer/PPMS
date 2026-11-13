@@ -17,6 +17,7 @@ import { ICD10_OPHTHALMOLOGY } from "@/lib/constants";
 import { getCustomDiagnoses } from "@/lib/customDiagnoses";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { fileHref } from "@/lib/file-href";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PatientRow {
@@ -702,8 +703,8 @@ export function PatientsClient({
                             onMouseDown={() => { setDiagnosisInput(d.description); navigate({ diagnosis: d.description, page: "1" }); setDiagnosisOpen(false); }}
                             className="px-3 py-1.5 text-label text-[var(--color-ink-800)] cursor-pointer hover:bg-[var(--color-primary-50)] flex items-center justify-between gap-2"
                           >
-                            <span className="truncate">{d.description}</span>
-                            {d.code && <span className="font-mono text-caption text-[var(--color-ink-400)] shrink-0">{d.code}</span>}
+                            <span className="truncate"><MatchHighlight text={d.description} term={diagnosisInput} /></span>
+                            {d.code && <span className="font-mono text-caption text-[var(--color-ink-400)] shrink-0"><MatchHighlight text={d.code} term={diagnosisInput} /></span>}
                           </li>
                         ))}
                       </ul>
@@ -758,7 +759,7 @@ export function PatientsClient({
                             onMouseDown={() => { setComplaintInput(s); navigate({ complaint: s, page: "1" }); setComplaintOpen(false); }}
                             className="px-3 py-1.5 text-label text-[var(--color-ink-800)] cursor-pointer hover:bg-[var(--color-primary-50)]"
                           >
-                            {s}
+                            <MatchHighlight text={s} term={complaintInput} />
                           </li>
                         ))}
                       </ul>

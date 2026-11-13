@@ -95,7 +95,7 @@ function PresetFieldCombobox({
                   onMouseDown={(e) => { e.preventDefault(); setInputVal(opt); onChange(opt); setOpen(false); }}
                   className={`w-full text-left px-3 py-1.5 text-xs transition-colors hover:bg-[var(--color-surface-sunken)] ${opt === value ? "font-semibold text-[var(--color-primary-700)] bg-[var(--color-primary-50)]" : "text-[var(--color-ink-700)]"}`}
                 >
-                  {opt}
+                  <MatchHighlight text={opt} term={inputVal} />
                 </button>
               </li>
             ))
@@ -116,6 +116,7 @@ import { Toast } from "@/components/ui/Toast";
 import { format } from "date-fns";
 import { getCustomDiagnoses, saveCustomDiagnosis, isDuplicateDescription, type CustomDx } from "@/lib/customDiagnoses";
 import { saveCustomMedication } from "@/lib/ophthalmic-medications";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
 type DiagnosisItem = { code: string; description: string; custom: boolean; category?: string };
 
@@ -771,13 +772,27 @@ export function AssessmentTab({
       {/* ── Provisional Diagnosis ─────────────────────────────────────────── */}
       <div {...(overview && provisionalDiagnoses.length === 0 ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Provisional Diagnosis</p>
+        <div className="flex items-center gap-2 mb-3">
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)] shrink-0">Provisional Diagnosis</p>
+          {/* Same protocol prompts as the Plan tab, as small pills beside the heading; Confirm / No act on both */}
+          {!readOnly && (protocolPrompts?.prompts.length ?? 0) > 0 && (
+            <div data-overview-hide className="flex-1 flex flex-wrap items-center justify-center gap-1.5 min-w-0">
+              {protocolPrompts!.prompts.map((p, i) => (
+                <ProtocolPromptCard
+                  key={`${p.diagnosisDesc}-${p.laterality ?? "none"}-${i}`}
+                  compact
+                  diagnosisDesc={p.laterality ? `${p.diagnosisDesc} (${p.laterality})` : p.diagnosisDesc}
+                  onConfirm={() => protocolPrompts!.confirm(p)}
+                  onDismiss={() => protocolPrompts!.dismiss(p.diagnosisDesc, p.matches)}
+                />
+              ))}
+            </div>
+          )}
           <button
             type="button"
             data-overview-hide
             onClick={() => setProvHistoryOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
+            className="ml-auto shrink-0 flex items-center gap-1 text-xs text-[#0F766E] bg-[#EEF8F7] hover:bg-[#DCF3F1] font-medium px-2.5 py-0.5 rounded-full border border-[#B2DEDA] transition-colors"
           >
             <History size={11} />
             History {priorProvGroups.length > 0 && `(${priorProvGroups.length})`}
@@ -922,12 +937,12 @@ export function AssessmentTab({
                                 i === provSuggestionIndex ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : ""
                               }`}
                             >
-                              <span className="flex-1 min-w-0 truncate">{s.description}</span>
+                              <span className="flex-1 min-w-0 truncate"><MatchHighlight text={s.description} term={provQuery} /></span>
                               <div className="flex items-center gap-2 shrink-0">
                                 {s.custom && (
                                   <span className="text-caption font-semibold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Custom</span>
                                 )}
-                                {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]">{s.code}</span>}
+                                {s.code && <span className="text-xs font-mono text-[var(--color-ink-400)]"><MatchHighlight text={s.code} term={provQuery} /></span>}
                               </div>
                             </button>
                           </li>
@@ -974,19 +989,6 @@ export function AssessmentTab({
       </Card>
       </div>
 
-      {/* Same protocol prompts as the Plan tab — Confirm / No act on both */}
-      {!readOnly && (protocolPrompts?.prompts.length ?? 0) > 0 && (
-        <div data-overview-hide className="flex flex-col gap-2">
-          {protocolPrompts!.prompts.map((p, i) => (
-            <ProtocolPromptCard
-              key={`${p.diagnosisDesc}-${p.laterality ?? "none"}-${i}`}
-              diagnosisDesc={p.laterality ? `${p.diagnosisDesc} (${p.laterality})` : p.diagnosisDesc}
-              onConfirm={() => protocolPrompts!.confirm(p)}
-              onDismiss={() => protocolPrompts!.dismiss(p.diagnosisDesc, p.matches)}
-            />
-          ))}
-        </div>
-      )}
     </div>
 
 
@@ -1156,7 +1158,7 @@ export function AssessmentTab({
                                       }}
                                       className="w-full text-left px-3.5 py-2 hover:bg-[var(--color-surface-sunken)] transition-colors"
                                     >
-                                      <p className="text-xs font-medium text-[var(--color-ink-800)] truncate">{med.drugName}</p>
+                                      <p className="text-xs font-medium text-[var(--color-ink-800)] truncate"><MatchHighlight text={med.drugName} term={m.drugName} /></p>
                                       {(med.dosage || med.frequency || med.duration) && (
                                         <p className="text-caption text-[var(--color-ink-400)] mt-0.5 truncate">
                                           {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}

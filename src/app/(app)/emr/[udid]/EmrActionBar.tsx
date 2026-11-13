@@ -9,6 +9,7 @@ import { useSidebar } from "@/components/ui/SidebarContext";
 import { Toast } from "@/components/ui/Toast";
 import { closeVisit, markPartialDispense, passOverToDoctor } from "./actions";
 import { useEMRSaveContext } from "./EmrSaveContext";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
 const PARTIAL_REASONS = [
   "Glasses not ready",
@@ -143,7 +144,7 @@ function PartialDispenseModal({
                             : "text-[var(--color-ink-800)] hover:bg-gray-50"
                         }`}
                       >
-                        {r}
+                        <span><MatchHighlight text={r} term={query} /></span>
                         {reason === r && <CheckCircle2 size={13} className="text-amber-600 shrink-0" />}
                       </button>
                     </li>
@@ -168,7 +169,7 @@ function PartialDispenseModal({
                         }`}
                       >
                         <Clock size={12} className="text-[var(--color-ink-400)] shrink-0" />
-                        {r}
+                        <span><MatchHighlight text={r} term={query} /></span>
                         {reason === r && <CheckCircle2 size={13} className="ml-auto text-amber-600 shrink-0" />}
                       </button>
                     </li>

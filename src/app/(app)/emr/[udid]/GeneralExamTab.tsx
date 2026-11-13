@@ -22,6 +22,7 @@ import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { FREQUENCY_OPTIONS, DOSE_OPTIONS, DURATION_OPTIONS } from "@/lib/medication-options";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
 const LATERALITY_OPTIONS = ["RE", "LE", "OU"] as const;
 // Default keywords for the Family History card (doctors can add their own).
@@ -939,7 +940,7 @@ function CmDrugInput({ value, onChange, className }: { value: string; onChange: 
               onClick={() => { onChange(med.name, med.defaultDose); setOpen(false); }}
               className="w-full text-left px-3 py-1.5 text-xs border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors"
             >
-              <span className="font-semibold">{med.name}</span>
+              <span className="font-semibold"><MatchHighlight text={med.name} term={value} /></span>
               {med.defaultDose && <span className="text-[var(--color-ink-400)] ml-1">· {med.defaultDose}</span>}
             </button>
           ))}
@@ -981,7 +982,7 @@ function CmOptionsInput({ value, options, onChange, placeholder, className }: { 
               onClick={() => { onChange(opt); setOpen(false); }}
               className="w-full text-left px-3 py-1.5 text-xs border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)] transition-colors"
             >
-              {opt}
+              <MatchHighlight text={opt} term={value} />
             </button>
           ))}
         </div>

@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BookmarkPlus, ChevronDown, FolderOpen, Loader2, Search, Settings2, Trash2, X } from "lucide-react";
 import { deleteIpdTemplate, renameIpdTemplate, saveIpdTemplate } from "../actions";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
 export interface SavedTemplate { id: string; kind: string; name: string; surgery: string | null; items: string[] }
 
@@ -174,7 +175,7 @@ export function EducationSetPicker({ value, sets, onPick, disabled }: { value: s
   const row = (x: PickableSet) => (
     <button key={x.id} type="button" onClick={() => { onPick(x); setOpen(false); setQ(""); }}
       className={`block w-full text-left px-3 py-1.5 hover:bg-[var(--color-primary-50)] ${x.label === value ? "bg-[var(--color-primary-50)]" : ""}`}>
-      <span className="text-sm text-[var(--color-ink-800)]">{x.label}</span>
+      <span className="text-sm text-[var(--color-ink-800)]"><MatchHighlight text={x.label} term={q} /></span>
       <span className="ml-1.5 text-[11px] text-[var(--color-ink-400)]">{x.points.length} points</span>
     </button>
   );

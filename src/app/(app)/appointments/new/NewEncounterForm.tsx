@@ -17,6 +17,7 @@ import { TealSelect } from "@/components/ui/TealSelect";
 import { keywordEntries } from "@/components/emr/KeywordField";
 import { CHIEF_COMPLAINT_FIELD_KEY } from "@/lib/constants";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import { chipMatcher, CHIP_MATCH_CLASS } from "@/lib/chip-match";
 
 const RELATIONSHIP_CHIPS = ["Brother", "Sister", "Parent", "Child", "Spouse", "Relative", "Friend", "Other"];
@@ -207,10 +208,6 @@ export function NewEncounterForm({
     setComposerError("");
     const text = composerText.trim();
     if (!text) return;
-    if (visitType === "General OPD") {
-      if (!composerLat) { setComposerError("Please select laterality (RE, LE, or OU)."); return; }
-      if (!composerSinceNum) { setComposerError("Please enter the duration."); return; }
-    }
     const entry: ComplaintEntry = { lat: composerLat, text, sinceNum: composerSinceNum, sinceUnit: composerSinceUnit };
     if (isDuplicateEntry(entry, bullets, editingIndex ?? undefined)) {
       setComposerError("This complaint is already in the list.");
@@ -278,10 +275,6 @@ export function NewEncounterForm({
     const isGeneralOPD = visitType === "General OPD";
     let finalEntries = [...bullets];
     if (composerText.trim()) {
-      if (isGeneralOPD) {
-        if (!composerLat) { setError("Please select laterality, RE, LE, or OU."); return; }
-        if (!composerSinceNum) { setError("Please select the 'Since' duration."); return; }
-      }
       const composerEntry: ComplaintEntry = {
         lat: composerLat, text: composerText.trim(),
         sinceNum: composerSinceNum, sinceUnit: composerSinceUnit,
@@ -435,8 +428,8 @@ export function NewEncounterForm({
                             {p.name.charAt(0)}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
-                            <p className="text-xs text-[var(--color-ink-400)]">{p.udid} · {p.age ?? "?"}y {p.sex.charAt(0)}</p>
+                            <p className="text-sm font-medium text-[var(--color-ink-900)]"><MatchHighlight text={p.name} term={search} /></p>
+                            <p className="text-xs text-[var(--color-ink-400)]"><MatchHighlight text={p.udid} term={search} /> · {p.age ?? "?"}y {p.sex.charAt(0)}</p>
                           </div>
                         </button>
                       </li>
@@ -582,8 +575,8 @@ export function NewEncounterForm({
                                 <button type="button" onClick={() => { setReferralPatient(p); setRefSearch(""); }} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--color-primary-50)] transition-colors">
                                   <div className="size-7 rounded-full bg-[var(--color-surface-sunken)] flex items-center justify-center text-[var(--color-ink-500)] text-xs font-bold shrink-0">{p.name.charAt(0)}</div>
                                   <div>
-                                    <p className="text-sm font-medium text-[var(--color-ink-900)]">{p.name}</p>
-                                    <p className="text-xs text-[var(--color-ink-400)]">{p.udid} · {p.age ?? "?"}y {p.sex.charAt(0)}</p>
+                                    <p className="text-sm font-medium text-[var(--color-ink-900)]"><MatchHighlight text={p.name} term={refSearch} /></p>
+                                    <p className="text-xs text-[var(--color-ink-400)]"><MatchHighlight text={p.udid} term={refSearch} /> · {p.age ?? "?"}y {p.sex.charAt(0)}</p>
                                   </div>
                                 </button>
                               </li>

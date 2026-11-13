@@ -12,6 +12,7 @@ import {
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList, ChevronLeft,
 } from "lucide-react";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
+import { MatchHighlight } from "@/components/ui/MatchHighlight";
 import type { ActivityEvent, ActivityTone } from "@/lib/counselling-activity";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
@@ -523,7 +524,7 @@ function SuggestInput({
           {matches.map((o) => (
             <button key={o} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(o); setOpen(false); }}
               className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--color-primary-50)] ${o === value ? "text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"}`}>
-              {o}
+              <span><MatchHighlight text={o} term={value} /></span>
               {o === value && <Check size={14} />}
             </button>
           ))}
@@ -1073,7 +1074,7 @@ export function CounsellingDetail({
                       {implants.map((s) => (
                         <button key={s} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
                           className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
-                          {s}
+                          <MatchHighlight text={s} term={implant} />
                         </button>
                       ))}
                     </div>
@@ -1497,7 +1498,7 @@ function AddInvestigationsModal({
                   return (
                     <button key={i.name} type="button" disabled={isOrdered} onMouseDown={(e) => e.preventDefault()} onClick={() => toggle(i.name)}
                       className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-sm text-left text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 disabled:hover:bg-transparent">
-                      <span>{i.name}</span>
+                      <span><MatchHighlight text={i.name} term={query} /></span>
                       {isOrdered
                         ? <span className="text-micro font-semibold text-[var(--color-ink-400)]">Already ordered</span>
                         : isPicked && <Check size={14} className="text-[var(--color-primary-600)]" />}
