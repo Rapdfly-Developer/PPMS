@@ -46,11 +46,11 @@ type CardFilter = "PENDING" | "PARTIAL" | "COMPLETED" | "NOSHOW" | "ALL";
 export const STATUS_META: Record<CounsellingStatus, { label: string; pill: string; dot: string }> = {
   PENDING:   { label: "Pending",                    pill: "bg-slate-100 text-slate-600 border border-slate-200",       dot: "bg-slate-400" },
   PARTIAL:   { label: "Fit for Surgery",            pill: "bg-amber-50 text-amber-700 border border-amber-300",        dot: "bg-amber-500" },
-  COMPLETED: { label: "Eligible for Surgery",       pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
+  COMPLETED: { label: "Completed",                  pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
   POSTPONED: { label: "Date Not Confirmed",         pill: "bg-orange-50 text-orange-700 border border-orange-200",     dot: "bg-orange-500" },
 };
 
-export function StatusBadge({ status, expired, eligible = true }: { status: CounsellingStatus; expired?: boolean; eligible?: boolean }) {
+export function StatusBadge({ status, expired }: { status: CounsellingStatus; expired?: boolean }) {
   if (expired) {
     return (
       <span className="inline-flex items-center gap-1.5 text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap bg-red-50 text-red-700 border border-red-200">
@@ -63,7 +63,7 @@ export function StatusBadge({ status, expired, eligible = true }: { status: Coun
   return (
     <span className={`inline-flex items-center gap-1.5 text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${m.pill}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${m.dot}`} />
-      {status === "COMPLETED" && !eligible ? "Advance Paid" : m.label}
+      {m.label}
     </span>
   );
 }

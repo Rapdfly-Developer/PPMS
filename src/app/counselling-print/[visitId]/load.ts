@@ -4,7 +4,8 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
 import { defaultConsents, defaultEducation, upgradeConsents, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
-import { parseCounsellingConsents, parseCounsellingEducation } from "@/lib/counselling-sheets";
+import { parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
+import { SUPERSEDED } from "@/lib/counselling";
 
 export const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
 
@@ -19,7 +20,19 @@ export async function loadCounsellingPrint(visitId: string) {
       hospital: { select: { name: true, address: true, contact: true, logoUrl: true, email: true } },
       doctor: { select: { name: true, qualifications: true, specialty: true } },
       patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true } },
-      counsellingRecord: { select: { implant: true, dateOfSurgery: true, consents: true, education: true } },
+      advisedSurgeryNotes: true,
+      counsellingRecord: {
+        select: {
+          implant: true, dateOfSurgery: true, consents: true, education: true, implantDetails: true,
+          paymentMode: true, paymentType: true, schemeName: true, policyNumber: true, paymentDocs: true,
+          estimateAmount: true, advancePaid: true, advanceReceived: true, fitForSurgery: true, fitByName: true, doctorReviewedAt: true,
+        },
+      },
+      investigationOrders: {
+        where: { status: { not: SUPERSEDED } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true, testName: true, laterality: true, notes: true, doctorNotes: true, resultRef: true, resultAt: true, createdAt: true },
+      },
     },
   });
   if (!v) notFound();
@@ -32,5 +45,6 @@ export async function loadCounsellingPrint(visitId: string) {
   };
   const consents: ConsentsData = upgradeConsents(parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx), ctx);
   const education: EducationData = parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx);
-  return { v, pid, ctx, consents, education };
+  const implantDetails = parseCounsellingImplant(rec?.implantDetails);
+  return { v, pid, ctx, consents, education, implantDetails };
 }

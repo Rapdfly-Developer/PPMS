@@ -7,7 +7,7 @@ import { addMonths, differenceInCalendarDays, differenceInMonths, eachDayOfInter
 import { motion } from "framer-motion";
 import {
   UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
-  Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
+  Upload, X, AlertTriangle, Info, CalendarClock, IndianRupee, RotateCcw, Search,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, ChevronLeft,
   Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, Paperclip, Trash2, UserX,
@@ -31,7 +31,7 @@ import {
 } from "@/lib/counselling";
 import {
   saveCounsellingDetails, markFitForSurgery, reopenCounselling, addCounsellingInvestigations,
-  postponeSurgery, resumeCounselling, saveAdvance, markEligibleForSurgery, attachCounsellingReport,
+  postponeSurgery, resumeCounselling, saveAdvance, savePreOp, attachCounsellingReport,
   addCounsellingExtraReport, removeCounsellingReport, removeCounsellingExtraReport, rescheduleNoShow,
 } from "../actions";
 import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
@@ -39,6 +39,7 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { STATUS_META } from "../CounsellingClient";
 import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
+import { CounsellingOverview, CounsellingPrintModal } from "./CounsellingPrintOverview";
 
 export interface CounsellingOrder {
   id: string;
@@ -79,6 +80,7 @@ export interface CounsellingDetailData {
     estimateAmount: number | null;
     advancePaid: number | null;
     advanceReceived: boolean;
+    preOpTime: string;
     fitForSurgery: boolean;
     eligibleForSurgery: boolean;
     surgeryDeferred: boolean;
@@ -826,9 +828,9 @@ function PaymentDocs({ docs, onChange, editable, typeLabel, button }: { docs: Pa
 }
 
 function SectionCard({
-  id, step, icon, title, right, locked, lockedText, children,
+  id, icon, title, right, locked, lockedText, children,
 }: {
-  id?: string; step: number; icon: React.ReactNode; title: string;
+  id?: string; step?: number; icon: React.ReactNode; title: string;
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
@@ -836,7 +838,6 @@ function SectionCard({
       <header className={`h-10 flex items-center gap-2.5 px-4 ${locked ? "" : "border-b border-[var(--color-border)]/70"}`}>
         <span className={`relative w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"}`}>
           {icon}
-          <span className={`absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-bold leading-[14px] text-center tabular-nums ${locked ? "bg-[var(--color-ink-300)] text-white" : "bg-[var(--color-primary-600)] text-white"}`}>{step}</span>
         </span>
         <p className={`flex-1 min-w-0 truncate text-[13px] font-semibold tracking-tight ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-900)]"}`}>
           {title}
@@ -985,14 +986,13 @@ type SheetId = "sheet" | "investigations" | "consents" | "education";
 const consentTabLabel = (c: ConsentItem) => (["General", "GVP", "Anaesthesia", "Negative"].includes(c.id) ? c.id : c.title);
 
 export function CounsellingDetail({
-  data, canEdit, canFit, canAddInvestigations, canEligible, canUpload, canViewProfile,
+  data, canEdit, canFit, canAddInvestigations, canUpload, canViewProfile,
 }: {
   data: CounsellingDetailData;
   canEdit: boolean;
   canFit: boolean;
   /** Ordering more investigations has its own permission (not for counsellors unless the Super Admin ticks it). */
   canAddInvestigations: boolean;
-  canEligible: boolean;
   canUpload: boolean;
   canViewProfile: boolean;
 }) {
@@ -1024,10 +1024,13 @@ export function CounsellingDetail({
   const [advance, setAdvance]           = useState(rec.advancePaid != null ? String(rec.advancePaid) : "");
   const [tickOnly, setTickOnly]         = useState(rec.advanceReceived && rec.advancePaid == null);
   const [advanceReceived, setAdvanceReceived] = useState(rec.advanceReceived);
+  const [preOpTime, setPreOpTime] = useState(rec.preOpTime || (data.preOp ? format(new Date(data.preOp.dateTime), "HH:mm") : ""));
 
   const [sheet, setSheet] = useState<SheetId>("sheet");
-  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "eligible" | "noShow">(null);
+  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "noShow">(null);
   const [showActivity, setShowActivity] = useState(false);
+  const [overviewMode, setOverviewMode] = useState(false);
+  const [showPrint, setShowPrint] = useState(false);
   const [error, setError] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -1052,7 +1055,8 @@ export function CounsellingDetail({
   const advanceEditable = canEdit && rec.fitForSurgery && !expired;
   const advanceDirty = advanceEditable && JSON.stringify(advancePayload) !== JSON.stringify({ advancePaid: rec.advancePaid, advanceReceived: rec.advanceReceived });
   const sheetDirty = sheetsEditable && snapshot !== savedSnapshot;
-  const dirty = sheetDirty || advanceDirty;
+  const preOpDirty = canEdit && preOpTime !== (rec.preOpTime || (data.preOp ? format(new Date(data.preOp.dateTime), "HH:mm") : ""));
+  const dirty = sheetDirty || advanceDirty || preOpDirty;
 
   // Leaving the page with unsaved changes asks first
   useEffect(() => {
@@ -1071,6 +1075,11 @@ export function CounsellingDetail({
     }
     if (advanceDirty) {
       const r = await saveAdvance(data.visitId, advancePayload);
+      if (r.error) return r.error;
+    }
+    // Books, moves or cancels the pre-op appointment to match what was just saved
+    if (canEdit) {
+      const r = await savePreOp(data.visitId, preOpTime);
       if (r.error) return r.error;
     }
     return undefined;
@@ -1187,7 +1196,7 @@ export function CounsellingDetail({
     return {};
   });
 
-  const statusLabel = expired ? "Reports Expired" : data.status === "COMPLETED" && !rec.eligibleForSurgery ? "Advance Paid" : STATUS_META[data.status].label;
+  const statusLabel = expired ? "Reports Expired" : STATUS_META[data.status].label;
   const daysToSurgery = dateOfSurgery ? differenceInCalendarDays(new Date(`${dateOfSurgery}T00:00:00`), new Date()) : null;
 
   const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" · ");
@@ -1465,27 +1474,26 @@ export function CounsellingDetail({
                 )}
               </div>
             )}
+            {/* Pre-op appointment: booked by Save on the surgery date at this time */}
+            <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <label className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-[var(--color-ink-400)] uppercase tracking-[0.08em] whitespace-nowrap">
+                <CalendarClock size={13} /> Pre-op time
+              </label>
+              <input type="time" value={preOpTime} disabled={!canEdit} onChange={(e) => setPreOpTime(e.target.value)}
+                className="h-8 w-32 rounded-lg border border-[var(--color-border)] bg-white px-2 text-sm tabular-nums text-[var(--color-ink-900)] focus:outline-none focus:border-[var(--color-primary-500)]" />
+              <span className="text-caption text-[var(--color-ink-500)] min-w-0">
+                {data.preOp && data.preOp.status !== "CANCELLED" && !preOpDirty
+                  ? <>Pre-op booked on <b className="text-[var(--color-ink-800)]">{fmtDateTime(data.preOp.dateTime)}</b></>
+                  : advanceDone || advancePayload.advanceReceived
+                    ? "Save books the pre-op on the surgery date at this time."
+                    : "Booked on the surgery date once the advance is recorded."}
+              </span>
+            </div>
             {canEdit && <p className="text-caption text-[var(--color-ink-400)]">Saved with the Save button below.</p>}
           </div>
         )}
       </SectionCard>
 
-      {/* ── H ─────────────────────────────────────────────────────── */}
-      <SectionCard
-        step={5} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
-        locked={!(rec.fitForSurgery && advanceDone)} lockedText="Unlocks after the advance is recorded"
-        right={rec.eligibleForSurgery ? <DoneTag tone="emerald">Eligible</DoneTag> : null}
-      >
-        {rec.eligibleForSurgery ? (
-          <p className="text-sm text-[var(--color-ink-700)]">
-            Confirmed by <b>{rec.eligibleByName ?? "-"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
-          </p>
-        ) : canEligible ? (
-          <p className="text-caption sm:text-xs text-[var(--color-ink-500)]">Press <b>Save &amp; Finalize</b> below: verify date, implant and surgery, then book the pre-op.</p>
-        ) : (
-          <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
-        )}
-      </SectionCard>
     </div>
   );
 
@@ -1613,15 +1621,6 @@ export function CounsellingDetail({
   const desktopSidebarOffset = collapsed
     ? "min-[1025px]:left-16"
     : "min-[1025px]:left-60 min-[1920px]:left-[268px] min-[2560px]:left-[288px] min-[3840px]:left-[312px]";
-  // Save also finalizes once the patient is Fit and the advance is recorded (saved, or entered now)
-  const advanceEntered = advanceDone || advancePayload.advanceReceived || (advancePayload.advancePaid ?? 0) > 0;
-  const readyToFinalize = canEligible && rec.fitForSurgery && advanceEntered && !rec.eligibleForSurgery && !expired && !rec.surgeryDeferred;
-  const saveAndFinalize = () => run(async () => {
-    // Save first, so what is verified is what gets finalized
-    const err = await saveAll();
-    return err ? { error: err } : {};
-  }, () => setModal("eligible"));
-
   return (
     <div className="fade-in pb-28">
 
@@ -1741,12 +1740,6 @@ export function CounsellingDetail({
       </section>
 
       {/* ── Banners ───────────────────────────────────────────────────── */}
-      {rec.eligibleForSurgery && (
-        <Banner tone="emerald" icon={<Lock size={15} />}>
-          Counselling finalized{rec.eligibleByName ? <> by <b>{rec.eligibleByName}</b></> : ""}{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
-          {data.preOp && <> · Pre-op appointment on <b>{fmtDateTime(data.preOp.dateTime)}</b></>}
-        </Banner>
-      )}
       {rec.surgeryDeferred && (
         <Banner tone="orange" icon={<PauseCircle size={15} />}
           action={canFit && <button className={`${btnOutline} !h-8 !py-0 text-xs`} disabled={pending} onClick={() => run(() => resumeCounselling(data.visitId))}><RotateCcw size={13} /> Resume</button>}>
@@ -1764,37 +1757,55 @@ export function CounsellingDetail({
 
       {/* ── Sheets (tabs like the EMR) ────────────────────────────────── */}
       <div className="mt-3">
-        <Tabs tabs={sheetTabs} activeTab={sheet} onTabChange={(id) => setSheet(id as SheetId)} keepMounted />
+        <Tabs
+          tabs={sheetTabs}
+          activeTab={sheet}
+          onTabChange={(id) => setSheet(id as SheetId)}
+          overviewMode={overviewMode}
+          onOverviewToggle={() => setOverviewMode((v) => !v)}
+          overviewContent={overviewMode ? (
+            <CounsellingOverview
+              sheet={sheet}
+              surgery={data.surgery} laterality={data.laterality} anaesthesia={data.anaesthesia} surgeryNotes={data.surgeryNotes}
+              implant={implant} dateOfSurgery={dateOfSurgery} implantInfo={implantInfo}
+              payment={paymentLabel(paymentMode, paymentType)}
+              payerLabel={cashless?.nameLabel ?? ""} payer={cashless ? schemeName : ""}
+              idLabel={cashless?.idLabel ?? ""} payerId={cashless ? policyNumber : ""}
+              docs={cashless ? paymentDocs : []}
+              estimate={estimateNum != null ? rupees(estimateNum) : ""}
+              advance={advancePayload.advancePaid != null ? rupees(advancePayload.advancePaid) : advancePayload.advanceReceived ? "Received" : ""}
+              fit={rec.fitForSurgery} fitBy={rec.fitByName} fitAt={rec.fitAt}
+              orders={currentOrders} consents={consents.items} education={education}
+            />
+          ) : null}
+          keepMounted
+        />
       </div>
 
-      {/* ── Bottom bar: one Save button; it also finalizes once the advance is recorded ── */}
+      {/* ── Bottom bar: one Save button ── */}
       <div className={`fixed bottom-16 lg:bottom-0 short:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-3 md:px-8 py-3 flex flex-wrap items-center gap-2 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200`}>
         <div className="mr-auto flex flex-wrap items-center gap-2 min-w-0">
-          {rec.eligibleForSurgery ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700"><CheckCircle2 size={12} /> Finalized</span>
-          ) : (
-            <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+          <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
               advanceDone ? "bg-emerald-50 border-emerald-200 text-emerald-700" : rec.fitForSurgery ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-500)]"
             }`}>
               <IndianRupee size={12} />
               {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Fit for Surgery"}
             </span>
-          )}
           {canEdit && (
             <span className={`text-xs font-medium ${dirty ? "text-amber-700" : savedFlash ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
               {dirty ? "Unsaved changes" : savedFlash ? "Saved" : "All changes saved"}
             </span>
           )}
         </div>
+        <button type="button" onClick={() => setShowPrint(true)} disabled={pending}
+          className="h-10 inline-flex items-center gap-1.5 px-4 rounded-xl text-sm font-medium bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] disabled:opacity-50 transition-colors whitespace-nowrap">
+          <Printer size={14} /> Print <ChevronDown size={12} />
+        </button>
         {canEdit && (
-          <button type="button" onClick={readyToFinalize ? saveAndFinalize : save} disabled={pending || (!dirty && !readyToFinalize)}
-            className={`h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors ${
-              readyToFinalize
-                ? "bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)]"
-                : "border border-[var(--color-primary-300)] bg-white text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
-            }`}>
-            {readyToFinalize ? <FileSignature size={15} /> : <Save size={15} />}
-            {pending ? "Saving..." : readyToFinalize ? "Save & Finalize" : "Save"}
+          <button type="button" onClick={save} disabled={pending || !dirty}
+            className="h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)]">
+            <Save size={15} />
+            {pending ? "Saving..." : "Save"}
           </button>
         )}
       </div>
@@ -1802,6 +1813,13 @@ export function CounsellingDetail({
       {showActivity && <ActivityDrawer data={data} onClose={() => setShowActivity(false)} />}
 
       {/* Modals */}
+      {showPrint && (
+        <CounsellingPrintModal
+          visitId={data.visitId} consents={consents.items} hasOrders={currentOrders.length > 0}
+          onPrint={(href) => (canEdit ? printSaved(href) : printInPlace(href))}
+          onClose={() => setShowPrint(false)}
+        />
+      )}
       {modal === "fit" && (
         <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)} wide>
           <div className="grid grid-cols-1 gap-3">
@@ -1847,11 +1865,11 @@ export function CounsellingDetail({
             )}
           </div>
 
-          {/* Freeze notice */}
+          {/* What happens next */}
           <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
             <div className="flex items-center gap-2 bg-amber-100/70 px-3.5 py-2">
-              <Lock size={13} className="text-amber-700" />
-              <p className="text-xs font-bold text-amber-900">Before you confirm</p>
+              <Info size={13} className="text-amber-700" />
+              <p className="text-xs font-bold text-amber-900">Good to know</p>
             </div>
             <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
               <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The patient moves to <b>Partial</b>. Every field stays editable.</span></li>
@@ -1872,7 +1890,7 @@ export function CounsellingDetail({
                 if (err) return { error: err };
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
-              <ShieldCheck size={15} /> Confirm &amp; Freeze
+              <ShieldCheck size={15} /> Confirm Fit for Surgery
             </button>
           </div>
         </Modal>
@@ -1892,24 +1910,6 @@ export function CounsellingDetail({
       {modal === "postpone" && <PostponeModal pending={pending} error={error} onClose={() => setModal(null)}
         onSubmit={(p) => run(() => postponeSurgery(data.visitId, p), () => setModal(null))} />}
 
-      {modal === "eligible" && (
-        <EligibleModal
-          pending={pending} error={error} onClose={() => setModal(null)}
-          laterality={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia}
-          implant={implant || "-"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}
-          paymentOption={paymentLabel(paymentMode, paymentType) || "-"}
-          payerLabel={cashless?.nameLabel ?? "Covered by"} payer={cashless ? schemeName : ""}
-          idLabel={cashless?.idLabel ?? "ID"} payerId={cashless ? policyNumber : ""}
-          estimate={rupees(estimateNum)}
-          advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "-"}
-          pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
-          onSubmit={(time, notes) => run(async () => {
-            const err = await saveAll();
-            if (err) return { error: err };
-            return markEligibleForSurgery(data.visitId, time, notes);
-          }, () => setModal(null))}
-        />
-      )}
     </div>
   );
 }
@@ -2090,137 +2090,3 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   );
 }
 
-/* ── H. Eligible — final sign-off: verify each item twice, then book pre-op ── */
-type VerifyKey = "date" | "implant" | "surgery";
-
-/** A confirm line (same layout as the Fit pop-up) with the 1st and 2nd check beside it. */
-function VerifyLine({ label, strong, first, second, onFirst, onSecond, children }: {
-  label: string; strong?: boolean; first: boolean; second: boolean; onFirst: () => void; onSecond: () => void; children: React.ReactNode;
-}) {
-  return (
-    <div className={`grid grid-cols-[8.5rem_minmax(0,1fr)_2.25rem_2.25rem] gap-3 items-center rounded-lg -mx-1.5 px-1.5 py-1 transition-colors ${first && second ? "bg-emerald-50" : ""}`}>
-      <p className="text-caption text-[var(--color-ink-400)] break-words">{label}</p>
-      <p className={`text-sm leading-snug break-words ${strong ? "font-bold text-[var(--color-ink-900)]" : "font-medium text-[var(--color-ink-800)]"}`}>{children}</p>
-      <div className="flex justify-center"><CheckDot on={first} onClick={onFirst} label={`1st check: ${label}`} /></div>
-      <div className="flex justify-center"><CheckDot on={second} disabled={!first} onClick={onSecond} label={`2nd check: ${label}`} /></div>
-    </div>
-  );
-}
-
-function CheckDot({ on, disabled, onClick, label }: { on: boolean; disabled?: boolean; onClick: () => void; label: string }) {
-  return (
-    <button type="button" onClick={onClick} disabled={disabled} aria-label={label} aria-pressed={on} title={disabled ? "Do the 1st check first" : label}
-      className={`w-7 h-7 rounded-full flex items-center justify-center border-2 transition-all disabled:cursor-not-allowed ${
-        on ? "bg-emerald-500 border-emerald-500 text-white"
-          : disabled ? "bg-[var(--color-surface-sunken)] border-dashed border-[var(--color-ink-300)] text-transparent"
-          : "bg-white border-[var(--color-ink-300)] text-transparent hover:border-emerald-400"
-      }`}>
-      <Check size={13} strokeWidth={3} />
-    </button>
-  );
-}
-
-function EligibleModal({
-  pending, error, onClose, onSubmit, laterality, surgery, anaesthesia, implant, date,
-  paymentOption, payerLabel, payer, idLabel, payerId, estimate, advance, pendingAmount,
-}: {
-  pending: boolean; error: string; onClose: () => void; onSubmit: (time: string, notes: string) => void;
-  laterality: string | null; surgery: string; anaesthesia: string | null; implant: string; date: string;
-  paymentOption: string; payerLabel: string; payer: string; idLabel: string; payerId: string;
-  estimate: string; advance: string; pendingAmount: string | null;
-}) {
-  const [first, setFirst] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
-  const [second, setSecond] = useState<Record<VerifyKey, boolean>>({ date: false, implant: false, surgery: false });
-  const [time, setTime] = useState("");
-  const [notes, setNotes] = useState("");
-
-  const keys: VerifyKey[] = ["surgery", "implant", "date"];
-  const checks = keys.reduce((n, k) => n + (first[k] ? 1 : 0) + (second[k] ? 1 : 0), 0);
-  const allChecked = checks === keys.length * 2;
-  const verify = (k: VerifyKey) => ({
-    first: first[k], second: second[k],
-    // un-ticking the 1st clears the 2nd
-    onFirst: () => { const on = !first[k]; setFirst({ ...first, [k]: on }); if (!on) setSecond({ ...second, [k]: false }); },
-    onSecond: () => setSecond({ ...second, [k]: !second[k] }),
-  });
-  const timeLabel = time ? format(new Date(`2000-01-01T${time}`), "h:mm a") : null;
-
-  return (
-    <Modal title="Confirm Eligible for Surgery" onClose={onClose} wide>
-      <div className="grid grid-cols-1 gap-3">
-        {/* Surgery — each item verified twice with the patient */}
-        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 px-3.5 py-3">
-          <div className="grid grid-cols-[minmax(0,1fr)_2.25rem_2.25rem] gap-3 items-center mb-2">
-            <p className="inline-flex items-center gap-1.5 text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)]"><Scissors size={13} /> Surgery · verify twice with the patient</p>
-            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] text-center">1st</p>
-            <p className="text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] text-center">2nd</p>
-          </div>
-          <div className="space-y-1">
-            <VerifyLine label="Surgery" {...verify("surgery")}>
-              {laterality && <span className="clinical-laterality mr-1">{laterality}</span>}{surgery}
-              {anaesthesia && <span className="text-[var(--color-ink-500)]"> · {anaesthesia}</span>}
-            </VerifyLine>
-            <VerifyLine label="Implant" {...verify("implant")}>{implant}</VerifyLine>
-            <VerifyLine label="Date of surgery" strong {...verify("date")}>{date}</VerifyLine>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="flex-1 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
-              <span className="block h-full rounded-full bg-emerald-500 transition-all duration-300" style={{ width: `${(checks / (keys.length * 2)) * 100}%` }} />
-            </span>
-            <span className={`text-caption font-semibold tabular-nums ${allChecked ? "text-emerald-700" : "text-[var(--color-ink-500)]"}`}>{checks}/{keys.length * 2} checks</span>
-          </div>
-        </div>
-
-        {/* Payment */}
-        <ConfirmCard icon={<Wallet size={13} />} title="Payment">
-          <ConfirmLine inline label="Option">{paymentOption}</ConfirmLine>
-          {payer && <ConfirmLine inline label={payerLabel}>{payer}</ConfirmLine>}
-          {payerId && <ConfirmLine inline label={idLabel}>{payerId}</ConfirmLine>}
-          <ConfirmLine inline label="Estimate">{estimate}</ConfirmLine>
-          <ConfirmLine inline label="Advance" strong>{advance}</ConfirmLine>
-          {pendingAmount && <ConfirmLine inline label="Pending">{pendingAmount}</ConfirmLine>}
-        </ConfirmCard>
-      </div>
-
-      {/* Pre-op appointment */}
-      <div className="mt-3 rounded-xl border border-[var(--color-border)] px-3.5 py-3">
-        <p className="flex items-center justify-between text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] mb-2">
-          <span className="inline-flex items-center gap-1.5"><CalendarCheck size={12} /> Pre-op appointment</span>
-          <span className="text-[var(--color-ink-500)]">{date}</span>
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] gap-3">
-          <InlineField label="Time" tight>
-            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={`${inputCls} sm:w-36`} />
-          </InlineField>
-          <InlineField label="Notes (optional)" tight>
-            <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputCls} placeholder="e.g. Report fasting, bring reports" />
-          </InlineField>
-        </div>
-      </div>
-
-      {/* Finalize notice */}
-      <div className="mt-4 rounded-xl overflow-hidden border border-amber-200">
-        <div className="flex items-center gap-2 bg-amber-100/70 px-3.5 py-2">
-          <Lock size={13} className="text-amber-700" />
-          <p className="text-xs font-bold text-amber-900">Before you confirm</p>
-        </div>
-        <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>This <b>finalizes counselling</b>; it can&apos;t be edited afterwards.</span></li>
-          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>Every field stays editable afterwards; a changed date does not move the pre-op appointment.</span></li>
-          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>A Pre-op appointment will be booked on <b className="whitespace-nowrap">{date}</b>{timeLabel ? <> at <b className="whitespace-nowrap">{timeLabel}</b></> : ""}.</span></li>
-        </ul>
-      </div>
-
-      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
-      <div className="flex items-center justify-between gap-3 mt-4">
-        <p className="text-caption text-[var(--color-ink-400)]">{allChecked ? (time ? "Ready to finalize." : "Pick the pre-op time to continue.") : "Tick every item twice to continue."}</p>
-        <div className="flex gap-2 shrink-0">
-          <button className={btnOutline} onClick={onClose}>Cancel</button>
-          <button className={`${btnPrimary} !bg-emerald-600 hover:!bg-emerald-700`} disabled={pending || !allChecked || !time} onClick={() => onSubmit(time, notes)}>
-            <CheckCircle2 size={15} /> Confirm &amp; Finalize
-          </button>
-        </div>
-      </div>
-    </Modal>
-  );
-}

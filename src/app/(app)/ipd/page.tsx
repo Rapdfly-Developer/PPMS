@@ -52,9 +52,9 @@ export default async function IpdPage() {
     ...completion(a.admissionType, a.forms),
   }));
 
-  // Upcoming: counselling partially completed (Fit for surgery, not yet Eligible or postponed), not yet admitted
+  // Upcoming: Fit for surgery (with or without the advance), date confirmed, not yet admitted
   const partial = await prisma.counsellingRecord.findMany({
-    where: { fitForSurgery: true, eligibleForSurgery: false, surgeryDeferred: false, visit: { ...scope, finalizedAt: { not: null } } },
+    where: { fitForSurgery: true, surgeryDeferred: false, visit: { ...scope, finalizedAt: { not: null } } },
     orderBy: { dateOfSurgery: "asc" },
     include: {
       visit: {

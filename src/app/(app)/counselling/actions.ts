@@ -272,6 +272,81 @@ export async function saveAdvance(visitId: string, data: { advancePaid: number |
   return {};
 }
 
+// ── Pre-op appointment: booked by Save once the patient is Fit with the advance ──
+
+const MOVABLE = ["REQUESTED", "CONFIRMED"];
+
+/**
+ * Store the pre-op time and keep the pre-op appointment in step: booked on the
+ * surgery date at that time once the patient is Fit and the advance is
+ * recorded; moved when the date or time changes; cancelled (if still ahead)
+ * when the patient is no longer ready.
+ */
+export async function savePreOp(visitId: string, time: string): Promise<Result> {
+  const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
+  if (!rec) return {};
+  const t = time.trim();
+  if (t && !/^\d{2}:\d{2}$/.test(t)) return { error: "Enter the pre-op time." };
+  if ((rec.preOpTime ?? "") !== t) await prisma.counsellingRecord.update({ where: { visitId }, data: { preOpTime: t || null } });
+
+  const existing = rec.preOpAppointmentId
+    ? await prisma.appointment.findUnique({ where: { id: rec.preOpAppointmentId }, select: { id: true, dateTime: true, status: true } })
+    : null;
+  const today = istTodayStr();
+  const active = existing && MOVABLE.includes(existing.status) && istTodayStr(existing.dateTime) >= today ? existing : null;
+
+  const advance = rec.advanceReceived || Number(rec.advancePaid ?? 0) > 0;
+  const expired = !!rec.reportsValidUntil && rec.reportsValidUntil < new Date();
+  const dateStr = rec.dateOfSurgery ? istTodayStr(rec.dateOfSurgery) : "";
+  const ready = rec.fitForSurgery && advance && !rec.surgeryDeferred && !expired && !!dateStr && dateStr >= today && !!t;
+
+  if (!ready) {
+    // Not ready any more (Fit cleared, advance removed, date pending): drop an upcoming pre-op
+    if (active && !(rec.fitForSurgery && advance && !rec.surgeryDeferred && t)) {
+      await prisma.$transaction([
+        prisma.appointment.update({ where: { id: active.id }, data: { status: "CANCELLED" } }),
+        prisma.counsellingRecord.update({ where: { visitId }, data: { preOpAppointmentId: null } }),
+      ]);
+      await writeAudit(user.id, "CounsellingRecord", visitId, "PRE_OP_CANCELLED", { appointmentId: active.id });
+      revalidatePath("/appointments");
+    }
+    refresh(visitId);
+    return {};
+  }
+
+  const dateTime = istDateTime(dateStr, t);
+  if (active && active.dateTime.getTime() === dateTime.getTime()) return {};
+
+  const clash = await prisma.appointment.findFirst({
+    where: {
+      doctorId: visit.doctorId, hospitalId: visit.hospitalId, dateTime, status: { notIn: ["CANCELLED", "NO_SHOW"] },
+      ...(active ? { id: { not: active.id } } : {}),
+    },
+    select: { id: true },
+  });
+  if (clash) return { error: "Saved, but the pre-op time is already booked for the doctor. Pick another time and Save again." };
+
+  const notes = [`Pre-op: ${surgeryLine(visit)}`, rec.implant ? `Implant: ${rec.implant}` : ""].filter(Boolean).join("\n");
+  if (active) {
+    await prisma.appointment.update({ where: { id: active.id }, data: { dateTime, notes } });
+    await writeAudit(user.id, "CounsellingRecord", visitId, "PRE_OP_MOVED", { from: active.dateTime, to: dateTime });
+  } else {
+    await prisma.$transaction(async (tx) => {
+      const appt = await tx.appointment.create({
+        data: {
+          patientId: visit.patientId, doctorId: visit.doctorId, hospitalId: visit.hospitalId,
+          dateTime, visitType: "Pre-op", status: "CONFIRMED", isWalkIn: false, notes,
+        },
+      });
+      await tx.counsellingRecord.update({ where: { visitId }, data: { preOpAppointmentId: appt.id } });
+    });
+    await writeAudit(user.id, "CounsellingRecord", visitId, "PRE_OP_BOOKED", { dateTime });
+  }
+  refresh(visitId);
+  revalidatePath("/appointments");
+  return {};
+}
+
 // ── Reports uploaded from the counselling screen ───────────────────────────
 
 const REPORT_PERMS = ["counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"];

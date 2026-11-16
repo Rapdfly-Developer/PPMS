@@ -1561,6 +1561,7 @@ model CounsellingRecord {
   fitByName             String?
   eligibleByName        String?
   preOpAppointmentId    String?
+  preOpTime             String?   // "HH:MM": the pre-op is booked on the surgery date at this time once Fit + advance
 
   // Counselling sheets (JSON, same shapes as the IPD forms; copied into the IPD file at Pre-op admission)
   implantDetails        String    @default("{}") // { manufacturer, model, power, aConstant }

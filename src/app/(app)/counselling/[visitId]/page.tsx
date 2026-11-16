@@ -127,6 +127,7 @@ export default async function CounsellingVisitPage({
       estimateAmount: rec?.estimateAmount != null ? Number(rec.estimateAmount) : null,
       advancePaid: rec?.advancePaid != null ? Number(rec.advancePaid) : null,
       advanceReceived: rec?.advanceReceived ?? false,
+      preOpTime: rec?.preOpTime ?? "",
       fitForSurgery: rec?.fitForSurgery ?? false,
       eligibleForSurgery: rec?.eligibleForSurgery ?? false,
       surgeryDeferred: rec?.surgeryDeferred ?? false,
@@ -160,7 +161,6 @@ export default async function CounsellingVisitPage({
       canEdit={userCan(user, "counselling.edit")}
       canFit={userCan(user, "counselling.fit")}
       canAddInvestigations={userCan(user, "counselling.addInvestigations")}
-      canEligible={userCan(user, "counselling.eligible")}
       canUpload={["counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"].some((p) => userCan(user, p))}
       canViewProfile={userCan(user, "patients.view")}
     />
