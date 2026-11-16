@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { activateLicense } from "@/lib/license";
+import { resignLicense } from "@/lib/license-sign";
 
 // Cashfree Payment Gateway helpers (server only).
 // Env vars: CASHFREE_APP_ID, CASHFREE_SECRET_KEY, CASHFREE_ENV ("production" | "sandbox").
@@ -123,4 +124,158 @@ export async function confirmOrderAndActivate(
 
   await activateLicense(doctorId, plan, orderId, paymentId, "");
   return { ok: true, status: "PAID", doctorId, plan, paymentId };
+}
+
+/**
+ * First real payment = no successful payment id on the license yet. Failed or
+ * abandoned attempts only touch the order id / status, so they never bring the
+ * first-month discount back. (Manual activations also keep it "first".)
+ */
+export function isFirstPayment(license: { razorpayPaymentId: string | null } | null | undefined): boolean {
+  return !license?.razorpayPaymentId;
+}
+
+// ── Monthly auto-pay (Cashfree Subscriptions) ───────────────────────────────
+
+const SUB_API_VERSION = "2025-01-01";
+
+function subHeaders() {
+  return { ...headers(), "x-api-version": SUB_API_VERSION };
+}
+
+export interface CashfreeSubscription {
+  subscription_id: string;
+  cf_subscription_id?: string;
+  subscription_status: string;
+  subscription_session_id?: string;
+  next_schedule_date?: string | null;
+  authorisation_details?: {
+    authorization_status?: string;
+    payment_id?: string;
+    authorization_amount?: number;
+  } | null;
+}
+
+export async function createCashfreeSubscription(input: {
+  subscriptionId: string;
+  planName: string;
+  recurringRupees: number;     // full monthly price, charged from month 2
+  firstRupees: number;         // taken at authorization (discounted on first payment)
+  firstChargeAt: Date;
+  expiresAt: Date;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  returnUrl: string;
+  tags: Record<string, string>;
+}): Promise<CashfreeSubscription> {
+  const res = await fetch(`${baseUrl()}/subscriptions`, {
+    method: "POST",
+    headers: subHeaders(),
+    body: JSON.stringify({
+      subscription_id: input.subscriptionId,
+      customer_details: {
+        customer_name: input.customerName,
+        customer_email: input.customerEmail,
+        customer_phone: input.customerPhone,
+      },
+      plan_details: {
+        plan_name: input.planName.slice(0, 40),
+        plan_type: "PERIODIC",
+        plan_currency: "INR",
+        plan_amount: input.recurringRupees,
+        plan_max_amount: input.recurringRupees,
+        plan_intervals: 1,
+        plan_interval_type: "MONTH",
+      },
+      authorization_details: {
+        authorization_amount: input.firstRupees,
+        authorization_amount_refund: false,
+        payment_methods: ["upi", "card"],
+      },
+      subscription_meta: {
+        return_url: input.returnUrl,
+        notification_channel: ["EMAIL", "SMS"],
+      },
+      subscription_first_charge_time: input.firstChargeAt.toISOString(),
+      subscription_expiry_time: input.expiresAt.toISOString(),
+      subscription_tags: input.tags,
+    }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as { message?: string }).message || "Cashfree could not set up auto-pay.");
+  return json as CashfreeSubscription;
+}
+
+export async function getCashfreeSubscription(subscriptionId: string): Promise<CashfreeSubscription> {
+  const res = await fetch(`${baseUrl()}/subscriptions/${encodeURIComponent(subscriptionId)}`, { headers: subHeaders() });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((json as { message?: string }).message || "Cashfree subscription lookup failed.");
+  return json as CashfreeSubscription;
+}
+
+export async function cancelCashfreeSubscription(subscriptionId: string): Promise<void> {
+  const res = await fetch(`${baseUrl()}/subscriptions/${encodeURIComponent(subscriptionId)}/manage`, {
+    method: "POST",
+    headers: subHeaders(),
+    body: JSON.stringify({ subscription_id: subscriptionId, action: "CANCEL" }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({}));
+    throw new Error((json as { message?: string }).message || "Cashfree could not cancel auto-pay.");
+  }
+}
+
+function addMonths(from: Date, months: number): Date {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+/**
+ * Applies a successful auto-pay payment to the license. Idempotent on the
+ * payment id (the razorpayPaymentId column holds the last applied payment).
+ *  - AUTH: the first payment taken at authorization (discounted on a first
+ *    payment). Activates the license for one month.
+ *  - CHARGE: a later monthly debit at the full price. Extends one month from
+ *    the current end date, so a debit that lands a little early loses nothing.
+ */
+export async function applyAutopayPayment(
+  subscriptionId: string,
+  paymentId: string,
+  kind: "AUTH" | "CHARGE",
+): Promise<{ applied: boolean; doctorId?: string }> {
+  const lic = await prisma.tenantLicense.findFirst({ where: { cashfreeSubscriptionId: subscriptionId } });
+  if (!lic) return { applied: false };
+  if (lic.razorpayPaymentId === paymentId) return { applied: false, doctorId: lic.doctorId };
+
+  const plan = (lic.autopayPlan ?? lic.plan) as PlanKey | null;
+  if (!plan || plan === "YEARLY") return { applied: false, doctorId: lic.doctorId };
+
+  if (kind === "AUTH" || !lic.subscriptionEndsAt) {
+    await activateLicense(lic.doctorId, plan, subscriptionId, paymentId, "");
+    const fresh = await prisma.tenantLicense.findUnique({ where: { doctorId: lic.doctorId }, select: { subscriptionEndsAt: true } });
+    await prisma.tenantLicense.update({
+      where: { doctorId: lic.doctorId },
+      data: { autopayStatus: "ACTIVE", autopayNextChargeAt: fresh?.subscriptionEndsAt ?? null },
+    });
+  } else {
+    const now = new Date();
+    const base = lic.subscriptionEndsAt > now ? lic.subscriptionEndsAt : now;
+    const end = addMonths(base, 1);
+    await prisma.tenantLicense.update({
+      where: { doctorId: lic.doctorId },
+      data: {
+        plan,
+        subscriptionEndsAt: end,
+        paymentStatus: "PAID",
+        razorpayPaymentId: paymentId,
+        isActive: true,
+        autopayStatus: "ACTIVE",
+        autopayNextChargeAt: end,
+      },
+    });
+    await resignLicense(lic.doctorId);
+  }
+  return { applied: true, doctorId: lic.doctorId };
 }

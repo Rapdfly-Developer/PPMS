@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { createCashfreeOrder, type PlanKey } from "@/lib/cashfree";
+import { createCashfreeOrder, isFirstPayment as isFirstPaymentFor, type PlanKey } from "@/lib/cashfree";
 
 // Amounts in paise, same as before. Cashfree takes rupees, converted below.
 const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
@@ -36,14 +36,14 @@ export async function POST(req: Request) {
   const [existing, doctor] = await Promise.all([
     prisma.tenantLicense.findUnique({
       where: { doctorId },
-      select: { subscriptionStartsAt: true, paymentStatus: true },
+      select: { razorpayPaymentId: true },
     }),
     prisma.doctor.findUnique({
       where: { id: doctorId },
       select: { name: true, contact: true },
     }),
   ]);
-  const isFirstPayment = !existing?.subscriptionStartsAt || existing.paymentStatus !== "PAID";
+  const isFirstPayment = isFirstPaymentFor(existing);
 
   const planConfig = PLANS[plan];
   const chargePaise =

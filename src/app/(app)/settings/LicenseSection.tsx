@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { getLicenseFullDetails, type LicenseFullData } from "./actions";
 import { activateLicenseKey, reactivateLicense, verifyLicense } from "@/app/license/actions";
-import { payWithCashfree } from "@/lib/cashfree-client";
+import { payWithCashfree, startCashfreeAutopay } from "@/lib/cashfree-client";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -777,6 +777,7 @@ const PLAN_TIERS: PlanTier[] = [
 
 function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onRefresh: () => void; onTabChange: (t: LicTab) => void }) {
   const [paying, setPaying]     = useState(false);
+  const [autopay, setAutopay]   = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
   const [payOk, setPayOk]       = useState(false);
   const [paidPlanKey, setPaidPlanKey] = useState<string | null>(null);
@@ -797,6 +798,14 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
     void description;
     const doctorId = data.doctorId;
     if (!doctorId) { setPayError("Doctor ID not found. Please refresh."); setPaying(false); return; }
+
+    // Monthly auto-pay: hands over to Cashfree's approval page (this window
+    // navigates away on success, so "Processing" simply stays until it does).
+    if (autopay && planKey !== "YEARLY") {
+      const err = await startCashfreeAutopay(planKey, doctorId);
+      if (err) { setPayError(err); setPaying(false); }
+      return;
+    }
 
     const r = await payWithCashfree(planKey, doctorId);
     if (r.ok) {
@@ -915,6 +924,24 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
             </button>
           </div>
         </div>
+      )}
+
+      {data.autopayStatus !== "ACTIVE" && (
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={autopay}
+            onChange={(e) => setAutopay(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-primary-600)]"
+          />
+          <span className="text-xs text-[var(--color-ink-700)]">
+            <span className="font-semibold">Auto-pay every month</span> (Professional and Enterprise).
+            {data.isFirstPayment
+              ? " The first month is charged at the discounted price; every month after that is charged at the regular price."
+              : " Charged at the regular price every month."}
+            {" "}You approve it once with UPI or card and can cancel any time from this page.
+          </span>
+        </label>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1292,7 +1319,55 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
     getLicenseFullDetails().then((d) => { setData(d); setLoading(false); });
   }
 
+  const [autopayNote, setAutopayNote] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [cancelling, setCancelling]   = useState(false);
+
   useEffect(() => { load(); }, []);
+
+  // Back from Cashfree's auto-pay approval page: ask the server to verify it.
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("autopay") !== "return") return;
+    window.history.replaceState(null, "", "/settings?section=licenses&tab=plans");
+    getLicenseFullDetails().then(async (d) => {
+      if (!d) return;
+      try {
+        const res = await fetch("/api/cashfree/subscription/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doctorId: d.doctorId }),
+        });
+        const v = await res.json() as { success?: boolean; error?: string };
+        setAutopayNote(v.success
+          ? { ok: true, msg: "Auto-pay is on. Your licence is active and will renew every month." }
+          : { ok: false, msg: v.error ?? "Auto-pay was not completed." });
+      } catch {
+        setAutopayNote({ ok: false, msg: "Could not confirm auto-pay. Refresh in a minute; if you were charged, contact support." });
+      }
+      load();
+    });
+  }, []);
+
+  async function cancelAutopay() {
+    if (!data) return;
+    if (!window.confirm("Stop auto-pay? Your licence stays active until the end of the month you have paid for, then it will not renew.")) return;
+    setCancelling(true);
+    try {
+      const res = await fetch("/api/cashfree/subscription/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorId: data.doctorId }),
+      });
+      const v = await res.json() as { success?: boolean; error?: string };
+      setAutopayNote(v.success
+        ? { ok: true, msg: "Auto-pay cancelled. Your licence stays active until its end date." }
+        : { ok: false, msg: v.error ?? "Could not cancel auto-pay." });
+    } catch {
+      setAutopayNote({ ok: false, msg: "Could not cancel auto-pay. Please try again." });
+    }
+    setCancelling(false);
+    load();
+  }
 
   return (
     <div className="space-y-5">
@@ -1353,6 +1428,41 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
         </div>
       ) : (
         <>
+          {autopayNote && (
+            <div className={`rounded-xl border px-4 py-3 text-xs font-medium ${autopayNote.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-700"}`}>
+              {autopayNote.msg}
+            </div>
+          )}
+          {data.autopayStatus && data.autopayStatus !== "PENDING" && (tab === "overview" || tab === "plans") && (
+            <div className="rounded-xl border border-[var(--color-border)] bg-white px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-xs text-[var(--color-ink-700)]">
+                <p className="font-semibold text-sm text-[var(--color-ink-900)]">
+                  Monthly auto-pay: {
+                    data.autopayStatus === "ACTIVE" ? "On"
+                    : data.autopayStatus === "CANCELLED" ? "Cancelled"
+                    : data.autopayStatus === "ON_HOLD" ? "On hold"
+                    : "Last debit failed"
+                  }
+                </p>
+                <p className="mt-0.5 text-[var(--color-ink-500)]">
+                  {data.autopayStatus === "ACTIVE"
+                    ? `Next automatic charge around ${fmt(data.autopayNextChargeAt)} at the regular price.`
+                    : data.autopayStatus === "CANCELLED"
+                      ? "No further automatic charges. Your licence runs until its end date."
+                      : "Renew from the Plans tab to keep your licence active."}
+                </p>
+              </div>
+              {data.autopayStatus === "ACTIVE" && (
+                <button
+                  onClick={cancelAutopay}
+                  disabled={cancelling}
+                  className="shrink-0 px-4 py-2 rounded-lg border border-red-200 text-red-700 text-xs font-semibold hover:bg-red-50 transition-colors disabled:opacity-60"
+                >
+                  {cancelling ? "Cancelling…" : "Cancel auto-pay"}
+                </button>
+              )}
+            </div>
+          )}
           {tab === "overview"  && <OverviewTab  data={data} onTabChange={setTab} />}
           {tab === "activate"  && <ActivateTab  data={data} onRefresh={load} />}
           {tab === "plans"     && <PlansTab     data={data} onRefresh={load} onTabChange={setTab} />}

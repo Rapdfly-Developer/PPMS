@@ -84,6 +84,8 @@ export default auth((req) => {
   // nightly jobs, payment webhooks and demo form never reached their handlers.
   const isSelfAuthedApi    = isCronApi
     || pathname === "/api/cashfree/webhook"
+    || pathname === "/api/cashfree/subscription-webhook"
+    || pathname === "/api/cashfree/subscription/return"
     || pathname === "/api/demo-request"
     || pathname === "/api/grievance-contact";
 

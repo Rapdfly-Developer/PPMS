@@ -197,6 +197,12 @@ model TenantLicense {
   razorpayPaymentId    String?
   razorpaySignature    String?
 
+  // Cashfree monthly auto-pay (the razorpay* columns above hold Cashfree ids)
+  cashfreeSubscriptionId String?
+  autopayStatus          String?   // PENDING | ACTIVE | FAILED | CANCELLED | ON_HOLD
+  autopayPlan            String?   // MONTHLY | ENTERPRISE
+  autopayNextChargeAt    DateTime?
+
   // License key activation (offline/manual key)
   licenseKey           String?
   machineId            String?   // browser-generated UUID stored in cookie

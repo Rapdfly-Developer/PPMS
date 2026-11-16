@@ -25,6 +25,30 @@ function loadSdk(): Promise<void> {
   });
 }
 
+// Monthly auto-pay: opens Cashfree's approval page in this same window. After
+// approval Cashfree sends the customer back to Settings (see the return route).
+type SubscriptionCheckout = { subscriptionsCheckout(o: { subsSessionId: string; redirectTarget: "_self" }): Promise<{ error?: { message?: string } } | void> };
+
+export async function startCashfreeAutopay(plan: string, doctorId: string): Promise<string | null> {
+  try {
+    await loadSdk();
+    const res = await fetch("/api/cashfree/subscription/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan, doctorId }),
+    });
+    const sub = await res.json() as { subscriptionSessionId?: string; mode?: "sandbox" | "production"; error?: string };
+    if (!res.ok || !sub.subscriptionSessionId) return sub.error || "Failed to start auto-pay.";
+
+    const cashfree = window.Cashfree!({ mode: sub.mode ?? "production" }) as unknown as SubscriptionCheckout;
+    const r = await cashfree.subscriptionsCheckout({ subsSessionId: sub.subscriptionSessionId, redirectTarget: "_self" });
+    if (r && r.error) return r.error.message || "Could not open the auto-pay page.";
+    return null;
+  } catch (e) {
+    return e instanceof Error ? e.message : "Auto-pay failed. Please try again.";
+  }
+}
+
 export type CashfreePayResult =
   | { ok: true; orderId: string; paymentId?: string }
   | { ok: false; error: string };
