@@ -7,7 +7,7 @@ import { createCashfreeOrder, isFirstPayment as isFirstPaymentFor, type PlanKey 
 const PLANS: Record<PlanKey, { amount: number; discountedAmount: number | null; label: string }> = {
   MONTHLY:    { amount: 299900,  discountedAmount: 75000,  label: "Professional Monthly (₹2,999/month)" },
   ENTERPRISE: { amount: 129900,  discountedAmount: 32500,  label: "Enterprise Monthly (₹1,299/month)" },
-  YEARLY:     { amount: 999900,  discountedAmount: null,   label: "Annual (₹9,999/year)" },
+  YEARLY:     { amount: 999900,  discountedAmount: 249975, label: "Annual (₹9,999/year)" },
 };
 
 export async function POST(req: Request) {

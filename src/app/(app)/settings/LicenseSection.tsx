@@ -716,6 +716,7 @@ interface PlanTier {
 const FIRST_MONTH_DISCOUNTS: Record<string, { firstPrice: string; regularPrice: string; firstLabel: string }> = {
   MONTHLY:    { firstPrice: "₹750",  regularPrice: "₹2,999/month",  firstLabel: "first month" },
   ENTERPRISE: { firstPrice: "₹325",  regularPrice: "₹1,299/month",  firstLabel: "first month" },
+  YEARLY:     { firstPrice: "₹2,499.75", regularPrice: "₹9,999/year", firstLabel: "first year"  },
 };
 
 const PLAN_TIERS: PlanTier[] = [

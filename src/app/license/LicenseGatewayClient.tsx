@@ -1066,7 +1066,7 @@ const PLANS_LIST: Array<{
     key: "YEARLY",
     name: "Yearly",
     price: "₹9,999",
-    discountedPrice: null,
+    discountedPrice: "₹2,499.75",
     per: "/ year",
     tagline: "Best value - save 2 months",
     badge: "Best Value",
@@ -1173,7 +1173,7 @@ function PlansModal({
                 </div>
                 {p.discountedPrice && (
                   <p className="text-[11px] mt-0.5" style={{ color: "#D97706" }}>
-                    First month only · then {p.price}{p.per}
+                    {p.key === "YEARLY" ? "First year only" : "First month only"} · then {p.price}{p.per}
                   </p>
                 )}
                 <p className="text-xs mt-0.5 mb-4" style={{ color: T.faint }}>{p.tagline}</p>

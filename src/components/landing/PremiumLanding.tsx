@@ -535,7 +535,7 @@ const PLANS = [
     tag: "Best value",
     price: "₹9,999",
     period: "/year",
-    discount: "Save ₹26,000 vs monthly",
+    discount: "First year ₹2,499.75 (75% OFF)",
     features: [
       "Everything in 5 Doctors",
       "Unlimited hospitals",
@@ -781,7 +781,7 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Pricing"
           title="Priced per practice, not per patient."
-          lede="Start with a 7-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans."
+          lede="Start with a 7-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans, first year 75% off on Yearly."
         />
         <Reveal>
           <div className="mx-auto mt-4 flex w-max items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 ring-1 ring-inset ring-emerald-600/[0.15]">
