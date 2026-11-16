@@ -1064,7 +1064,7 @@ function PlansTab({ data, onRefresh, onTabChange }: { data: LicenseFullData; onR
                   </a>
                 ) : (
                   <div className="w-full py-2.5 rounded-xl text-center text-xs font-medium bg-slate-50 text-slate-500 border border-slate-200 opacity-50 cursor-not-allowed pointer-events-none">
-                    {data.status === "SUBSCRIBED" ? "Not Available" : "Trial Active"}
+                    {data.status === "TRIAL_ACTIVE" ? "Trial Active" : data.status === "TRIAL_EXPIRED" ? "Trial Expired" : "Not Available"}
                   </div>
                 )}
               </div>

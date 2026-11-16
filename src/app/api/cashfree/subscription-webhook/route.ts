@@ -47,15 +47,22 @@ export async function POST(req: NextRequest) {
         ? "CHARGE" : "AUTH";
       const r = await applyAutopayPayment(subscriptionId, d.payment_id, kind);
       if (r.applied && r.doctorId) {
-        await prisma.auditLog.create({
-          data: {
-            userId: r.doctorId,
-            entityType: "TenantLicense",
-            entityId: r.doctorId,
-            action: kind === "AUTH" ? "AUTOPAY_STARTED_WEBHOOK" : "AUTOPAY_CHARGE_SUCCESS",
-            newValue: JSON.stringify({ subscriptionId, paymentId: d.payment_id }),
-          },
-        });
+        // The audit row needs a User id (the doctor's login), not the doctor id.
+        // A logging problem must never turn an applied payment into a 500 retry.
+        try {
+          const doc = await prisma.doctor.findUnique({ where: { id: r.doctorId }, select: { userId: true } });
+          if (doc) {
+            await prisma.auditLog.create({
+              data: {
+                userId: doc.userId,
+                entityType: "TenantLicense",
+                entityId: r.doctorId,
+                action: kind === "AUTH" ? "AUTOPAY_STARTED_WEBHOOK" : "AUTOPAY_CHARGE_SUCCESS",
+                newValue: JSON.stringify({ subscriptionId, paymentId: d.payment_id }),
+              },
+            });
+          }
+        } catch { /* audit only */ }
       }
     } else if (event.type === "SUBSCRIPTION_PAYMENT_FAILED" && d.payment_type === "CHARGE") {
       // The licence simply runs out at its end date; the doctor can pay again.

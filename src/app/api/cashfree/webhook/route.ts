@@ -37,15 +37,22 @@ export async function POST(req: NextRequest) {
   }
 
   if (result.ok && result.doctorId && !result.already) {
-    await prisma.auditLog.create({
-      data: {
-        userId: result.doctorId,
-        entityType: "TenantLicense",
-        entityId: result.doctorId,
-        action: "PAYMENT_SUCCESS_WEBHOOK",
-        newValue: JSON.stringify({ plan: result.plan, cashfreePaymentId: result.paymentId }),
-      },
-    });
+    // The audit row needs a User id (the doctor's login), not the doctor id.
+    // A logging problem must never turn an applied payment into a 500 retry.
+    try {
+      const doc = await prisma.doctor.findUnique({ where: { id: result.doctorId }, select: { userId: true } });
+      if (doc) {
+        await prisma.auditLog.create({
+          data: {
+            userId: doc.userId,
+            entityType: "TenantLicense",
+            entityId: result.doctorId,
+            action: "PAYMENT_SUCCESS_WEBHOOK",
+            newValue: JSON.stringify({ plan: result.plan, cashfreePaymentId: result.paymentId }),
+          },
+        });
+      }
+    } catch { /* audit only */ }
   }
 
   return NextResponse.json({ ok: true });
