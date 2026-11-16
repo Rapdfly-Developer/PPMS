@@ -2,10 +2,10 @@ import { notFound } from "next/navigation";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { counsellingStatus } from "@/lib/counselling";
+import { counsellingStatus, parsePaymentDocs, SUPERSEDED } from "@/lib/counselling";
 import { getCounsellingActivity } from "@/lib/counselling-activity";
 import { CounsellingDetail, type CounsellingDetailData } from "./CounsellingDetail";
-import { defaultConsents, defaultEducation, type FormContext } from "@/lib/ipd-forms";
+import { defaultConsents, defaultEducation, upgradeConsents, type FormContext } from "@/lib/ipd-forms";
 import { parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 
@@ -48,8 +48,8 @@ export default async function CounsellingVisitPage({
     where: { visit: { patientId: visit.patientId, ...scope } },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true, visitId: true, testName: true, category: true, laterality: true, notes: true,
-      resultRef: true, resultAt: true, updatedAt: true, createdAt: true,
+      id: true, visitId: true, testName: true, category: true, laterality: true, notes: true, priority: true,
+      doctorNotes: true, status: true, extraResultRefs: true, resultRef: true, resultAt: true, updatedAt: true, createdAt: true,
     },
   });
 
@@ -102,8 +102,12 @@ export default async function CounsellingVisitPage({
     diagnoses: visit.diagnoses,
     orders: orders.map((o) => ({
       id: o.id,
-      current: o.visitId === visit.id,
+      // Reports replaced by a No Show retake stay in the history only
+      current: o.visitId === visit.id && o.status !== SUPERSEDED,
       testName: o.testName,
+      priority: o.priority,
+      doctorNotes: o.doctorNotes,
+      extraResultRefs: o.extraResultRefs,
       category: o.category,
       laterality: o.laterality,
       notes: o.notes,
@@ -119,6 +123,7 @@ export default async function CounsellingVisitPage({
       paymentType: rec?.paymentType ?? "",
       schemeName: rec?.schemeName ?? "",
       policyNumber: rec?.policyNumber ?? "",
+      paymentDocs: parsePaymentDocs(rec?.paymentDocs),
       estimateAmount: rec?.estimateAmount != null ? Number(rec.estimateAmount) : null,
       advancePaid: rec?.advancePaid != null ? Number(rec.advancePaid) : null,
       advanceReceived: rec?.advanceReceived ?? false,
@@ -144,7 +149,7 @@ export default async function CounsellingVisitPage({
       ctx,
       templates,
       implant: parseCounsellingImplant(rec?.implantDetails),
-      consents: parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx),
+      consents: upgradeConsents(parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx), ctx),
       education: parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx),
     },
   };

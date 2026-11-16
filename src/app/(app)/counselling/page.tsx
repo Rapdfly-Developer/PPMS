@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { counsellingStatus, reportsValidUntil } from "@/lib/counselling";
+import { counsellingStatus, reportsValidUntil, SUPERSEDED } from "@/lib/counselling";
 import { CounsellingClient, type CounsellingRow } from "./CounsellingClient";
 
 export const metadata = { title: "Counselling" };
@@ -22,15 +22,15 @@ export default async function CounsellingPage() {
       advisedSurgeryEye: true,
       advisedSurgeryAnaesthesia: true,
       advisedSurgeryDate: true,
-      patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
+      patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
       doctor: { select: { id: true, name: true } },
       generalExam: { select: { chiefComplaint: true } },
       diagnoses: { select: { description: true, laterality: true, status: true }, orderBy: { createdAt: "asc" } },
-      investigationOrders: { select: { resultRef: true, resultAt: true, updatedAt: true } },
+      investigationOrders: { where: { status: { not: SUPERSEDED } }, select: { resultRef: true, resultAt: true, updatedAt: true } },
       counsellingRecord: {
         select: {
           status: true, fitForSurgery: true, eligibleForSurgery: true, surgeryDeferred: true, advancePaid: true, advanceReceived: true,
-          dateOfSurgery: true, implant: true, reportsValidUntil: true, postponedUntil: true, postponedIndefinitely: true,
+          dateOfSurgery: true, implant: true, paymentMode: true, paymentType: true, reportsValidUntil: true, postponedUntil: true, postponedIndefinitely: true,
           createdAt: true, updatedAt: true,
         },
       },
@@ -65,6 +65,8 @@ export default async function CounsellingPage() {
         postponedUntil: rec?.postponedUntil?.toISOString() ?? null,
         postponedIndefinitely: rec?.postponedIndefinitely ?? false,
         updatedAt: (rec?.updatedAt ?? v.date).toISOString(),
+        paymentMode: rec?.paymentMode ?? null,
+        paymentType: rec?.paymentType ?? null,
       };
     });
 

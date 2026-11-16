@@ -90,7 +90,11 @@ function consentText(kind: string, c: FormContext): string {
     case "General":
       return `I, ${who}, hereby give my consent to be admitted to ${c.hospital} and to undergo ${proc} on my ${eyeName(c.eye)} under the care of Dr. ${c.doctor} and team.\n\nThe nature of my eye condition, the purpose of the operation, the expected benefits, the alternatives available (including not having the operation) and the likely course after surgery have been explained to me in a language I understand. I have had the opportunity to ask questions and all my questions have been answered to my satisfaction.\n\nI consent to the administration of medicines, injections and investigations that the treating team considers necessary, and to any additional procedure that may become necessary during the operation in my best interest.`;
     case "GVP":
-      return `General & Visual Prognosis: I understand that the visual outcome after ${proc} depends on the condition of my eye, including the retina, optic nerve and cornea, and on other health conditions such as diabetes and high blood pressure.\n\nIt has been explained that vision may improve, remain the same or, rarely, become worse; that I may still need glasses for distance and/or near after surgery; and that further treatment such as laser (YAG capsulotomy) or another procedure may be needed in future.`;
+      return `Guarded Visual Prognosis: I, ${who}, have been informed that my ${eyeName(c.eye)} has other existing eye or health conditions (such as a retinal, optic nerve, corneal or glaucoma problem, amblyopia, diabetes or high blood pressure) that may limit the vision I gain after ${proc}.
+
+The doctor has explained that my visual prognosis is GUARDED: the improvement in vision may be partial or less than expected, vision may stay the same, and in some cases it may become worse, even when the operation itself goes well. I may still need glasses, further investigations, laser or another surgery, and long-term treatment for the existing condition.
+
+I understand that no assurance about the final visual outcome has been given to me, and I agree to undergo the operation knowing this.`;
     case "Anaesthesia":
       return `I consent to receive ${c.anaesthesia || "the anaesthesia advised"} for my operation. The anaesthesia plan and its alternatives have been explained to me.\n\nI understand the possible risks, including discomfort, bruising around the eye, allergy to medicines, rise in blood pressure, injury to the eye or optic nerve (for injection blocks) and, rarely, effects on breathing or heart that need emergency treatment. I agree to follow the fasting and medicine instructions given to me.`;
     case "Negative":
@@ -100,9 +104,22 @@ function consentText(kind: string, c: FormContext): string {
   }
 }
 
+/** Consents saved before the GVP consent became "Guarded Visual Prognosis" get the new title and, if untouched, the new wording. */
+export function upgradeConsents<T extends { items?: { id: string; title: string; text: string }[] }>(d: T, c: FormContext): T {
+  if (!d.items) return d;
+  return {
+    ...d,
+    items: d.items.map((i) => i.id !== "GVP" ? i : {
+      ...i,
+      title: i.title === "General & Visual Prognosis (GVP) Consent" ? "Guarded Visual Prognosis (GVP) Consent" : i.title,
+      text: i.text.startsWith("General & Visual Prognosis:") ? consentText("GVP", c) : i.text,
+    }),
+  };
+}
+
 export const CONSENT_KINDS = [
   { id: "General", title: "General Consent for Admission & Surgery" },
-  { id: "GVP", title: "General & Visual Prognosis (GVP) Consent" },
+  { id: "GVP", title: "Guarded Visual Prognosis (GVP) Consent" },
   { id: "Anaesthesia", title: "Consent for Anaesthesia" },
   { id: "Negative", title: "High-risk / Negative Consent" },
 ];

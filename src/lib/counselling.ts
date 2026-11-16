@@ -10,6 +10,12 @@ export function reportsValidUntil(oldestReportAt: Date): Date {
   return d;
 }
 
+/** Investigation order status for reports replaced by a retake (kept in the history only). */
+export const SUPERSEDED = "SUPERSEDED";
+
+/** An investigation is frozen 2 months after it was ordered (same rule as the EMR). */
+export const INV_FREEZE_MONTHS = 2;
+
 /** Stored status, mapping the retired workflow values onto the current ones. */
 export function counsellingStatus(rec: {
   status: string;
@@ -98,19 +104,48 @@ export const SURGICAL_NOTE_KEYWORDS = [
 
 // ── Co-payment ──────────────────────────────────────────────────────────────
 export const PAYMENT_MODES = [
-  { value: "CASH",     label: "Cash (Self-pay)" },
-  { value: "CASHLESS", label: "Cashless" },
+  { value: "CASH",     label: "Out of Pocket" },
+  { value: "CASHLESS", label: "Covered" },
 ] as const;
 
+/** Payment types, asked first. "Self" is always Out of Pocket; the others are Out of Pocket or Covered. */
 export const CASHLESS_TYPES = [
   { value: "INSURANCE",   label: "Health Insurance",      nameLabel: "Insurance company / TPA", idLabel: "Policy number" },
   { value: "GOVT_SCHEME", label: "Government Scheme",     nameLabel: "Scheme name",             idLabel: "Beneficiary / card ID" },
-  { value: "CORPORATE",   label: "Corporate Covered",     nameLabel: "Company name",            idLabel: "Employee ID" },
+  { value: "CORPORATE",   label: "Corporate",             nameLabel: "Company name",            idLabel: "Employee ID" },
   { value: "COMMUNITY",   label: "Community Based",       nameLabel: "Organisation / camp",     idLabel: "Reference ID" },
   { value: "OTHER",       label: "Other",                 nameLabel: "Details",                 idLabel: "Reference ID" },
 ] as const;
 
-/** Starter options for the payer name, per cashless type; custom entries are remembered on top. */
+export const SELF_PAY = "SELF";
+export const PAYMENT_TYPES = [
+  { value: SELF_PAY, label: "Self", nameLabel: "", idLabel: "" },
+  ...CASHLESS_TYPES,
+] as const;
+
+/** The payment type; records saved before types came first (Out of Pocket, no type) count as Self. */
+export function paymentTypeOf(mode: string | null | undefined, type: string | null | undefined): string {
+  return type || (mode === "CASH" ? SELF_PAY : "");
+}
+
+/** One line for the payment, e.g. "Self · Out of Pocket" or "Health Insurance · Covered". */
+export function paymentLabel(mode: string | null | undefined, type: string | null | undefined): string {
+  const t = paymentTypeOf(mode, type);
+  const typeLabel = PAYMENT_TYPES.find((x) => x.value === t)?.label ?? "";
+  const modeLabel = PAYMENT_MODES.find((m) => m.value === mode)?.label ?? "";
+  return [typeLabel, modeLabel].filter(Boolean).join(" · ");
+}
+
+export interface PaymentDoc { ref: string; name: string; at: string }
+
+export function parsePaymentDocs(s: string | null | undefined): PaymentDoc[] {
+  try {
+    const x = JSON.parse(s ?? "[]");
+    return Array.isArray(x) ? x.filter((d): d is PaymentDoc => !!d && typeof d.ref === "string" && typeof d.name === "string" && typeof d.at === "string") : [];
+  } catch { return []; }
+}
+
+/** Starter options for the payer name, per covered-by type; custom entries are remembered on top. */
 export const PAYER_SUGGESTIONS: Record<string, string[]> = {
   INSURANCE: [
     "Star Health Insurance",

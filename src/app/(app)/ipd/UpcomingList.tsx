@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { User, X, Eye, CalendarClock } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
-import { CASHLESS_TYPES, LATERALITY_LABEL } from "@/lib/counselling";
+import { CASHLESS_TYPES, LATERALITY_LABEL, paymentLabel } from "@/lib/counselling";
 
 export interface UpcomingRow {
   visitId: string;
@@ -35,8 +35,7 @@ const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") :
 const rupees = (n: number | null) => (n != null ? `₹ ${n.toLocaleString("en-IN")}` : null);
 
 function paymentText(r: UpcomingRow) {
-  if (r.paymentMode === "CASH") return "Cash (Self-pay)";
-  if (r.paymentMode === "CASHLESS") return CASHLESS_TYPES.find((t) => t.value === r.paymentType)?.label ?? "Cashless";
+  if (r.paymentMode || r.paymentType) return paymentLabel(r.paymentMode, r.paymentType);
   return null;
 }
 
@@ -126,8 +125,8 @@ function CounsellingView({ r, onClose }: { r: UpcomingRow; onClose: () => void }
             {line("Implant", r.implant)}
             {line("Estimate", rupees(r.estimateAmount))}
             {line("Payment option", paymentText(r))}
-            {r.paymentMode === "CASHLESS" && line(cashless?.nameLabel ?? "Covered by", r.schemeName)}
-            {r.paymentMode === "CASHLESS" && line(cashless?.idLabel ?? "ID", r.policyNumber)}
+            {cashless && line(cashless.nameLabel, r.schemeName)}
+            {cashless && line(cashless.idLabel, r.policyNumber)}
             {line("Advance", advanceText(r))}
             {line("Date of surgery", day(r.dateOfSurgery))}
           </>)}

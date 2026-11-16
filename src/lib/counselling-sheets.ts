@@ -8,9 +8,13 @@ export interface CounsellingImplant {
   model: string;
   power: string;
   aConstant: string;
+  lot: string;
+  serial: string;
+  /** "YYYY-MM" */
+  expiry: string;
 }
 
-export const blankCounsellingImplant = (): CounsellingImplant => ({ manufacturer: "", model: "", power: "", aConstant: "" });
+export const blankCounsellingImplant = (): CounsellingImplant => ({ manufacturer: "", model: "", power: "", aConstant: "", lot: "", serial: "", expiry: "" });
 
 const parse = (s: string | null | undefined): unknown => {
   try { return s ? JSON.parse(s) : null; } catch { return null; }
@@ -19,7 +23,10 @@ const parse = (s: string | null | undefined): unknown => {
 export function parseCounsellingImplant(s: string | null | undefined): CounsellingImplant {
   const x = parse(s) as Partial<CounsellingImplant> | null;
   const str = (v: unknown) => (typeof v === "string" ? v : "");
-  return { manufacturer: str(x?.manufacturer), model: str(x?.model), power: str(x?.power), aConstant: str(x?.aConstant) };
+  return {
+    manufacturer: str(x?.manufacturer), model: str(x?.model), power: str(x?.power), aConstant: str(x?.aConstant),
+    lot: str(x?.lot), serial: str(x?.serial), expiry: str(x?.expiry),
+  };
 }
 
 export const hasCounsellingImplant = (i: CounsellingImplant) => Object.values(i).some((v) => v.trim());
@@ -36,8 +43,8 @@ export function parseCounsellingEducation(s: string | null | undefined): Educati
   return isV2(x) && Array.isArray((x as EducationData).points) ? (x as EducationData) : null;
 }
 
-/** IPD Implant form start: the counselling details, with lot / serial / expiry and verification left for the ward. */
+/** IPD Implant form start: the counselling details, with verification left for the ward. */
 export function implantFromCounselling(s: string | null | undefined): ImplantData {
   const c = parseCounsellingImplant(s);
-  return { ...defaultImplant(), manufacturer: c.manufacturer, model: c.model, power: c.power, aConstant: c.aConstant };
+  return { ...defaultImplant(), ...c };
 }

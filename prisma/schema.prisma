@@ -1566,6 +1566,7 @@ model CounsellingRecord {
   implantDetails        String    @default("{}") // { manufacturer, model, power, aConstant }
   consents              String    @default("{}") // ConsentsData
   education             String    @default("{}") // EducationData
+  paymentDocs           String    @default("[]") // [{ ref, name, at }] insurance / scheme / letter files
 }
 
 // ──────────────────────────────────────────────────────────────────────────

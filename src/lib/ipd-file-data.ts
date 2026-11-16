@@ -6,6 +6,7 @@ import { admissionTypeText, buildDischargeDraft, otTemplateSteps } from "@/lib/i
 import {
   defaultChecklist, defaultConsents, defaultEducation, defaultImplant, defaultNurse, defaultOtNotes, defaultPostOp,
   defaultTreatment, educationAdvice, isV2, type EducationData, type FormContext,
+  upgradeConsents,
 } from "@/lib/ipd-forms";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 import { implantFromCounselling, parseCounsellingConsents, parseCounsellingEducation } from "@/lib/counselling-sheets";
@@ -162,7 +163,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const education = savedEducation ?? (counselling && parseCounsellingEducation(counselling.education)) ?? defaultEducation(ctx);
   const defaults: Record<string, unknown> = {
     implant: counselling ? implantFromCounselling(counselling.implantDetails) : defaultImplant(),
-    consents: (counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx),
+    consents: upgradeConsents((counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx), ctx),
     checklist: defaultChecklist(),
     education,
     treatment: defaultTreatment(),

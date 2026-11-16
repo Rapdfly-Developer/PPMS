@@ -6,8 +6,9 @@ import { visitRecordScope } from "@/lib/patient-access";
 import { revalidatePath } from "next/cache";
 import { writeAudit } from "@/lib/audit";
 import { istDateTime, istDayRange, istTodayStr } from "@/lib/ist";
-import { reportsValidUntil, surgeryLine } from "@/lib/counselling";
+import { reportsValidUntil, surgeryLine, SUPERSEDED } from "@/lib/counselling";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
 
 type Result = { error?: string };
 
@@ -18,7 +19,11 @@ async function loadVisit(visitId: string, ...permissions: string[]) {
   if (!scope) throw new Error("Forbidden");
   const visit = await prisma.visit.findFirst({
     where: { id: visitId, ...scope, surgeryAdvised: true, finalizedAt: { not: null }, advisedSurgeryName: { not: null } },
-    include: { counsellingRecord: true, investigationOrders: { select: { testName: true, resultRef: true, resultAt: true, updatedAt: true } } },
+    include: {
+      counsellingRecord: true,
+      // Reports replaced by a retake stay in the history but no longer count here
+      investigationOrders: { where: { status: { not: SUPERSEDED } }, select: { id: true, testName: true, category: true, laterality: true, notes: true, priority: true, resultRef: true, resultAt: true, updatedAt: true } },
+    },
   });
   if (!visit) throw new Error("Counselling record not found");
   return { user, visit, rec: visit.counsellingRecord };
@@ -61,11 +66,11 @@ export async function saveCounsellingDetails(visitId: string, data: {
   implantDetails?: unknown;
   consents?: unknown;
   education?: unknown;
+  /** Insurance / scheme / letter files: [{ ref, name, at }] */
+  paymentDocs?: { ref: string; name: string; at: string }[];
 }): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
-  // Eligible for surgery finalizes counselling; after Fit only the date can change.
-  if (rec?.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery). Details can't be changed." };
-  const dateOnly = !!rec?.fitForSurgery;
+  // Nothing is frozen: every field can be changed at every stage.
   // A past date can't be set; an unchanged earlier date doesn't block saving the other fields.
   const currentDate = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   const nextDate = data.dateOfSurgery === undefined ? undefined : dayFromStr(data.dateOfSurgery);
@@ -81,23 +86,20 @@ export async function saveCounsellingDetails(visitId: string, data: {
 
   const patch: Record<string, unknown> = {};
   if (data.dateOfSurgery !== undefined) patch.dateOfSurgery = dayFromStr(data.dateOfSurgery);
-  // Implant, payment and estimate stay frozen after Fit
-  if (!dateOnly) {
-    if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
-    if (data.paymentMode !== undefined) patch.paymentMode = data.paymentMode || null;
-    if (data.paymentType !== undefined) patch.paymentType = data.paymentType || null;
-    if (data.schemeName !== undefined) patch.schemeName = data.schemeName.trim() || null;
-    if (data.policyNumber !== undefined) patch.policyNumber = data.policyNumber.trim() || null;
-    if (data.estimateAmount !== undefined) {
-      if (data.estimateAmount !== null && !(data.estimateAmount >= 0)) return { error: "Invalid estimate amount." };
-      patch.estimateAmount = data.estimateAmount;
-    }
+  if (data.implant !== undefined) patch.implant = data.implant.trim() || null;
+  if (data.paymentMode !== undefined) patch.paymentMode = data.paymentMode || null;
+  if (data.paymentType !== undefined) patch.paymentType = data.paymentType || null;
+  if (data.schemeName !== undefined) patch.schemeName = data.schemeName.trim() || null;
+  if (data.policyNumber !== undefined) patch.policyNumber = data.policyNumber.trim() || null;
+  if (data.estimateAmount !== undefined) {
+    if (data.estimateAmount !== null && !(data.estimateAmount >= 0)) return { error: "Invalid estimate amount." };
+    patch.estimateAmount = data.estimateAmount;
   }
   const sheet = (x: unknown): string | null => {
     const json = JSON.stringify(x ?? {});
     return json.length > 200_000 ? null : json;
   };
-  if (!dateOnly && data.implantDetails !== undefined) {
+  if (data.implantDetails !== undefined) {
     const s = sheet(data.implantDetails);
     if (s === null) return { error: "The implant details are too large." };
     patch.implantDetails = s;
@@ -106,6 +108,10 @@ export async function saveCounsellingDetails(visitId: string, data: {
     const s = sheet(data.consents);
     if (s === null) return { error: "The consents are too large." };
     patch.consents = s;
+  }
+  if (data.paymentDocs !== undefined) {
+    const docs = Array.isArray(data.paymentDocs) ? data.paymentDocs.filter((d) => d && typeof d.ref === "string" && typeof d.name === "string" && typeof d.at === "string").slice(0, 30) : [];
+    patch.paymentDocs = JSON.stringify(docs.map((d) => ({ ref: d.ref, name: d.name.slice(0, 200), at: d.at })));
   }
   if (data.education !== undefined) {
     const s = sheet(data.education);
@@ -121,7 +127,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
     update: patch,
   });
   // The sheets are logged as "updated", not copied whole into the audit log
-  const logged = Object.fromEntries(Object.entries(patch).map(([k, x]) => [k, ["implantDetails", "consents", "education"].includes(k) ? "updated" : x]));
+  const logged = Object.fromEntries(Object.entries(patch).map(([k, x]) => [k, ["implantDetails", "consents", "education", "paymentDocs"].includes(k) ? "updated" : x]));
   await writeAudit(user.id, "CounsellingRecord", visitId, "UPDATE", logged);
   if (dateChanged) {
     await writeAudit(user.id, "CounsellingRecord", visitId, "DATE_CHANGED", { from: currentDate, to: nextDate });
@@ -256,7 +262,6 @@ export async function resumeCounselling(visitId: string): Promise<Result> {
 export async function saveAdvance(visitId: string, data: { advancePaid: number | null; advanceReceived: boolean }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.edit");
   if (!rec?.fitForSurgery) return { error: "Advance is recorded after Fit for surgery." };
-  if (rec.eligibleForSurgery) return { error: "Counselling is already complete." };
   if (rec.reportsValidUntil && rec.reportsValidUntil < new Date()) return { error: "Reports have expired. Reopen counselling first." };
   if (data.advancePaid !== null && !(data.advancePaid >= 0)) return { error: "Invalid advance amount." };
 
@@ -269,16 +274,117 @@ export async function saveAdvance(visitId: string, data: { advancePaid: number |
 
 // ── Reports uploaded from the counselling screen ───────────────────────────
 
-export async function attachCounsellingReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
-  const { user, visit, rec } = await loadVisit(visitId, "counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit");
-  if (rec?.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery). Reports can't be changed here." };
-  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visitId: visit.id }, select: { id: true } });
+const REPORT_PERMS = ["counselling.reports", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"];
+
+type OrderRow = NonNullable<Awaited<ReturnType<typeof prisma.investigationOrder.findFirst>>>;
+
+/** An order of this counselling visit whose report can still be changed here. */
+async function editableOrder(visitId: string, orderId: string): Promise<{ error: string } | { user: { id: string }; order: OrderRow }> {
+  const { user, visit } = await loadVisit(visitId, ...REPORT_PERMS);
+  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visitId: visit.id, status: { not: SUPERSEDED } } });
   if (!order) return { error: "Order not found." };
+  return { user, order };
+}
+
+/** Upload or re-upload the report (replaces the current file). */
+export async function attachCounsellingReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
+  const r = await editableOrder(visitId, orderId);
+  if ("error" in r) return { error: r.error };
   await prisma.investigationOrder.update({
     where: { id: orderId },
     data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" },
   });
-  await writeAudit(user.id, "InvestigationOrder", orderId, "RESULT_ATTACHED", { resultRef });
+  await writeAudit(r.user.id, "InvestigationOrder", orderId, "RESULT_ATTACHED", { resultRef });
+  refresh(visitId);
+  return {};
+}
+
+/** "Add more": attach a further report file. */
+export async function addCounsellingExtraReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
+  const r = await editableOrder(visitId, orderId);
+  if ("error" in r) return { error: r.error };
+  if (!r.order.resultRef) {
+    await prisma.investigationOrder.update({ where: { id: orderId }, data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" } });
+    await writeAudit(r.user.id, "InvestigationOrder", orderId, "RESULT_ATTACHED", { resultRef });
+  } else {
+    const extras = [...parseExtraResults(r.order.extraResultRefs), { ref: resultRef, at: new Date().toISOString() }];
+    await prisma.investigationOrder.update({ where: { id: orderId }, data: { extraResultRefs: JSON.stringify(extras) } });
+    await writeAudit(r.user.id, "InvestigationOrder", orderId, "RESULT_ADDED", { resultRef });
+  }
+  refresh(visitId);
+  return {};
+}
+
+/** Remove the uploaded report; with more files attached, the next one takes its place. */
+export async function removeCounsellingReport(visitId: string, orderId: string): Promise<Result> {
+  const r = await editableOrder(visitId, orderId);
+  if ("error" in r) return { error: r.error };
+  const [next, ...rest] = parseExtraResults(r.order.extraResultRefs);
+  await prisma.investigationOrder.update({
+    where: { id: orderId },
+    data: next
+      ? { resultRef: next.ref, resultAt: new Date(next.at), extraResultRefs: rest.length ? JSON.stringify(rest) : null }
+      : { resultRef: null, resultAt: null, status: "PENDING" },
+  });
+  await writeAudit(r.user.id, "InvestigationOrder", orderId, "RESULT_REMOVED", {});
+  refresh(visitId);
+  return {};
+}
+
+/** Remove one file that was added with "Add more". */
+export async function removeCounsellingExtraReport(visitId: string, orderId: string, resultRef: string): Promise<Result> {
+  const r = await editableOrder(visitId, orderId);
+  if ("error" in r) return { error: r.error };
+  const extras = parseExtraResults(r.order.extraResultRefs).filter((x) => x.ref !== resultRef);
+  await prisma.investigationOrder.update({ where: { id: orderId }, data: { extraResultRefs: extras.length ? JSON.stringify(extras) : null } });
+  await writeAudit(r.user.id, "InvestigationOrder", orderId, "EXTRA_RESULT_REMOVED", { resultRef });
+  refresh(visitId);
+  return {};
+}
+
+// ── No show: a new tentative date ──────────────────────────────────────────
+
+/**
+ * Give a No Show patient (tentative date passed, counselling not complete) a
+ * new date. "retake" sends them back to Pending: Fit is cleared and the tests
+ * that have reports are ordered again; the old reports stay in the history.
+ * Without it they keep their stage (Partial stays Partial while the reports
+ * are still valid for the new date).
+ */
+export async function rescheduleNoShow(visitId: string, date: string, retake: boolean): Promise<Result> {
+  const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
+  if (!rec) return { error: "Counselling record not found." };
+  if (rec.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery)." };
+  const next = dayFromStr(date);
+  if (!next) return { error: "Pick the new tentative date." };
+  if (isPastDay(next)) return { error: "The surgery date can't be in the past." };
+  const from = rec.dateOfSurgery ?? visit.advisedSurgeryDate;
+
+  if (!retake) {
+    if (rec.fitForSurgery && rec.reportsValidUntil && next > rec.reportsValidUntil) {
+      return { error: "The reports are no longer valid for this date. Move the patient to Pending so the investigations are taken again." };
+    }
+    await prisma.counsellingRecord.update({ where: { visitId }, data: { dateOfSurgery: next } });
+    await writeAudit(user.id, "CounsellingRecord", visitId, "DATE_CHANGED", { from, to: next, noShow: true });
+    refresh(visitId);
+    return {};
+  }
+
+  const reported = visit.investigationOrders.filter((o) => o.resultRef);
+  await prisma.$transaction([
+    prisma.investigationOrder.updateMany({ where: { id: { in: reported.map((o) => o.id) } }, data: { status: SUPERSEDED } }),
+    prisma.investigationOrder.createMany({
+      data: reported.map((o) => ({ visitId, category: o.category, testName: o.testName, priority: o.priority, laterality: o.laterality, notes: o.notes })),
+    }),
+    prisma.counsellingRecord.update({
+      where: { visitId },
+      data: {
+        dateOfSurgery: next,
+        fitForSurgery: false, status: "PENDING", doctorDecision: null, reportsValidUntil: null, fitByName: null, doctorReviewedAt: null,
+      },
+    }),
+  ]);
+  await writeAudit(user.id, "CounsellingRecord", visitId, "NO_SHOW_RETAKE", { from, to: next, retaken: reported.map((o) => o.testName) });
   refresh(visitId);
   return {};
 }

@@ -3,19 +3,19 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
+import { addMonths, differenceInCalendarDays, differenceInMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import { motion } from "framer-motion";
 import {
   UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, IndianRupee, RotateCcw, Search, CalendarCheck,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, Stethoscope, ClipboardList, ChevronLeft,
-  Printer, Save, FileSignature, BookOpen,
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, ChevronLeft,
+  Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, Paperclip, Trash2, UserX,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 import { useSidebar } from "@/components/ui/SidebarContext";
 import { printInPlace } from "@/lib/print-in-place";
-import { CONSENT_DECLARATION, CONSENT_LANGUAGES, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
+import { CONSENT_DECLARATION, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, type CounsellingImplant } from "@/lib/counselling-sheets";
 import { EducationForm, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
 import type { SavedTemplate } from "../../ipd/[admissionId]/templatesUi";
@@ -27,13 +27,18 @@ import { fileHref } from "@/lib/file-href";
 import { istTodayStr } from "@/lib/ist";
 import {
   type CounsellingStatus, CASHLESS_TYPES, PAYER_SUGGESTIONS, LATERALITY_LABEL, PAYMENT_MODES,
-  implantSuggestions, reportsValidUntil,
+  implantSuggestions, reportsValidUntil, paymentLabel, paymentTypeOf, PAYMENT_TYPES, SELF_PAY, type PaymentDoc,
 } from "@/lib/counselling";
 import {
   saveCounsellingDetails, markFitForSurgery, reopenCounselling, addCounsellingInvestigations,
   postponeSurgery, resumeCounselling, saveAdvance, markEligibleForSurgery, attachCounsellingReport,
+  addCounsellingExtraReport, removeCounsellingReport, removeCounsellingExtraReport, rescheduleNoShow,
 } from "../actions";
-import { StatusBadge } from "../CounsellingClient";
+import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
+import { STATUS_META } from "../CounsellingClient";
+import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
+import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 
 export interface CounsellingOrder {
   id: string;
@@ -45,6 +50,9 @@ export interface CounsellingOrder {
   resultRef: string | null;
   resultAt: string | null;
   createdAt: string;
+  priority: string;
+  doctorNotes: string | null;
+  extraResultRefs: string | null;
 }
 
 export interface CounsellingDetailData {
@@ -67,6 +75,7 @@ export interface CounsellingDetailData {
     paymentType: string;
     schemeName: string;
     policyNumber: string;
+    paymentDocs: PaymentDoc[];
     estimateAmount: number | null;
     advancePaid: number | null;
     advanceReceived: boolean;
@@ -98,13 +107,12 @@ export interface CounsellingDetailData {
   };
 }
 
-const SEX_LABEL: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
 const IMPLANT_LIBRARY_KEY = "ppms_counselling_implants";
 
-const inputCls = "w-full h-8 rounded-lg border border-[var(--color-border)] bg-white px-3 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)] disabled:text-[var(--color-ink-600)]";
-const labelCls = "text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider block mb-1";
-const btnPrimary = "h-8 inline-flex items-center justify-center gap-1.5 px-3 text-xs sm:text-sm font-semibold rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50 transition-colors";
-const btnOutline = "h-8 inline-flex items-center justify-center gap-1.5 px-3 text-xs sm:text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-50 transition-colors";
+const inputCls = "w-full h-8 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-[13px] text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] shadow-[inset_0_1px_1px_rgba(20,36,43,0.03)] transition-colors hover:border-[var(--color-primary-200)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] disabled:bg-[var(--color-surface-sunken)]/60 disabled:text-[var(--color-ink-600)]";
+const labelCls = "text-[10.5px] font-semibold text-[var(--color-ink-400)] uppercase tracking-[0.08em] block mb-1";
+const btnPrimary = "h-8 inline-flex items-center justify-center gap-1.5 px-3.5 text-xs font-semibold rounded-full bg-[var(--color-primary-600)] text-white shadow-sm hover:bg-[var(--color-primary-700)] active:scale-[0.97] disabled:opacity-50 transition-[background-color,transform]";
+const btnOutline = "h-8 inline-flex items-center justify-center gap-1.5 px-3.5 text-xs font-semibold rounded-full border border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)] active:scale-[0.97] disabled:opacity-50 transition-[border-color,color,transform]";
 
 const IN_VIEW_OF_SUGGESTIONS = [
   "Physician fitness for surgery",
@@ -162,24 +170,6 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
   );
 }
 
-/** Read-only advance view: paid vs estimate with a meter. */
-function AdvanceMeter({ estimate, paid }: { estimate: number | null; paid: number }) {
-  const pct = estimate && estimate > 0 ? Math.min(100, Math.round((paid / estimate) * 100)) : null;
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-        <span className="text-[var(--color-ink-500)]">Advance <b className="text-base text-[var(--color-ink-900)] tabular-nums">{rupees(paid)}</b></span>
-        {estimate != null && <span className="text-[var(--color-ink-500)]">Pending <b className="text-[var(--color-ink-900)] tabular-nums">{rupees(Math.max(estimate - paid, 0))}</b> of {rupees(estimate)}</span>}
-      </div>
-      {pct != null && (
-        <div className="h-2 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-          <div className="h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-emerald-400" style={{ width: `${pct}%` }} />
-        </div>
-      )}
-    </div>
-  );
-}
-
 function ConfirmCard({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 px-3.5 py-3">
@@ -210,26 +200,35 @@ function ConfirmLine({ label, strong, inline, children }: { label: string; stron
 /* ── Investigations history ─────────────────────────────────────────────── */
 const isImage = (ref: string) => /\.(png|jpe?g|webp|gif)(\?|$)/i.test(ref);
 
-/** Report thumbnail: the image itself, or a file tile for PDFs / documents. */
-function ReportThumb({ resultRef }: { resultRef: string }) {
-  const href = fileHref(resultRef)!;
+/* Investigations sheet: the same layout as Previous Investigations in the EMR.
+   Counsellors upload, re-upload and remove report files only; no new orders,
+   no changes to the doctor's notes. */
+
+/** Read-only box for a value set when the test was ordered. */
+function InfoBox({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer" className="w-12 h-12 shrink-0 rounded-lg border border-[var(--color-border)] bg-white overflow-hidden flex items-center justify-center hover:ring-2 hover:ring-[var(--color-primary-300)] transition-shadow" title="Open report">
-      {isImage(resultRef)
-        ? <img src={href} alt="Report" className="w-full h-full object-cover" />
-        : <span className="flex flex-col items-center text-[var(--color-ink-500)]"><FileText size={18} /><span className="text-[8px] font-bold uppercase mt-0.5">{resultRef.split(".").pop()?.split("?")[0]?.slice(0, 4) ?? "file"}</span></span>}
-    </a>
+    <div className={`min-w-0 rounded-xl border border-[var(--color-border)]/80 bg-[var(--color-surface-sunken)]/70 px-2.5 py-1.5 text-label leading-snug ${className}`}>
+      {children}
+    </div>
   );
 }
 
-/** Drop a file on it, or click to browse. */
-function UploadResult({ orderId, visitId, onDone }: { orderId: string; visitId: string; onDone: () => void }) {
+function PriorityPill({ priority }: { priority: string }) {
+  const map: Record<string, string> = {
+    ROUTINE: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
+    URGENT:  "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
+    STAT:    "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
+  };
+  return <span className={`text-caption font-medium px-2 py-0.5 rounded-full ${map[priority] ?? map.ROUTINE}`}>{priority}</span>;
+}
+
+function UploadButton({ visitId, orderId, label, addMore = false, onDone }: { visitId: string; orderId: string; label: string; /** Keep the current file and attach this one as well. */ addMore?: boolean; onDone: () => void }) {
   const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const upload = async (file: File | undefined) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setError("");
@@ -239,7 +238,7 @@ function UploadResult({ orderId, visitId, onDone }: { orderId: string; visitId: 
       const res = await fetch("/api/uploads", { method: "POST", body: fd });
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      const result = await attachCounsellingReport(visitId, orderId, json.url);
+      const result = addMore ? await addCounsellingExtraReport(visitId, orderId, json.url) : await attachCounsellingReport(visitId, orderId, json.url);
       if (result?.error) throw new Error(result.error);
       onDone();
     } catch (err) {
@@ -251,95 +250,296 @@ function UploadResult({ orderId, visitId, onDone }: { orderId: string; visitId: 
   };
 
   return (
-    <div className="shrink-0 flex flex-col items-end gap-0.5">
-      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+    <div className="flex flex-col items-end gap-0.5">
+      <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFile} />
       <button
         type="button"
         disabled={uploading}
         onClick={() => fileRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => { e.preventDefault(); setDragOver(false); upload(e.dataTransfer.files?.[0]); }}
-        className={`w-40 h-12 flex flex-col items-center justify-center rounded-lg border-2 border-dashed text-caption font-semibold transition-colors disabled:opacity-60 ${
-          dragOver
-            ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-            : "border-[var(--color-primary-300)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]"
-        }`}
+        className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors"
       >
-        <span className="inline-flex items-center gap-1"><Upload size={13} className={uploading ? "animate-pulse" : ""} /> {uploading ? "Uploading…" : dragOver ? "Drop to upload" : "Upload report"}</span>
-        {!uploading && !dragOver && <span className="text-micro font-normal text-[var(--color-ink-400)]">or drag a file here</span>}
+        <Upload size={12} className={uploading ? "animate-pulse" : ""} />
+        {uploading ? "..." : label}
       </button>
       {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
   );
 }
 
-/** Investigations sheet: every order for the patient by date (like Previous Investigations in the EMR), with upload. */
+function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
+  order: CounsellingOrder; visitId: string; canUpload: boolean; onView: (url: string) => void; onChanged: () => void;
+}) {
+  // Only this surgery's orders can be changed here
+  const locked = !canUpload || !order.current;
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [busy, startBusy] = useTransition();
+  const [error, setError] = useState("");
+
+  const handleRemoveFile = () => {
+    if (!confirmRemove) { setConfirmRemove(true); setTimeout(() => setConfirmRemove(false), 3500); return; }
+    setError("");
+    startBusy(async () => {
+      const r = await removeCounsellingReport(visitId, order.id);
+      if (r?.error) setError(r.error); else onChanged();
+      setConfirmRemove(false);
+    });
+  };
+
+  const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
+  const orderedAt = format(new Date(order.createdAt), "dd MMM yyyy, h:mm a");
+
+  const lateralityBadge = (
+    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
+      {order.laterality ?? ""}
+    </span>
+  );
+  const nameBox = <InfoBox className="font-semibold text-[var(--color-ink-900)]">{order.testName}</InfoBox>;
+  const inViewOfBox = (
+    <InfoBox className="border-dashed italic text-[var(--color-ink-600)]">
+      <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
+    </InfoBox>
+  );
+
+  // Report not uploaded: one bar
+  if (!order.resultRef) {
+    return (
+      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]">
+        <div className="flex flex-wrap items-center gap-2">
+          {lateralityBadge}
+          <div className="min-w-[8rem] flex-1">{nameBox}</div>
+          <div className="min-w-[8rem] flex-1">{inViewOfBox}</div>
+          <PriorityPill priority={order.priority} />
+          <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+            <Clock size={10} />Ordered {orderedAt}
+          </span>
+          <div className="ml-auto flex items-center gap-1 shrink-0">
+            {!locked
+              ? <UploadButton visitId={visitId} orderId={order.id} label="Upload" onDone={onChanged} />
+              : <span className="text-caption text-[var(--color-ink-400)]">Pending</span>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Report uploaded: details on top, uploaded file below
+  const fileUrl = fileHref(order.resultRef)!;
+  const isPdf = /\.pdf$/i.test(order.resultRef);
+  const extraFiles = parseExtraResults(order.extraResultRefs);
+  return (
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]">
+      <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
+        {lateralityBadge}
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+          <div className="w-full">{nameBox}</div>
+          <PriorityPill priority={order.priority} />
+        </div>
+        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5 overflow-hidden">
+          <div className="w-full">{inViewOfBox}</div>
+          <span className="inline-flex items-start gap-1 text-caption text-[var(--color-ink-500)]">
+            <Clock size={10} className="mt-0.5 shrink-0" />Ordered {orderedAt}
+          </span>
+        </div>
+        <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
+          <div className="w-full">
+            <InfoBox className="text-[var(--color-ink-700)] whitespace-pre-wrap">
+              <span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{order.doctorNotes ?? ""}
+            </InfoBox>
+          </div>
+          {order.resultAt && (
+            <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
+              <Clock size={10} />Uploaded {format(new Date(order.resultAt), "dd MMM yyyy, h:mm a")}
+            </span>
+          )}
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="flex items-center gap-1">
+            <a
+              href={fileUrl}
+              download
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
+            >
+              <Download size={12} />
+            </a>
+          </div>
+          {!locked && (
+            <div className="flex items-center gap-1">
+              <UploadButton visitId={visitId} orderId={order.id} label="Re-upload" onDone={onChanged} />
+              <UploadButton visitId={visitId} orderId={order.id} label="Add more" addMore onDone={onChanged} />
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                disabled={busy}
+                className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                  confirmRemove
+                    ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                    : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
+                }`}
+              >
+                <Trash2 size={12} />
+                {confirmRemove ? "Sure?" : "Delete"}
+              </button>
+            </div>
+          )}
+          {error && <p className="text-caption text-red-600">{error}</p>}
+        </div>
+      </div>
+
+      {/* Uploaded file(s) */}
+      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
+        {isImage(order.resultRef) ? (
+          <img
+            src={fileUrl}
+            alt={`${order.testName} result`}
+            className="max-h-52 rounded-lg cursor-pointer object-contain"
+            onClick={() => onView(fileUrl)}
+          />
+        ) : isPdf ? (
+          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <iframe src={`${fileUrl}#toolbar=0&navpanes=0`} title={`${order.testName} result`} className="h-full w-full pointer-events-none" />
+            <button type="button" onClick={() => onView(fileUrl)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
+          </div>
+        ) : (
+          <button
+            onClick={() => onView(fileUrl)}
+            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
+          >
+            <Paperclip size={13} /> {order.testName} result file, click to view
+          </button>
+        )}
+        {extraFiles.map((file) => (
+          <ExtraResultPreview
+            key={file.ref}
+            file={file}
+            label={`${order.testName} result`}
+            onOpen={() => onView(fileHref(file.ref)!)}
+            onRemove={locked ? undefined : () => startBusy(async () => {
+              const r = await removeCounsellingExtraReport(visitId, order.id, file.ref);
+              if (r?.error) setError(r.error); else onChanged();
+            })}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Investigations sheet: every order for the patient by date, like Previous Investigations in the EMR. */
 function InvestigationsPanel({ data, canUpload, onChanged, action }: { data: CounsellingDetailData; canUpload: boolean; onChanged: () => void; action?: React.ReactNode }) {
-  const groups = useMemo(() => {
+  const [viewUrl, setViewUrl] = useState<string | null>(null);
+  const grouped = useMemo(() => {
     const map = new Map<string, CounsellingOrder[]>();
     for (const o of data.orders) {
-      const key = format(new Date(o.createdAt), "yyyy-MM-dd");
+      const key = format(new Date(o.createdAt), "dd MMM yyyy");
       map.set(key, [...(map.get(key) ?? []), o]);
     }
     return [...map.entries()];
   }, [data.orders]);
-  const current = data.orders.filter((o) => o.current);
-  const done = current.filter((o) => o.resultRef).length;
 
   return (
-    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-        <p className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-ink-800)]"><FlaskConical size={15} className="text-[var(--color-primary-600)]" /> Investigations</p>
-        {action}
-      </div>
-      {current.length > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2">
-          <span className="text-xs font-semibold text-[var(--color-ink-700)] whitespace-nowrap">For this surgery: {done}/{current.length} uploaded</span>
-          <span className="flex-1 h-1.5 rounded-full bg-[var(--color-border)] overflow-hidden">
-            <span className={`block h-full rounded-full ${done === current.length ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${(done / current.length) * 100}%` }} />
-          </span>
+    <>
+      {/* PDF/image viewer */}
+      {viewUrl && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60" onClick={() => setViewUrl(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
+              <p className="text-label sm:text-sm font-medium text-[var(--color-ink-700)]">Result Viewer</p>
+              <div className="flex items-center gap-2">
+                <a href={viewUrl} download target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary-400)] text-[var(--color-ink-600)] transition-colors">
+                  <Download size={13} /> Download
+                </a>
+                <button onClick={() => setViewUrl(null)} className="text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)] text-lg font-bold px-2" aria-label="Close">×</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-2">
+              {/\.(jpg|jpeg|png|webp)$/i.test(viewUrl)
+                ? <img src={viewUrl} alt="Result" className="max-w-full mx-auto rounded-lg" />
+                : <iframe src={viewUrl} className="w-full h-[75vh] rounded-lg" title="Result" />}
+            </div>
+          </div>
         </div>
       )}
-      {groups.length === 0 ? (
-        <p className="text-sm text-[var(--color-ink-400)] py-8 text-center">No investigations ordered for this patient.</p>
+
+      {action && <div className="flex justify-end">{action}</div>}
+
+      {grouped.length === 0 ? (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center justify-center py-12 text-center gap-2">
+          <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
+          <p className="text-label sm:text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {groups.map(([day, orders]) => (
-            <div key={day}>
-              <p className="text-micro font-bold uppercase tracking-wider text-[var(--color-ink-400)] mb-1.5">{format(new Date(day), "d MMM yyyy")}</p>
-              <div className="space-y-1.5">
-                {orders.map((o) => (
-                  <div key={o.id} className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${o.current ? "border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/40" : "border-[var(--color-border)]"}`}>
-                    {o.resultRef
-                      ? <ReportThumb resultRef={o.resultRef} />
-                      : <span className="w-12 h-12 shrink-0 rounded-lg border border-dashed border-[var(--color-border)] flex items-center justify-center text-[var(--color-ink-300)]"><FlaskConical size={18} /></span>}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[var(--color-ink-800)]">
-                        {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}
-                        {o.testName}
-                        {o.current && <span className="ml-2 text-micro font-bold uppercase text-[var(--color-primary-600)]">For this surgery</span>}
-                      </p>
-                      <p className="text-caption text-[var(--color-ink-400)] truncate">
-                        {o.category}{o.notes ? ` · In view of: ${o.notes}` : ""}
-                      </p>
-                      {o.resultRef && <p className="text-caption text-emerald-700 font-medium mt-0.5">Uploaded {fmtDate(o.resultAt)}</p>}
-                    </div>
-                    {o.resultRef ? (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-caption font-semibold text-emerald-700"><CheckCircle2 size={13} /> Complete</span>
-                    ) : o.current && canUpload ? (
-                      <UploadResult orderId={o.id} visitId={data.visitId} onDone={onChanged} />
-                    ) : (
-                      <span className="shrink-0 text-caption font-semibold text-slate-500">Pending</span>
-                    )}
-                  </div>
+        <div className="flex flex-col gap-6">
+          {grouped.map(([dateLabel, dayOrders]) => (
+            <div key={dateLabel}>
+              <div className="flex items-center gap-3 mb-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-100)]"><CalendarDays size={11} />{dateLabel}</span>
+                <div className="flex-1 h-px bg-gradient-to-r from-[var(--color-primary-100)] to-transparent" />
+              </div>
+              <div className="flex flex-col gap-3">
+                {dayOrders.map((o) => (
+                  <InvestigationCard key={o.id} order={o} visitId={data.visitId} canUpload={canUpload} onView={setViewUrl} onChanged={onChanged} />
                 ))}
               </div>
             </div>
           ))}
         </div>
       )}
-    </section>
+    </>
+  );
+}
+
+/** New date for a No Show patient: keep the reports, or take the investigations again. */
+function NoShowModal({ pending, error, onClose, newDate, fit, oldestReport, validUntil, onKeep, onRetake }: {
+  pending: boolean; error: string; onClose: () => void; newDate: string; fit: boolean;
+  oldestReport: string | null; validUntil: string | null; onKeep: () => void; onRetake: () => void;
+}) {
+  const taken = oldestReport ? new Date(oldestReport) : null;
+  const days = taken ? differenceInCalendarDays(new Date(), taken) : 0;
+  const months = taken ? differenceInMonths(new Date(), taken) : 0;
+  const ago = months >= 1 ? `${months} month${months > 1 ? "s" : ""}` : `${days} day${days === 1 ? "" : "s"}`;
+  const expiredNow = !!validUntil && new Date(validUntil) < new Date();
+  // Kept reports must still be valid on the new surgery date
+  const validForNew = !validUntil || new Date(`${newDate}T00:00:00`) <= new Date(validUntil);
+  const canKeep = !fit || validForNew;
+
+  return (
+    <Modal title="New date for a No Show patient" onClose={onClose}>
+      <div className="space-y-3">
+        <div className={`rounded-xl border px-3.5 py-3 ${expiredNow || !validForNew ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
+          <p className="text-sm font-semibold text-[var(--color-ink-900)]">
+            The investigations were taken {ago} ago{taken ? ` (${format(taken, "d MMM yyyy")})` : ""}.
+          </p>
+          {validUntil && (
+            <p className={`mt-1 text-caption font-medium ${expiredNow || !validForNew ? "text-red-700" : "text-amber-800"}`}>
+              {expiredNow
+                ? `The reports expired on ${fmtDate(validUntil)}.`
+                : validForNew
+                  ? `The reports are valid till ${fmtDate(validUntil)}.`
+                  : `The reports are valid only till ${fmtDate(validUntil)}, before the new date (${fmtDate(new Date(`${newDate}T00:00:00`).toISOString())}).`}
+            </p>
+          )}
+        </div>
+        <p className="text-caption sm:text-xs text-[var(--color-ink-500)]">
+          {fit
+            ? "Keep the patient in Partial with these reports, or move them to Pending so the investigations are taken again."
+            : "Keep these reports, or have the investigations taken again."}
+        </p>
+        {error && <p className="text-caption text-red-600">{error}</p>}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button className={`${btnOutline} flex-1`} disabled={pending || !canKeep} onClick={onKeep}
+            title={canKeep ? undefined : "The reports are not valid for the new date"}>
+            {fit ? "Keep in Partial" : "Keep reports"}
+          </button>
+          <button className={`${btnPrimary} flex-1`} disabled={pending} onClick={onRetake}>
+            <RotateCcw size={14} /> {fit ? "Move to Pending, retake" : "Retake investigations"}
+          </button>
+        </div>
+        <p className="text-micro text-[var(--color-ink-400)]">Retake orders the same tests again; the old reports stay in the Investigations history.</p>
+      </div>
+    </Modal>
   );
 }
 
@@ -555,24 +755,6 @@ function SuggestInput({
   );
 }
 
-/** Two-letter initials for the avatar fallback. */
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
-}
-
-/** Tiny progress ring for the investigations pill. */
-function MiniRing({ value, done }: { value: number; done: boolean }) {
-  const r = 6, c = 2 * Math.PI * r;
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" className="shrink-0 -rotate-90">
-      <circle cx="8" cy="8" r={r} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="2.5" />
-      <circle cx="8" cy="8" r={r} fill="none" stroke={done ? "#10b981" : "var(--color-primary-500)"} strokeWidth="2.5" strokeLinecap="round"
-        strokeDasharray={c} strokeDashoffset={c * (1 - value)} />
-    </svg>
-  );
-}
-
 /* ── Layout pieces ───────────────────────────────────────────────────────── */
 const CASHLESS_ICON: Record<string, React.ReactNode> = {
   INSURANCE:   <ShieldCheck size={13} />,
@@ -582,6 +764,67 @@ const CASHLESS_ICON: Record<string, React.ReactNode> = {
   OTHER:       <MoreHorizontal size={13} />,
 };
 
+/** Insurance card, pre-authorisation, scheme card or letter: upload, view, remove. Saved with the common Save. */
+function PaymentDocs({ docs, onChange, editable, typeLabel, button }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploading(true);
+    setError("");
+    try {
+      const added: PaymentDoc[] = [];
+      for (const file of Array.from(files)) {
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/uploads", { method: "POST", body: fd });
+        const json = await res.json();
+        if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+        added.push({ ref: json.url, name: file.name, at: new Date().toISOString() });
+      }
+      onChange([...docs, ...added]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  if (button) {
+    if (!editable) return null;
+    return (
+      <span className="relative shrink-0">
+        <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" className="hidden" onChange={(e) => upload(e.target.files)} />
+        <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+          title={error || `Upload ${typeLabel.toLowerCase()} document (card, pre-authorisation, letter)`}
+          className={`h-8 inline-flex items-center gap-1 px-2.5 rounded-full border border-dashed text-xs font-semibold transition-colors disabled:opacity-50 ${error ? "border-red-300 text-red-600" : "border-[var(--color-primary-400)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"} bg-white`}>
+          <Upload size={12} className={uploading ? "animate-pulse" : ""} />
+          {uploading ? "..." : "Doc"}
+          {docs.length > 0 && <span className="rounded-full bg-[var(--color-primary-100)] px-1.5 text-[10px] tabular-nums">{docs.length}</span>}
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <ul className="flex flex-wrap gap-1.5">
+      {docs.map((d) => (
+        <li key={d.ref} className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-2.5 pr-1 py-0.5 text-xs">
+          <FileText size={12} className="shrink-0 text-[var(--color-primary-600)]" />
+          <a href={fileHref(d.ref)!} target="_blank" rel="noreferrer" className="truncate max-w-[220px] font-medium text-[var(--color-ink-700)] hover:text-[var(--color-primary-700)] hover:underline" title={d.name}>{d.name}</a>
+          <span className="text-[10px] text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(d.at), "d MMM")}</span>
+          {editable && (
+            <button type="button" onClick={() => onChange(docs.filter((x) => x.ref !== d.ref))} aria-label={`Remove ${d.name}`}
+              className="w-5 h-5 rounded-full flex items-center justify-center text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-600 transition-colors"><X size={11} /></button>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function SectionCard({
   id, step, icon, title, right, locked, lockedText, children,
 }: {
@@ -589,19 +832,20 @@ function SectionCard({
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
-    <section id={id} className={`scroll-mt-4 rounded-xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)]"}`}>
-      <header className={`h-10 flex items-center gap-2.5 px-4 ${locked ? "" : "border-b border-[var(--color-border)]"}`}>
-        <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>
+    <section id={id} className={`scroll-mt-4 rounded-2xl border bg-[var(--color-surface)] ${locked ? "border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40" : "border-[var(--color-border)] shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]"}`}>
+      <header className={`h-10 flex items-center gap-2.5 px-4 ${locked ? "" : "border-b border-[var(--color-border)]/70"}`}>
+        <span className={`relative w-7 h-7 rounded-xl flex items-center justify-center shrink-0 ${locked ? "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)]" : "bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"}`}>
           {icon}
+          <span className={`absolute -top-1 -right-1 min-w-[14px] h-[14px] px-0.5 rounded-full text-[9px] font-bold leading-[14px] text-center tabular-nums ${locked ? "bg-[var(--color-ink-300)] text-white" : "bg-[var(--color-primary-600)] text-white"}`}>{step}</span>
         </span>
-        <p className={`flex-1 min-w-0 truncate text-sm font-semibold ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-900)]"}`}>
-          <span className="tabular-nums text-[var(--color-ink-300)] mr-1.5">{step}</span>{title}
+        <p className={`flex-1 min-w-0 truncate text-[13px] font-semibold tracking-tight ${locked ? "text-[var(--color-ink-400)]" : "text-[var(--color-ink-900)]"}`}>
+          {title}
         </p>
         {locked
           ? <span className="inline-flex items-center gap-1 text-caption font-medium text-[var(--color-ink-400)]"><Lock size={12} /> <span className="hidden sm:inline">{lockedText}</span></span>
           : right}
       </header>
-      {!locked && <div className="px-4 py-3">{children}</div>}
+      {!locked && <div className="px-4 py-3.5">{children}</div>}
     </section>
   );
 }
@@ -610,7 +854,7 @@ function SectionCard({
 function InlineField({ label, tight, children }: { label: string; tight?: boolean; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center gap-x-3 gap-y-1 min-w-0">
-      <label className={`text-micro font-semibold text-[var(--color-ink-500)] uppercase tracking-wider whitespace-nowrap ${tight ? "" : "sm:min-w-[8.5rem]"}`}>{label}</label>
+      <label className={`text-[10.5px] font-semibold text-[var(--color-ink-400)] uppercase tracking-[0.08em] whitespace-nowrap ${tight ? "" : "sm:min-w-[8.5rem]"}`}>{label}</label>
       {children}
     </div>
   );
@@ -623,36 +867,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       {children}
     </div>
   );
-}
-
-/** What is still to be filled on a sheet. A reminder only: nothing is blocked. */
-function MissingBox({ items, groups }: { items?: string[]; groups?: { title: string; items: string[] }[] }) {
-  const all = groups ? groups.filter((g) => g.items.length > 0) : [];
-  const count = (items?.length ?? 0) + all.reduce((n, g) => n + g.items.length, 0);
-  if (count === 0) {
-    return (
-      <p className="inline-flex items-center gap-1.5 self-start rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-        <CheckCircle2 size={13} /> All details filled
-      </p>
-    );
-  }
-  const chip = (t: string) => <span key={t} className="rounded-full bg-white border border-amber-200 px-2 py-0.5 text-caption font-medium text-amber-800">{t}</span>;
-  return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/70 px-3.5 py-2.5">
-      <p className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-800 mb-1.5"><AlertTriangle size={13} /> Still to fill ({count})</p>
-      {items && items.length > 0 && <div className="flex flex-wrap gap-1.5">{items.map(chip)}</div>}
-      {all.map((g) => (
-        <div key={g.title} className="flex flex-wrap items-center gap-1.5 mt-1 first:mt-0">
-          <span className="text-caption font-semibold text-amber-900 mr-0.5">{g.title}:</span>
-          {g.items.map((t) => chip(t))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function LockedTag() {
-  return <span className="inline-flex items-center gap-1 rounded-full bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-2 py-0.5 text-micro font-semibold text-[var(--color-ink-500)]"><Lock size={10} /> Frozen</span>;
 }
 
 function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; children: React.ReactNode }) {
@@ -791,7 +1005,8 @@ export function CounsellingDetail({
   const [implant, setImplant]           = useState(rec.implant);
   const [dateOfSurgery, setDate]        = useState(rec.dateOfSurgery ? istTodayStr(new Date(rec.dateOfSurgery)) : "");
   const [paymentMode, setPaymentMode]   = useState(rec.paymentMode);
-  const [paymentType, setPaymentType]   = useState(rec.paymentType);
+  const [paymentType, setPaymentType]   = useState(paymentTypeOf(rec.paymentMode, rec.paymentType));
+  const [paymentDocs, setPaymentDocs]   = useState<PaymentDoc[]>(rec.paymentDocs);
   const [schemeName, setSchemeName]     = useState(rec.schemeName);
   const [policyNumber, setPolicyNumber] = useState(rec.policyNumber);
   const [estimate, setEstimate]         = useState(rec.estimateAmount != null ? String(rec.estimateAmount) : "");
@@ -811,22 +1026,22 @@ export function CounsellingDetail({
   const [advanceReceived, setAdvanceReceived] = useState(rec.advanceReceived);
 
   const [sheet, setSheet] = useState<SheetId>("sheet");
-  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "eligible">(null);
+  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "eligible" | "noShow">(null);
   const [showActivity, setShowActivity] = useState(false);
   const [error, setError] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
 
-  const frozen = rec.fitForSurgery || rec.eligibleForSurgery;
-  const editable = canEdit && !frozen;
+  // Nothing is frozen: every field stays editable at every stage
+  const editable = canEdit;
   // After Fit only the surgery date can still change, until Eligible finalizes counselling.
-  const dateEditable = canEdit && !rec.eligibleForSurgery;
+  const dateEditable = canEdit;
   // Consents and education stay editable until Eligible
-  const sheetsEditable = canEdit && !rec.eligibleForSurgery;
+  const sheetsEditable = canEdit;
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
   const details = useMemo(
-    () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, estimateAmount: estimate === "" ? null : Number(estimate) }),
-    [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, estimate],
+    () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, paymentDocs, estimateAmount: estimate === "" ? null : Number(estimate) }),
+    [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, paymentDocs, estimate],
   );
 
   // What Save writes, and what was last saved (to know when there are unsaved changes)
@@ -834,7 +1049,7 @@ export function CounsellingDetail({
   const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
   const advanceNum = advance === "" ? null : Number(advance);
   const advancePayload = tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 };
-  const advanceEditable = canEdit && rec.fitForSurgery && !rec.eligibleForSurgery && !expired;
+  const advanceEditable = canEdit && rec.fitForSurgery && !expired;
   const advanceDirty = advanceEditable && JSON.stringify(advancePayload) !== JSON.stringify({ advancePaid: rec.advancePaid, advanceReceived: rec.advanceReceived });
   const sheetDirty = sheetsEditable && snapshot !== savedSnapshot;
   const dirty = sheetDirty || advanceDirty;
@@ -885,21 +1100,15 @@ export function CounsellingDetail({
     !implantInfo.model.trim() && "Implant model",
     !implantInfo.power.trim() && "IOL power",
     !implantInfo.aConstant.trim() && "A-constant",
-    !paymentMode && "Payment option",
-    paymentMode === "CASHLESS" && !paymentType && "Cashless: covered by",
-    paymentMode === "CASHLESS" && cashless && !schemeName.trim() && cashless.nameLabel,
-    paymentMode === "CASHLESS" && cashless && !policyNumber.trim() && cashless.idLabel,
+    !paymentType && "Payment type",
+    !!cashless && !paymentMode && "Out of Pocket or Covered",
+    !!cashless && !schemeName.trim() && cashless.nameLabel,
+    !!cashless && !policyNumber.trim() && cashless.idLabel,
     rec.fitForSurgery && !advanceDone && "Advance payment",
   ].filter((x): x is string => !!x);
   const invMissing = invPending.map((o) => `${o.testName} report`);
   const consentMissing = (c: ConsentItem) => [
     !c.text.trim() && "Wording",
-    !c.language && "Explained in",
-    !c.explainedBy?.trim() && "Explained by",
-    !c.signer?.name.trim() && "Signed by",
-    c.signer?.kind === "RELATIVE" && !c.signer.relation.trim() && "Relationship",
-    !c.witness?.trim() && "Witness",
-    !c.signed && "Signature taken",
   ].filter((x): x is string => !!x);
   const nbm = education.dietTypes.includes("Nil by mouth");
   const unexplained = education.points.filter((p) => !p.done).length;
@@ -929,10 +1138,46 @@ export function CounsellingDetail({
     });
   }
 
-  const save = () => run(async () => {
+  // Small "Mark Fit for Surgery" pill: the counsellor clicks it once every report is
+  // uploaded and the doctor has approved them. Fit moves the patient to Partial.
+  const fitBlocked = rec.surgeryDeferred ? "Surgery date is not confirmed"
+    : invPending.length > 0 ? "Upload every report first"
+    : !dateOfSurgery ? "Set the tentative date first" : "";
+  const fitPillButton = (
+    <button
+      type="button"
+      disabled={pending || !!fitBlocked}
+      title={fitBlocked || "Reports seen and approved by the doctor"}
+      onClick={() => { setError(""); setModal("fit"); }}
+      className="inline-flex items-center gap-1.5 h-7 pl-2 pr-3 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 shadow-[0_1px_2px_rgba(180,83,9,0.12)] hover:bg-amber-100 hover:border-amber-400 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 transition-[background-color,border-color,transform]"
+    >
+      <span className="grid place-items-center w-4 h-4 rounded-full bg-amber-500 text-white"><Check size={10} strokeWidth={3} /></span>
+      Mark Fit for Surgery
+    </button>
+  );
+
+  const flashSaved = () => { setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500); };
+
+  // No Show: the saved tentative date has passed and counselling is not complete
+  const savedDay = rec.dateOfSurgery ? istTodayStr(new Date(rec.dateOfSurgery)) : "";
+  const noShow = !!savedDay && savedDay < istTodayStr() && !rec.eligibleForSurgery && !rec.surgeryDeferred && !(rec.fitForSurgery && advanceDone);
+  const reportsTaken = currentOrders.some((o) => o.resultRef);
+
+  const save = () => {
+    // A new date for a No Show patient with reports asks whether the reports are kept or taken again
+    if (noShow && dateOfSurgery && dateOfSurgery !== savedDay && reportsTaken) { setError(""); setModal("noShow"); return; }
+    run(async () => {
+      const err = await saveAll();
+      return err ? { error: err } : {};
+    }, flashSaved);
+  };
+
+  const rescheduleSave = (retake: boolean) => run(async () => {
+    const r = await rescheduleNoShow(data.visitId, dateOfSurgery, retake);
+    if (r.error) return r;
     const err = await saveAll();
     return err ? { error: err } : {};
-  }, () => { setSavedFlash(true); setTimeout(() => setSavedFlash(false), 2500); });
+  }, () => { setModal(null); flashSaved(); });
 
   /** Save first (so the print shows what is on screen), then print. */
   const printSaved = (href: string) => run(async () => {
@@ -942,15 +1187,11 @@ export function CounsellingDetail({
     return {};
   });
 
+  const statusLabel = expired ? "Reports Expired" : data.status === "COMPLETED" && !rec.eligibleForSurgery ? "Advance Paid" : STATUS_META[data.status].label;
+  const daysToSurgery = dateOfSurgery ? differenceInCalendarDays(new Date(`${dateOfSurgery}T00:00:00`), new Date()) : null;
+
   const surgeryFull = [data.surgery, data.laterality ? LATERALITY_LABEL[data.laterality] ?? data.laterality : "", data.anaesthesia ?? ""].filter(Boolean).join(" · ");
 
-  const steps = [
-    { label: "Counselling", icon: ClipboardList, done: true },
-    { label: "Fit for Surgery", icon: ShieldCheck, done: rec.fitForSurgery },
-    { label: "Advance", icon: IndianRupee, done: advanceDone },
-    { label: "Eligible", icon: CalendarCheck, done: rec.eligibleForSurgery },
-  ];
-  const currentStep = steps.findIndex((s) => !s.done);
   const invAllDone = currentOrders.length > 0 && invDone === currentOrders.length;
 
   // The IPD forms take a file context; in Counselling it is this visit
@@ -972,21 +1213,24 @@ export function CounsellingDetail({
   };
 
   const consentCard = (c: ConsentItem) => (
-    <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
-        <p className="text-sm font-semibold text-[var(--color-ink-800)]">{c.title}</p>
+    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-[var(--color-border)]/70">
+        <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-tight text-[var(--color-ink-900)]">
+          <span className="w-7 h-7 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"><FileSignature size={14} /></span>
+          {c.title}
+        </p>
         <button type="button" className={btnOutline} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/consent/${encodeURIComponent(c.id)}`)}>
           <Printer size={14} /> Print
         </button>
       </div>
-      <div className="p-4">
+      <div className="p-4 space-y-3">
         {sheetsEditable ? (
           <textarea
             value={c.text}
             onChange={(e) => setConsentText(c.id, e.target.value)}
             rows={Math.min(16, Math.max(5, c.text.split("\n").length + 3))}
             placeholder="Consent wording…"
-            className="w-full rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent resize-y"
+            className="w-full rounded-xl border border-transparent bg-[var(--color-surface-sunken)]/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] transition-colors hover:bg-[var(--color-surface-sunken)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] resize-y"
           />
         ) : (
           <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">
@@ -994,55 +1238,8 @@ export function CounsellingDetail({
             {!c.text.trim() && <p className="italic text-[var(--color-ink-400)]">No wording entered.</p>}
           </div>
         )}
-        <p className="mt-3 text-xs italic text-[var(--color-ink-500)]">{CONSENT_DECLARATION}</p>
+        <p className="rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>
 
-        {/* Who explained it, who signed, the witness */}
-        <div className="mt-4 pt-3 border-t border-dashed border-[var(--color-border)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Field label="Explained in">
-            <select value={c.language ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { language: e.target.value })} className={inputCls}>
-              <option value="">Select language</option>
-              {[...new Set([...CONSENT_LANGUAGES, ...(c.language ? [c.language] : [])])].map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="Explained by">
-            <div className="flex gap-1.5">
-              <input value={c.explainedBy ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { explainedBy: e.target.value })} placeholder={sheetsEditable ? "Counsellor / doctor name" : "-"} className={inputCls} />
-              {sheetsEditable && !c.explainedBy && <button type="button" className={btnOutline} onClick={() => setConsentItem(c.id, { explainedBy: data.sheets.me })}>Me</button>}
-            </div>
-          </Field>
-          <Field label="Signed by">
-            <div className="inline-flex rounded-lg border border-[var(--color-border)] bg-white p-0.5 gap-0.5">
-              {(["PATIENT", "RELATIVE"] as const).map((k) => {
-                const on = (c.signer?.kind ?? "") === k;
-                return (
-                  <button key={k} type="button" disabled={!sheetsEditable}
-                    onClick={() => setConsentItem(c.id, { signer: { kind: k, name: k === "PATIENT" ? (c.signer?.kind === "PATIENT" && c.signer.name ? c.signer.name : data.patient.name) : (c.signer?.kind === "RELATIVE" ? c.signer.name : ""), relation: k === "RELATIVE" ? (c.signer?.relation ?? "") : "" } })}
-                    className={`h-7 px-3 rounded-md text-xs font-semibold transition-colors disabled:cursor-default ${on ? "bg-[var(--color-primary-600)] text-white" : "text-[var(--color-ink-600)] enabled:hover:bg-[var(--color-surface-sunken)]"}`}>
-                    {k === "PATIENT" ? "Patient" : "Relative"}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-          <Field label="Signer name">
-            <input value={c.signer?.name ?? ""} disabled={!sheetsEditable || !c.signer} onChange={(e) => setConsentItem(c.id, { signer: { kind: c.signer?.kind ?? "PATIENT", name: e.target.value, relation: c.signer?.relation ?? "" } })} placeholder={c.signer ? "Name" : "Choose Patient or Relative"} className={inputCls} />
-          </Field>
-          {c.signer?.kind === "RELATIVE" && (
-            <Field label="Relationship">
-              <input value={c.signer.relation} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { signer: { ...c.signer!, relation: e.target.value } })} placeholder="e.g. Son" className={inputCls} />
-            </Field>
-          )}
-          <Field label="Witness">
-            <input value={c.witness ?? ""} disabled={!sheetsEditable} onChange={(e) => setConsentItem(c.id, { witness: e.target.value })} placeholder={sheetsEditable ? "Witness name" : "-"} className={inputCls} />
-          </Field>
-        </div>
-        <label className={`mt-3 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${c.signed ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-[var(--color-border)] text-[var(--color-ink-700)]"} ${sheetsEditable ? "cursor-pointer" : ""}`}>
-          <input type="checkbox" checked={c.signed} disabled={!sheetsEditable}
-            onChange={() => setConsentItem(c.id, c.signed ? { signed: false, signedAt: undefined, recordedBy: undefined } : { signed: true, signedAt: new Date().toISOString(), recordedBy: data.sheets.me })}
-            className="w-4 h-4 accent-emerald-600" />
-          Signed consent taken
-          {c.signed && c.signedAt && <span className="text-caption text-emerald-700">· {c.recordedBy ? `${c.recordedBy}, ` : ""}{fmtDateTime(c.signedAt)}</span>}
-        </label>
       </div>
     </section>
   );
@@ -1050,9 +1247,8 @@ export function CounsellingDetail({
   /* ── Sheet 1: Counselling sheet ───────────────────────────────────────── */
   const counsellingSheet = (
     <div className="flex flex-col gap-3">
-      {!rec.eligibleForSurgery && <MissingBox items={sheetMissing} />}
       {/* ── A & B ─────────────────────────────────────────────────── */}
-      <SectionCard step={1} icon={<Scissors size={15} />} title="Surgery Details" right={frozen ? <LockedTag /> : null}>
+      <SectionCard step={1} icon={<Scissors size={15} />} title="Surgery Details">
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
             {data.laterality
@@ -1088,51 +1284,84 @@ export function CounsellingDetail({
             </div>
           </InlineField>
           <InlineField label="Tentative Date" tight>
-            <input type="date" value={dateOfSurgery} min={istTodayStr()} max={rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+            <input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+            {noShow && dateEditable && (
+              <p className="mt-1 inline-flex items-center gap-1 text-caption font-medium text-red-600"><UserX size={12} /> No show: the date has passed. Pick a new date and Save.</p>
+            )}
           </InlineField>
         </div>
       </SectionCard>
 
       {/* ── Implant details (as in the IPD Implant form) ──────────── */}
-      <SectionCard step={2} icon={<Package size={15} />} title="Implant Details" right={frozen ? <LockedTag /> : null}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <SectionCard step={2} icon={<Package size={15} />} title="Implant Details">
+        {/* Same fields as the IPD Implant form ("Implant used"); the IPD file starts from them */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <IolFields value={implantInfo} onChange={(p) => setImplantInfo((v) => ({ ...v, ...p }))} disabled={!editable} inputClass={inputCls}
+            row={(k, label, control) => <Field key={k} label={label}>{control}</Field>} />
+          <Field label="IOL power (D)">
+            <IolPowerInput value={implantInfo.power} onChange={(x) => setImplantInfo((v) => ({ ...v, power: x }))} disabled={!editable} className={inputCls} />
+          </Field>
           {([
-            ["manufacturer", "Manufacturer", "e.g. Alcon"],
-            ["model", "Model", "e.g. AcrySof IQ"],
-            ["power", "IOL power (D)", "e.g. +21.5"],
-            ["aConstant", "A-constant", "e.g. 118.7"],
-          ] as const).map(([k, label, ph]) => (
+            ["lot", "Lot / batch no.", "", "text"],
+            ["serial", "Serial no.", "", "text"],
+            ["expiry", "Expiry", "", "month"],
+          ] as const).map(([k, label, ph, type]) => (
             <Field key={k} label={label}>
-              <input value={implantInfo[k]} disabled={!editable} onChange={(e) => setImplantInfo((v) => ({ ...v, [k]: e.target.value }))} placeholder={editable ? ph : "-"} className={inputCls} />
+              <input type={type} value={implantInfo[k]} disabled={!editable} onChange={(e) => setImplantInfo((v) => ({ ...v, [k]: e.target.value }))} placeholder={editable ? ph : "-"} className={inputCls} />
             </Field>
           ))}
         </div>
-        <p className="mt-2 text-caption text-[var(--color-ink-400)]">Lot no., serial no., expiry and the implant checks are filled in the IPD file on the day of surgery.</p>
+        <p className="mt-2 text-caption text-[var(--color-ink-400)]">As printed on the implant pack / sticker. The implant checks are done in the IPD file on the day of surgery.</p>
       </SectionCard>
 
       {/* ── C & D ─────────────────────────────────────────────────── */}
-      <SectionCard step={3} icon={<Wallet size={15} />} title="Payment" right={frozen ? <LockedTag /> : null}>
-        <div>
-          <InlineField label="Payment Option">
-            <div className="inline-flex gap-2">
-              {PAYMENT_MODES.map((m) => {
-                const active = paymentMode === m.value;
-                return (
-                  <button key={m.value} type="button" disabled={!editable}
-                    onClick={() => { setPaymentMode(m.value); if (m.value === "CASH") { setPaymentType(""); setSchemeName(""); setPolicyNumber(""); } }}
-                    className={`h-8 w-28 inline-flex items-center justify-center gap-2 rounded-lg border text-xs sm:text-sm font-semibold transition-colors disabled:cursor-default ${
-                      active
-                        ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
-                        : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
-                    }`}>
-                    {m.value === "CASH" ? <Banknote size={15} /> : <CreditCard size={15} />}
-                    {m.value === "CASH" ? "Cash" : "Cashless"}
-                  </button>
-                );
-              })}
-            </div>
-          </InlineField>
-        </div>
+      <SectionCard step={3} icon={<Wallet size={15} />} title="Payment">
+        {/* 1. Type of payment */}
+        <InlineField label="Payment type">
+          <div className="flex flex-wrap gap-1.5">
+            {PAYMENT_TYPES.map((t) => {
+              const active = paymentType === t.value;
+              return (
+                <button key={t.value} type="button" disabled={!editable}
+                  onClick={() => {
+                    if (t.value === paymentType) return;
+                    setPaymentType(t.value); setSchemeName(""); setPolicyNumber("");
+                    // Self always pays out of pocket
+                    if (t.value === SELF_PAY) setPaymentMode("CASH");
+                  }}
+                  className={`h-8 inline-flex items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors disabled:cursor-default ${
+                    active
+                      ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
+                      : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
+                  }`}>
+                  {t.value === SELF_PAY ? <UserRound size={13} /> : CASHLESS_ICON[t.value]}{t.label}
+                </button>
+              );
+            })}
+          </div>
+        </InlineField>
+
+        {/* 2. Out of Pocket or Covered (Self is always Out of Pocket) */}
+        {cashless && (
+          <div className="mt-3">
+            <InlineField label="Paid as">
+              <div className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-0.5">
+                {PAYMENT_MODES.map((m) => {
+                  const active = paymentMode === m.value;
+                  return (
+                    <button key={m.value} type="button" disabled={!editable} onClick={() => setPaymentMode(m.value)}
+                      className={`h-7 inline-flex items-center gap-1.5 px-3.5 rounded-full text-xs font-semibold transition-colors disabled:cursor-default ${
+                        active ? "bg-white text-[var(--color-primary-700)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
+                      }`}>
+                      {m.value === "CASH" ? <Banknote size={13} /> : <CreditCard size={13} />}
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </InlineField>
+          </div>
+        )}
 
         <div className="mt-3">
           <InlineField label="Estimate (optional)">
@@ -1143,109 +1372,40 @@ export function CounsellingDetail({
           </InlineField>
         </div>
 
-        {paymentMode === "CASHLESS" && (
-          <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-3 space-y-3">
-            <Field label="Covered By">
-              <div className="flex flex-wrap gap-1.5">
-                {CASHLESS_TYPES.map((t) => {
-                  const active = paymentType === t.value;
-                  return (
-                    <button key={t.value} type="button" disabled={!editable} onClick={() => { if (t.value !== paymentType) { setPaymentType(t.value); setSchemeName(""); setPolicyNumber(""); } }}
-                      className={`h-8 inline-flex items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors disabled:cursor-default ${
-                        active
-                          ? "border-[var(--color-primary-500)] bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-500)]"
-                          : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)] hover:border-[var(--color-primary-300)]"
-                      }`}>
-                      {CASHLESS_ICON[t.value]}{t.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
-            {cashless && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                <InlineField label={cashless.nameLabel} tight>
-                  <SuggestInput
-                    key={cashless.value}
-                    value={schemeName}
-                    onChange={setSchemeName}
-                    disabled={!editable}
-                    options={PAYER_SUGGESTIONS[cashless.value] ?? []}
-                    libraryKey={`ppms_counselling_payer_${cashless.value}`}
-                    placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}…`}
-                  />
-                </InlineField>
-                <InlineField label={cashless.idLabel} tight>
+        {/* 3. Payer details and documents (every type except Self) */}
+        {cashless && (
+          <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 p-3 space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <InlineField label={cashless.nameLabel} tight>
+                <SuggestInput
+                  key={cashless.value}
+                  value={schemeName}
+                  onChange={setSchemeName}
+                  disabled={!editable}
+                  options={PAYER_SUGGESTIONS[cashless.value] ?? []}
+                  libraryKey={`ppms_counselling_payer_${cashless.value}`}
+                  placeholder={`Search or type ${cashless.nameLabel.toLowerCase()}...`}
+                />
+              </InlineField>
+              <InlineField label={cashless.idLabel} tight>
+                <div className="flex items-center gap-2 min-w-0">
                   <input value={policyNumber} disabled={!editable} onChange={(e) => setPolicyNumber(e.target.value)} className={`${inputCls} !bg-white`} />
-                </InlineField>
-              </div>
-            )}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* ── E & F ─────────────────────────────────────────────────── */}
-      <SectionCard
-        step={4} icon={<ShieldCheck size={15} />} title="Doctor Review"
-        right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
-      >
-        {rec.fitForSurgery ? (
-          <p className="text-sm text-[var(--color-ink-700)]">
-            Marked fit by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
-            {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
-          </p>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-              <ReadyItem ok={invPending.length === 0}>
-                {currentOrders.length === 0
-                  ? "No investigations ordered"
-                  : invPending.length === 0
-                    ? `All ${currentOrders.length} reports uploaded`
-                    : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
-              </ReadyItem>
-              <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
+                  <PaymentDocs docs={paymentDocs} onChange={setPaymentDocs} editable={editable} typeLabel={cashless.label} button />
+                </div>
+              </InlineField>
             </div>
-            {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
-            {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
-
-            {canFit || canAddInvestigations ? (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                {canFit && (
-                  <button className={btnPrimary} disabled={pending || rec.surgeryDeferred || invPending.length > 0 || !dateOfSurgery} onClick={() => { setError(""); setModal("fit"); }}>
-                    <ShieldCheck size={15} /> Fit for Surgery
-                  </button>
-                )}
-                {canFit && canAddInvestigations && <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />}
-                {canAddInvestigations && (
-                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
-                    <PlusCircle size={14} /> Add Investigations
-                  </button>
-                )}
-                {canFit && !rec.surgeryDeferred && (
-                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
-                    <PauseCircle size={14} /> Date Not Confirmed
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
-            )}
+            {paymentDocs.length > 0 && <PaymentDocs docs={paymentDocs} onChange={setPaymentDocs} editable={editable} typeLabel={cashless.label} />}
           </div>
         )}
       </SectionCard>
 
       {/* ── G ─────────────────────────────────────────────────────── */}
       <SectionCard
-        step={5} icon={<IndianRupee size={15} />} title="Advance Payment"
+        step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
         locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Fit for Surgery"}
-        right={rec.eligibleForSurgery ? <LockedTag /> : advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
+        right={advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
       >
-        {rec.eligibleForSurgery ? (
-          rec.advancePaid != null
-            ? <AdvanceMeter estimate={rec.estimateAmount} paid={rec.advancePaid} />
-            : <p className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"><CheckCircle2 size={16} /> Advance received</p>
-        ) : (
+        {(
           <div className="space-y-3">
             {/* Mode */}
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1312,7 +1472,7 @@ export function CounsellingDetail({
 
       {/* ── H ─────────────────────────────────────────────────────── */}
       <SectionCard
-        step={6} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
+        step={5} icon={<CalendarCheck size={15} />} title="Eligible for Surgery"
         locked={!(rec.fitForSurgery && advanceDone)} lockedText="Unlocks after the advance is recorded"
         right={rec.eligibleForSurgery ? <DoneTag tone="emerald">Eligible</DoneTag> : null}
       >
@@ -1321,7 +1481,7 @@ export function CounsellingDetail({
             Confirmed by <b>{rec.eligibleByName ?? "-"}</b>{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
           </p>
         ) : canEligible ? (
-          <p className="text-caption sm:text-xs text-[var(--color-ink-500)]">Use <b>Finalize &amp; Sign</b> below: verify date, implant and surgery twice, then book the pre-op.</p>
+          <p className="text-caption sm:text-xs text-[var(--color-ink-500)]">Press <b>Save &amp; Finalize</b> below: verify date, implant and surgery, then book the pre-op.</p>
         ) : (
           <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Ready to be marked eligible.</p>
         )}
@@ -1332,16 +1492,57 @@ export function CounsellingDetail({
   /* ── Sheet 2: Investigations ──────────────────────────────────────────── */
   const investigationsSheet = (
     <div className="flex flex-col gap-3">
-    {!rec.eligibleForSurgery && currentOrders.length > 0 && <MissingBox items={invMissing} />}
+    {/* Doctor Review: Fit for Surgery once every report is in and approved */}
+      <SectionCard
+        step={1} icon={<ShieldCheck size={15} />} title="Doctor Review"
+        right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
+      >
+        {rec.fitForSurgery ? (
+          <p className="text-sm text-[var(--color-ink-700)]">
+            Marked fit by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+            {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+              <ReadyItem ok={invPending.length === 0}>
+                {currentOrders.length === 0
+                  ? "No investigations ordered"
+                  : invPending.length === 0
+                    ? `All ${currentOrders.length} reports uploaded`
+                    : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
+              </ReadyItem>
+              <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
+            </div>
+            {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
+            {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
+
+            {canFit || canAddInvestigations ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {canFit && fitPillButton}
+                {canFit && canAddInvestigations && <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />}
+                {canAddInvestigations && (
+                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
+                    <PlusCircle size={14} /> Add Investigations
+                  </button>
+                )}
+                {canFit && !rec.surgeryDeferred && (
+                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
+                    <PauseCircle size={14} /> Date Not Confirmed
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
+            )}
+          </div>
+        )}
+      </SectionCard>
+
     <InvestigationsPanel
       data={data}
-      canUpload={canUpload && !rec.eligibleForSurgery}
+      canUpload={canUpload}
       onChanged={() => router.refresh()}
-      action={canAddInvestigations && !rec.fitForSurgery && !rec.eligibleForSurgery ? (
-        <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
-          <PlusCircle size={14} /> Add Investigations
-        </button>
-      ) : null}
     />
     </div>
   );
@@ -1349,7 +1550,6 @@ export function CounsellingDetail({
   /* ── Sheet 3: Consents (each consent on its own sub-tab) ──────────────── */
   const consentsSheet = (
     <div className="flex flex-col gap-3">
-      {!rec.eligibleForSurgery && <MissingBox groups={consents.items.map((c) => ({ title: consentTabLabel(c), items: consentMissing(c) }))} />}
       {consents.items.length > 0 && activeConsent ? (
         <Tabs
           variant="sub"
@@ -1361,10 +1561,12 @@ export function CounsellingDetail({
         <p className="text-sm italic text-[var(--color-ink-400)]">No consents.</p>
       )}
       {sheetsEditable && (
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/30 p-1.5 pl-3">
+          <Plus size={14} className="shrink-0 text-[var(--color-primary-500)]" />
           <input value={newConsent} onChange={(e) => setNewConsent(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addConsent(); } }}
-            placeholder="Add a custom consent, e.g. Consent for photography" className={inputCls} />
-          <button type="button" disabled={!newConsent.trim()} onClick={addConsent} className={btnOutline}><Plus size={13} /> Add consent</button>
+            placeholder="Add a custom consent, e.g. Consent for photography"
+            className="flex-1 min-w-0 h-8 bg-transparent text-[13px] text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
+          <button type="button" disabled={!newConsent.trim()} onClick={addConsent} className={`${btnPrimary} shrink-0`}>Add</button>
         </div>
       )}
     </div>
@@ -1373,9 +1575,11 @@ export function CounsellingDetail({
   /* ── Sheet 4: Patient education & diet (one copy before the operation) ─ */
   const educationSheet = (
     <div className="flex flex-col gap-3">
-      {!rec.eligibleForSurgery && <MissingBox items={educationMissing} />}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5">
-        <p className="text-xs text-[var(--color-ink-500)]">Explain the points, set the diet, then print one copy for the patient before the operation.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--color-primary-100)] bg-gradient-to-r from-[var(--color-primary-50)] via-white to-white px-4 py-2.5">
+        <p className="inline-flex items-center gap-2.5 text-xs text-[var(--color-ink-600)]">
+          <span className="w-7 h-7 rounded-xl flex items-center justify-center bg-white text-[var(--color-primary-700)] shadow-sm ring-1 ring-[var(--color-primary-100)]"><BookOpen size={14} /></span>
+          Explain the points, set the diet, then print one copy for the patient before the operation.
+        </p>
         <button type="button" className={btnPrimary} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/education`)}>
           <Printer size={14} /> Print copy for patient
         </button>
@@ -1409,155 +1613,137 @@ export function CounsellingDetail({
   const desktopSidebarOffset = collapsed
     ? "min-[1025px]:left-16"
     : "min-[1025px]:left-60 min-[1920px]:left-[268px] min-[2560px]:left-[288px] min-[3840px]:left-[312px]";
-  const showFinalize = canEligible && rec.fitForSurgery && advanceDone && !rec.eligibleForSurgery;
+  // Save also finalizes once the patient is Fit and the advance is recorded (saved, or entered now)
+  const advanceEntered = advanceDone || advancePayload.advanceReceived || (advancePayload.advancePaid ?? 0) > 0;
+  const readyToFinalize = canEligible && rec.fitForSurgery && advanceEntered && !rec.eligibleForSurgery && !expired && !rec.surgeryDeferred;
+  const saveAndFinalize = () => run(async () => {
+    // Save first, so what is verified is what gets finalized
+    const err = await saveAll();
+    return err ? { error: err } : {};
+  }, () => setModal("eligible"));
 
   return (
     <div className="fade-in pb-28">
 
-      {/* ── Title ─────────────────────────────────────────────────────── */}
-      <section className="relative rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-        {/* Line 1: patient details */}
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full shrink-0 overflow-hidden bg-[var(--color-primary-100)] flex items-center justify-center">
-            {data.patient.photoUrl
-              ? <img src={fileHref(data.patient.photoUrl)!} alt={data.patient.name} className="w-full h-full object-cover" />
-              : <span className="text-xs font-bold text-[var(--color-primary-700)]">{initials(data.patient.name)}</span>}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <p className="text-[15px] sm:text-base font-bold leading-tight text-[var(--color-ink-900)] truncate">{data.patient.name}</p>
-              <StatusBadge status={data.status} expired={expired} eligible={rec.eligibleForSurgery} />
-            </div>
-            <p className="text-caption text-[var(--color-ink-500)] mt-0.5 tabular-nums truncate">
-              {data.patient.age}y · {SEX_LABEL[data.patient.sex] ?? data.patient.sex} · {data.patient.uhid ?? data.patient.udid}
-              {data.patient.mobile && <> · {data.patient.mobile}</>}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+      {/* ── Patient banner (same style as the EMR banner) ───────────────── */}
+      <section
+        className="relative rounded-2xl overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, #0E8282 0%, #0C7676 55%, #0A6C6C 100%)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+          border: "1px solid rgba(255,255,255,0.10)",
+        }}
+      >
+        <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.055 }} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="cs-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.2" fill="#38BDF8" />
+            </pattern>
+            <pattern id="cs-cross" x="4" y="4" width="64" height="64" patternUnits="userSpaceOnUse">
+              <rect x="29" y="22" width="6" height="20" rx="1" fill="#2DD4BF" />
+              <rect x="22" y="29" width="20" height="6" rx="1" fill="#2DD4BF" />
+            </pattern>
+            <pattern id="cs-ecg" x="0" y="0" width="160" height="48" patternUnits="userSpaceOnUse">
+              <polyline points="0,24 20,24 28,8 36,40 44,16 52,32 60,24 80,24 88,8 96,40 104,16 112,32 120,24 160,24"
+                fill="none" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#cs-dots)" />
+          <rect x="60%" width="40%" height="100%" fill="url(#cs-cross)" />
+          <rect y="60%" width="100%" height="40%" fill="url(#cs-ecg)" />
+        </svg>
+
+        <div className="relative z-10 p-3 sm:p-4">
+          {/* Activity / profile: quiet icons in the corner */}
+          <div className="absolute top-3 right-3 sm:top-4 sm:right-4 flex items-center gap-1.5">
             <button type="button" onClick={() => setShowActivity(true)} title="Activity" aria-label="Activity"
-              className="w-8 h-8 rounded-full border border-[var(--color-border)] bg-white flex items-center justify-center text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors">
+              className="w-8 h-8 rounded-full bg-white/10 ring-1 ring-white/15 flex items-center justify-center text-white/75 hover:bg-white/20 hover:text-white transition-colors">
               <History size={15} />
             </button>
             {canViewProfile && (
               <Link
                 href={`/patients/${data.patient.udid}?returnTo=/counselling&source=counselling`}
-                title="Patient Profile"
-                className="h-8 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-ink-700)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
+                title="Patient Profile" aria-label="Patient Profile"
+                className="w-8 h-8 rounded-full bg-white/10 ring-1 ring-white/15 flex items-center justify-center text-white/75 hover:bg-white/20 hover:text-white transition-colors"
               >
-                <UserRound size={14} /> <span className="hidden sm:inline">Profile</span>
+                <UserRound size={15} />
               </Link>
             )}
           </div>
-        </div>
 
-        {/* Line 2: surgery · tentative date · investigations */}
-        <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
-            {data.laterality
-              ? <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{data.laterality}</span>
-              : <Scissors size={13} className="ml-1.5 text-[var(--color-primary-600)]" />}
-            <span className="font-semibold text-[var(--color-ink-900)] truncate">{data.surgery}</span>
-            {data.anaesthesia && <span className="text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs">
-            <CalendarDays size={13} className="text-[var(--color-primary-600)]" />
-            <span className="font-semibold text-[var(--color-ink-900)]">{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Date not set"}</span>
-            {validUntil && <span className="text-[var(--color-ink-400)]">· valid till {fmtDate(validUntil)}</span>}
-          </span>
-          <button
-            type="button"
-            onClick={() => setSheet("investigations")}
-            className={`inline-flex items-center gap-1.5 rounded-full border pl-1.5 pr-2.5 py-1 text-xs font-semibold transition-colors ${
-              invAllDone
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"
-            }`}
-          >
-            <MiniRing value={currentOrders.length ? invDone / currentOrders.length : 0} done={invAllDone} />
-            {currentOrders.length === 0 ? "No investigations" : `Investigations ${invDone}/${currentOrders.length}`}
-            <ChevronRight size={12} className="opacity-50" />
-          </button>
-        </div>
-
-        {/* Chief complaint · diagnosis · notes (same style as the visit summaries) */}
-        {(data.chiefComplaint || data.diagnoses.length > 0 || data.surgeryNotes) && (
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-xl border border-[var(--color-border)] bg-white/70 px-3 py-2">
-            {data.chiefComplaint && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 shrink-0">
-                  <FileText size={11} className="text-[var(--color-ink-400)]" />
-                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Chief Complaint</span>
-                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-                </span>
-                <ComplaintChips value={data.chiefComplaint} wrap />
+          <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 lg:gap-5">
+            {/* Left: photo + patient details */}
+            <div className="flex gap-3 flex-1 min-w-0 pr-20 lg:pr-0">
+              <div className="shrink-0">
+                <PatientPhoto src={data.patient.photoUrl ? fileHref(data.patient.photoUrl)! : null} alt={data.patient.name} statusDot={null} />
               </div>
-            )}
-            {data.diagnoses.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex items-center gap-1.5 shrink-0">
-                  <Stethoscope size={11} className="clinical-diagnosis-text" />
-                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Diagnosis</span>
-                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {data.diagnoses.map((d, i) => (
-                    <span key={i} className="clinical-diagnosis-chip inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full border text-caption">
-                      {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {data.surgeryNotes && (
-              <div className="flex items-center gap-2 flex-wrap min-w-0">
-                <span className="flex items-center gap-1.5 shrink-0">
-                  <ClipboardList size={11} className="text-[var(--color-ink-400)]" />
-                  <span className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-ink-400)]">Notes</span>
-                  <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
-                </span>
-                <span className="text-caption text-[var(--color-ink-700)]">{data.surgeryNotes.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(" · ")}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Progress: icon steps on a smooth track (hover for the step name) */}
-        <ol className="mt-3 pt-3 border-t border-[var(--color-border)] flex items-center px-1">
-          {steps.map((st, i) => {
-            const isCurrent = i === currentStep;
-            const Icon = st.icon;
-            const segDone = i < steps.length - 1 && steps[i + 1].done;
-            const segHalf = i < steps.length - 1 && !segDone && st.done;
-            return (
-              <Fragment key={st.label}>
-                <li className="relative shrink-0" title={`${st.label}${st.done ? ": done" : isCurrent ? ": current step" : ""}`}>
-                  {isCurrent && <span className="absolute inset-0 rounded-full bg-[var(--color-primary-300)] opacity-40 animate-ping" />}
-                  <span className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                    st.done
-                      ? "bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-700)] text-white shadow-sm"
-                      : isCurrent
-                        ? "bg-white text-[var(--color-primary-700)] ring-2 ring-[var(--color-primary-500)] shadow-sm"
-                        : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-300)] ring-1 ring-[var(--color-border)]"
-                  }`}>
-                    {st.done && i > 0 ? <Check size={15} strokeWidth={3} /> : <Icon size={15} />}
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h2 className="text-base sm:text-lg font-bold text-white leading-tight tracking-tight">{data.patient.name}</h2>
+                  <span className="text-xs font-medium text-white/60">{data.patient.age}y · {data.patient.sex.charAt(0).toUpperCase()}</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 ring-1 ring-white/20 px-2 py-0.5 text-micro font-semibold text-white">
+                    <span className={`w-1.5 h-1.5 rounded-full ${expired ? "bg-red-400" : STATUS_META[data.status].dot}`} />
+                    {statusLabel}
                   </span>
-                  <span className="sr-only">{st.label}</span>
-                </li>
-                {i < steps.length - 1 && (
-                  <span className="flex-1 mx-1.5 h-1 rounded-full bg-[var(--color-border)] overflow-hidden">
-                    <span className={`block h-full rounded-full bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-400)] transition-all duration-500 ${segDone ? "w-full" : segHalf ? "w-1/2" : "w-0"}`} />
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-white/65">
+                  <span className="inline-flex items-center gap-1 text-teal-100 font-mono font-semibold tracking-wide">
+                    <Hash size={10} />{data.patient.udid}
+                  </span>
+                  {data.patient.mobile && (
+                    <span className="inline-flex items-center gap-1"><Phone size={10} />{data.patient.mobile}</span>
+                  )}
+                </div>
+                {(data.chiefComplaint || data.diagnoses.length > 0) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {data.chiefComplaint && <ComplaintChips value={data.chiefComplaint} tone="dark" />}
+                    {data.diagnoses.map((d, i) => (
+                      <span key={i} className="clinical-diagnosis-chip-dark inline-flex items-center gap-1 text-caption px-2.5 py-0.5 rounded-full border">
+                        {d.laterality && <span className="clinical-laterality">{d.laterality}</span>}{d.description}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right: surgery | date, in one glass panel */}
+            <div className="lg:w-[52%] lg:mr-20 shrink-0 rounded-2xl bg-white/[0.08] ring-1 ring-white/15 backdrop-blur-sm grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="min-w-0 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Surgery</p>
+                <p className="mt-1 text-base sm:text-lg font-bold text-white leading-snug" title={surgeryFull}>
+                  {data.laterality && (
+                    <span className="mr-2 inline-flex items-center rounded-md bg-white px-1.5 py-px align-[3px] text-xs font-extrabold text-[#0A6C6C]">{data.laterality}</span>
+                  )}
+                  {data.surgery}
+                </p>
+                {(data.anaesthesia || data.surgeryNotes) && (
+                  <p className="mt-1 text-caption text-white/60 leading-snug break-words">
+                    {[data.anaesthesia, data.surgeryNotes?.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(" · ")].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+              </div>
+              <div className="px-4 py-3 border-t sm:border-t-0 sm:border-l border-white/15 flex flex-col justify-center sm:min-w-[9.5rem]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Surgery date</p>
+                <p className="mt-1 inline-flex items-center gap-1.5 text-base sm:text-lg font-bold text-white leading-tight whitespace-nowrap">
+                  <CalendarDays size={16} className="text-teal-200" />
+                  {dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "Not set"}
+                </p>
+                {dateOfSurgery && (
+                  <span className={`mt-1.5 self-start rounded-full px-2 py-0.5 text-micro font-semibold ${daysToSurgery! < 0 ? "bg-red-400/20 text-red-100 ring-1 ring-red-300/30" : "bg-white/12 text-white/80 ring-1 ring-white/15"}`}>
+                    {daysToSurgery === 0 ? "Today" : daysToSurgery === 1 ? "Tomorrow" : daysToSurgery! > 0 ? `In ${daysToSurgery} days` : `${-daysToSurgery!} day${daysToSurgery === -1 ? "" : "s"} ago`}
                   </span>
                 )}
-              </Fragment>
-            );
-          })}
-        </ol>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── Banners ───────────────────────────────────────────────────── */}
       {rec.eligibleForSurgery && (
         <Banner tone="emerald" icon={<Lock size={15} />}>
-          Counselling finalized{rec.eligibleByName ? <> by <b>{rec.eligibleByName}</b></> : ""}{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""} · read-only
+          Counselling finalized{rec.eligibleByName ? <> by <b>{rec.eligibleByName}</b></> : ""}{rec.eligibleAt ? <> on {fmtDateTime(rec.eligibleAt)}</> : ""}
           {data.preOp && <> · Pre-op appointment on <b>{fmtDateTime(data.preOp.dateTime)}</b></>}
         </Banner>
       )}
@@ -1581,11 +1767,11 @@ export function CounsellingDetail({
         <Tabs tabs={sheetTabs} activeTab={sheet} onTabChange={(id) => setSheet(id as SheetId)} keepMounted />
       </div>
 
-      {/* ── Bottom bar: common Save, and Finalize & Sign once the advance is recorded ── */}
+      {/* ── Bottom bar: one Save button; it also finalizes once the advance is recorded ── */}
       <div className={`fixed bottom-16 lg:bottom-0 short:bottom-0 left-0 ${desktopSidebarOffset} right-0 z-20 border-t border-[var(--color-border)] bg-white/95 backdrop-blur-sm px-3 md:px-8 py-3 flex flex-wrap items-center gap-2 md:gap-3 shadow-[0_-4px_16px_rgba(20,36,43,0.06)] transition-[left] duration-200`}>
         <div className="mr-auto flex flex-wrap items-center gap-2 min-w-0">
           {rec.eligibleForSurgery ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700"><Lock size={12} /> Finalized · read-only</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-semibold text-emerald-700"><CheckCircle2 size={12} /> Finalized</span>
           ) : (
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
               advanceDone ? "bg-emerald-50 border-emerald-200 text-emerald-700" : rec.fitForSurgery ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-500)]"
@@ -1594,27 +1780,21 @@ export function CounsellingDetail({
               {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Fit for Surgery"}
             </span>
           )}
-          {!rec.eligibleForSurgery && canEdit && (
+          {canEdit && (
             <span className={`text-xs font-medium ${dirty ? "text-amber-700" : savedFlash ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
               {dirty ? "Unsaved changes" : savedFlash ? "Saved" : "All changes saved"}
             </span>
           )}
         </div>
-        {canEdit && !rec.eligibleForSurgery && (
-          <button type="button" onClick={save} disabled={pending || !dirty}
-            className="h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold border border-[var(--color-primary-300)] bg-white text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)] disabled:opacity-50 transition-colors">
-            <Save size={15} /> {pending ? "Saving…" : "Save"}
-          </button>
-        )}
-        {showFinalize && (
-          <button type="button" disabled={pending || expired || rec.surgeryDeferred}
-            onClick={() => run(async () => {
-              // Save first, so what is verified is what gets finalized
-              const err = await saveAll();
-              return err ? { error: err } : {};
-            }, () => setModal("eligible"))}
-            className="h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)] disabled:opacity-50 transition-colors">
-            <FileSignature size={15} /> Finalize &amp; Sign
+        {canEdit && (
+          <button type="button" onClick={readyToFinalize ? saveAndFinalize : save} disabled={pending || (!dirty && !readyToFinalize)}
+            className={`h-10 inline-flex items-center gap-2 px-5 rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors ${
+              readyToFinalize
+                ? "bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)]"
+                : "border border-[var(--color-primary-300)] bg-white text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"
+            }`}>
+            {readyToFinalize ? <FileSignature size={15} /> : <Save size={15} />}
+            {pending ? "Saving..." : readyToFinalize ? "Save & Finalize" : "Save"}
           </button>
         )}
       </div>
@@ -1640,9 +1820,9 @@ export function CounsellingDetail({
 
             {/* Payment */}
             <ConfirmCard icon={<Wallet size={13} />} title="Payment">
-              <ConfirmLine inline label="Option">{paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}</ConfirmLine>
-              {paymentMode === "CASHLESS" && schemeName && <ConfirmLine inline label={cashless?.nameLabel ?? "Covered by"}>{schemeName}</ConfirmLine>}
-              {paymentMode === "CASHLESS" && policyNumber && <ConfirmLine inline label={cashless?.idLabel ?? "ID"}>{policyNumber}</ConfirmLine>}
+              <ConfirmLine inline label="Option">{paymentLabel(paymentMode, paymentType) || "-"}</ConfirmLine>
+              {cashless && schemeName && <ConfirmLine inline label={cashless.nameLabel}>{schemeName}</ConfirmLine>}
+              {cashless && policyNumber && <ConfirmLine inline label={cashless.idLabel}>{policyNumber}</ConfirmLine>}
               <ConfirmLine inline label="Estimate" strong>{rupees(estimateNum)}</ConfirmLine>
             </ConfirmCard>
           </div>
@@ -1674,7 +1854,7 @@ export function CounsellingDetail({
               <p className="text-xs font-bold text-amber-900">Before you confirm</p>
             </div>
             <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, payment and estimate above will be <b>frozen</b>. Only the date can still be changed (within the reports&apos; validity) until Eligible for surgery.</span></li>
+              <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The patient moves to <b>Partial</b>. Every field stays editable.</span></li>
               <li className="flex gap-2">
                 <span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" />
                 <span>Surgery must happen within <b>1 month</b> of the reports{validUntil ? <>, on or before <b className="whitespace-nowrap">{fmtDate(validUntil)}</b></> : ""}.</span>
@@ -1698,6 +1878,14 @@ export function CounsellingDetail({
         </Modal>
       )}
 
+      {modal === "noShow" && (
+        <NoShowModal
+          pending={pending} error={error} onClose={() => setModal(null)}
+          newDate={dateOfSurgery} fit={rec.fitForSurgery} oldestReport={oldestReport} validUntil={validUntil}
+          onKeep={() => rescheduleSave(false)} onRetake={() => rescheduleSave(true)}
+        />
+      )}
+
       {modal === "addInv" && <AddInvestigationsModal pending={pending} error={error} existing={currentOrders.map((o) => o.testName)} onClose={() => setModal(null)}
         onSubmit={(tests, inViewOf) => run(() => addCounsellingInvestigations(data.visitId, tests, inViewOf), () => setModal(null))} />}
 
@@ -1709,9 +1897,9 @@ export function CounsellingDetail({
           pending={pending} error={error} onClose={() => setModal(null)}
           laterality={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia}
           implant={implant || "-"} date={dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}
-          paymentOption={paymentMode === "CASH" ? "Cash (Self-pay)" : paymentMode === "CASHLESS" ? (cashless?.label ?? "Cashless") : "-"}
-          payerLabel={cashless?.nameLabel ?? "Covered by"} payer={paymentMode === "CASHLESS" ? schemeName : ""}
-          idLabel={cashless?.idLabel ?? "ID"} payerId={paymentMode === "CASHLESS" ? policyNumber : ""}
+          paymentOption={paymentLabel(paymentMode, paymentType) || "-"}
+          payerLabel={cashless?.nameLabel ?? "Covered by"} payer={cashless ? schemeName : ""}
+          idLabel={cashless?.idLabel ?? "ID"} payerId={cashless ? policyNumber : ""}
           estimate={rupees(estimateNum)}
           advance={rec.advancePaid != null ? rupees(rec.advancePaid) : rec.advanceReceived ? "Received" : "-"}
           pendingAmount={estimateNum != null && rec.advancePaid != null ? rupees(Math.max(estimateNum - rec.advancePaid, 0)) : null}
@@ -2017,8 +2205,8 @@ function EligibleModal({
           <p className="text-xs font-bold text-amber-900">Before you confirm</p>
         </div>
         <ul className="bg-amber-50/60 px-3.5 py-2.5 space-y-1.5 text-xs text-amber-900">
-          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>This <b>finalizes counselling</b>, like Finalize &amp; Sign in the EMR.</span></li>
-          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>The implant, date, payment, advance and reports become <b>read-only</b> and can&apos;t be reopened.</span></li>
+          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>This <b>finalizes counselling</b>; it can&apos;t be edited afterwards.</span></li>
+          <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>Every field stays editable afterwards; a changed date does not move the pre-op appointment.</span></li>
           <li className="flex gap-2"><span className="mt-1.5 w-1 h-1 rounded-full bg-amber-500 shrink-0" /><span>A Pre-op appointment will be booked on <b className="whitespace-nowrap">{date}</b>{timeLabel ? <> at <b className="whitespace-nowrap">{timeLabel}</b></> : ""}.</span></li>
         </ul>
       </div>

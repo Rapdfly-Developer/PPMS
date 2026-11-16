@@ -3,7 +3,8 @@ import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
 import { IpdPrintHeader } from "../../../IpdPrintHeader";
-import { CONSENT_DECLARATION, defaultConsents, isV2, type ConsentsData, type FormContext } from "@/lib/ipd-forms";
+import { ConsentPrintBody, CONSENT_PAGE_MIN_H } from "../../../ConsentPrintBody";
+import { defaultConsents, isV2, upgradeConsents, type ConsentsData, type FormContext } from "@/lib/ipd-forms";
 import { PrintBar } from "../../PrintBar";
 import { parseCounsellingConsents } from "@/lib/counselling-sheets";
 
@@ -47,17 +48,16 @@ export default async function ConsentPrintPage({ params, searchParams }: {
   const fromCounselling = !isV2(saved) && a.counsellingVisitId
     ? parseCounsellingConsents((await prisma.counsellingRecord.findUnique({ where: { visitId: a.counsellingVisitId }, select: { consents: true } }))?.consents)
     : null;
-  const data: ConsentsData = isV2(saved) ? (saved as ConsentsData) : fromCounselling ?? defaultConsents(ctx);
+  const data: ConsentsData = upgradeConsents(isV2(saved) ? (saved as ConsentsData) : fromCounselling ?? defaultConsents(ctx), ctx);
   const c = data.items.find((x) => x.id === decodeURIComponent(consentId));
   if (!c) notFound();
 
-  const line = "border-t border-gray-800 pt-1 mt-12";
   return (
     <main className="min-h-screen bg-gray-100 print:bg-white">
       <style>{"@page { size: A4; margin: 10mm 0; }"}</style>
       <PrintBar autoPrint={print !== "0"} title={c.title} />
       <div className="py-6 print:py-0">
-        <div className="mx-auto w-[210mm] max-w-full bg-white px-[14mm] pt-0 pb-[12mm] shadow-sm print:shadow-none print:w-auto print:py-0 text-black" style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
+        <div className={`mx-auto w-[210mm] max-w-full bg-white px-[7mm] pt-0 pb-[10mm] shadow-sm print:shadow-none print:w-auto print:pb-0 text-black flex flex-col box-border ${CONSENT_PAGE_MIN_H}`} style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>
           <IpdPrintHeader
             hospital={{ name: v.hospital.name, logoUrl: v.hospital.logoUrl, address: v.hospital.address, contact: v.hospital.contact, email: v.hospital.email }}
             doctor={ctx.doctor}
@@ -76,29 +76,7 @@ export default async function ConsentPrintPage({ params, searchParams }: {
             ]}
           />
 
-          <div className="space-y-3 text-[12.5px] leading-[1.7] text-justify">
-            {c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}
-          </div>
-          <p className="mt-4 text-[12px] font-semibold italic">{CONSENT_DECLARATION}</p>
-          <p className="mt-2 text-[12px]">Explained in: ______________</p>
-
-          <div className="mt-6 grid grid-cols-3 gap-8 text-[11.5px] break-inside-avoid">
-            <div>
-              <p className={line}><b>Signature of patient / relative</b></p>
-              <p>Name: ____________________</p>
-              <p>Relationship: ______________</p>
-            </div>
-            <div>
-              <p className={line}><b>Signature of witness</b></p>
-              <p>Name: ____________________</p>
-            </div>
-            <div>
-              <p className={line}><b>Signature of doctor</b></p>
-              <p>Dr. {ctx.doctor.replace(/^Dr\.?\s*/i, "")}</p>
-              {v.doctor.qualifications && <p>{v.doctor.qualifications}</p>}
-            </div>
-          </div>
-          <p className="mt-6 text-[11px]">Date & time: ______________________</p>
+          <ConsentPrintBody c={c} doctor={ctx.doctor} qualifications={v.doctor.qualifications} />
         </div>
       </div>
     </main>

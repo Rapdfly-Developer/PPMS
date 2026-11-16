@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
+import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
+import { paymentLabel } from "@/lib/counselling";
 import { format } from "date-fns";
 import {
-  Check, CheckCircle2, ClipboardCheck, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw, Search,
-  Trash2, X,
+  BookOpen, Check, CheckCircle2, ClipboardCheck, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw, Search,
+  Trash2, X, Utensils,
 } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
@@ -79,6 +81,25 @@ export function Card({ title, sub, right, children, tone }: { title: string; sub
         {right}
       </div>
       <div className="p-3">{children}</div>
+    </section>
+  );
+}
+
+/** Rounded card with an icon chip; used by the Education & Diet form. */
+function SoftCard({ icon, title, sub, right, children }: { icon: React.ReactNode; title: string; sub?: React.ReactNode; right?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-[var(--color-border)]/70">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-7 h-7 shrink-0 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]">{icon}</span>
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-semibold tracking-tight text-[var(--color-ink-900)]">{title}</h3>
+            {sub}
+          </div>
+        </div>
+        {right}
+      </div>
+      <div className="px-4 py-3">{children}</div>
     </section>
   );
 }
@@ -212,7 +233,7 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
           {[
             ["Implant", f.ctx.implant],
-            ["Payment", pay ? [pay.type, pay.mode, pay.scheme, pay.policy].filter(Boolean).join(" · ").replaceAll("_", " ") : ""],
+            ["Payment", pay ? [paymentLabel(pay.mode, pay.type), pay.scheme, pay.policy].filter(Boolean).join(" · ") : ""],
             ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy")}` : ""}` : ""],
           ].map(([k, x]) => (
             <div key={k} className={rowIn}><p className={lblIn}>{k}</p><p className="font-semibold text-[var(--color-ink-800)] min-w-0">{x || "-"}</p></div>
@@ -221,10 +242,9 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
       </Card>
       <Card title="Implant used" sub="As printed on the implant pack / sticker">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Field label="Manufacturer" value={v.manufacturer} onChange={(x) => set("manufacturer", x)} disabled={!editable} placeholder="e.g. Alcon" />
-          <Field label="Model" value={v.model} onChange={(x) => set("model", x)} disabled={!editable} placeholder="e.g. AcrySof IQ" />
-          <Field label="IOL power (D)" value={v.power} onChange={(x) => set("power", x)} disabled={!editable} placeholder="e.g. +21.5" />
-          <Field label="A-constant" value={v.aConstant} onChange={(x) => set("aConstant", x)} disabled={!editable} placeholder="e.g. 118.7" />
+          <IolFields value={v} onChange={(p) => change({ ...v, ...p })} disabled={!editable} inputClass={`${inp} flex-1`}
+            row={(k, label, control) => <div key={k} className={rowIn}><label className={lblIn}>{label}</label>{control}</div>} />
+          <div className={rowIn}><label className={lblIn}>IOL power (D)</label><IolPowerInput value={v.power} onChange={(x) => set("power", x)} disabled={!editable} className={inp} /></div>
           <Field label="Lot / batch no." value={v.lot} onChange={(x) => set("lot", x)} disabled={!editable} />
           <Field label="Serial no." value={v.serial} onChange={(x) => set("serial", x)} disabled={!editable} />
           <Field label="Expiry" type="month" value={v.expiry} onChange={(x) => set("expiry", x)} disabled={!editable} />
@@ -399,7 +419,15 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
 
   return (
     <div className="space-y-3">
-      <Card title="Patient education" sub={`${explained} of ${v.points.length} points explained`}
+      <SoftCard icon={<BookOpen size={14} />} title="Patient education"
+        sub={
+          <div className="mt-0.5 flex items-center gap-2">
+            <span className="h-1.5 w-24 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
+              <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-primary-400)] to-emerald-400 transition-[width] duration-300" style={{ width: `${v.points.length ? (explained / v.points.length) * 100 : 0}%` }} />
+            </span>
+            <span className="text-[11px] text-[var(--color-ink-500)] tabular-nums">{explained} of {v.points.length} explained</span>
+          </div>
+        }
         right={editable && (
           <div className="flex flex-wrap items-center gap-1.5">
             <SaveAsMine kind="EDUCATION" surgery={f.ctx.surgery} items={v.points.map((p) => p.text)} defaultName={`My set · ${v.preset}`} label="Save as my set" />
@@ -407,38 +435,48 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
           </div>
         )}>
         <div className="mb-3"><EducationSetPicker value={v.preset} sets={sets} onPick={pickSet} disabled={!editable} /></div>
-        <ul className="space-y-1">
+        <ul className="space-y-1.5">
           {v.points.map((p, i) => (
-            <li key={i} className="flex items-center gap-2.5">
-              <label className={`flex-1 flex items-center gap-2.5 rounded-lg border px-3 py-1.5 text-sm ${p.done ? "border-emerald-200 bg-emerald-50/50" : "border-[var(--color-border)]"} ${editable ? "cursor-pointer" : ""}`}>
-                <input type="checkbox" checked={p.done} disabled={!editable} onChange={() => change({ ...v, points: v.points.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} className="w-4 h-4 accent-emerald-600" />
+            <li key={i} className="group flex items-center gap-1.5">
+              <label className={`flex-1 flex items-center gap-2.5 rounded-xl border px-3 py-1.5 text-[13px] leading-snug transition-colors ${p.done ? "border-emerald-200 bg-emerald-50/60 text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-200)]"} ${editable ? "cursor-pointer" : ""}`}>
+                <input type="checkbox" checked={p.done} disabled={!editable} onChange={() => change({ ...v, points: v.points.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) })} className="sr-only" />
+                <span className={`w-[18px] h-[18px] shrink-0 rounded-full flex items-center justify-center transition-colors ${p.done ? "bg-emerald-500 text-white" : "border-2 border-[var(--color-ink-200)] bg-white"}`}>
+                  {p.done && <Check size={11} strokeWidth={3} />}
+                </span>
                 {p.text}
               </label>
-              {editable && <button type="button" onClick={() => change({ ...v, points: v.points.filter((_, j) => j !== i) })} className="p-1 text-[var(--color-ink-300)] hover:text-red-600" aria-label="Remove point"><X size={14} /></button>}
+              {editable && <button type="button" onClick={() => change({ ...v, points: v.points.filter((_, j) => j !== i) })} className="p-1 rounded-full text-[var(--color-ink-300)] opacity-60 group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 transition" aria-label="Remove point"><X size={13} /></button>}
             </li>
           ))}
         </ul>
         {editable && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            <input value={point} onChange={(e) => setPoint(e.target.value)} placeholder="Add an education point" className={`${inp} flex-1 min-w-[200px]`} />
-            <button type="button" disabled={!point.trim()} onClick={() => { change({ ...v, points: [...v.points, { text: point.trim(), done: false }] }); setPoint(""); }} className={btnG}><Plus size={13} /> Add</button>
-            <button type="button" onClick={() => change({ ...v, points: v.points.map((x) => ({ ...x, done: true })) })} className={btnG}><CheckCircle2 size={13} /> Mark all explained</button>
+          <div className="flex flex-wrap items-center gap-2 mt-2.5">
+            <div className="flex flex-1 min-w-[220px] items-center gap-2 rounded-full border border-dashed border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/30 py-1 pl-3 pr-1">
+              <Plus size={13} className="shrink-0 text-[var(--color-primary-500)]" />
+              <input value={point} onChange={(e) => setPoint(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && point.trim()) { e.preventDefault(); change({ ...v, points: [...v.points, { text: point.trim(), done: false }] }); setPoint(""); } }}
+                placeholder="Add an education point" className="flex-1 min-w-0 h-7 bg-transparent text-[13px] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
+              <button type="button" disabled={!point.trim()} onClick={() => { change({ ...v, points: [...v.points, { text: point.trim(), done: false }] }); setPoint(""); }}
+                className="h-7 px-3 rounded-full bg-[var(--color-primary-600)] text-white text-xs font-semibold disabled:opacity-40 hover:bg-[var(--color-primary-700)] transition-colors">Add</button>
+            </div>
+            <button type="button" onClick={() => change({ ...v, points: v.points.map((x) => ({ ...x, done: true })) })}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"><CheckCircle2 size={13} /> Mark all explained</button>
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-dashed border-[var(--color-border)]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 rounded-xl bg-[var(--color-surface-sunken)]/50 px-3 py-2.5">
           <div className={rowIn}><label className={lblIn}>Explained to</label><Seg options={["Patient", "Relative", "Both"]} value={v.explainedTo} onChange={(x) => change({ ...v, explainedTo: x })} disabled={!editable} /></div>
           <div className={rowIn}><label className={lblIn}>Language</label>
             <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={v.language} onChange={(x) => change({ ...v, language: x })} disabled={!editable} className={inp} />
           </div>
-          <label className="flex items-center gap-2 text-sm self-end pb-1.5">
-            <input type="checkbox" checked={v.teachBack} disabled={!editable} onChange={() => change({ ...v, teachBack: !v.teachBack })} className="w-4 h-4 accent-emerald-600" />
+          <label className={`flex items-center gap-2 self-center rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${v.teachBack ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-[var(--color-border)] bg-white text-[var(--color-ink-600)]"} ${editable ? "cursor-pointer" : ""}`}>
+            <input type="checkbox" checked={v.teachBack} disabled={!editable} onChange={() => change({ ...v, teachBack: !v.teachBack })} className="w-3.5 h-3.5 accent-emerald-600" />
             Understanding confirmed (teach-back)
           </label>
         </div>
         <div className="mt-3"><Area label="Notes" value={v.notes} onChange={(x) => change({ ...v, notes: x })} disabled={!editable} rows={2} /></div>
-      </Card>
+      </SoftCard>
 
-      <Card title="Diet chart">
+      <SoftCard icon={<Utensils size={14} />} title="Diet chart">
         <div className="flex flex-wrap items-end gap-4 mb-3">
           <div className={rowIn}>
             <label className={lblIn}>Diet</label>
@@ -452,14 +490,14 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
           </div>
           {v.dietTypes.includes("Nil by mouth") && <Field label="Nil by mouth from" type="time" value={v.nbmFrom} onChange={(x) => change({ ...v, nbmFrom: x })} disabled={!editable} className="w-40" />}
         </div>
-        <div className="-mx-3.5 -mb-3.5 overflow-x-auto">
+        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
           <table className="w-full min-w-[560px]">
             <thead><tr>{["Meal", "Time", "Diet", ...(planOnly ? [] : [`Taken today (${format(new Date(), "d MMM")})`])].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {v.meals.map((m, i) => {
                 const rec = [...todayFood].reverse().find((e) => e.meta?.meal === m.meal);
                 return (
-                  <tr key={i}>
+                  <tr key={i} className="transition-colors hover:bg-[var(--color-primary-50)]/30">
                     <td className={`${td} font-semibold whitespace-nowrap`}>
                       <span className="inline-flex items-center gap-1">
                         {m.meal}
@@ -497,7 +535,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
           {editable && <AddMeal onAdd={(meal, t) => change({ ...v, meals: [...v.meals, { meal, time: t, diet: "" }] })} />}
         </div>
         <ErrorText text={error} />
-      </Card>
+      </SoftCard>
 
       {!planOnly && log.filter((e) => e.kind === "food" || !e.kind).length > 0 && (
         <Card title="Food intake record">
