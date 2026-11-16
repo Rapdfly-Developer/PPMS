@@ -62,6 +62,12 @@ export async function saveCounsellingDetails(visitId: string, data: {
   schemeName?: string;
   policyNumber?: string;
   estimateAmount?: number | null;
+  /** Drug allergy: saved into this visit's EMR (General Examination). */
+  allergies?: string;
+  nkda?: boolean;
+  /** Split of the estimate (non-Self types). */
+  outOfPocketAmount?: number | null;
+  coveredAmount?: number | null;
   /** Sheets (JSON). Implant details freeze at Fit; consents and education stay editable until Eligible. */
   implantDetails?: unknown;
   consents?: unknown;
@@ -78,7 +84,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (nextDate && dateChanged && isPastDay(nextDate)) return { error: "The surgery date can't be in the past." };
   // After Fit the date must stay set and within the reports' 1-month validity.
   if (rec?.fitForSurgery && dateChanged) {
-    if (!nextDate) return { error: "The surgery date is required after Fit for surgery." };
+    if (!nextDate) return { error: "The surgery date is required after Eligibility for surgery." };
     if (rec.reportsValidUntil && nextDate > rec.reportsValidUntil) {
       return { error: `The reports are valid only till ${rec.reportsValidUntil.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
     }
@@ -94,6 +100,12 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (data.estimateAmount !== undefined) {
     if (data.estimateAmount !== null && !(data.estimateAmount >= 0)) return { error: "Invalid estimate amount." };
     patch.estimateAmount = data.estimateAmount;
+  }
+  for (const k of ["outOfPocketAmount", "coveredAmount"] as const) {
+    const v = data[k];
+    if (v === undefined) continue;
+    if (v !== null && !(v >= 0)) return { error: "Invalid amount." };
+    patch[k] = v;
   }
   const sheet = (x: unknown): string | null => {
     const json = JSON.stringify(x ?? {});
@@ -132,15 +144,76 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (dateChanged) {
     await writeAudit(user.id, "CounsellingRecord", visitId, "DATE_CHANGED", { from: currentDate, to: nextDate });
   }
+  // Consents changed here are carried into the IPD file made from this counselling
+  if (data.consents !== undefined) await syncConsentsToIpd(visitId, rec?.consents ?? null, data.consents);
+  // Drug allergy entered in Counselling goes into the EMR allergies of this
+  // visit and of the patient's latest visit, so the EMR shows the same
+  if (data.allergies !== undefined || data.nkda !== undefined) {
+    const allergies = (data.allergies ?? "").trim().slice(0, 2000);
+    const nkda = !allergies && !!data.nkda;
+    const scope = await visitRecordScope(user);
+    const latest = scope
+      ? await prisma.visit.findFirst({ where: { patientId: visit.patientId, ...scope }, orderBy: { date: "desc" }, select: { id: true } })
+      : null;
+    for (const id of [...new Set([visitId, latest?.id].filter((x): x is string => !!x))]) {
+      const ge = await prisma.generalExamination.findUnique({ where: { visitId: id }, select: { allergies: true, nkda: true } });
+      if ((ge?.allergies ?? "").trim() === allergies && !!ge?.nkda === nkda) continue;
+      await prisma.generalExamination.upsert({
+        where: { visitId: id },
+        create: { visitId: id, allergies: allergies || null, nkda },
+        update: { allergies: allergies || null, nkda },
+      });
+      await writeAudit(user.id, "GeneralExamination", id, "ALLERGIES_UPDATED_FROM_COUNSELLING", { from: { allergies: ge?.allergies ?? null, nkda: !!ge?.nkda }, to: { allergies: allergies || null, nkda }, counsellingVisitId: visitId });
+    }
+    revalidatePath("/emr/[udid]", "page");
+  }
   refresh(visitId);
   return {};
+}
+
+type ConsentItemLike = { id: string; title?: string; text?: string; [k: string]: unknown };
+const consentItems = (x: unknown): ConsentItemLike[] => {
+  const items = (x as { items?: unknown } | null)?.items;
+  return Array.isArray(items) ? items.filter((i): i is ConsentItemLike => !!i && typeof (i as ConsentItemLike).id === "string") : [];
+};
+
+/**
+ * Bring the IPD Consents form (when the ward has saved one and it isn't frozen)
+ * in line with Counselling: wording and titles follow Counselling, consents
+ * added here appear, consents deleted here go. The ward's signatures and the
+ * consents added only in IPD stay.
+ */
+async function syncConsentsToIpd(visitId: string, before: string | null, after: unknown) {
+  const admissions = await prisma.ipdAdmission.findMany({ where: { counsellingVisitId: visitId }, select: { id: true } });
+  if (!admissions.length) return;
+  let prev: unknown = null;
+  try { prev = before ? JSON.parse(before) : null; } catch { /* unreadable */ }
+  const prevIds = new Set(consentItems(prev).map((i) => i.id));
+  const next = consentItems(after);
+  const nextIds = new Set(next.map((i) => i.id));
+  for (const a of admissions) {
+    const form = await prisma.ipdForm.findUnique({ where: { admissionId_key: { admissionId: a.id, key: "consents" } } });
+    if (!form || form.frozen) continue; // not saved yet: IPD already starts from Counselling
+    let data: { items?: unknown; [k: string]: unknown } = {};
+    try { data = JSON.parse(form.data); } catch { continue; }
+    const ipd = consentItems(data);
+    const byId = new Map(ipd.map((i) => [i.id, i]));
+    const items = [
+      // Counselling's consents, in its order, keeping what the ward recorded on them
+      ...next.map((c) => ({ ...(byId.get(c.id) ?? { signed: false }), id: c.id, title: c.title ?? "", text: c.text ?? "", signedFile: c.signedFile ?? undefined })),
+      // Consents added only in IPD (not removed in Counselling)
+      ...ipd.filter((i) => !nextIds.has(i.id) && !prevIds.has(i.id)),
+    ];
+    await prisma.ipdForm.update({ where: { id: form.id }, data: { data: JSON.stringify({ ...data, items }) } });
+  }
+  revalidatePath(`/ipd`, "layout");
 }
 
 // ── E. Fit for surgery ──────────────────────────────────────────────────────
 
 export async function markFitForSurgery(visitId: string): Promise<Result & { validUntil?: string | null }> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.fit");
-  if (rec?.fitForSurgery) return { error: "Already marked fit for surgery." };
+  if (rec?.fitForSurgery) return { error: "Already marked eligible for surgery." };
   const dateOfSurgery = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   if (!rec || !dateOfSurgery) return { error: "Set the tentative date of surgery first." };
   if (isPastDay(dateOfSurgery)) return { error: "The surgery date is in the past. Set a new tentative date first." };
@@ -188,6 +261,32 @@ export async function reopenCounselling(visitId: string): Promise<Result> {
   return {};
 }
 
+/**
+ * Undo Fit for Surgery: back to Pending, reports validity cleared, an upcoming
+ * pre-op appointment cancelled. The advance stays recorded. Not allowed once
+ * the patient has been admitted to IPD from this counselling.
+ */
+export async function revertFitForSurgery(visitId: string): Promise<Result> {
+  const { user, rec } = await loadVisit(visitId, "counselling.fit");
+  if (!rec?.fitForSurgery && !rec?.eligibleForSurgery) return { error: "Not marked eligible for surgery." };
+  const admitted = await prisma.ipdAdmission.findFirst({ where: { counsellingVisitId: visitId }, select: { id: true } });
+  if (admitted) return { error: "The patient is already admitted to IPD from this counselling, so eligibility can't be reverted." };
+
+  await prisma.counsellingRecord.update({
+    where: { visitId },
+    data: {
+      fitForSurgery: false, eligibleForSurgery: false, status: "PENDING", doctorDecision: null,
+      reportsValidUntil: null, fitByName: null, doctorReviewedAt: null,
+    },
+  });
+  await writeAudit(user.id, "CounsellingRecord", visitId, "FIT_REVERTED", {});
+  // Not ready any more: drop an upcoming pre-op appointment
+  const r = await savePreOp(visitId, rec.preOpTime ?? "");
+  if (r.error) return r;
+  refresh(visitId);
+  return {};
+}
+
 // ── F. Doctor not satisfied: add investigations / postpone ──────────────────
 
 /** EMR investigation category for a test, from the catalog group it belongs to (custom tests → Pre-op & Lab). */
@@ -198,7 +297,7 @@ function emrCategory(testName: string): string {
 
 export async function addCounsellingInvestigations(visitId: string, tests: string[], inViewOf: string): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.addInvestigations");
-  if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked fit for surgery." };
+  if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked eligible for surgery." };
 
   const norm = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
   const existing = new Set(visit.investigationOrders.map((o) => norm(o.testName)));
@@ -225,7 +324,7 @@ export async function postponeSurgery(visitId: string, data: { until: string | n
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.eligibleForSurgery) return { error: "Counselling is already complete." };
   // Per the requirements this is the doctor's option at review, before Fit for surgery.
-  if (rec?.fitForSurgery) return { error: "Date not confirmed is chosen at the doctor's review, before Fit for surgery." };
+  if (rec?.fitForSurgery) return { error: "Date not confirmed is chosen at the doctor's review, before Eligibility for surgery." };
   if (!data.indefinitely && !data.until) return { error: "Pick an expected date or choose Not decided yet." };
   if (!data.indefinitely && data.until && isPastDay(dayFromStr(data.until)!)) return { error: "The expected date can't be in the past." };
   if (!data.reason.trim()) return { error: "Enter the reason the date is not confirmed." };
@@ -261,7 +360,7 @@ export async function resumeCounselling(visitId: string): Promise<Result> {
 
 export async function saveAdvance(visitId: string, data: { advancePaid: number | null; advanceReceived: boolean }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.edit");
-  if (!rec?.fitForSurgery) return { error: "Advance is recorded after Fit for surgery." };
+  if (!rec?.fitForSurgery) return { error: "Advance is recorded after Eligibility for surgery." };
   if (rec.reportsValidUntil && rec.reportsValidUntil < new Date()) return { error: "Reports have expired. Reopen counselling first." };
   if (data.advancePaid !== null && !(data.advancePaid >= 0)) return { error: "Invalid advance amount." };
 
@@ -326,16 +425,16 @@ export async function savePreOp(visitId: string, time: string): Promise<Result> 
   });
   if (clash) return { error: "Saved, but the pre-op time is already booked for the doctor. Pick another time and Save again." };
 
-  const notes = [`Pre-op: ${surgeryLine(visit)}`, rec.implant ? `Implant: ${rec.implant}` : ""].filter(Boolean).join("\n");
+  // No auto-generated notes: they would show as the chief complaint
   if (active) {
-    await prisma.appointment.update({ where: { id: active.id }, data: { dateTime, notes } });
+    await prisma.appointment.update({ where: { id: active.id }, data: { dateTime } });
     await writeAudit(user.id, "CounsellingRecord", visitId, "PRE_OP_MOVED", { from: active.dateTime, to: dateTime });
   } else {
     await prisma.$transaction(async (tx) => {
       const appt = await tx.appointment.create({
         data: {
           patientId: visit.patientId, doctorId: visit.doctorId, hospitalId: visit.hospitalId,
-          dateTime, visitType: "Pre-op", status: "CONFIRMED", isWalkIn: false, notes,
+          dateTime, visitType: "Pre-op", status: "CONFIRMED", isWalkIn: false,
         },
       });
       await tx.counsellingRecord.update({ where: { visitId }, data: { preOpAppointmentId: appt.id } });
@@ -468,7 +567,7 @@ export async function rescheduleNoShow(visitId: string, date: string, retake: bo
 
 export async function markEligibleForSurgery(visitId: string, time: string, notes: string): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.eligible");
-  if (!rec?.fitForSurgery) return { error: "Mark Fit for surgery first." };
+  if (!rec?.fitForSurgery) return { error: "Mark Eligibility for surgery first." };
   if (rec.eligibleForSurgery) return { error: "Already eligible for surgery." };
   if (rec.surgeryDeferred) return { error: "Surgery date is not confirmed. Resume counselling first." };
   if (!rec.advanceReceived && !(Number(rec.advancePaid ?? 0) > 0)) return { error: "Record the advance payment first." };
@@ -500,7 +599,8 @@ export async function markEligibleForSurgery(visitId: string, time: string, note
         visitType: "Pre-op",
         status: "CONFIRMED",
         isWalkIn: false,
-        notes: [`Pre-op: ${surgery}`, rec.implant ? `Implant: ${rec.implant}` : "", notes.trim()].filter(Boolean).join("\n"),
+        // Only what staff typed; no auto-generated text (it would show as the chief complaint)
+        notes: notes.trim() || null,
       },
     });
     await tx.counsellingRecord.update({

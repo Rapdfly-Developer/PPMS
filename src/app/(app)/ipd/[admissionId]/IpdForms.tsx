@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { paymentLabel } from "@/lib/counselling";
 import { format } from "date-fns";
@@ -11,6 +11,8 @@ import {
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
+import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
+import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { EducationSetPicker, LoadOtTemplate, ManageMine, SaveAsMine, type PickableSet, type SavedTemplate } from "./templatesUi";
 import { searchMedications } from "@/lib/ophthalmic-medications";
 import { MatchHighlight } from "@/components/ui/MatchHighlight";
@@ -124,9 +126,24 @@ export function Seg<T extends string>({ options, value, onChange, disabled, tone
   );
 }
 
-function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className }: {
+function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className, opts }: {
   label: string; value: string; onChange: (v: string) => void; disabled?: boolean; type?: string; placeholder?: string; list?: string; className?: string;
+  /** Type-ahead list with "+ Custom", like the other pick fields. */
+  opts?: FieldOptions;
 }) {
+  if (opts) {
+    return (
+      <div className={className ?? ""}>
+        <div className={rowIn}>
+          <label className={lblIn}>{label}</label>
+          <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} apply={(_, pick) => pick} disabled={disabled} className="relative flex-1 min-w-0">
+            {(sp) => <input {...sp} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} w-full`} />}
+          </SuggestField>
+        </div>
+        {!disabled && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} isOn={(x) => value === x} onPick={onChange} /></div>}
+      </div>
+    );
+  }
   return (
     <div className={`${rowIn} ${className ?? ""}`}>
       <label className={lblIn}>{label}</label>
@@ -135,13 +152,43 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
   );
 }
 
-function Area({ label, value, onChange, disabled, placeholder, rows = 3 }: { label?: string; value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; rows?: number }) {
+/** Adds a pick as its own line (once). */
+const addLine = (value: string, pick: string) =>
+  value.split("\n").some((l) => l.trim() === pick) ? value : (value.trim() ? `${value.replace(/\s+$/, "")}\n${pick}` : pick);
+
+function Area({ label, value, onChange, disabled, placeholder, rows = 3, opts }: {
+  label?: string; value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; rows?: number;
+  /** Keyword chips with "+ Custom" and a type-ahead list, like the other note fields. */
+  opts?: FieldOptions;
+}) {
+  const box = opts ? (
+    <div className="min-w-0">
+      {!disabled && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
+      <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} disabled={disabled}>
+        {(sp) => <textarea {...sp} value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />}
+      </SuggestField>
+    </div>
+  ) : (
+    <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
+  );
   return (
     <div className={label ? "grid grid-cols-[auto_1fr] items-start gap-2" : ""}>
       {label && <label className={`${lblIn} pt-2`}>{label}</label>}
-      <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
+      {box}
     </div>
   );
+}
+
+/** Consent wording: grows with the text, so the full consent shows without scrolling. */
+function GrowArea({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={4} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${inp} resize-none overflow-hidden leading-relaxed`} />;
 }
 
 function TickNote({ by, at }: { by?: string; at?: string }) {
@@ -278,39 +325,65 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
 /* ── 3. Consents ───────────────────────────────────────────────────────── */
 
 export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormProps<ConsentsData>) {
-  const [newTitle, setNewTitle] = useState("");
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const items = v.items ?? [];
+  const [tab, setTab] = useState<string>(items[0]?.id ?? "");
+  const current = items.find((x) => x.id === tab) ?? items[0];
   const setItem = (c: ConsentItem) => change({ ...v, items: items.map((x) => (x.id === c.id ? c : x)) });
   const print = (c: ConsentItem) => start(async () => {
     if (editable) { const err = await saveNow(v); if (err) { setError(err); return; } }
     printInPlace(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`);
   });
+  const add = (title: string) => {
+    const id = `c-${uid()}`;
+    change({ ...v, items: [...items, { id, title, text: "", signed: false }] });
+    setTab(id);
+  };
+  const remove = (id: string) => {
+    const rest = items.filter((x) => x.id !== id);
+    change({ ...v, items: rest });
+    if (tab === id) setTab(rest[0]?.id ?? "");
+  };
 
   return (
     <div className="space-y-3">
       <ErrorText text={error} />
-      {items.map((c) => (
-        <Card key={c.id} title={c.title}
-          right={<button type="button" disabled={busy} onClick={() => print(c)} className={btnG}><Printer size={12} /> Print</button>}>
-          {editable
-            ? <Area value={c.text} onChange={(x) => setItem({ ...c, text: x })} rows={Math.min(14, Math.max(4, c.text.split("\n").length + 2))} placeholder="Consent wording…" />
-            : <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">{c.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</div>}
-          <p className="mt-3 text-xs italic text-[var(--color-ink-500)]">{CONSENT_DECLARATION}</p>
-
-        </Card>
-      ))}
-      {editable && (
-        <div className="flex gap-2">
-          <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Add a custom consent, e.g. Consent for photography" className={inp} />
-          <button type="button" disabled={!newTitle.trim()} onClick={() => { change({ ...v, items: [...items, { id: `c-${uid()}`, title: newTitle.trim(), text: "", signed: false }] }); setNewTitle(""); }} className={btnG}><Plus size={13} /> Add consent</button>
-        </div>
+      {/* Consent tabs (same as Counselling): × deletes a consent, + New adds one */}
+      <ConsentTabBar
+        items={items.map((c) => ({ id: c.id, label: CONSENT_TAB_IDS.includes(c.id) ? c.id : c.title }))}
+        active={current?.id ?? ""}
+        onSelect={setTab}
+        editable={editable}
+        onAdd={add}
+        onRemove={remove}
+      />
+      {current ? (
+        <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-[var(--color-border)]/60 bg-gradient-to-r from-[var(--color-primary-50)]/70 via-white to-white">
+            <div className="min-w-0">
+              <p className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-primary-600)]">Consent</p>
+              <p className="truncate text-sm font-semibold tracking-tight text-[var(--color-ink-900)]">{current.title}</p>
+            </div>
+            <button type="button" disabled={busy} onClick={() => print(current)} className={btnG}><Printer size={12} /> Print</button>
+          </div>
+          <div className="px-5 py-4">
+            {editable
+              ? <GrowArea value={current.text} onChange={(x) => setItem({ ...current, text: x })} placeholder="Consent wording…" />
+              : <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">{current.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</div>}
+            <p className="mt-3 rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>
+          </div>
+        </section>
+      ) : (
+        <p className="text-sm italic text-[var(--color-ink-400)]">No consents. Use + New to add one.</p>
       )}
       {busy && <Loader2 size={14} className="animate-spin text-[var(--color-ink-400)]" />}
     </div>
   );
 }
+
+/** Standard consents show their short name on the tab. */
+const CONSENT_TAB_IDS = ["General", "GVP", "Anaesthesia", "Negative"];
 
 /* ── 4. Pre-operative surgery checklist ────────────────────────────────── */
 
@@ -338,7 +411,9 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
           </span>
         </div>
         {a?.value === "NO" && (
-          <input value={a.remark ?? ""} disabled={!editable} onChange={(e) => remark(item, e.target.value)} placeholder="Reason / action taken" className={`${inp} mt-1.5 border-red-200`} />
+          <SuggestField storeKey={FO.checklistRemark.storeKey} builtIns={FO.checklistRemark.builtIns} value={a.remark ?? ""} onChange={(x) => remark(item, x)} apply={(_, pick) => pick} disabled={!editable} className="relative mt-1.5">
+            {(sp) => <input {...sp} value={a.remark ?? ""} disabled={!editable} onChange={(e) => remark(item, e.target.value)} placeholder="Reason / action taken" className={`${inp} border-red-200`} />}
+          </SuggestField>
         )}
       </li>
     );
@@ -473,7 +548,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
             Understanding confirmed (teach-back)
           </label>
         </div>
-        <div className="mt-3"><Area label="Notes" value={v.notes} onChange={(x) => change({ ...v, notes: x })} disabled={!editable} rows={2} /></div>
+        <div className="mt-3"><Area label="Notes" value={v.notes} onChange={(x) => change({ ...v, notes: x })} disabled={!editable} rows={2} opts={FO.formNotes} /></div>
       </SoftCard>
 
       <SoftCard icon={<Utensils size={14} />} title="Diet chart">
@@ -510,7 +585,9 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
                       <input type="time" value={m.time} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, time: e.target.value } : x)) })} className={inp} />
                     </td>
                     <td className={td}>
-                      <input value={m.diet} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />
+                      <SuggestField storeKey={FO.dietMeal.storeKey} builtIns={FO.dietMeal.builtIns} value={m.diet} onChange={(d) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: d } : x)) })} disabled={!editable}>
+                        {(sp) => <input {...sp} value={m.diet} disabled={!editable} onChange={(e) => change({ ...v, meals: v.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />}
+                      </SuggestField>
                     </td>
                     {!planOnly && <td className={`${td} whitespace-nowrap`}>
                       {rec && <p className={`text-xs font-semibold ${rec.meta?.amount === "Refused" ? "text-red-600" : "text-emerald-700"}`}>{rec.meta?.amount} · {time(rec.at)} · {rec.by}</p>}
@@ -654,13 +731,13 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
             <p className="text-xs font-bold text-[var(--color-primary-800)] mb-2">New order</p>
             <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr] gap-2.5">
               <div className={rowIn}><label className={lblIn}>Drug</label><DrugSearch value={draft.name} onChange={(x) => setDraft({ ...draft, name: x })} onPick={(name, dose, route) => setDraft({ ...draft, name, dose: dose || draft.dose, route: ROUTE_GUESS(route) })} /></div>
-              <Field label="Dose" value={draft.dose} onChange={(x) => setDraft({ ...draft, dose: x })} list="ipd-dose-options" />
+              <Field label="Dose" value={draft.dose} onChange={(x) => setDraft({ ...draft, dose: x })} opts={FO.treatDose} />
               <div className={rowIn}><label className={lblIn}>Route</label><SelectWithCustom storeKey="routes" builtIns={ROUTES} value={draft.route} onChange={(x) => setDraft({ ...draft, route: x })} className={inp} /></div>
             </div>
             <div className="grid grid-cols-1 xl:grid-cols-[auto_minmax(16rem,1fr)_1fr] gap-2.5 mt-2.5 items-center">
               <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={draft.eye} onChange={(x) => setDraft({ ...draft, eye: draft.eye === x ? "" : x })} /></div>
               <div className={rowIn}><label className={lblIn}>Frequency</label><SelectWithCustom storeKey="frequencies" builtIns={FREQUENCY_OPTIONS} value={draft.frequency} onChange={(x) => setDraft({ ...draft, frequency: x })} className={inp} /></div>
-              <Field label="Instructions" value={draft.instructions} onChange={(x) => setDraft({ ...draft, instructions: x })} placeholder="e.g. Shake well; 5 min gap between drops" />
+              <Field label="Instructions" value={draft.instructions} onChange={(x) => setDraft({ ...draft, instructions: x })} placeholder="e.g. Shake well; 5 min gap between drops" opts={FO.treatInstructions} />
             </div>
             <datalist id="ipd-dose-options">{DOSE_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist>
             <button type="button" disabled={!draft.name.trim()} onClick={addOrder} className={`${btnP} mt-3`}><Plus size={13} /> Add order</button>
@@ -873,12 +950,12 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
     <div className="space-y-3">
       <Card title="Operation details">
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_1fr] gap-3 items-end">
-          <Field label="Procedure" value={v.procedure} onChange={(x) => set("procedure", x)} disabled={!editable} />
+          <Field label="Procedure" value={v.procedure} onChange={(x) => set("procedure", x)} disabled={!editable} opts={FO.otProcedure} />
           <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
-          <Field label="Anaesthesia" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} />
+          <Field label="Anaesthesia" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} opts={FO.otAnaesthesia} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-          <Field label="Implant" value={v.implant} onChange={(x) => set("implant", x)} disabled={!editable} className="sm:col-span-2" />
+          <Field label="Implant" value={v.implant} onChange={(x) => set("implant", x)} disabled={!editable} className="sm:col-span-2" opts={FO.otImplant} />
           <Field label="Surgeon" value={v.surgeon} onChange={(x) => set("surgeon", x)} disabled={!editable} />
           <Field label="Assistant" value={v.assistant} onChange={(x) => set("assistant", x)} disabled={!editable} />
           <Field label="Anaesthetist" value={v.anaesthetist} onChange={(x) => set("anaesthetist", x)} disabled={!editable} />
@@ -923,7 +1000,7 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
       </Card>
       <Card title="Findings, events & instructions">
         <div className="space-y-3">
-          <Area label="Intra-operative findings" value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} />
+          <Area label="Intra-operative findings" value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} opts={FO.otFindings} />
           <div>
             <div className={rowIn}>
               <label className={lblIn}>Complications</label>
@@ -933,7 +1010,7 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
             </div>
             {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
           </div>
-          <Area label="Post-operative instructions" value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} />
+          <Area label="Post-operative instructions" value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} opts={FO.otInstructions} />
         </div>
       </Card>
     </div>
@@ -973,8 +1050,8 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
             </div>
           )}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Vision RE" value={r.vaRe} onChange={(x) => set(r.id, "vaRe", x)} disabled={!editable} />
-            <Field label="Vision LE" value={r.vaLe} onChange={(x) => set(r.id, "vaLe", x)} disabled={!editable} />
+            <Field label="Vision RE" value={r.vaRe} onChange={(x) => set(r.id, "vaRe", x)} disabled={!editable} opts={FO.postopVision} />
+            <Field label="Vision LE" value={r.vaLe} onChange={(x) => set(r.id, "vaLe", x)} disabled={!editable} opts={FO.postopVision} />
             <Field label="IOP RE (mmHg)" value={r.iopRe} onChange={(x) => set(r.id, "iopRe", x)} disabled={!editable} />
             <Field label="IOP LE (mmHg)" value={r.iopLe} onChange={(x) => set(r.id, "iopLe", x)} disabled={!editable} />
           </div>
@@ -991,8 +1068,8 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
             </table>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-            <Area label="Complaints" value={r.complaints} onChange={(x) => set(r.id, "complaints", x)} disabled={!editable} rows={2} />
-            <Area label="Plan" value={r.plan} onChange={(x) => set(r.id, "plan", x)} disabled={!editable} rows={2} />
+            <Area label="Complaints" value={r.complaints} onChange={(x) => set(r.id, "complaints", x)} disabled={!editable} rows={2} opts={FO.postopComplaints} />
+            <Area label="Plan" value={r.plan} onChange={(x) => set(r.id, "plan", x)} disabled={!editable} rows={2} opts={FO.postopPlan} />
           </div>
         </Card>
       ))}

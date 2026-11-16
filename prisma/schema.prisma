@@ -1522,6 +1522,9 @@ model CounsellingRecord {
   // 4. Estimate
   estimateAmount Decimal? @db.Decimal(10, 2)
   estimateVague  Boolean  @default(false)
+  // Split of the estimate for non-Self payment types
+  outOfPocketAmount Decimal? @db.Decimal(10, 2)
+  coveredAmount     Decimal? @db.Decimal(10, 2)
   fitForSurgery  Boolean  @default(false)
 
   // 5. Advance

@@ -19,6 +19,8 @@ import {
   type OtNotesData, type PostOpData, type TreatmentData,
 } from "@/lib/ipd-forms";
 import { SaveIndicator, useAutoSave } from "@/lib/useAutoSave";
+import { ChipRow, SuggestField } from "./customOptions";
+import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import {
   ChecklistForm, ConsentsForm, DoctorNoteComposer, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
   OtNotesForm, PostOpForm, TreatmentForm, type FileInfo, type NewLog,
@@ -624,7 +626,11 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
         </div>
         <div>
           <label className={labelCls}>Additional notes (optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />
+          {/* Keyword chips with "+ Custom" and a type-ahead list */}
+          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} /></div>
+          <SuggestField storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} value={notes} onChange={setNotes}>
+            {(sp) => <textarea {...sp} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />}
+          </SuggestField>
         </div>
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-3 space-y-2">
           <p className="text-sm font-semibold text-[var(--color-ink-800)]">Sign with OTP</p>

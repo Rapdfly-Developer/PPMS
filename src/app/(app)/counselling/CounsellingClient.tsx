@@ -45,7 +45,7 @@ type CardFilter = "PENDING" | "PARTIAL" | "COMPLETED" | "NOSHOW" | "ALL";
 
 export const STATUS_META: Record<CounsellingStatus, { label: string; pill: string; dot: string }> = {
   PENDING:   { label: "Pending",                    pill: "bg-slate-100 text-slate-600 border border-slate-200",       dot: "bg-slate-400" },
-  PARTIAL:   { label: "Fit for Surgery",            pill: "bg-amber-50 text-amber-700 border border-amber-300",        dot: "bg-amber-500" },
+  PARTIAL:   { label: "Eligible for Surgery",       pill: "bg-amber-50 text-amber-700 border border-amber-300",        dot: "bg-amber-500" },
   COMPLETED: { label: "Completed",                  pill: "bg-emerald-100 text-emerald-700 border border-emerald-200", dot: "bg-emerald-500" },
   POSTPONED: { label: "Date Not Confirmed",         pill: "bg-orange-50 text-orange-700 border border-orange-200",     dot: "bg-orange-500" },
 };
@@ -391,7 +391,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
           onClick={() => toggleCard("PENDING")} active={card === "PENDING"}
         />
         <StatCard
-          label="Partial · Fit for Surgery" count={counts.PARTIAL}
+          label="Partial · Eligible for Surgery" count={counts.PARTIAL}
           icon={<ShieldCheck size={17} className="text-amber-600" />}
           accent="text-amber-600" iconBg="bg-amber-50"
           onClick={() => toggleCard("PARTIAL")} active={card === "PARTIAL"}
@@ -430,7 +430,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
               { value: "ALL", label: "All Statuses" },
               { value: "PENDING", label: "Pending" },
               { value: "POSTPONED", label: "Date Not Confirmed" },
-              { value: "PARTIAL", label: "Fit for Surgery" },
+              { value: "PARTIAL", label: "Eligible for Surgery" },
               { value: "COMPLETED", label: "Completed (advance paid)" },
             ]}
           />

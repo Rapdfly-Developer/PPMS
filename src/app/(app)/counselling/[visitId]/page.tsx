@@ -53,6 +53,18 @@ export default async function CounsellingVisitPage({
     },
   });
 
+  // Drug allergy: the patient's latest EMR entry (any visit, also ones after this
+  // counselling visit), so a change made in the EMR shows here too
+  const allergyVisits = await prisma.visit.findMany({
+    where: { patientId: visit.patientId, ...scope },
+    orderBy: { date: "desc" },
+    take: 12,
+    select: { generalExam: { select: { allergies: true, nkda: true } } },
+  });
+  const latestAllergy = allergyVisits.find((x) => x.generalExam?.allergies?.trim() || x.generalExam?.nkda)?.generalExam;
+  const allergyText = latestAllergy?.allergies?.trim() ?? "";
+  const drugAllergy = { text: allergyText, nkda: !allergyText && !!latestAllergy?.nkda };
+
   const rec = visit.counsellingRecord;
   const preOp = rec?.preOpAppointmentId
     ? await prisma.appointment.findUnique({ where: { id: rec.preOpAppointmentId }, select: { dateTime: true, status: true } })
@@ -96,6 +108,7 @@ export default async function CounsellingVisitPage({
     laterality: visit.advisedSurgeryEye,
     anaesthesia: visit.advisedSurgeryAnaesthesia,
     surgeryNotes: visit.advisedSurgeryNotes,
+    drugAllergy,
     doctorName: visit.doctor.name,
     patient: { ...visit.patient, udid: visit.patient.udid ?? visit.patient.id },
     chiefComplaint: visit.generalExam?.chiefComplaint ?? null,
@@ -125,6 +138,8 @@ export default async function CounsellingVisitPage({
       policyNumber: rec?.policyNumber ?? "",
       paymentDocs: parsePaymentDocs(rec?.paymentDocs),
       estimateAmount: rec?.estimateAmount != null ? Number(rec.estimateAmount) : null,
+      outOfPocketAmount: rec?.outOfPocketAmount != null ? Number(rec.outOfPocketAmount) : null,
+      coveredAmount: rec?.coveredAmount != null ? Number(rec.coveredAmount) : null,
       advancePaid: rec?.advancePaid != null ? Number(rec.advancePaid) : null,
       advanceReceived: rec?.advanceReceived ?? false,
       preOpTime: rec?.preOpTime ?? "",

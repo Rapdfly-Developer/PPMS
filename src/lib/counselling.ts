@@ -234,6 +234,77 @@ export function implantSuggestions(surgery: string): string[] {
   return [...new Set(out)];
 }
 
+/** Implant family of a surgery: decides the Implant Details fields in Counselling. */
+export type ImplantGroup = "IOL" | "GLAUCOMA" | "RETINA" | "BUCKLE" | "CORNEA" | "PTERYGIUM" | "OTHER" | "NONE";
+
+const CATARACT_IOLS = IMPLANT_PRESETS[0].implants;
+
+/** IOLs by the lens kind named in the surgery (e.g. "Phaco with Multifocal IOL"). */
+const IOL_KINDS: { match: RegExp; implants: string[] }[] = [
+  { match: /trifocal/i, implants: ["Trifocal IOL (Hydrophobic acrylic)", "Trifocal IOL (Hydrophilic acrylic)", "Trifocal Toric IOL"] },
+  { match: /multifocal/i, implants: ["Multifocal IOL (Diffractive)", "Multifocal IOL (Refractive)", "Multifocal Toric IOL"] },
+  { match: /edof|extended depth/i, implants: ["EDOF IOL", "EDOF Toric IOL"] },
+  { match: /toric/i, implants: ["Toric IOL (Hydrophobic acrylic)", "Toric IOL (Hydrophilic acrylic)"] },
+  { match: /monofocal/i, implants: ["Monofocal IOL (Hydrophobic acrylic, foldable)", "Monofocal IOL (Hydrophilic acrylic, foldable)", "Monofocal IOL (PMMA, rigid)", "Aspheric Monofocal IOL"] },
+  { match: /icl|phakic/i, implants: ["Implantable Collamer Lens (ICL)", "Toric ICL"] },
+];
+const kindIols = (name: string) => [...new Set(IOL_KINDS.filter((k) => k.match.test(name)).flatMap((k) => k.implants))];
+
+/** Implant list and Implant Details fields set for each surgery in the EMR list. */
+const SURGERY_IMPLANTS: Record<string, { group: ImplantGroup; implants: string[] }> = {
+  "Phacoemulsification with IOL": { group: "IOL", implants: CATARACT_IOLS },
+  "Manual Small Incision Cataract Surgery (MSICS) with IOL": { group: "IOL", implants: CATARACT_IOLS },
+  "Extracapsular Cataract Extraction (ECCE) with IOL": { group: "IOL", implants: CATARACT_IOLS },
+  "Phacoemulsification with Toric IOL": { group: "IOL", implants: kindIols("Toric") },
+  "Phacoemulsification with Multifocal IOL": { group: "IOL", implants: kindIols("Multifocal") },
+  "Secondary IOL Implantation": { group: "IOL", implants: ["Anterior Chamber IOL (ACIOL)", "Scleral-Fixated IOL (SFIOL)", "Iris-Claw IOL", "Sulcus IOL (3-piece)"] },
+  "Trabeculectomy with MMC": { group: "NONE", implants: [] },
+  "Combined Phaco-Trabeculectomy": { group: "IOL", implants: CATARACT_IOLS },
+  "Glaucoma Drainage Device (Ahmed Valve) Implantation": { group: "GLAUCOMA", implants: ["Ahmed Glaucoma Valve (FP7)", "Ahmed Glaucoma Valve (S2)", "Ahmed Glaucoma Valve (FP8, paediatric)"] },
+  "Pars Plana Vitrectomy (PPV)": { group: "RETINA", implants: ["Silicone Oil (1000 cs)", "Silicone Oil (5000 cs)", "SF6 Gas", "C3F8 Gas", "Air"] },
+  "PPV with Silicone Oil Injection": { group: "RETINA", implants: ["Silicone Oil (1000 cs)", "Silicone Oil (5000 cs)", "Heavy Silicone Oil"] },
+  "PPV with Endolaser": { group: "NONE", implants: [] },
+  "Silicone Oil Removal": { group: "NONE", implants: [] },
+  "Scleral Buckling": { group: "BUCKLE", implants: ["Scleral Buckle (Silicone band)", "Scleral Buckle (Silicone tyre)", "Silicone Sponge"] },
+  "Penetrating Keratoplasty (PK)": { group: "CORNEA", implants: ["Donor Cornea", "Bandage Contact Lens"] },
+  "DSAEK / DMEK": { group: "CORNEA", implants: ["Donor Cornea (DSAEK lenticule)", "Donor Cornea (DMEK graft)"] },
+  "Pterygium Excision with Conjunctival Autograft": { group: "PTERYGIUM", implants: ["Conjunctival Autograft + Fibrin Glue", "Conjunctival Autograft + Sutures", "Amniotic Membrane"] },
+  "Dacryocystorhinostomy (DCR)": { group: "OTHER", implants: ["Silicone Lacrimal Intubation Tube", "Jones Tube"] },
+  "Ptosis Correction": { group: "OTHER", implants: ["Silicone Rod (Frontalis sling)", "Fascia Lata"] },
+  "Strabismus Surgery": { group: "NONE", implants: [] },
+  "Evisceration with Orbital Implant": { group: "OTHER", implants: ["PMMA Orbital Implant", "Silicone Orbital Implant", "Hydroxyapatite Orbital Implant", "Porous Polyethylene (Medpor) Implant"] },
+  "Enucleation with Orbital Implant": { group: "OTHER", implants: ["PMMA Orbital Implant", "Silicone Orbital Implant", "Hydroxyapatite Orbital Implant", "Porous Polyethylene (Medpor) Implant"] },
+  "Implantable Collamer Lens (ICL)": { group: "IOL", implants: kindIols("ICL") },
+};
+const SURGERY_IMPLANTS_LC = new Map(Object.entries(SURGERY_IMPLANTS).map(([k, v]) => [k.toLowerCase(), v]));
+const listed = (surgery: string) => SURGERY_IMPLANTS_LC.get((surgery || "").trim().toLowerCase());
+
+/** Implant family of a surgery: decides the Implant Details fields in Counselling. */
+export function implantGroup(surgery: string): ImplantGroup {
+  const hit = listed(surgery);
+  if (hit) return hit.group;
+  // A surgery typed by hand: guess from the words in its name
+  const s = surgery || "";
+  if (/pterygium/i.test(s)) return "PTERYGIUM";
+  if (/icl|phakic|cataract|phaco|sics|ecce|iol|lens/i.test(s)) return "IOL";
+  if (/glaucoma|tube|valve|ahmed|baerveldt|shunt|stent/i.test(s)) return "GLAUCOMA";
+  if (/buckl/i.test(s)) return "BUCKLE";
+  if (/vitrect|retina|rd|detachment/i.test(s)) return "RETINA";
+  if (/kerato|cornea|dsaek|dmek|pk/i.test(s)) return "CORNEA";
+  return "OTHER";
+}
+
+/**
+ * Counselling's Type of Implant list: set per surgery; for a surgery typed by
+ * hand, the lens kind it names or else its group. (The EMR keeps using implantSuggestions.)
+ */
+export function counsellingImplantOptions(surgery: string): string[] {
+  const hit = listed(surgery);
+  if (hit) return hit.implants;
+  const kinds = kindIols(surgery || "");
+  return kinds.length ? kinds : implantSuggestions(surgery);
+}
+
 /** Every starter implant, for when the surgery name matches no preset. */
 export const ALL_IMPLANTS: readonly string[] = [...new Set(IMPLANT_PRESETS.flatMap((p) => p.implants))];
 

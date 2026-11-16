@@ -8,14 +8,14 @@ import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { addInvestigationOrder, updateInvestigationStatus, attachResult, removeResult, addExtraResult, removeExtraResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
-import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { ReportFilesMenu, type ReportFile } from "@/components/emr/ReportFilesMenu";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { INV_IN_VIEW_OF_DEFAULTS, INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
 import { useAutoSave } from "@/lib/useAutoSave";
 import { format, addMonths } from "date-fns";
 import {
-  Paperclip, ExternalLink, Upload, Download, Eye, Clock,
+  ExternalLink, Upload, Download, Clock,
   CheckCircle2, XCircle, FlaskConical, Plus, History,
   X, Search, Trash2, Lock,
 } from "lucide-react";
@@ -24,7 +24,6 @@ const FAVES_KEY   = "ppms_inv_favorites";
 const SESSION_KEY = "ppms_inv_session_customs";
 import clsx from "clsx";
 import { MatchHighlight } from "@/components/ui/MatchHighlight";
-import { fileHref } from "@/lib/file-href";
 
 // ── Main export ───────────────────────────────────────────────────────────
 
@@ -197,7 +196,6 @@ function InvestigationCard({
 }: {
   order: any; udid: string; readOnly: boolean; onView: (url: string) => void;
 }) {
-  const isImage = order.resultRef && /\.(jpg|jpeg|png|webp)$/i.test(order.resultRef);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, startDelete]           = useTransition();
 
@@ -243,23 +241,15 @@ function InvestigationCard({
 
         <div className="flex items-center gap-1 shrink-0 pt-1">
           {order.resultRef ? (
-            <>
-              <button
-                onClick={() => onView(fileHref(order.resultRef)!)}
-                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors"
-              >
-                <Eye size={12} /> View
-              </button>
-              <a
-                href={fileHref(order.resultRef)!}
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
-              >
-                <Download size={12} />
-              </a>
-            </>
+            // One Report button: View, Re-upload, Delete, Add more
+            <ReportFilesMenu
+              files={reportFiles(order)}
+              locked={readOnly}
+              onView={onView}
+              onReplace={(url) => attachResult(order.id, udid, url)}
+              onAddMore={(url) => addExtraResult(order.id, udid, url)}
+              onDelete={(f) => (f.main ? removeResult(order.id, udid) : removeExtraResult(order.id, udid, f.ref))}
+            />
           ) : !readOnly ? (
             <span data-overview-hide className="contents"><UploadButton orderId={order.id} udid={udid} /></span>
           ) : (
@@ -292,29 +282,6 @@ function InvestigationCard({
         </span>
       </div>
 
-      {/* Inline result preview */}
-      {order.resultRef && (
-        <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-          <p className="text-caption font-semibold text-[var(--color-ink-400)] uppercase tracking-wide mb-2">
-            {order.testName}, Result
-          </p>
-          {isImage ? (
-            <img
-              src={fileHref(order.resultRef)!}
-              alt={`${order.testName} result`}
-              className="max-h-52 rounded-xl cursor-pointer object-contain border border-[var(--color-border)]"
-              onClick={() => onView(fileHref(order.resultRef)!)}
-            />
-          ) : (
-            <button
-              onClick={() => onView(fileHref(order.resultRef)!)}
-              className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
-            >
-              <Paperclip size={13} /> {order.testName} result file, click to view
-            </button>
-          )}
-        </div>
-      )}
     </Card>
   );
 }
@@ -336,13 +303,10 @@ function PreviousInvestigationCard({
 }: {
   order: any; udid: string; readOnly: boolean; uploadedAt?: string; onView: (url: string) => void;
 }) {
-  const isImage = order.resultRef && /\.(jpg|jpeg|png|webp)$/i.test(order.resultRef);
   const frozen = new Date() > addMonths(new Date(order.createdAt), FREEZE_MONTHS);
   const locked = readOnly || frozen;
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmRemove, setConfirmRemove] = useState(false);
   const [busy, startBusy] = useTransition();
-  const [error, setError] = useState("");
 
   const [doctorNotes, setDoctorNotes] = useState<string>(order.doctorNotes ?? "");
   const { savePaused } = useEMRSaveContext();
@@ -354,15 +318,6 @@ function PreviousInvestigationCard({
   const handleDeleteOrder = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
     startBusy(async () => { await deleteInvestigationOrder(order.id, udid); });
-  };
-  const handleRemoveFile = () => {
-    if (!confirmRemove) { setConfirmRemove(true); setTimeout(() => setConfirmRemove(false), 3500); return; }
-    setError("");
-    startBusy(async () => {
-      const r = await removeResult(order.id, udid);
-      if (r?.error) setError(r.error);
-      setConfirmRemove(false);
-    });
   };
 
   const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
@@ -428,10 +383,7 @@ function PreviousInvestigationCard({
     );
   }
 
-  // Report uploaded: details on top, uploaded file below
-  const fileUrl = fileHref(order.resultRef)!;
-  const isPdf = /\.pdf$/i.test(order.resultRef);
-  const extraFiles = parseExtraResults(order.extraResultRefs);
+  // Report uploaded: details, then one Report button for the file(s)
   return (
     <Card className="px-3 py-2.5">
       <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
@@ -468,75 +420,17 @@ function PreviousInvestigationCard({
             </span>
           )}
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <div className="flex items-center gap-1">
-            <a
-              href={fileUrl}
-              download
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
-            >
-              <Download size={12} />
-            </a>
-          </div>
-          {!locked && (
-            <div data-overview-hide className="flex items-center gap-1">
-              <UploadButton orderId={order.id} udid={udid} label="Re-upload" />
-              <UploadButton orderId={order.id} udid={udid} label="Add more" addMore />
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                disabled={busy}
-                className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
-                  confirmRemove
-                    ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                    : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
-                }`}
-              >
-                <Trash2 size={12} />
-                {confirmRemove ? "Sure?" : "Delete"}
-              </button>
-            </div>
-          )}
-          {error && <p className="text-caption text-red-600">{error}</p>}
+        {/* One Report button: View, Re-upload, Delete, Add more (no inline previews) */}
+        <div data-overview-hide className="flex shrink-0 flex-col items-end gap-1">
+          <ReportFilesMenu
+            files={reportFiles(order)}
+            locked={locked}
+            onView={onView}
+            onReplace={(url) => attachResult(order.id, udid, url)}
+            onAddMore={(url) => addExtraResult(order.id, udid, url)}
+            onDelete={(f) => (f.main ? removeResult(order.id, udid) : removeExtraResult(order.id, udid, f.ref))}
+          />
         </div>
-      </div>
-
-      {/* Uploaded file(s) */}
-      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
-        {isImage ? (
-          <img
-            src={fileUrl}
-            alt={`${order.testName} result`}
-            className="max-h-52 rounded-lg cursor-pointer object-contain"
-            onClick={() => onView(fileUrl)}
-          />
-        ) : isPdf ? (
-          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
-            <iframe src={`${fileUrl}#toolbar=0&navpanes=0`} title={`${order.testName} result`} className="h-full w-full pointer-events-none" />
-            <button type="button" onClick={() => onView(fileUrl)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
-          </div>
-        ) : (
-          <button
-            onClick={() => onView(fileUrl)}
-            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
-          >
-            <Paperclip size={13} /> {order.testName} result file, click to view
-          </button>
-        )}
-        {extraFiles.map((file) => (
-          <ExtraResultPreview
-            key={file.ref}
-            file={file}
-            label={`${order.testName} result`}
-            onOpen={() => onView(fileHref(file.ref)!)}
-            onRemove={locked ? undefined : () => startBusy(async () => {
-              const r = await removeExtraResult(order.id, udid, file.ref);
-              if (r?.error) setError(r.error);
-            })}
-          />
-        ))}
       </div>
       {frozenNote}
     </Card>
@@ -587,6 +481,15 @@ function UploadButton({ orderId, udid, label = "File", addMore = false }: { orde
       {error && <p className="text-caption text-red-600">{error}</p>}
     </div>
   );
+}
+
+/** An order's report files for the Report button: the main one, then the ones added with "Add more". */
+function reportFiles(order: { resultRef: string; resultAt?: string | Date | null; updatedAt?: string | Date | null; extraResultRefs?: string | null }): ReportFile[] {
+  const at = order.resultAt ?? order.updatedAt ?? null;
+  return [
+    { ref: order.resultRef, at: at ? new Date(at).toISOString() : null, main: true },
+    ...parseExtraResults(order.extraResultRefs).map((f) => ({ ref: f.ref, at: f.at, main: false })),
+  ];
 }
 
 // ── Add Custom Test Modal ─────────────────────────────────────────────────

@@ -15,7 +15,7 @@ export interface CounsellingSheet {
 }
 
 const STAGE = (r: { eligibleForSurgery: boolean; fitForSurgery: boolean; surgeryDeferred: boolean } | null) =>
-  !r ? "Not started" : r.eligibleForSurgery ? "Eligible for surgery" : r.fitForSurgery ? "Fit for surgery" : r.surgeryDeferred ? "Date not confirmed" : "Pending";
+  !r ? "Not started" : r.eligibleForSurgery ? "Eligible for surgery" : r.fitForSurgery ? "Eligible for surgery" : r.surgeryDeferred ? "Date not confirmed" : "Pending";
 
 /**
  * The patient's counselling sheet to import into an admission: the most recent

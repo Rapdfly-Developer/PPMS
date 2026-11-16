@@ -102,7 +102,10 @@ export async function getCounsellingActivity(input: {
         break;
       case "CounsellingRecord:FIT_FOR_SURGERY":
         seen.add("fit");
-        ev.push({ at: t, title: "Marked fit for surgery", detail: v.validUntil ? `Reports valid till ${day(v.validUntil)}` : undefined, by, tone: "amber", milestone: "fit" });
+        ev.push({ at: t, title: "Marked eligible for surgery", detail: v.validUntil ? `Reports valid till ${day(v.validUntil)}` : undefined, by, tone: "amber", milestone: "fit" });
+        break;
+      case "CounsellingRecord:FIT_REVERTED":
+        ev.push({ at: t, title: "Eligibility for surgery reverted", by, tone: "red", milestone: "reopen" });
         break;
       case "CounsellingRecord:REOPEN":
         ev.push({ at: t, title: "Counselling reopened — reports to be redone", by, tone: "red", milestone: "reopen" });
@@ -139,7 +142,7 @@ export async function getCounsellingActivity(input: {
   }
   if (rec) {
     if (!detailsStarted) ev.push({ at: at(rec.createdAt), title: "Counselling started — details being filled", tone: "primary" });
-    if (rec.fitForSurgery && rec.doctorReviewedAt && !seen.has("fit")) ev.push({ at: at(rec.doctorReviewedAt), title: "Marked fit for surgery", by: rec.fitByName ?? undefined, tone: "amber", milestone: "fit" });
+    if (rec.fitForSurgery && rec.doctorReviewedAt && !seen.has("fit")) ev.push({ at: at(rec.doctorReviewedAt), title: "Marked eligible for surgery", by: rec.fitByName ?? undefined, tone: "amber", milestone: "fit" });
     if (rec.surgeryDeferred && rec.postponedAt && !seen.has("postpone")) ev.push({ at: at(rec.postponedAt), title: "Surgery date not confirmed", tone: "orange", milestone: "postpone" });
     if (rec.eligibleForSurgery && rec.confirmedAt && !seen.has("eligible")) ev.push({ at: at(rec.confirmedAt), title: "Confirmation done — eligible for surgery", by: rec.eligibleByName ?? undefined, tone: "emerald", milestone: "eligible" });
     if (rec.eligibleForSurgery && rec.confirmedAt && input.preOp && !seen.has("preop")) {

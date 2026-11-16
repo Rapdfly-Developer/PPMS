@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { ChipRow, SuggestField } from "./customOptions";
+import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
@@ -62,11 +63,29 @@ function Field({ label, value, onChange, editable, type = "text", placeholder, c
   );
 }
 
-function Area({ label, value, onChange, editable, placeholder, min }: { label?: string; value: string; onChange: (v: string) => void; editable: boolean; placeholder?: string; min?: number }) {
+/** Adds a pick as its own line (once). */
+const addLine = (value: string, pick: string) =>
+  value.split("\n").some((l) => l.trim() === pick) ? value : (value.trim() ? `${value.replace(/\s+$/, "")}\n${pick}` : pick);
+
+function Area({ label, value, onChange, editable, placeholder, min, opts }: {
+  label?: string; value: string; onChange: (v: string) => void; editable: boolean; placeholder?: string; min?: number;
+  /** Keyword chips with "+ Custom" and a type-ahead list, like the other note fields. */
+  opts?: FieldOptions;
+}) {
+  const area = (sp?: object) => (
+    <textarea {...sp} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
+  );
   return (
     <div className={label ? "grid grid-cols-[auto_1fr] items-start gap-2" : ""}>
       {label && <label className={`${labelIn} pt-2`}>{label}</label>}
-      <textarea value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
+      {opts ? (
+        <div className="min-w-0">
+          {editable && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
+          <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} disabled={!editable}>
+            {(sp) => area(sp)}
+          </SuggestField>
+        </div>
+      ) : area()}
     </div>
   );
 }
@@ -93,6 +112,9 @@ function Picks({ storeKey, options, value, onPick, editable }: { storeKey: strin
   if (!editable) return null;
   return <div className="mt-1.5"><ChipRow storeKey={storeKey} builtIns={options} isOn={(o) => value === o} onPick={onPick} /></div>;
 }
+
+/** Discharge medicine columns that have a type-ahead list. */
+const MED_OPTS: Partial<Record<string, FieldOptions>> = { dose: FO.medDose, frequency: FO.medFrequency, duration: FO.medDuration };
 
 /** A multi-line text edited as a list: one row per line; Enter adds a row. */
 function LineList({ value, onChange, editable, placeholder, numbered, addLabel }: {
@@ -191,7 +213,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               </button>
             ))}
           </div>
-          {s.dischargeType === "REFERRED" && <Field label="Referred to" value={s.referredTo} onChange={(v) => set("referredTo", v)} editable={editable} placeholder="Hospital / doctor" className="mt-2 max-w-md" />}
+          {s.dischargeType === "REFERRED" && <div className="mt-2 max-w-md"><PickField storeKey={FO.dcReferredTo.storeKey} options={[...FO.dcReferredTo.builtIns]} label="Referred to" value={s.referredTo} onChange={(v) => set("referredTo", v)} editable={editable} placeholder="Hospital / doctor" /></div>}
         </div>
       </Block>
 
@@ -208,7 +230,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
             <LineList value={s.complaints} onChange={(v) => set("complaints", v)} editable={editable} placeholder="e.g. Blurred vision LE × 6 months" addLabel="Add complaint" />
           </div>
           <div className="space-y-3">
-            <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={editable} placeholder="Medical / surgical / family history" />
+            <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={editable} placeholder="Medical / surgical / family history" opts={FO.dcHistory} />
             <div>
               <PickField label="Allergies" storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onChange={(v) => set("allergies", v)} editable={editable} placeholder="Drug / other allergies" />
             </div>
@@ -223,8 +245,8 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
           { label: "IOP", re: s.findings.iopRe, le: s.findings.iopLe, onRe: (v) => setIn("findings", "iopRe", v), onLe: (v) => setIn("findings", "iopLe", v), ph: ["mmHg", "mmHg"] },
         ]} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-          <Area label="Anterior segment" value={s.findings.anterior} onChange={(v) => setIn("findings", "anterior", v)} editable={editable} placeholder="RE: …&#10;LE: …" />
-          <Area label="Posterior segment" value={s.findings.posterior} onChange={(v) => setIn("findings", "posterior", v)} editable={editable} placeholder="RE: …&#10;LE: …" />
+          <Area label="Anterior segment" value={s.findings.anterior} onChange={(v) => setIn("findings", "anterior", v)} editable={editable} placeholder="RE: …&#10;LE: …" opts={FO.dcAnterior} />
+          <Area label="Posterior segment" value={s.findings.posterior} onChange={(v) => setIn("findings", "posterior", v)} editable={editable} placeholder="RE: …&#10;LE: …" opts={FO.dcPosterior} />
         </div>
       </Block>
 
@@ -277,7 +299,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
           </div>
         )}
         <div className="mt-3">
-          <Area label="Key findings" value={s.investigations} onChange={(v) => set("investigations", v)} editable={editable} min={1} placeholder="e.g. FFA: no leakage. OCT macula: normal foveal contour." />
+          <Area label="Key findings" value={s.investigations} onChange={(v) => set("investigations", v)} editable={editable} min={1} placeholder="e.g. FFA: no leakage. OCT macula: normal foveal contour." opts={FO.dcFindings} />
         </div>
       </Block>
 
@@ -285,13 +307,13 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
       {showProcedure && (
         <Block n={next()} title="Procedure">
           <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr_1fr] gap-3">
-            <Field label="Surgery" value={s.procedure.name} onChange={(v) => setIn("procedure", "name", v)} editable={editable} />
+            <PickField storeKey={FO.dcSurgery.storeKey} options={[...FO.dcSurgery.builtIns]} label="Surgery" value={s.procedure.name} onChange={(v) => setIn("procedure", "name", v)} editable={editable} />
             <Field label="Eye" value={s.procedure.eye} onChange={(v) => setIn("procedure", "eye", v)} editable={editable} placeholder="RE / LE" />
             <Field label="Date" type="date" value={s.procedure.date} onChange={(v) => setIn("procedure", "date", v)} editable={editable} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mt-3">
-            <Field label="Anaesthesia" value={s.procedure.anaesthesia} onChange={(v) => setIn("procedure", "anaesthesia", v)} editable={editable} />
-            <Field label="Implant" value={s.procedure.implant} onChange={(v) => setIn("procedure", "implant", v)} editable={editable} />
+            <PickField storeKey={FO.dcAnaesthesia.storeKey} options={[...FO.dcAnaesthesia.builtIns]} label="Anaesthesia" value={s.procedure.anaesthesia} onChange={(v) => setIn("procedure", "anaesthesia", v)} editable={editable} />
+            <PickField storeKey={FO.dcImplant.storeKey} options={[...FO.dcImplant.builtIns]} label="Implant" value={s.procedure.implant} onChange={(v) => setIn("procedure", "implant", v)} editable={editable} />
             <Field label="Surgeon" value={s.procedure.surgeon} onChange={(v) => setIn("procedure", "surgeon", v)} editable={editable} />
           </div>
           <div className="mt-3">
@@ -305,7 +327,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
         action={editable && ctx.doctorNotes.length > 0 && (
           <button type="button" onClick={() => set("course", courseFromNotes(ctx.doctorNotes))} className={linkBtn}><RefreshCw size={12} /> Fill from doctor&apos;s notes</button>
         )}>
-        <Area value={s.course} onChange={(v) => set("course", v)} editable={editable} min={3} placeholder="Treatment given and the patient's progress, day by day" />
+        <Area value={s.course} onChange={(v) => set("course", v)} editable={editable} min={3} placeholder="Treatment given and the patient's progress, day by day" opts={FO.dcCourse} />
       </Block>
 
       {/* 8. Condition at discharge */}
@@ -347,8 +369,15 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                   <td className="px-3 py-1 text-xs text-[var(--color-ink-400)] tabular-nums">{i + 1}</td>
                   {(["name", "dose", "eye", "frequency", "duration"] as const).map((f) => (
                     <td key={f} className={`px-1.5 py-1 ${f === "name" ? "w-[34%]" : f === "eye" ? "w-16" : ""}`}>
+                      {MED_OPTS[f] ? (
+                        // Dose, frequency and duration: type-ahead list with "Save as keyword"
+                        <SuggestField storeKey={MED_OPTS[f]!.storeKey} builtIns={MED_OPTS[f]!.builtIns} value={m[f]} onChange={(x) => setMed(i, f, x)} apply={(_, pk) => pk} disabled={!editable}>
+                          {(sp) => <input {...sp} value={m[f]} disabled={!editable} onChange={(e) => setMed(i, f, e.target.value)} placeholder={editable && f === "duration" ? "e.g. 2 weeks" : ""} className={inputCls} />}
+                        </SuggestField>
+                      ) : (
                       <input value={m[f]} disabled={!editable} onChange={(e) => setMed(i, f, e.target.value)} placeholder={editable && f === "duration" ? "e.g. 2 weeks" : ""}
                         className={`${inputCls} ${f === "name" ? "font-semibold" : ""}`} />
+                      )}
                     </td>
                   ))}
                   {editable && (

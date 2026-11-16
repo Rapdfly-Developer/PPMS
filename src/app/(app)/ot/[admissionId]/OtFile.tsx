@@ -23,6 +23,7 @@ import { OtNotesView } from "../../ipd/[admissionId]/OtNotesView";
 import { PostOpForm, Seg } from "../../ipd/[admissionId]/IpdForms";
 import { DischargeEditor } from "../../ipd/[admissionId]/DischargeEditor";
 import { ChipRow, SuggestField, replaceTail, useCustomOptions } from "../../ipd/[admissionId]/customOptions";
+import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import { useSuggest } from "@/components/ui/Suggest";
 import {
   abortOperation, anaesthesiaAdministered, beginOperation, confirmOtVerified, dischargeFromOt, endOperation,
@@ -779,7 +780,11 @@ function DischargeFromOt({ d, onClose, onDone }: { d: FileData; onClose: () => v
         </div>
         <div>
           <label className={labelCls}>Additional notes (optional)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />
+          {/* Keyword chips with "+ Custom" and a type-ahead list */}
+          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} /></div>
+          <SuggestField storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} value={notes} onChange={setNotes}>
+            {(sp) => <textarea {...sp} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />}
+          </SuggestField>
         </div>
         <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-3 space-y-2">
           <p className="text-sm font-semibold text-[var(--color-ink-800)]">Sign with OTP</p>

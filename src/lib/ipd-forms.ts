@@ -78,6 +78,8 @@ export interface ConsentItem {
   recordedBy?: string;
   /** Older entries only. */
   signedBy?: string;
+  /** Scanned / photographed signed consent; when present it is shown instead of the wording. */
+  signedFile?: { ref: string; name: string; at: string; by?: string };
 }
 export interface ConsentsData { v: 2; items: ConsentItem[] }
 

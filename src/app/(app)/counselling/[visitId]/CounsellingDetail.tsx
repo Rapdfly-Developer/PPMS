@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { addMonths, differenceInCalendarDays, differenceInMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
@@ -10,13 +10,13 @@ import {
   Upload, X, AlertTriangle, Info, CalendarClock, IndianRupee, RotateCcw, Search,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, ChevronLeft,
-  Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, Paperclip, Trash2, UserX,
+  Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, Trash2, UserX,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 import { useSidebar } from "@/components/ui/SidebarContext";
 import { printInPlace } from "@/lib/print-in-place";
 import { CONSENT_DECLARATION, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
-import { hasCounsellingImplant, type CounsellingImplant } from "@/lib/counselling-sheets";
+import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
 import { EducationForm, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
 import type { SavedTemplate } from "../../ipd/[admissionId]/templatesUi";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
@@ -27,19 +27,21 @@ import { fileHref } from "@/lib/file-href";
 import { istTodayStr } from "@/lib/ist";
 import {
   type CounsellingStatus, CASHLESS_TYPES, PAYER_SUGGESTIONS, LATERALITY_LABEL, PAYMENT_MODES,
-  implantSuggestions, reportsValidUntil, paymentLabel, paymentTypeOf, PAYMENT_TYPES, SELF_PAY, type PaymentDoc,
+  counsellingImplantOptions, implantGroup, reportsValidUntil, paymentLabel, paymentTypeOf, PAYMENT_TYPES, SELF_PAY, type PaymentDoc,
 } from "@/lib/counselling";
 import {
-  saveCounsellingDetails, markFitForSurgery, reopenCounselling, addCounsellingInvestigations,
+  saveCounsellingDetails, markFitForSurgery, reopenCounselling, revertFitForSurgery, addCounsellingInvestigations,
   postponeSurgery, resumeCounselling, saveAdvance, savePreOp, attachCounsellingReport,
   addCounsellingExtraReport, removeCounsellingReport, removeCounsellingExtraReport, rescheduleNoShow,
 } from "../actions";
-import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
+import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { STATUS_META } from "../CounsellingClient";
 import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { CounsellingOverview, CounsellingPrintModal } from "./CounsellingPrintOverview";
+import { KeywordTextarea } from "@/components/emr/KeywordField";
 
 export interface CounsellingOrder {
   id: string;
@@ -63,6 +65,8 @@ export interface CounsellingDetailData {
   laterality: string | null;
   anaesthesia: string | null;
   surgeryNotes: string | null;
+  /** From the EMR; edits here are saved back into this visit's EMR allergies. */
+  drugAllergy: { text: string; nkda: boolean };
   doctorName: string;
   patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; mobile: string; photoUrl: string | null };
   chiefComplaint: string | null;
@@ -78,6 +82,8 @@ export interface CounsellingDetailData {
     policyNumber: string;
     paymentDocs: PaymentDoc[];
     estimateAmount: number | null;
+    outOfPocketAmount: number | null;
+    coveredAmount: number | null;
     advancePaid: number | null;
     advanceReceived: boolean;
     preOpTime: string;
@@ -130,22 +136,113 @@ const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy
 const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : null);
 const rupees = (n: number | null) => (n == null ? "—" : `₹${n.toLocaleString("en-IN")}`);
 
-function getCustomImplants(): string[] {
+/** Custom implants are remembered per surgery, so they only come back for that surgery. */
+const implantLibraryKey = (surgery: string) => `${IMPLANT_LIBRARY_KEY}:${surgery.trim().toLowerCase()}`;
+
+function getCustomImplants(surgery: string): string[] {
   try {
-    const parsed = JSON.parse(localStorage.getItem(IMPLANT_LIBRARY_KEY) ?? "[]");
+    const parsed = JSON.parse(localStorage.getItem(implantLibraryKey(surgery)) ?? "[]");
     return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === "string") : [];
   } catch {
     return [];
   }
 }
 
-function rememberImplant(value: string): string[] {
-  const current = getCustomImplants();
+function rememberImplant(surgery: string, value: string): string[] {
+  const current = getCustomImplants(surgery);
   const v = value.trim();
   if (!v || current.some((s) => s.toLowerCase() === v.toLowerCase())) return current;
   const next = [...current, v];
-  try { localStorage.setItem(IMPLANT_LIBRARY_KEY, JSON.stringify(next)); } catch {}
+  try { localStorage.setItem(implantLibraryKey(surgery), JSON.stringify(next)); } catch {}
   return next;
+}
+
+/** A textarea that grows with its text (no inner scroll bar). */
+function AutoGrowTextarea({ value, onChange, placeholder, className }: { value: string; onChange: (v: string) => void; placeholder?: string; className?: string }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={4} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={className} />;
+}
+
+/** The uploaded signed consent, shown large: an image in full width, a PDF in a tall viewer. */
+function SignedConsentView({ file, title }: { file: { ref: string; name: string; at: string }; title: string }) {
+  const url = fileHref(file.ref)!;
+  const isPdf = /\.pdf(\?|$)/i.test(file.ref) || /\.pdf$/i.test(file.name);
+  const isImg = /\.(png|jpe?g|webp|gif)(\?|$)/i.test(file.ref) || /\.(png|jpe?g|webp|gif)$/i.test(file.name);
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
+        <span className="inline-flex items-center gap-1.5 font-semibold"><CheckCircle2 size={14} /> Signed consent uploaded</span>
+        <span className="text-emerald-700/80">{file.name} · {format(new Date(file.at), "d MMM yyyy, h:mm a")}</span>
+      </div>
+      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50">
+        {isImg ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt={`Signed ${title}`} className="mx-auto block max-h-[85vh] w-auto max-w-full object-contain" />
+        ) : isPdf ? (
+          <iframe src={`${url}#view=FitH`} title={`Signed ${title}`} className="block h-[85vh] w-full bg-white" />
+        ) : (
+          <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-6 text-sm font-medium text-[var(--color-primary-700)] hover:underline">
+            <FileText size={16} /> Open {file.name}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Upload, replace or remove the signed consent file of the open consent. */
+function SignedConsentUpload({ file, title, onChange }: {
+  file?: { ref: string; name: string; at: string };
+  title: string;
+  onChange: (f: { ref: string; name: string; at: string } | undefined) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [confirm, setConfirm] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  const upload = async (f: File | undefined) => {
+    if (ref.current) ref.current.value = "";
+    if (!f) return;
+    setBusy(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch("/api/uploads", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
+      onChange({ ref: json.url, name: f.name, at: new Date().toISOString() });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/30 p-1.5 pl-3">
+      <input ref={ref} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+      <Upload size={14} className="shrink-0 text-[var(--color-primary-500)]" />
+      <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
+        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. Saved with the Save button.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above.</>}
+      </p>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+      {file && (confirm ? (
+        <button type="button" onClick={() => { onChange(undefined); setConfirm(false); }} className="h-8 rounded-full bg-red-600 px-3 text-xs font-semibold text-white hover:bg-red-700">Remove file?</button>
+      ) : (
+        <button type="button" onClick={() => setConfirm(true)} className="h-8 inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-ink-500)] hover:border-red-300 hover:text-red-600"><Trash2 size={12} /> Remove</button>
+      ))}
+      <button type="button" disabled={busy} onClick={() => ref.current?.click()}
+        className="h-8 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60">
+        <Upload size={12} className={busy ? "animate-pulse" : ""} /> {busy ? "Uploading..." : file ? "Replace file" : "Upload signed consent"}
+      </button>
+    </div>
+  );
 }
 
 /* ── Modal shell ─────────────────────────────────────────────────────────── */
@@ -273,19 +370,6 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
 }) {
   // Only this surgery's orders can be changed here
   const locked = !canUpload || !order.current;
-  const [confirmRemove, setConfirmRemove] = useState(false);
-  const [busy, startBusy] = useTransition();
-  const [error, setError] = useState("");
-
-  const handleRemoveFile = () => {
-    if (!confirmRemove) { setConfirmRemove(true); setTimeout(() => setConfirmRemove(false), 3500); return; }
-    setError("");
-    startBusy(async () => {
-      const r = await removeCounsellingReport(visitId, order.id);
-      if (r?.error) setError(r.error); else onChanged();
-      setConfirmRemove(false);
-    });
-  };
 
   const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
   const orderedAt = format(new Date(order.createdAt), "dd MMM yyyy, h:mm a");
@@ -324,9 +408,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
     );
   }
 
-  // Report uploaded: details on top, uploaded file below
-  const fileUrl = fileHref(order.resultRef)!;
-  const isPdf = /\.pdf$/i.test(order.resultRef);
+  // Report uploaded: details, then one Report button for the file(s)
   const extraFiles = parseExtraResults(order.extraResultRefs);
   return (
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]">
@@ -354,75 +436,17 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
             </span>
           )}
         </div>
+        {/* One Report button: View, Re-upload, Delete, Add more (no inline previews) */}
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <div className="flex items-center gap-1">
-            <a
-              href={fileUrl}
-              download
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-600)] hover:border-[var(--color-primary-400)] transition-colors"
-            >
-              <Download size={12} />
-            </a>
-          </div>
-          {!locked && (
-            <div className="flex items-center gap-1">
-              <UploadButton visitId={visitId} orderId={order.id} label="Re-upload" onDone={onChanged} />
-              <UploadButton visitId={visitId} orderId={order.id} label="Add more" addMore onDone={onChanged} />
-              <button
-                type="button"
-                onClick={handleRemoveFile}
-                disabled={busy}
-                className={`flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
-                  confirmRemove
-                    ? "border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                    : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50"
-                }`}
-              >
-                <Trash2 size={12} />
-                {confirmRemove ? "Sure?" : "Delete"}
-              </button>
-            </div>
-          )}
-          {error && <p className="text-caption text-red-600">{error}</p>}
+          <ReportFilesMenu
+            files={[{ ref: order.resultRef, at: order.resultAt, main: true }, ...extraFiles.map((f) => ({ ref: f.ref, at: f.at, main: false }))]}
+            locked={locked}
+            onView={onView}
+            onReplace={async (url) => { const r = await attachCounsellingReport(visitId, order.id, url); if (!r?.error) onChanged(); return r; }}
+            onAddMore={async (url) => { const r = await addCounsellingExtraReport(visitId, order.id, url); if (!r?.error) onChanged(); return r; }}
+            onDelete={async (f) => { const r = f.main ? await removeCounsellingReport(visitId, order.id) : await removeCounsellingExtraReport(visitId, order.id, f.ref); if (!r?.error) onChanged(); return r; }}
+          />
         </div>
-      </div>
-
-      {/* Uploaded file(s) */}
-      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
-        {isImage(order.resultRef) ? (
-          <img
-            src={fileUrl}
-            alt={`${order.testName} result`}
-            className="max-h-52 rounded-lg cursor-pointer object-contain"
-            onClick={() => onView(fileUrl)}
-          />
-        ) : isPdf ? (
-          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
-            <iframe src={`${fileUrl}#toolbar=0&navpanes=0`} title={`${order.testName} result`} className="h-full w-full pointer-events-none" />
-            <button type="button" onClick={() => onView(fileUrl)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
-          </div>
-        ) : (
-          <button
-            onClick={() => onView(fileUrl)}
-            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
-          >
-            <Paperclip size={13} /> {order.testName} result file, click to view
-          </button>
-        )}
-        {extraFiles.map((file) => (
-          <ExtraResultPreview
-            key={file.ref}
-            file={file}
-            label={`${order.testName} result`}
-            onOpen={() => onView(fileHref(file.ref)!)}
-            onRemove={locked ? undefined : () => startBusy(async () => {
-              const r = await removeCounsellingExtraReport(visitId, order.id, file.ref);
-              if (r?.error) setError(r.error); else onChanged();
-            })}
-          />
-        ))}
       </div>
     </div>
   );
@@ -767,7 +791,7 @@ const CASHLESS_ICON: Record<string, React.ReactNode> = {
 };
 
 /** Insurance card, pre-authorisation, scheme card or letter: upload, view, remove. Saved with the common Save. */
-function PaymentDocs({ docs, onChange, editable, typeLabel, button }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean }) {
+function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean; /** Button tooltip. */ hint?: string }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -800,7 +824,7 @@ function PaymentDocs({ docs, onChange, editable, typeLabel, button }: { docs: Pa
       <span className="relative shrink-0">
         <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" className="hidden" onChange={(e) => upload(e.target.files)} />
         <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-          title={error || `Upload ${typeLabel.toLowerCase()} document (card, pre-authorisation, letter)`}
+          title={error || hint || `Upload ${typeLabel.toLowerCase()} document (card, pre-authorisation, letter)`}
           className={`h-8 inline-flex items-center gap-1 px-2.5 rounded-full border border-dashed text-xs font-semibold transition-colors disabled:opacity-50 ${error ? "border-red-300 text-red-600" : "border-[var(--color-primary-400)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"} bg-white`}>
           <Upload size={12} className={uploading ? "animate-pulse" : ""} />
           {uploading ? "..." : "Doc"}
@@ -830,7 +854,7 @@ function PaymentDocs({ docs, onChange, editable, typeLabel, button }: { docs: Pa
 function SectionCard({
   id, icon, title, right, locked, lockedText, children,
 }: {
-  id?: string; step?: number; icon: React.ReactNode; title: string;
+  id?: string; step?: number; icon: React.ReactNode; title: React.ReactNode;
   right?: React.ReactNode; locked?: boolean; lockedText?: string; children: React.ReactNode;
 }) {
   return (
@@ -852,10 +876,10 @@ function SectionCard({
 }
 
 /** Label on the left, field on the right, on one line (stacks on phones). */
-function InlineField({ label, tight, children }: { label: string; tight?: boolean; children: React.ReactNode }) {
+function InlineField({ label, tight, labelClass, children }: { label: string; tight?: boolean; labelClass?: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center gap-x-3 gap-y-1 min-w-0">
-      <label className={`text-[10.5px] font-semibold text-[var(--color-ink-400)] uppercase tracking-[0.08em] whitespace-nowrap ${tight ? "" : "sm:min-w-[8.5rem]"}`}>{label}</label>
+      <label className={`text-[10.5px] font-semibold ${labelClass ?? "text-[var(--color-ink-400)]"} uppercase tracking-[0.08em] whitespace-nowrap ${tight ? "" : "sm:min-w-[8.5rem]"}`}>{label}</label>
       {children}
     </div>
   );
@@ -1010,7 +1034,12 @@ export function CounsellingDetail({
   const [schemeName, setSchemeName]     = useState(rec.schemeName);
   const [policyNumber, setPolicyNumber] = useState(rec.policyNumber);
   const [estimate, setEstimate]         = useState(rec.estimateAmount != null ? String(rec.estimateAmount) : "");
-  const [customImplants, setCustomImplants] = useState<string[]>(() => (typeof window === "undefined" ? [] : getCustomImplants()));
+  // Drug allergy (saved back into this visit's EMR)
+  const [allergies, setAllergies]       = useState(data.drugAllergy.text);
+  const [nkda, setNkda]                 = useState(data.drugAllergy.nkda);
+  const [outOfPocketAmt, setOutOfPocketAmt] = useState(rec.outOfPocketAmount != null ? String(rec.outOfPocketAmount) : "");
+  const [coveredAmt, setCoveredAmt]     = useState(rec.coveredAmount != null ? String(rec.coveredAmount) : "");
+  const [customImplants, setCustomImplants] = useState<string[]>(() => (typeof window === "undefined" ? [] : getCustomImplants(data.surgery)));
   const [implantOpen, setImplantOpen]   = useState(false);
   const [implantInfo, setImplantInfo]   = useState<CounsellingImplant>(data.sheets.implant);
 
@@ -1027,7 +1056,7 @@ export function CounsellingDetail({
   const [preOpTime, setPreOpTime] = useState(rec.preOpTime || (data.preOp ? format(new Date(data.preOp.dateTime), "HH:mm") : ""));
 
   const [sheet, setSheet] = useState<SheetId>("sheet");
-  const [modal, setModal] = useState<null | "fit" | "addInv" | "postpone" | "noShow">(null);
+  const [modal, setModal] = useState<null | "fit" | "revertFit" | "addInv" | "postpone" | "noShow">(null);
   const [showActivity, setShowActivity] = useState(false);
   const [overviewMode, setOverviewMode] = useState(false);
   const [showPrint, setShowPrint] = useState(false);
@@ -1043,12 +1072,16 @@ export function CounsellingDetail({
   const expired = rec.fitForSurgery && !rec.eligibleForSurgery && !!rec.reportsValidUntil && new Date(rec.reportsValidUntil) < new Date();
 
   const details = useMemo(
-    () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, paymentDocs, estimateAmount: estimate === "" ? null : Number(estimate) }),
-    [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, paymentDocs, estimate],
+    () => ({ implant, dateOfSurgery: dateOfSurgery || null, paymentMode: paymentMode || null, paymentType: paymentType || null, schemeName, policyNumber, paymentDocs, estimateAmount: estimate === "" ? null : Number(estimate),
+      // Split only for non-Self types
+      outOfPocketAmount: paymentType && paymentType !== SELF_PAY && outOfPocketAmt !== "" ? Number(outOfPocketAmt) : null,
+      coveredAmount: paymentType && paymentType !== SELF_PAY && coveredAmt !== "" ? Number(coveredAmt) : null }),
+    [implant, dateOfSurgery, paymentMode, paymentType, schemeName, policyNumber, paymentDocs, estimate, outOfPocketAmt, coveredAmt],
   );
 
   // What Save writes, and what was last saved (to know when there are unsaved changes)
-  const snapshot = JSON.stringify({ details, implantInfo, consents, education });
+  const allergyChanged = allergies.trim() !== data.drugAllergy.text || nkda !== data.drugAllergy.nkda;
+  const snapshot = JSON.stringify({ details, implantInfo, consents, education, allergies: allergies.trim(), nkda });
   const [savedSnapshot, setSavedSnapshot] = useState(snapshot);
   const advanceNum = advance === "" ? null : Number(advance);
   const advancePayload = tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 };
@@ -1069,7 +1102,7 @@ export function CounsellingDetail({
   /** Save everything entered on every sheet. Returns an error message, if any. */
   async function saveAll(): Promise<string | undefined> {
     if (sheetDirty) {
-      const r = await saveCounsellingDetails(data.visitId, { ...details, implantDetails: implantInfo, consents, education });
+      const r = await saveCounsellingDetails(data.visitId, { ...details, implantDetails: implantInfo, consents, education, ...(allergyChanged ? { allergies, nkda } : {}) });
       if (r.error) return r.error;
       setSavedSnapshot(snapshot);
     }
@@ -1092,23 +1125,29 @@ export function CounsellingDetail({
   const validUntil = rec.reportsValidUntil ?? (oldestReport ? reportsValidUntil(new Date(oldestReport)).toISOString() : null);
 
   const implants = useMemo(() => {
-    const all = [...implantSuggestions(data.surgery), ...customImplants];
+    const all = [...counsellingImplantOptions(data.surgery), ...customImplants];
     const q = implant.trim().toLowerCase();
     return [...new Set(all)].filter((s) => !q || s.toLowerCase().includes(q));
   }, [data.surgery, customImplants, implant]);
 
   const cashless = CASHLESS_TYPES.find((t) => t.value === paymentType);
+  const implantKind = implantGroup(data.surgery);
   const estimateNum = estimate === "" ? null : Number(estimate);
   const advanceDone = rec.advanceReceived || (rec.advancePaid ?? 0) > 0;
 
   // What is still to be filled on each sheet (shown as a checklist; nothing is blocked)
   const sheetMissing = [
-    !implant.trim() && "Type of implant",
+    implantKind !== "NONE" && !implant.trim() && "Type of implant",
     !dateOfSurgery && "Tentative date",
-    !implantInfo.manufacturer.trim() && "Implant manufacturer",
-    !implantInfo.model.trim() && "Implant model",
-    !implantInfo.power.trim() && "IOL power",
-    !implantInfo.aConstant.trim() && "A-constant",
+    // Implant details to fill depend on the surgery
+    ...(implantKind === "IOL"
+      ? [
+          !implantInfo.manufacturer.trim() && "Implant manufacturer",
+          !implantInfo.model.trim() && "Implant model",
+          !implantInfo.power.trim() && "IOL power",
+          !implantInfo.aConstant.trim() && "A-constant",
+        ]
+      : implantFieldsFor(implantKind).filter((f) => f.required).map((f) => !implantInfo[f.key].trim() && f.label)),
     !paymentType && "Payment type",
     !!cashless && !paymentMode && "Out of Pocket or Covered",
     !!cashless && !schemeName.trim() && cashless.nameLabel,
@@ -1117,7 +1156,7 @@ export function CounsellingDetail({
   ].filter((x): x is string => !!x);
   const invMissing = invPending.map((o) => `${o.testName} report`);
   const consentMissing = (c: ConsentItem) => [
-    !c.text.trim() && "Wording",
+    !c.signedFile && !c.text.trim() && "Wording",
   ].filter((x): x is string => !!x);
   const nbm = education.dietTypes.includes("Nil by mouth");
   const unexplained = education.points.filter((p) => !p.done).length;
@@ -1147,7 +1186,7 @@ export function CounsellingDetail({
     });
   }
 
-  // Small "Mark Fit for Surgery" pill: the counsellor clicks it once every report is
+  // Small "Eligibility Check" pill (marks Fit for Surgery): the counsellor clicks it once every report is
   // uploaded and the doctor has approved them. Fit moves the patient to Partial.
   const fitBlocked = rec.surgeryDeferred ? "Surgery date is not confirmed"
     : invPending.length > 0 ? "Upload every report first"
@@ -1161,7 +1200,7 @@ export function CounsellingDetail({
       className="inline-flex items-center gap-1.5 h-7 pl-2 pr-3 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 shadow-[0_1px_2px_rgba(180,83,9,0.12)] hover:bg-amber-100 hover:border-amber-400 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 transition-[background-color,border-color,transform]"
     >
       <span className="grid place-items-center w-4 h-4 rounded-full bg-amber-500 text-white"><Check size={10} strokeWidth={3} /></span>
-      Mark Fit for Surgery
+      Eligibility Check
     </button>
   );
 
@@ -1212,34 +1251,42 @@ export function CounsellingDetail({
   const activeConsent = consents.items.find((c) => c.id === consentTab) ?? consents.items[0];
   const setConsentItem = (id: string, patch: Partial<ConsentItem>) => setConsents((v) => ({ ...v, items: v.items.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
   const setConsentText = (id: string, text: string) => setConsentItem(id, { text });
-  const addConsent = () => {
-    const title = newConsent.trim();
+  const addConsent = (name?: string) => {
+    const title = (name ?? newConsent).trim();
     if (!title) return;
     const id = `c-${Math.random().toString(36).slice(2, 10)}`;
     setConsents((v) => ({ ...v, items: [...v.items, { id, title, text: "", signed: false }] }));
     setConsentTab(id);
     setNewConsent("");
   };
+  const removeConsent = (id: string) => {
+    const rest = consents.items.filter((x) => x.id !== id);
+    setConsents((v) => ({ ...v, items: v.items.filter((x) => x.id !== id) }));
+    if (consentTab === id) setConsentTab(rest[0]?.id ?? "");
+  };
 
   const consentCard = (c: ConsentItem) => (
     <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 border-b border-[var(--color-border)]/70">
-        <p className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-tight text-[var(--color-ink-900)]">
-          <span className="w-7 h-7 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"><FileSignature size={14} /></span>
-          {c.title}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-b border-[var(--color-border)]/60 bg-gradient-to-r from-[var(--color-primary-50)]/70 via-white to-white">
+        <div className="min-w-0">
+          <p className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-primary-600)]">Consent</p>
+          <p className="truncate text-sm font-semibold tracking-tight text-[var(--color-ink-900)]">{c.title}</p>
+        </div>
         <button type="button" className={btnOutline} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/consent/${encodeURIComponent(c.id)}`)}>
           <Printer size={14} /> Print
         </button>
       </div>
-      <div className="p-4 space-y-3">
-        {sheetsEditable ? (
-          <textarea
+      <div className="px-5 py-4 space-y-3">
+        {c.signedFile ? (
+          // The uploaded signed consent replaces the wording
+          <SignedConsentView file={c.signedFile} title={c.title} />
+        ) : sheetsEditable ? (
+          // Grows with the text, so the full consent shows without scrolling
+          <AutoGrowTextarea
             value={c.text}
-            onChange={(e) => setConsentText(c.id, e.target.value)}
-            rows={Math.min(16, Math.max(5, c.text.split("\n").length + 3))}
+            onChange={(t) => setConsentText(c.id, t)}
             placeholder="Consent wording…"
-            className="w-full rounded-xl border border-transparent bg-[var(--color-surface-sunken)]/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] transition-colors hover:bg-[var(--color-surface-sunken)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] resize-y"
+            className="w-full rounded-xl border border-transparent bg-[var(--color-surface-sunken)]/60 px-3.5 py-2.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] transition-colors hover:bg-[var(--color-surface-sunken)] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] resize-none overflow-hidden"
           />
         ) : (
           <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">
@@ -1247,8 +1294,7 @@ export function CounsellingDetail({
             {!c.text.trim() && <p className="italic text-[var(--color-ink-400)]">No wording entered.</p>}
           </div>
         )}
-        <p className="rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>
-
+        {!c.signedFile && <p className="rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>}
       </div>
     </section>
   );
@@ -1257,17 +1303,42 @@ export function CounsellingDetail({
   const counsellingSheet = (
     <div className="flex flex-col gap-3">
       {/* ── A & B ─────────────────────────────────────────────────── */}
-      <SectionCard step={1} icon={<Scissors size={15} />} title="Surgery Details">
-        <div className="flex flex-wrap items-center gap-1.5 mb-3">
-          <span className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-1 pr-3 py-1 text-xs" title={surgeryFull}>
-            {data.laterality
-              ? <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{data.laterality}</span>
-              : <Scissors size={13} className="ml-1.5 text-[var(--color-primary-600)]" />}
-            <span className="font-semibold text-[var(--color-ink-900)] truncate">{data.surgery}</span>
-            {data.anaesthesia && <span className="text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
-          </span>
+      <SectionCard step={1} icon={<Scissors size={15} />} title={
+        // Header shows the surgery itself: eye, name and anaesthesia
+        <span className="inline-flex items-center gap-1.5 min-w-0 max-w-full" title={surgeryFull}>
+          {data.laterality && <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{data.laterality}</span>}
+          <span className="truncate">{data.surgery ? `${data.surgery} Details` : "Surgery Details"}</span>
+          {data.anaesthesia && <span className="font-medium text-[var(--color-ink-500)] truncate">· {data.anaesthesia}</span>}
+        </span>
+      }>
+        {/* Surgery notes from the doctor's advice, first on the sheet */}
+        {data.surgeryNotes && (
+          <div className="mb-3">
+            <InlineField label="Surgery Notes" tight>
+              <p className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2 text-sm text-[var(--color-ink-800)] whitespace-pre-line break-words">
+                {data.surgeryNotes.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join("\n")}
+              </p>
+            </InlineField>
+          </div>
+        )}
+        {/* Drug allergy from the EMR (read-only), label in red */}
+        <div className="mb-3">
+          <InlineField label="Drug Allergy" tight labelClass="text-red-600">
+            <div className="flex flex-col gap-1.5 min-w-0">
+              <label className="inline-flex items-center gap-2 text-xs text-[var(--color-ink-600)]">
+                <input type="checkbox" disabled={!editable} checked={nkda} onChange={(e) => setNkda(e.target.checked)} className="accent-[var(--color-primary-600)]" />
+                NKDA (No Known Drug Allergies)
+              </label>
+              {/* Same keyword box as the EMR Allergies: autocomplete, keyword chips and + Add */}
+              {!nkda && (
+                <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={!editable} rows={1} placeholder="Search or type drug allergies..." />
+              )}
+            </div>
+          </InlineField>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
+          {/* No Type of Implant for a surgery with no implant */}
+          {implantKind === "NONE" ? <span className="hidden lg:block" /> : (
           <InlineField label="Type of Implant" tight>
             <div className="relative">
               <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
@@ -1276,7 +1347,7 @@ export function CounsellingDetail({
                 disabled={!editable}
                 onChange={(e) => { setImplant(e.target.value); setImplantOpen(true); }}
                 onFocus={() => setImplantOpen(true)}
-                onBlur={() => { setCustomImplants(rememberImplant(implant)); setTimeout(() => setImplantOpen(false), 150); }}
+                onBlur={() => { setCustomImplants(rememberImplant(data.surgery, implant)); setTimeout(() => setImplantOpen(false), 150); }}
                 placeholder="Search or type an implant…"
                 className={`${inputCls} pl-8`}
               />
@@ -1292,6 +1363,7 @@ export function CounsellingDetail({
               )}
             </div>
           </InlineField>
+          )}
           <InlineField label="Tentative Date" tight>
             <input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
             {noShow && dateEditable && (
@@ -1302,11 +1374,15 @@ export function CounsellingDetail({
       </SectionCard>
 
       {/* ── Implant details (as in the IPD Implant form) ──────────── */}
-      <SectionCard step={2} icon={<Package size={15} />} title="Implant Details">
+      <SectionCard step={2} icon={<Package size={15} />} title="Implant Details"
+        right={implantKind !== "NONE" && <PaymentDocs docs={implantInfo.docs} onChange={(d) => setImplantInfo((v) => ({ ...v, docs: d }))} editable={editable} typeLabel="Implant" hint="Upload implant document (pack sticker, invoice, tissue label)" button />}>
         {/* Same fields as the IPD Implant form ("Implant used"); the IPD file starts from them */}
+        {implantKind === "IOL" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <IolFields value={implantInfo} onChange={(p) => setImplantInfo((v) => ({ ...v, ...p }))} disabled={!editable} inputClass={inputCls}
             row={(k, label, control) => <Field key={k} label={label}>{control}</Field>} />
+          {/* Second row: a narrow IOL power, then lot, serial and expiry on the same line */}
+          <div className="col-span-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,11rem)_repeat(3,minmax(0,1fr))] gap-3">
           <Field label="IOL power (D)">
             <IolPowerInput value={implantInfo.power} onChange={(x) => setImplantInfo((v) => ({ ...v, power: x }))} disabled={!editable} className={inputCls} />
           </Field>
@@ -1319,8 +1395,37 @@ export function CounsellingDetail({
               <input type={type} value={implantInfo[k]} disabled={!editable} onChange={(e) => setImplantInfo((v) => ({ ...v, [k]: e.target.value }))} placeholder={editable ? ph : "-"} className={inputCls} />
             </Field>
           ))}
+          </div>
         </div>
-        <p className="mt-2 text-caption text-[var(--color-ink-400)]">As printed on the implant pack / sticker. The implant checks are done in the IPD file on the day of surgery.</p>
+        ) : implantKind === "NONE" ? (
+          <p className="text-sm text-[var(--color-ink-500)]">No implant for this surgery.</p>
+        ) : (
+          // Fields for this surgery's implant (glaucoma device, retina agent, buckle, donor cornea, graft, other)
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {implantFieldsFor(implantKind).map((f) => (
+              <Field key={f.key} label={f.label}>
+                {f.type === "text" && !f.plain ? (
+                  // Type-ahead list; a new entry is remembered for next time
+                  <SuggestInput
+                    key={`${implantKind}_${f.key}`}
+                    value={implantInfo[f.key]}
+                    onChange={(x) => setImplantInfo((v) => ({ ...v, [f.key]: x }))}
+                    disabled={!editable}
+                    options={f.options ?? []}
+                    libraryKey={`ppms_counselling_implant_${implantKind}_${f.key}`}
+                    placeholder={editable ? (f.placeholder ?? "Search or type...") : "-"}
+                  />
+                ) : (
+                  <input type={f.type} value={implantInfo[f.key]} disabled={!editable} onChange={(e) => setImplantInfo((v) => ({ ...v, [f.key]: e.target.value }))} placeholder={editable ? (f.placeholder ?? "") : "-"} className={inputCls} />
+                )}
+              </Field>
+            ))}
+          </div>
+        )}
+        {implantInfo.docs.length > 0 && (
+          <div className="mt-3"><PaymentDocs docs={implantInfo.docs} onChange={(d) => setImplantInfo((v) => ({ ...v, docs: d }))} editable={editable} typeLabel="Implant" /></div>
+        )}
+        <p className="mt-2 text-caption text-[var(--color-ink-400)]">{implantKind === "CORNEA" ? "As on the eye bank tissue label." : "As printed on the implant pack / sticker."} The implant checks are done in the IPD file on the day of surgery.</p>
       </SectionCard>
 
       {/* ── C & D ─────────────────────────────────────────────────── */}
@@ -1381,6 +1486,34 @@ export function CounsellingDetail({
           </InlineField>
         </div>
 
+        {/* Split of the estimate: typing one fills the other from the Estimate */}
+        {cashless && (
+          <div className="mt-3">
+            <InlineField label="Split">
+              <div className="flex flex-wrap items-center gap-3">
+                {([
+                  { label: "Out of Pocket", icon: <Banknote size={13} />, value: outOfPocketAmt, set: setOutOfPocketAmt, other: setCoveredAmt },
+                  { label: "Covered", icon: <CreditCard size={13} />, value: coveredAmt, set: setCoveredAmt, other: setOutOfPocketAmt },
+                ]).map((f) => (
+                  <label key={f.label} className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-600)]">{f.icon}{f.label}</span>
+                    <span className="relative w-40">
+                      <IndianRupee size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-400)] pointer-events-none" />
+                      <input type="number" min={0} inputMode="numeric" value={f.value} disabled={!editable} placeholder="0"
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          f.set(v);
+                          if (estimateNum != null && v !== "") f.other(String(Math.max(estimateNum - Number(v), 0)));
+                        }}
+                        className={`${inputCls} pl-8 tabular-nums`} />
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </InlineField>
+          </div>
+        )}
+
         {/* 3. Payer details and documents (every type except Self) */}
         {cashless && (
           <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 p-3 space-y-3">
@@ -1411,7 +1544,7 @@ export function CounsellingDetail({
       {/* ── G ─────────────────────────────────────────────────────── */}
       <SectionCard
         step={4} icon={<IndianRupee size={15} />} title="Advance Payment"
-        locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Fit for Surgery"}
+        locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Eligibility for Surgery"}
         right={advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
       >
         {(
@@ -1500,16 +1633,23 @@ export function CounsellingDetail({
   /* ── Sheet 2: Investigations ──────────────────────────────────────────── */
   const investigationsSheet = (
     <div className="flex flex-col gap-3">
-    {/* Doctor Review: Fit for Surgery once every report is in and approved */}
-      <SectionCard
-        step={1} icon={<ShieldCheck size={15} />} title="Doctor Review"
-        right={rec.fitForSurgery ? <DoneTag tone="amber">Fit for surgery</DoneTag> : null}
-      >
+    {/* Eligibility fields, shown on their own (no Doctor Review card) */}
+      <div className="px-1">
         {rec.fitForSurgery ? (
-          <p className="text-sm text-[var(--color-ink-700)]">
-            Marked fit by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
-            {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-ink-700)]">
+              <DoneTag tone="amber">Eligible for surgery</DoneTag>
+              <span>
+              Marked eligible by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+              {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
+              </span>
+            </p>
+            {canFit && (
+              <button className={`${btnOutline} !h-8 !py-0 text-xs`} disabled={pending} onClick={() => { setError(""); setModal("revertFit"); }}>
+                <RotateCcw size={13} /> Revert Eligibility
+              </button>
+            )}
+          </div>
         ) : (
           <div className="space-y-3">
             <div className="flex flex-wrap gap-x-5 gap-y-1.5">
@@ -1525,27 +1665,16 @@ export function CounsellingDetail({
             {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
             {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
 
-            {canFit || canAddInvestigations ? (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                {canFit && fitPillButton}
-                {canFit && canAddInvestigations && <span className="hidden sm:block w-px h-6 bg-[var(--color-border)] mx-1" />}
-                {canAddInvestigations && (
-                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("addInv"); }}>
-                    <PlusCircle size={14} /> Add Investigations
-                  </button>
-                )}
-                {canFit && !rec.surgeryDeferred && (
-                  <button className={btnOutline} disabled={pending} onClick={() => { setError(""); setModal("postpone"); }}>
-                    <PauseCircle size={14} /> Date Not Confirmed
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>
-            )}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {canFit ? fitPillButton : <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>}
+              {/* Same Tentative Date as the Counselling Sheet: one value, saved by Save and shown everywhere */}
+              <InlineField label="Tentative Date" tight>
+                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} !h-8 sm:w-44`} />
+              </InlineField>
+            </div>
           </div>
         )}
-      </SectionCard>
+      </div>
 
     <InvestigationsPanel
       data={data}
@@ -1558,24 +1687,23 @@ export function CounsellingDetail({
   /* ── Sheet 3: Consents (each consent on its own sub-tab) ──────────────── */
   const consentsSheet = (
     <div className="flex flex-col gap-3">
-      {consents.items.length > 0 && activeConsent ? (
-        <Tabs
-          variant="sub"
-          activeTab={activeConsent.id}
-          onTabChange={setConsentTab}
-          tabs={consents.items.map((c) => ({ id: c.id, label: consentTabLabel(c), badge: rec.eligibleForSurgery ? undefined : consentMissing(c).length || undefined, content: consentCard(c) }))}
+      {/* Consent tabs: × deletes a consent, + New adds one */}
+      <ConsentTabBar
+        items={consents.items.map((c) => ({ id: c.id, label: consentTabLabel(c), badge: rec.eligibleForSurgery ? undefined : consentMissing(c).length || undefined }))}
+        active={activeConsent?.id ?? ""}
+        onSelect={setConsentTab}
+        editable={sheetsEditable}
+        onAdd={(title) => addConsent(title)}
+        onRemove={removeConsent}
+      />
+      {activeConsent ? consentCard(activeConsent) : <p className="text-sm italic text-[var(--color-ink-400)]">No consents. Use + New to add one.</p>}
+      {/* Signed consent file for the open consent: once uploaded it replaces the wording */}
+      {activeConsent && sheetsEditable && (
+        <SignedConsentUpload
+          file={activeConsent.signedFile}
+          title={activeConsent.title}
+          onChange={(signedFile) => setConsentItem(activeConsent.id, { signedFile, signed: !!signedFile || activeConsent.signed })}
         />
-      ) : (
-        <p className="text-sm italic text-[var(--color-ink-400)]">No consents.</p>
-      )}
-      {sheetsEditable && (
-        <div className="flex items-center gap-2 rounded-2xl border border-dashed border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/30 p-1.5 pl-3">
-          <Plus size={14} className="shrink-0 text-[var(--color-primary-500)]" />
-          <input value={newConsent} onChange={(e) => setNewConsent(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addConsent(); } }}
-            placeholder="Add a custom consent, e.g. Consent for photography"
-            className="flex-1 min-w-0 h-8 bg-transparent text-[13px] text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none" />
-          <button type="button" disabled={!newConsent.trim()} onClick={addConsent} className={`${btnPrimary} shrink-0`}>Add</button>
-        </div>
       )}
     </div>
   );
@@ -1692,6 +1820,16 @@ export function CounsellingDetail({
                   {data.patient.mobile && (
                     <span className="inline-flex items-center gap-1"><Phone size={10} />{data.patient.mobile}</span>
                   )}
+                  {/* Drug allergy, as in the EMR banner */}
+                  {nkda ? (
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/25">
+                      <CheckCircle2 size={10} />NKDA
+                    </span>
+                  ) : allergies.trim() ? (
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/25">
+                      <AlertTriangle size={10} />{allergies.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(", ")}
+                    </span>
+                  ) : null}
                 </div>
                 {(data.chiefComplaint || data.diagnoses.length > 0) && (
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -1715,14 +1853,16 @@ export function CounsellingDetail({
                     <span className="mr-2 inline-flex items-center rounded-md bg-white px-1.5 py-px align-[3px] text-xs font-extrabold text-[#0A6C6C]">{data.laterality}</span>
                   )}
                   {data.surgery}
+                  {/* Anaesthesia on the same line, same size, lighter italic to set it apart */}
+                  {data.anaesthesia && (
+                    <span className="font-medium italic text-white/70">
+                      <span className="mx-2 not-italic text-white/40">·</span>{data.anaesthesia}
+                    </span>
+                  )}
                 </p>
-                {(data.anaesthesia || data.surgeryNotes) && (
-                  <p className="mt-1 text-caption text-white/60 leading-snug break-words">
-                    {[data.anaesthesia, data.surgeryNotes?.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(" · ")].filter(Boolean).join(" · ")}
-                  </p>
-                )}
               </div>
-              <div className="px-4 py-3 border-t sm:border-t-0 sm:border-l border-white/15 flex flex-col justify-center sm:min-w-[9.5rem]">
+              {/* Soft separator: a line that fades out at both ends */}
+              <div className="relative px-4 py-3 flex flex-col justify-center sm:min-w-[9.5rem] before:absolute before:pointer-events-none before:top-0 before:left-4 before:right-4 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent sm:before:left-0 sm:before:right-auto sm:before:top-3 sm:before:bottom-3 sm:before:h-auto sm:before:w-px sm:before:bg-gradient-to-b">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">Surgery date</p>
                 <p className="mt-1 inline-flex items-center gap-1.5 text-base sm:text-lg font-bold text-white leading-tight whitespace-nowrap">
                   <CalendarDays size={16} className="text-teal-200" />
@@ -1789,7 +1929,7 @@ export function CounsellingDetail({
               advanceDone ? "bg-emerald-50 border-emerald-200 text-emerald-700" : rec.fitForSurgery ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-500)]"
             }`}>
               <IndianRupee size={12} />
-              {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Fit for Surgery"}
+              {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Eligibility for Surgery"}
             </span>
           {canEdit && (
             <span className={`text-xs font-medium ${dirty ? "text-amber-700" : savedFlash ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
@@ -1820,8 +1960,21 @@ export function CounsellingDetail({
           onClose={() => setShowPrint(false)}
         />
       )}
+      {modal === "revertFit" && (
+        <Modal title="Revert Eligibility for Surgery?" onClose={() => setModal(null)}>
+          <p className="text-sm text-[var(--color-ink-700)]">The patient goes back to Pending and the reports validity is cleared. An upcoming pre-op appointment is cancelled and the patient leaves IPD Upcoming. The advance stays recorded.</p>
+          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <button className={btnOutline} disabled={pending} onClick={() => setModal(null)}>Cancel</button>
+            <button className={`${btnOutline} !border-red-300 !text-red-700 hover:!bg-red-50`} disabled={pending}
+              onClick={() => run(() => revertFitForSurgery(data.visitId), () => setModal(null))}>
+              <RotateCcw size={14} /> Revert Eligibility
+            </button>
+          </div>
+        </Modal>
+      )}
       {modal === "fit" && (
-        <Modal title="Confirm Fit for Surgery" onClose={() => setModal(null)} wide>
+        <Modal title="Confirm Eligibility for Surgery" onClose={() => setModal(null)} wide>
           <div className="grid grid-cols-1 gap-3">
             {/* Surgery */}
             <ConfirmCard icon={<Scissors size={13} />} title="Surgery">
@@ -1831,7 +1984,9 @@ export function CounsellingDetail({
               {data.anaesthesia && <ConfirmLine inline label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
               <ConfirmLine inline label="Implant">{implant || "-"}</ConfirmLine>
               {hasCounsellingImplant(implantInfo) && (
-                <ConfirmLine inline label="Implant details">{[implantInfo.manufacturer, implantInfo.model, implantInfo.power && `${implantInfo.power} D`, implantInfo.aConstant && `A ${implantInfo.aConstant}`].filter(Boolean).join(" · ")}</ConfirmLine>
+                <ConfirmLine inline label="Implant details">{(implantKind === "IOL"
+                  ? [implantInfo.manufacturer, implantInfo.model, implantInfo.power && `${implantInfo.power} D`, implantInfo.aConstant && `A ${implantInfo.aConstant}`]
+                  : implantFieldsFor(implantKind).map((f) => implantInfo[f.key])).filter(Boolean).join(" · ")}</ConfirmLine>
               )}
               <ConfirmLine inline label="Tentative date" strong>{dateOfSurgery ? fmtDate(new Date(dateOfSurgery).toISOString()) : "-"}</ConfirmLine>
             </ConfirmCard>
@@ -1890,7 +2045,7 @@ export function CounsellingDetail({
                 if (err) return { error: err };
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
-              <ShieldCheck size={15} /> Confirm Fit for Surgery
+              <ShieldCheck size={15} /> Confirm Eligibility for Surgery
             </button>
           </div>
         </Modal>

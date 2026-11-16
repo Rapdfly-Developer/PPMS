@@ -2,7 +2,8 @@ import { format } from "date-fns";
 import { ConsentPrintBody, CONSENT_PAGE_MIN_H } from "@/app/ipd-print/ConsentPrintBody";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 import { PrintBar } from "@/app/ipd-print/[admissionId]/PrintBar";
-import { LATERALITY_LABEL, CASHLESS_TYPES, paymentLabel, parsePaymentDocs } from "@/lib/counselling";
+import { LATERALITY_LABEL, CASHLESS_TYPES, paymentLabel, parsePaymentDocs, implantGroup } from "@/lib/counselling";
+import { implantFieldsFor } from "@/lib/counselling-sheets";
 import { loadCounsellingPrint, SEX } from "../load";
 import { EducationPrintBody } from "../../EducationPrintBody";
 
@@ -77,6 +78,12 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
           <H2>Implant details</H2>
           <table className="w-full border-collapse text-[12px]">
             <tbody>
+              {implantGroup(ctx.surgery ?? "") === "NONE" ? (
+                <Row label="Implant" value="No implant for this surgery" />
+              ) : implantGroup(ctx.surgery ?? "") !== "IOL" ? (
+                // This surgery's implant fields (glaucoma device, retina agent, buckle, donor cornea, graft, other)
+                implantFieldsFor(implantGroup(ctx.surgery ?? "")).map((f) => <Row key={f.key} label={f.label} value={imp[f.key]} />)
+              ) : (<>
               <Row label="Manufacturer" value={imp.manufacturer} />
               <Row label="Model" value={imp.model} />
               <Row label="IOL power" value={imp.power ? `${imp.power} D` : ""} />
@@ -84,6 +91,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
               <Row label="Lot / batch no." value={imp.lot} />
               <Row label="Serial no." value={imp.serial} />
               <Row label="Expiry" value={imp.expiry} />
+              </>)}
             </tbody>
           </table>
           <H2>Payment</H2>
@@ -100,7 +108,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
           <H2>Fitness</H2>
           <table className="w-full border-collapse text-[12px]">
             <tbody>
-              <Row label="Fit for surgery" value={rec?.fitForSurgery ? `Yes${rec.fitByName ? `, marked by ${rec.fitByName}` : ""}${rec.doctorReviewedAt ? ` on ${day(rec.doctorReviewedAt)}` : ""}` : "Not yet"} />
+              <Row label="Eligible for surgery" value={rec?.fitForSurgery ? `Yes${rec.fitByName ? `, marked by ${rec.fitByName}` : ""}${rec.doctorReviewedAt ? ` on ${day(rec.doctorReviewedAt)}` : ""}` : "Not yet"} />
             </tbody>
           </table>
           <div className="mt-12 grid grid-cols-2 gap-10 text-[11.5px] break-inside-avoid">

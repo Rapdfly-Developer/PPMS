@@ -7,7 +7,8 @@ import { format } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Block } from "@/app/(app)/patients/[udid]/VisitSummaryTabs";
 import type { ConsentItem, EducationData } from "@/lib/ipd-forms";
-import type { CounsellingImplant } from "@/lib/counselling-sheets";
+import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
+import { implantGroup } from "@/lib/counselling";
 import type { PaymentDoc } from "@/lib/counselling";
 
 /* ── Print pop-up (same look as the EMR Print) ──────────────────────────── */
@@ -197,7 +198,7 @@ export function CounsellingOverview(p: {
 
   if (p.sheet === "sheet") {
     const i = p.implantInfo;
-    const hasImplant = Object.values(i).some((v) => v.trim());
+    const hasImplant = hasCounsellingImplant(i);
     body = (
       <div className="space-y-5">
         <Block label="Surgery" icon={<Scissors size={12} className={iconCls} />}>
@@ -208,7 +209,13 @@ export function CounsellingOverview(p: {
           <KV label="Tentative date" value={p.dateOfSurgery ? day(p.dateOfSurgery) : ""} />
         </Block>
         <Block label="Implant details" icon={<Package size={12} className={iconCls} />}>
-          {hasImplant ? (
+          {implantGroup(p.surgery) === "NONE" ? <Empty>No implant for this surgery.</Empty> : hasImplant ? (implantGroup(p.surgery) !== "IOL" ? (
+            // This surgery's implant fields (glaucoma device, retina agent, buckle, donor cornea, graft, other)
+            <>
+              {implantFieldsFor(implantGroup(p.surgery)).map((f) => <KV key={f.key} label={f.label} value={i[f.key]} />)}
+              <KV label="Documents" value={i.docs.map((d) => d.name).join(", ")} />
+            </>
+          ) : (
             <>
               <KV label="Manufacturer" value={i.manufacturer} />
               <KV label="Model" value={i.model} />
@@ -217,8 +224,9 @@ export function CounsellingOverview(p: {
               <KV label="Lot / batch no." value={i.lot} />
               <KV label="Serial no." value={i.serial} />
               <KV label="Expiry" value={i.expiry} />
+              <KV label="Documents" value={i.docs.map((d) => d.name).join(", ")} />
             </>
-          ) : <Empty>Nothing recorded yet.</Empty>}
+          )) : <Empty>Nothing recorded yet.</Empty>}
         </Block>
         <Block label="Payment" icon={<Wallet size={12} className={iconCls} />}>
           {p.payment || p.estimate || p.advance ? (
@@ -238,7 +246,7 @@ export function CounsellingOverview(p: {
     body = (
       <div className="space-y-5">
         <Block label="Doctor review" icon={<ShieldCheck size={12} className={iconCls} />}>
-          <KV label="Fit for surgery" value={p.fit ? `Yes${p.fitBy ? `, marked by ${p.fitBy}` : ""}${p.fitAt ? ` on ${day(p.fitAt)}` : ""}` : "Not yet"} />
+          <KV label="Eligible for surgery" value={p.fit ? `Yes${p.fitBy ? `, marked by ${p.fitBy}` : ""}${p.fitAt ? ` on ${day(p.fitAt)}` : ""}` : "Not yet"} />
         </Block>
         <Block label="Investigations" icon={<FlaskConical size={12} className={iconCls} />}>
           {p.orders.length === 0 ? <Empty>No investigations ordered.</Empty> : (
