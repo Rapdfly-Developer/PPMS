@@ -502,7 +502,7 @@ const PLANS = [
     tag: "Individual doctors",
     price: "₹1,299",
     period: "/month",
-    discount: "First month: 75% OFF",
+    discount: "First month ₹325 (75% OFF)",
     features: [
       "1 doctor account",
       "Unlimited hospitals",
@@ -518,7 +518,7 @@ const PLANS = [
     tag: "Clinics & groups",
     price: "₹2,999",
     period: "/month",
-    discount: "First month: 75% OFF",
+    discount: "First month ₹750 (75% OFF)",
     features: [
       "Up to 5 doctor logins",
       "Unlimited hospitals",

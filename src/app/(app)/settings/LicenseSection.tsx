@@ -39,7 +39,7 @@ function maskId(mid: string | null) {
 const PLAN_CONFIG: Record<string, { name: string; tag: string; price: string; billingCycle: string }> = {
   MONTHLY:    { name: "Professional", tag: "Clinics & Groups",   price: "₹2,999", billingCycle: "Monthly" },
   ENTERPRISE: { name: "Enterprise",   tag: "Hospitals & Chains", price: "₹1,299", billingCycle: "Monthly" },
-  YEARLY:     { name: "Professional", tag: "Annual Plan",        price: "₹24,999", billingCycle: "Annual"  },
+  YEARLY:     { name: "Professional", tag: "Annual Plan",        price: "₹9,999",  billingCycle: "Annual"  },
 };
 
 const per = (plan: string | null) => (plan === "YEARLY" ? "year" : "month");
@@ -716,7 +716,6 @@ interface PlanTier {
 const FIRST_MONTH_DISCOUNTS: Record<string, { firstPrice: string; regularPrice: string; firstLabel: string }> = {
   MONTHLY:    { firstPrice: "₹750",  regularPrice: "₹2,999/month",  firstLabel: "first month" },
   ENTERPRISE: { firstPrice: "₹325",  regularPrice: "₹1,299/month",  firstLabel: "first month" },
-  YEARLY:     { firstPrice: "₹6,250", regularPrice: "₹24,999/year", firstLabel: "first year"  },
 };
 
 const PLAN_TIERS: PlanTier[] = [

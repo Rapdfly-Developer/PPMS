@@ -1065,8 +1065,8 @@ const PLANS_LIST: Array<{
   {
     key: "YEARLY",
     name: "Yearly",
-    price: "₹24,999",
-    discountedPrice: "₹6,249.75",
+    price: "₹9,999",
+    discountedPrice: null,
     per: "/ year",
     tagline: "Best value - save 2 months",
     badge: "Best Value",
