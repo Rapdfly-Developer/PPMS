@@ -36,13 +36,19 @@ export async function POST(req: Request) {
   const [existing, doctor] = await Promise.all([
     prisma.tenantLicense.findUnique({
       where: { doctorId },
-      select: { razorpayPaymentId: true },
+      select: { razorpayPaymentId: true, autopayStatus: true },
     }),
     prisma.doctor.findUnique({
       where: { id: doctorId },
       select: { name: true, contact: true },
     }),
   ]);
+  if (existing?.autopayStatus === "ACTIVE") {
+    return NextResponse.json(
+      { error: "Auto-pay is on, so your licence renews by itself. Cancel auto-pay first if you want to pay manually or change plan." },
+      { status: 400 },
+    );
+  }
   const isFirstPayment = isFirstPaymentFor(existing);
 
   const planConfig = PLANS[plan];

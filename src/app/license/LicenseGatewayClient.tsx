@@ -962,7 +962,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 
                     <InfoGrid rows={[
                       { label: "Licensed To", value: data.orgName ?? "—" },
-                      { label: "License Type", value: data.plan === "YEARLY" ? "Annual License" : data.plan === "5_DOCTORS" ? "5 Doctors Plan" : data.plan === "MONTHLY" ? "Monthly License" : data.plan ?? "Professional" },
+                      { label: "License Type", value: data.plan === "YEARLY" ? "Annual License" : data.plan === "MONTHLY" ? "Professional Monthly" : data.plan === "ENTERPRISE" ? "Enterprise Monthly" : data.plan ?? "Professional" },
                       { label: "Activation Date", value: fmt(data.activationDate) },
                       { label: "Expiry Date", value: fmt(data.expiryDate), highlight: status === "SUBSCRIPTION_EXPIRED" ? "red" : "green" },
                       { label: "License Key", value: mask(data.licenseKey), mono: true, small: true },
@@ -1014,6 +1014,7 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
       {showPlans && (
         <PlansModal
           doctorId={data.orgId ?? ""}
+          isFirstPayment={data.isFirstPayment ?? true}
           onClose={() => setShowPlans(false)}
           onActivateKey={() => { setShowPlans(false); router.push("/license/activate"); }}
           onSuccess={() => { setShowPlans(false); router.refresh(); }}
@@ -1024,7 +1025,9 @@ export function LicenseGatewayClient({ initial }: { initial: LicenseData }) {
 }
 
 /* ── Plans modal ────────────────────────────────────────────────────────────── */
-type PlanKey = "MONTHLY" | "5_DOCTORS" | "YEARLY";
+// Keys are the ones the payment server accepts (see api/cashfree/create-order):
+// ENTERPRISE = ₹1,299, MONTHLY = ₹2,999, YEARLY = annual.
+type PlanKey = "ENTERPRISE" | "MONTHLY" | "YEARLY";
 
 const PLANS_LIST: Array<{
   key: PlanKey;
@@ -1038,7 +1041,7 @@ const PLANS_LIST: Array<{
   features: string[];
 }> = [
   {
-    key: "MONTHLY",
+    key: "ENTERPRISE",
     name: "Monthly",
     price: "₹1,299",
     discountedPrice: "₹325",
@@ -1049,7 +1052,7 @@ const PLANS_LIST: Array<{
     features: ["1 doctor account", "Unlimited hospitals", "Appointments & EMR", "Prescriptions & billing", "Email support"],
   },
   {
-    key: "5_DOCTORS",
+    key: "MONTHLY",
     name: "5 Doctors",
     price: "₹2,999",
     discountedPrice: "₹750",
@@ -1062,8 +1065,8 @@ const PLANS_LIST: Array<{
   {
     key: "YEARLY",
     name: "Yearly",
-    price: "₹9,999",
-    discountedPrice: null,
+    price: "₹24,999",
+    discountedPrice: "₹6,249.75",
     per: "/ year",
     tagline: "Best value - save 2 months",
     badge: "Best Value",
@@ -1074,11 +1077,13 @@ const PLANS_LIST: Array<{
 
 function PlansModal({
   doctorId,
+  isFirstPayment,
   onClose,
   onActivateKey,
   onSuccess,
 }: {
   doctorId: string;
+  isFirstPayment: boolean;
   onClose: () => void;
   onActivateKey: () => void;
   onSuccess: () => void;
@@ -1127,7 +1132,13 @@ function PlansModal({
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {PLANS_LIST.map((p) => (
+            {PLANS_LIST.map((plan) => {
+              // The first-month discount applies only before any payment was made;
+              // the server charges the full price after that, so show the same.
+              const p = isFirstPayment
+                ? plan
+                : { ...plan, discountedPrice: null, badge: plan.badge?.startsWith("75%") ? null : plan.badge };
+              return (
               <div key={p.key} className="relative rounded-2xl p-5 flex flex-col" style={{
                 border: p.highlight ? "1px solid rgba(13,122,99,.34)" : "1px solid rgba(15,41,38,.09)",
                 background: p.highlight ? "rgba(13,122,99,.08)" : "rgba(15,41,38,.03)",
@@ -1186,7 +1197,8 @@ function PlansModal({
                     : `Subscribe: ${p.discountedPrice ?? p.price}`}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs" style={{ color: T.faint }}>

@@ -8,6 +8,24 @@ import { resignLicense } from "@/lib/license-sign";
 
 export type PlanKey = "MONTHLY" | "ENTERPRISE" | "YEARLY";
 
+// Monthly plan prices in rupees: first = discounted first payment, full = regular price.
+export const PLAN_PRICES = {
+  MONTHLY:    { first: 750, full: 2999 },
+  ENTERPRISE: { first: 325, full: 1299 },
+} as const;
+
+/** Writes a PAYMENT row to the licence history (shown in Settings > License). */
+async function recordPayment(doctorId: string, rupees: number, how: string, paymentId: string) {
+  await prisma.licenseEvent.create({
+    data: {
+      doctorId,
+      action: "PAYMENT",
+      status: "SUCCESS",
+      detail: `Paid ₹${rupees.toLocaleString("en-IN")} ${how} (payment ${paymentId})`,
+    },
+  }).catch(() => {});
+}
+
 const API_VERSION = "2023-08-01";
 
 function baseUrl() {
@@ -123,6 +141,7 @@ export async function confirmOrderAndActivate(
   }
 
   await activateLicense(doctorId, plan, orderId, paymentId, "");
+  await recordPayment(doctorId, Number(order.order_amount), "via Cashfree", paymentId);
   return { ok: true, status: "PAID", doctorId, plan, paymentId };
 }
 
@@ -252,6 +271,11 @@ export async function applyAutopayPayment(
   const plan = (lic.autopayPlan ?? lic.plan) as PlanKey | null;
   if (!plan || plan === "YEARLY") return { applied: false, doctorId: lic.doctorId };
 
+  // The first ever payment is the discounted one; every other debit is the regular price.
+  const wasFirst = !lic.razorpayPaymentId;
+  const prices = PLAN_PRICES[plan];
+  const paidRupees = kind === "AUTH" && wasFirst ? prices.first : prices.full;
+
   if (kind === "AUTH" || !lic.subscriptionEndsAt) {
     await activateLicense(lic.doctorId, plan, subscriptionId, paymentId, "");
     const fresh = await prisma.tenantLicense.findUnique({ where: { doctorId: lic.doctorId }, select: { subscriptionEndsAt: true } });
@@ -277,5 +301,6 @@ export async function applyAutopayPayment(
     });
     await resignLicense(lic.doctorId);
   }
+  await recordPayment(lic.doctorId, paidRupees, "by auto-pay", paymentId);
   return { applied: true, doctorId: lic.doctorId };
 }

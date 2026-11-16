@@ -31,6 +31,9 @@ export async function POST(req: Request) {
     where: { doctorId },
     data: { autopayStatus: "CANCELLED", autopayNextChargeAt: null },
   });
+  await prisma.licenseEvent.create({
+    data: { doctorId, action: "CANCELLED", status: "SUCCESS", detail: "Auto-pay cancelled. No further automatic charges." },
+  }).catch(() => {});
   await prisma.auditLog.create({
     data: {
       userId: user.id,

@@ -20,6 +20,8 @@ export interface LicensePageData {
   activationDate: string | null;
   expiryDate: string | null;
   plan: string | null;
+  /** True until a first successful payment exists; drives the first-month discount shown. */
+  isFirstPayment?: boolean;
 }
 
 export interface ActivationPageData extends LicensePageData {
@@ -87,6 +89,7 @@ export async function getLicenseData(overrideDoctorId?: string): Promise<License
     activationDate: doctor.license?.subscriptionStartsAt?.toISOString() ?? null,
     expiryDate: info.subscriptionEndsAt?.toISOString() ?? null,
     plan: info.plan,
+    isFirstPayment: !doctor.license?.razorpayPaymentId,
   };
 }
 

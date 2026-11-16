@@ -664,6 +664,8 @@ export type LicenseFullData = {
   autopayStatus: string | null;
   autopayPlan: string | null;
   autopayNextChargeAt: string | null;
+  lastPaymentAmount: number | null; // rupees actually paid, from the latest PAYMENT history row
+  lastPaymentAt: string | null;
   events: {
     id: string;
     date: string;
@@ -717,6 +719,8 @@ export async function getLicenseFullDetails(): Promise<LicenseFullData | null> {
     take: 100,
   });
 
+  const lastPayment = events.find((e) => e.action === "PAYMENT" && e.status === "SUCCESS");
+
   return {
     doctorId: doctor.id,
     doctorName: doctor.name,
@@ -742,6 +746,8 @@ export async function getLicenseFullDetails(): Promise<LicenseFullData | null> {
     autopayStatus: lic?.autopayStatus ?? null,
     autopayPlan: lic?.autopayPlan ?? null,
     autopayNextChargeAt: lic?.autopayNextChargeAt?.toISOString() ?? null,
+    lastPaymentAmount: lastPayment ? Number((lastPayment.detail ?? "").match(/Paid ₹([\d,.]+)/)?.[1]?.replace(/,/g, "") ?? NaN) || null : null,
+    lastPaymentAt: lastPayment?.createdAt.toISOString() ?? null,
     events: events.map((e) => ({
       id: e.id,
       date: e.createdAt.toISOString(),

@@ -145,7 +145,10 @@ export async function activateLicense(
   razorpaySignature: string,
 ) {
   const now = new Date();
-  const subscriptionEndsAt = new Date(now);
+  // Paying while days are left extends from the current end date, so no paid days are lost.
+  const current = await prisma.tenantLicense.findUnique({ where: { doctorId }, select: { subscriptionEndsAt: true } });
+  const base = current?.subscriptionEndsAt && current.subscriptionEndsAt > now ? current.subscriptionEndsAt : now;
+  const subscriptionEndsAt = new Date(base);
   if (plan === "YEARLY") {
     subscriptionEndsAt.setFullYear(subscriptionEndsAt.getFullYear() + 1);
   } else {

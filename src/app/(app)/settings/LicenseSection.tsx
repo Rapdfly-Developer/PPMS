@@ -42,6 +42,8 @@ const PLAN_CONFIG: Record<string, { name: string; tag: string; price: string; bi
   YEARLY:     { name: "Professional", tag: "Annual Plan",        price: "₹24,999", billingCycle: "Annual"  },
 };
 
+const per = (plan: string | null) => (plan === "YEARLY" ? "year" : "month");
+
 const PLAN_FEATURE_MAP: Record<string, string[]> = {
   MONTHLY: [
     "Patient Records (EMR)", "Appointments", "Doctor Dashboard",
@@ -225,11 +227,12 @@ const FEATURES = [
   { label: "Custom Role Permissions",    trial: false },
 ];
 
-function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange: (t: LicTab) => void }) {
+function OverviewTab({ data, onTabChange, onRefresh }: { data: LicenseFullData; onTabChange: (t: LicTab) => void; onRefresh: () => void }) {
   const [showManage, setShowManage] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelStep, setCancelStep] = useState<"idle" | "confirm">("idle");
   const [cancelDone, setCancelDone] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   const licensed = data.status === "SUBSCRIBED";
   const trial    = data.status === "TRIAL_ACTIVE";
@@ -237,11 +240,21 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
   const planCfg  = data.plan ? PLAN_CONFIG[data.plan] : null;
   const planFeatures = data.plan ? (PLAN_FEATURE_MAP[data.plan] ?? []) : [];
 
+  // Cancels the Cashfree auto-pay mandate, so no further debits happen.
   async function handleCancel() {
     setCancelling(true);
+    setCancelError("");
     try {
-      const res = await fetch("/api/license/cancel", { method: "POST" });
-      if (res.ok) { setCancelDone(true); setShowManage(false); }
+      const res = await fetch("/api/cashfree/subscription/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ doctorId: data.doctorId }),
+      });
+      const v = await res.json().catch(() => ({})) as { success?: boolean; error?: string };
+      if (v.success) { setCancelDone(true); setShowManage(false); onRefresh(); }
+      else setCancelError(v.error ?? "Could not cancel auto-pay.");
+    } catch {
+      setCancelError("Could not cancel auto-pay. Please try again.");
     } finally { setCancelling(false); setCancelStep("idle"); }
   }
 
@@ -263,7 +276,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
                 <p className="text-caption text-[var(--color-ink-400)]">{planCfg.tag}</p>
                 <div className="flex items-end gap-1 mt-2">
                   <span className="text-3xl font-bold text-[var(--color-ink-900)]">{planCfg.price}</span>
-                  <span className="text-sm text-[var(--color-ink-400)] mb-1">/ month</span>
+                  <span className="text-sm text-[var(--color-ink-400)] mb-1">/ {per(data.plan)}</span>
                 </div>
               </div>
               <ShieldCheck size={36} className="text-emerald-500 shrink-0 mt-1 opacity-60" />
@@ -277,7 +290,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
               </div>
               <div className="hidden sm:block w-px bg-[var(--color-border)]" />
               <div>
-                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Next Renewal</p>
+                <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">{data.autopayStatus === "ACTIVE" ? "Next Renewal" : "Plan Ends"}</p>
                 <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-0.5">{fmt(data.subscriptionEndsAt)}</p>
               </div>
               <div className="hidden sm:block w-px bg-[var(--color-border)]" />
@@ -305,14 +318,18 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
 
         {cancelDone && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-            <AlertTriangle size={14} /> Cancellation requested. Access continues until {fmt(data.subscriptionEndsAt)}.
+            <AlertTriangle size={14} /> Auto-pay cancelled. Access continues until {fmt(data.subscriptionEndsAt)}.
           </div>
         )}
 
         {data.remainingDays <= 7 && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
             <Clock size={15} className="text-amber-600 shrink-0" />
-            <p className="text-sm text-amber-800"><strong>{data.remainingDays} days</strong> until renewal; your subscription will auto-renew on {fmt(data.subscriptionEndsAt)}.</p>
+            <p className="text-sm text-amber-800">
+              {data.autopayStatus === "ACTIVE"
+                ? <><strong>{data.remainingDays} days</strong> until renewal; auto-pay will renew your subscription around {fmt(data.subscriptionEndsAt)}.</>
+                : <><strong>{data.remainingDays} days</strong> left; your plan ends on {fmt(data.subscriptionEndsAt)}. Renew from the Plans tab to keep access.</>}
+            </p>
           </div>
         )}
 
@@ -342,11 +359,11 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
             <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Amount</p>
-                <p className="text-sm font-bold text-[var(--color-ink-900)] mt-1">{planCfg.price}</p>
+                <p className="text-sm font-bold text-[var(--color-ink-900)] mt-1">{data.lastPaymentAmount != null ? `₹${data.lastPaymentAmount.toLocaleString("en-IN")}` : "-"}</p>
               </div>
               <div>
                 <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Date</p>
-                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(data.subscriptionStartsAt)}</p>
+                <p className="text-sm font-semibold text-[var(--color-ink-800)] mt-1">{fmt(data.lastPaymentAt ?? data.subscriptionStartsAt)}</p>
               </div>
               <div>
                 <p className="text-caption font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Status</p>
@@ -381,26 +398,31 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
                 <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-primary-50)] border border-[var(--color-primary-100)]">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{planCfg.name}</p>
-                    <p className="text-lg font-bold text-[var(--color-ink-900)]">{planCfg.price}<span className="text-sm font-normal text-[var(--color-ink-400)]"> / month</span></p>
+                    <p className="text-lg font-bold text-[var(--color-ink-900)]">{planCfg.price}<span className="text-sm font-normal text-[var(--color-ink-400)]"> / {per(data.plan)}</span></p>
                   </div>
                   <span className="inline-flex items-center gap-1 text-caption font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white">
                     <span className="w-1.5 h-1.5 rounded-full bg-white" /> ACTIVE
                   </span>
                 </div>
 
-                {cancelStep === "idle" ? (
+                {cancelError && <p className="text-xs text-red-600">{cancelError}</p>}
+                {data.autopayStatus !== "ACTIVE" ? (
+                  <p className="text-xs text-[var(--color-ink-600)] leading-relaxed">
+                    Automatic renewal is not on for this plan. It ends on <strong>{fmt(data.subscriptionEndsAt)}</strong>. To keep access, renew from the Plans tab.
+                  </p>
+                ) : cancelStep === "idle" ? (
                   <button
                     onClick={() => setCancelStep("confirm")}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors"
                   >
-                    <XIcon size={14} /> Cancel Subscription
+                    <XIcon size={14} /> Cancel Auto-pay
                   </button>
                 ) : (
                   <div className="space-y-3">
                     <div className="p-4 rounded-xl bg-red-50 border border-red-200">
-                      <p className="text-sm font-semibold text-red-800">Cancel subscription?</p>
+                      <p className="text-sm font-semibold text-red-800">Cancel auto-pay?</p>
                       <p className="text-xs text-red-700 mt-1">
-                        Your {planCfg.name} plan will remain active until <strong>{fmt(data.subscriptionEndsAt)}</strong>. Access will not be removed immediately.
+                        Auto-pay will stop. Your {planCfg.name} plan stays active until <strong>{fmt(data.subscriptionEndsAt)}</strong> and will not renew after that.
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -408,7 +430,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
                         onClick={() => setCancelStep("idle")}
                         className="flex-1 py-2.5 rounded-xl border border-[var(--color-border)] text-xs font-semibold text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)] transition-colors"
                       >
-                        Keep Subscription
+                        Keep Auto-pay
                       </button>
                       <button
                         onClick={handleCancel}
@@ -416,7 +438,7 @@ function OverviewTab({ data, onTabChange }: { data: LicenseFullData; onTabChange
                         className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-1"
                       >
                         {cancelling ? <Loader2 size={12} className="animate-spin" /> : null}
-                        Cancel Subscription
+                        Cancel Auto-pay
                       </button>
                     </div>
                   </div>
@@ -655,7 +677,7 @@ function ActivateTab({ data, onRefresh }: { data: LicenseFullData; onRefresh: ()
         <SCard title="Current License" icon={Package}>
           <div className="mb-3"><Pill status={data.status} /></div>
           <InfoRow label="License Key"      value={data.licenseKeyMasked} mono />
-          <InfoRow label="Plan"             value={data.plan === "YEARLY" ? "Annual (12 months)" : data.plan === "MONTHLY" ? "Monthly" : "Free Trial"} />
+          <InfoRow label="Plan"             value={data.status === "SUBSCRIBED" && data.plan ? (data.plan === "YEARLY" ? "Annual (12 months)" : `${PLAN_CONFIG[data.plan]?.name ?? data.plan} (Monthly)`) : "Free Trial"} />
           <InfoRow label="Activated"        value={fmt(data.subscriptionStartsAt)} />
           <InfoRow label="Expires"          value={fmt(data.subscriptionEndsAt ?? data.trialEndsAt)} />
           <InfoRow label="Days Remaining"   value={`${data.remainingDays} days`} />
@@ -1075,7 +1097,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
         {[
           {
             label: "Plan",
-            value: data.status === "TRIAL_ACTIVE" ? "Free Trial" : data.plan === "YEARLY" ? "Annual" : data.plan === "MONTHLY" ? "Monthly" : "—",
+            value: data.status === "TRIAL_ACTIVE" ? "Free Trial" : data.plan ? `${PLAN_CONFIG[data.plan]?.name ?? data.plan} (${data.plan === "YEARLY" ? "Annual" : "Monthly"})` : "-",
             sub: data.status === "TRIAL_ACTIVE" ? "7-day evaluation" : data.plan === "YEARLY" ? "Billed annually" : "Billed monthly",
           },
           {
@@ -1086,7 +1108,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
           {
             label: "Payment",
             value: data.paymentStatus || "—",
-            sub: "Contact support to renew",
+            sub: "Renew from the Plans tab",
           },
         ].map((c) => (
           <div key={c.label} className="rounded-xl bg-[var(--color-surface-sunken)] border border-[var(--color-border)] px-4 py-4">
@@ -1101,9 +1123,9 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
       <SCard title="How to Renew" icon={RefreshCw}>
         <ol className="space-y-4">
           {[
-            { n: "1", title: "Contact Support", desc: "Reach out to PPMS support via email or phone to purchase or renew your subscription.", icon: Mail },
-            { n: "2", title: "Receive Your License Key", desc: "You'll receive a new key (format: PPMS-XXXX-XXXX-XXXX-XXXX) via email within 1 business day.", icon: Key },
-            { n: "3", title: "Activate the Key", desc: "Go to the Activate tab, enter your new key, and click Activate. Your license renews immediately.", icon: ShieldCheck },
+            { n: "1", title: "Open the Plans tab", desc: "Choose your plan. Turn on monthly auto-pay if you want it to renew by itself.", icon: Crown },
+            { n: "2", title: "Pay securely with Cashfree", desc: "Pay with UPI or card. Your license is extended as soon as the payment is confirmed, and unused days are kept.", icon: CreditCard },
+            { n: "3", title: "Or use a license key", desc: "If support gave you a key (PPMS-XXXX-XXXX-XXXX-XXXX), enter it in the Activate tab.", icon: Key },
           ].map((s) => {
             const Icon = s.icon;
             return (
@@ -1170,6 +1192,8 @@ const ACTION_META: Record<string, { label: string; cls: string; Icon: React.Elem
   TRIAL_STARTED: { label: "Trial Started",   cls: "bg-amber-50 text-amber-700 border-amber-200",    Icon: Clock        },
   ACTIVATED:     { label: "Activated",       cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: Key       },
   REACTIVATED:   { label: "Reactivated",     cls: "bg-teal-50 text-teal-700 border-teal-100",        Icon: RefreshCw   },
+  PAYMENT:       { label: "Payment",         cls: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: CreditCard  },
+  CANCELLED:     { label: "Auto-pay Cancelled", cls: "bg-red-50 text-red-700 border-red-200",       Icon: XCircle     },
   VERIFIED:      { label: "Verified",        cls: "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] border-[var(--color-primary-200)]", Icon: ShieldCheck },
 };
 
@@ -1463,7 +1487,7 @@ export function LicenseSection({ initialTab = "overview" }: { initialTab?: LicTa
               )}
             </div>
           )}
-          {tab === "overview"  && <OverviewTab  data={data} onTabChange={setTab} />}
+          {tab === "overview"  && <OverviewTab  data={data} onTabChange={setTab} onRefresh={load} />}
           {tab === "activate"  && <ActivateTab  data={data} onRefresh={load} />}
           {tab === "plans"     && <PlansTab     data={data} onRefresh={load} onTabChange={setTab} />}
           {tab === "renewal"   && <RenewalTab   data={data} />}

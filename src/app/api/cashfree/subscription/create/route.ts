@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { canManageDoctorLicense } from "@/lib/cashfree-access";
-import { createCashfreeSubscription, isFirstPayment } from "@/lib/cashfree";
+import { createCashfreeSubscription, isFirstPayment, PLAN_PRICES } from "@/lib/cashfree";
 
 type AutopayPlan = "MONTHLY" | "ENTERPRISE";
 
 // Rupees. first = discounted first month, full = every month after that.
 const PLANS: Record<AutopayPlan, { first: number; full: number; name: string }> = {
-  MONTHLY:    { first: 750, full: 2999, name: "Professional Monthly" },
-  ENTERPRISE: { first: 325, full: 1299, name: "Enterprise Monthly" },
+  MONTHLY:    { ...PLAN_PRICES.MONTHLY, name: "Professional Monthly" },
+  ENTERPRISE: { ...PLAN_PRICES.ENTERPRISE, name: "Enterprise Monthly" },
 };
 
 function addMonths(from: Date, months: number): Date {

@@ -59,9 +59,9 @@ function shortMachineId(mid: string | null) {
 /* ── Plan limits ─────────────────────────────────────────────────────────────── */
 function planLimits(status: string, plan: string | null) {
   if (status === "SUBSCRIBED") {
-    if (plan === "MONTHLY")   return { type: "Monthly Plan",   hospitals: "Unlimited", doctors: "1",  users: "20"  };
-    if (plan === "5_DOCTORS") return { type: "5 Doctors Plan", hospitals: "Unlimited", doctors: "5",  users: "50"  };
-    return { type: "Yearly Plan", hospitals: "Unlimited", doctors: "25", users: "100" };
+    if (plan === "ENTERPRISE") return { type: "Enterprise Monthly", hospitals: "Unlimited", doctors: "1", users: "20"  };
+    if (plan === "MONTHLY")    return { type: "Professional Monthly", hospitals: "Unlimited", doctors: "1", users: "50"  };
+    return { type: "Annual Plan", hospitals: "Unlimited", doctors: "1", users: "100" };
   }
   if (status === "TRIAL_ACTIVE") return { type: "Trial",   hospitals: "2", doctors: "1", users: "10" };
   return { type: "—", hospitals: "—", doctors: "—", users: "—" };
