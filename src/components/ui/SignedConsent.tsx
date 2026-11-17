@@ -5,7 +5,7 @@
 
 import { useRef, useState } from "react";
 import { format } from "date-fns";
-import { CheckCircle2, FileText, Trash2, Upload } from "lucide-react";
+import { CheckCircle2, FileText, Lock, LockOpen, Trash2, Upload, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 
 /** The uploaded signed consent, shown large: an image in full width, a PDF in a tall viewer. */
@@ -31,6 +31,77 @@ export function SignedConsentView({ file, title }: { file: { ref: string; name: 
           </a>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Lock bar of a signed consent. Locked: nothing can be changed; Unlock asks
+ * for the user's own login password. Unlocked: Lock closes it again.
+ */
+export function ConsentLockBar({ locked, unfrozen, onUnlock, onLock }: {
+  locked: boolean;
+  unfrozen?: { by: string; at: string };
+  /** Resolves to an error message, or nothing when unlocked. */
+  onUnlock: (password: string) => Promise<string | undefined>;
+  onLock: () => Promise<string | undefined>;
+}) {
+  const [asking, setAsking] = useState(false);
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const run = async (fn: () => Promise<string | undefined>) => {
+    setBusy(true); setError("");
+    try {
+      const err = await fn();
+      if (err) setError(err); else { setAsking(false); setPassword(""); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally { setBusy(false); }
+  };
+  const unlock = () => { if (password) void run(() => onUnlock(password)); };
+
+  if (!locked) {
+    return (
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-amber-50 p-1.5 pl-3 ring-1 ring-amber-200">
+        <LockOpen size={14} className="shrink-0 text-amber-600" />
+        <p className="flex-1 min-w-0 text-[13px] text-amber-900">
+          Unlocked{unfrozen ? <> by <b>{unfrozen.by}</b> on {format(new Date(unfrozen.at), "EEE, d MMM yyyy, h:mm a")}</> : ""}. The signed copy can be replaced or removed.
+        </p>
+        {error && <span className="text-xs text-red-600">{error}</span>}
+        <button type="button" disabled={busy} onClick={() => void run(onLock)}
+          className="h-8 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60">
+          <Lock size={12} /> Lock again
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[var(--color-surface-sunken)]/70 p-1.5 pl-3 ring-1 ring-[var(--color-border)]">
+      <Lock size={14} className="shrink-0 text-[var(--color-ink-500)]" />
+      <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
+        <b className="text-[var(--color-ink-800)]">Locked.</b> The signed copy is on file, so this consent can&apos;t be changed.
+      </p>
+      {error && <span className="text-xs text-red-600">{error}</span>}
+      {asking ? (
+        <>
+          <input type="password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your login password"
+            autoComplete="current-password"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); unlock(); } if (e.key === "Escape") { setAsking(false); setPassword(""); setError(""); } }}
+            className="h-8 w-48 rounded-full border border-[var(--color-border)] bg-white px-3 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+          <button type="button" disabled={busy || !password} onClick={unlock}
+            className="h-8 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+            <LockOpen size={12} /> {busy ? "Checking..." : "Unlock"}
+          </button>
+          <button type="button" aria-label="Cancel" onClick={() => { setAsking(false); setPassword(""); setError(""); }}
+            className="grid h-7 w-7 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-white hover:text-[var(--color-ink-700)]"><X size={13} /></button>
+        </>
+      ) : (
+        <button type="button" onClick={() => setAsking(true)}
+          className="h-8 inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-white px-3.5 text-xs font-semibold text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]">
+          <LockOpen size={12} /> Unlock
+        </button>
+      )}
     </div>
   );
 }
@@ -68,7 +139,7 @@ export function SignedConsentUpload({ file, title, onChange }: {
       <input ref={ref} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
       <Upload size={14} className="shrink-0 text-[var(--color-primary-500)]" />
       <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
-        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. Saved with the Save button.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above.</>}
+        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. It locks as soon as it is uploaded.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above and locks the consent.</>}
       </p>
       {error && <span className="text-xs text-red-600">{error}</span>}
       {file && (confirm ? (

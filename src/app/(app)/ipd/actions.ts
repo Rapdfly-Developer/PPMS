@@ -11,6 +11,7 @@ import { counsellingSheetFor } from "@/lib/ipd-server";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 import { allergyFromLine, allergyLine, latestDrugAllergy, saveDrugAllergy, syncConsentsToCounselling, syncImplantToCounselling } from "@/lib/care-sync";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
+import { checkOwnPassword, keepLockedConsents, withUnlock } from "@/lib/consent-lock";
 import { SUPERSEDED } from "@/lib/counselling";
 import {
   IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
@@ -107,6 +108,8 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
   if (!formEditable(key, !!row?.frozen, admission.status) && !discharging) {
     return { error: "This form is frozen and can't be changed." };
   }
+  // Signed (locked) consents stay as stored until unlocked with a password
+  if (key === "consents") data = keepLockedConsents(await storedConsents(admission, row?.data ?? null), data);
   const json = JSON.stringify(data ?? {});
   if (json.length > 200_000) return { error: "The form is too large." };
   // Running logs are appended through addFormLog only; keep the stored ones
@@ -126,6 +129,49 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
   await syncOut(admission, key, row?.data ?? null, data);
   refresh(admissionId);
   return {};
+}
+
+/** The consents as stored: the IPD form, or (not saved here yet) the counselling sheet it starts from. */
+async function storedConsents(admission: { counsellingVisitId: string | null }, formData: string | null): Promise<string | null> {
+  if (formData) return formData;
+  if (!admission.counsellingVisitId) return null;
+  const rec = await prisma.counsellingRecord.findUnique({ where: { visitId: admission.counsellingVisitId }, select: { consents: true } });
+  return rec?.consents ?? null;
+}
+
+/** Unlock a signed consent: needs the user's own login password; logged. */
+export async function unlockIpdConsent(admissionId: string, consentId: string, password: string): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit", "ipd.discharge");
+  if (!(await checkOwnPassword(user.id, password))) return { error: "Wrong password." };
+  return setIpdConsentLock(user, admission, consentId, { by: user.name ?? user.username ?? "User", at: new Date().toISOString() });
+}
+
+/** Lock a signed consent again (no password needed). */
+export async function lockIpdConsent(admissionId: string, consentId: string): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit", "ipd.discharge");
+  return setIpdConsentLock(user, admission, consentId, undefined);
+}
+
+async function setIpdConsentLock(
+  user: { id: string },
+  admission: Awaited<ReturnType<typeof loadAdmission>>["admission"],
+  consentId: string, unfrozen: { by: string; at: string } | undefined,
+): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  const row = admission.forms.find((f) => f.key === "consents");
+  if (row?.frozen) return { error: "This form is frozen and can't be changed." };
+  const before = await storedConsents(admission, row?.data ?? null);
+  if (!before) return { error: "Save the consents first." };
+  const next = withUnlock(before, consentId, unfrozen);
+  if (!next.items.some((i) => i.id === consentId)) return { error: "Consent not found." };
+  await prisma.ipdForm.upsert({
+    where: { admissionId_key: { admissionId: admission.id, key: "consents" } },
+    create: { admissionId: admission.id, key: "consents", title: titleOf("consents", admission.forms), data: JSON.stringify(next) },
+    update: { data: JSON.stringify(next) },
+  });
+  await writeAudit(user.id, "IpdAdmission", admission.id, unfrozen ? "CONSENT_UNLOCKED" : "CONSENT_LOCKED", { consentId });
+  await syncOut(admission, "consents", before, next);
+  refresh(admission.id);
+  return { unfrozen };
 }
 
 /**

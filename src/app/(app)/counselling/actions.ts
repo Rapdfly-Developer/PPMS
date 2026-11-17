@@ -10,6 +10,7 @@ import { reportsValidUntil, surgeryLine, SUPERSEDED } from "@/lib/counselling";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { saveDrugAllergy, syncConsentsToIpd, syncImplantName, syncImplantToIpd } from "@/lib/care-sync";
+import { checkOwnPassword, keepLockedConsents, withUnlock } from "@/lib/consent-lock";
 
 type Result = { error?: string };
 
@@ -55,6 +56,32 @@ function isPastDay(d: Date): boolean {
 function oldestReportAt(orders: { resultRef: string | null; resultAt: Date | null; updatedAt: Date }[]): Date | null {
   const times = orders.filter((o) => o.resultRef).map((o) => (o.resultAt ?? o.updatedAt).getTime());
   return times.length ? new Date(Math.min(...times)) : null;
+}
+
+// ── Signed consent lock ─────────────────────────────────────────────────────
+
+/** Unlock a signed consent: needs the user's own login password; logged. */
+export async function unlockCounsellingConsent(visitId: string, consentId: string, password: string): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  const { user, rec } = await loadVisit(visitId, "counselling.edit");
+  if (!(await checkOwnPassword(user.id, password))) return { error: "Wrong password." };
+  return setConsentLock(user, visitId, rec?.consents ?? null, consentId, { by: user.name ?? user.username ?? "User", at: new Date().toISOString() });
+}
+
+/** Lock a signed consent again (no password needed). */
+export async function lockCounsellingConsent(visitId: string, consentId: string): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  const { user, rec } = await loadVisit(visitId, "counselling.edit");
+  return setConsentLock(user, visitId, rec?.consents ?? null, consentId, undefined);
+}
+
+async function setConsentLock(user: { id: string }, visitId: string, before: string | null, consentId: string, unfrozen: { by: string; at: string } | undefined): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  if (!before) return { error: "Save the consents first." };
+  const next = withUnlock(before, consentId, unfrozen);
+  if (!next.items.some((i) => i.id === consentId)) return { error: "Consent not found." };
+  await prisma.counsellingRecord.update({ where: { visitId }, data: { consents: JSON.stringify(next) } });
+  await writeAudit(user.id, "CounsellingRecord", visitId, unfrozen ? "CONSENT_UNLOCKED" : "CONSENT_LOCKED", { consentId });
+  await syncConsentsToIpd(visitId, before, next);
+  refresh(visitId);
+  return { unfrozen };
 }
 
 // ── Checklist A–D (frozen once Fit for surgery) ─────────────────────────────
@@ -122,6 +149,8 @@ export async function saveCounsellingDetails(visitId: string, data: {
     patch.implantDetails = s;
   }
   if (data.consents !== undefined) {
+    // Signed (locked) consents stay as stored until unlocked with a password
+    data.consents = keepLockedConsents(rec?.consents ?? null, data.consents);
     const s = sheet(data.consents);
     if (s === null) return { error: "The consents are too large." };
     patch.consents = s;

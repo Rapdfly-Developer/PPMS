@@ -132,7 +132,7 @@ function mergeConsents(target: unknown, before: unknown, after: unknown) {
   const mine = consentItems(target);
   const byId = new Map(mine.map((i) => [i.id, i]));
   return [
-    ...next.map((c) => ({ ...(byId.get(c.id) ?? { signed: false }), id: c.id, title: c.title ?? "", text: c.text ?? "", signedFile: c.signedFile ?? undefined })),
+    ...next.map((c) => ({ ...(byId.get(c.id) ?? { signed: false }), id: c.id, title: c.title ?? "", text: c.text ?? "", signedFile: c.signedFile ?? undefined, unfrozen: c.unfrozen ?? undefined })),
     ...mine.filter((i) => !nextIds.has(i.id) && !prevIds.has(i.id)),
   ];
 }

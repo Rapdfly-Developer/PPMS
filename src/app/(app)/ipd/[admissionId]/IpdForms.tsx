@@ -11,7 +11,9 @@ import {
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
 import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
-import { SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
+import { ConsentLockBar, SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
+import { isConsentLocked } from "@/lib/consent-lock-state";
+import { lockIpdConsent, unlockIpdConsent } from "../actions";
 import { PaymentDocs } from "@/components/ui/PaymentDocs";
 import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
@@ -416,7 +418,7 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
       <ErrorText text={error} />
       {/* Consent tabs (same as Counselling): × deletes a consent, + New adds one */}
       <ConsentTabBar
-        items={items.map((c) => ({ id: c.id, label: CONSENT_TAB_IDS.includes(c.id) ? c.id : c.title }))}
+        items={items.map((c) => ({ id: c.id, label: CONSENT_TAB_IDS.includes(c.id) ? c.id : c.title, locked: isConsentLocked(c) }))}
         active={current?.id ?? ""}
         onSelect={setTab}
         editable={editable}
@@ -446,9 +448,32 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
       ) : (
         <p className="text-sm italic text-[var(--color-ink-400)]">No consents. Use + New to add one.</p>
       )}
-      {current && editable && (
+      {/* Locked once the signed copy is on file; Unlock needs the login password */}
+      {current?.signedFile && editable && (
+        <ConsentLockBar
+          locked={isConsentLocked(current)}
+          unfrozen={current.unfrozen}
+          onUnlock={async (password) => {
+            const r = await unlockIpdConsent(f.id, current.id, password);
+            if (r.error) return r.error;
+            setItem({ ...current, unfrozen: r.unfrozen });
+          }}
+          onLock={async () => {
+            const r = await lockIpdConsent(f.id, current.id);
+            if (r.error) return r.error;
+            setItem({ ...current, unfrozen: undefined });
+          }}
+        />
+      )}
+      {current && editable && !isConsentLocked(current) && (
         <SignedConsentUpload file={current.signedFile} title={current.title}
-          onChange={(signedFile) => setItem({ ...current, signedFile, signed: !!signedFile || current.signed })} />
+          onChange={(signedFile) => start(async () => {
+            // A signed copy is saved straight away, which locks the consent
+            const next = { ...v, items: items.map((x) => (x.id === current.id ? { ...current, signedFile, signed: !!signedFile || current.signed, unfrozen: signedFile ? undefined : current.unfrozen } : x)) };
+            change(next);
+            const err = await saveNow(next);
+            if (err) setError(err);
+          })} />
       )}
       {busy && <Loader2 size={14} className="animate-spin text-[var(--color-ink-400)]" />}
     </div>
@@ -580,7 +605,7 @@ function StageTabs({ value, onChange, labels, icon }: {
         const on = k === value;
         return (
           <button key={k} type="button" onClick={() => onChange(k)}
-            className={`flex h-9 w-[10.5rem] items-center gap-1.5 rounded-xl pl-2.5 pr-1.5 text-left text-xs font-semibold transition-all duration-150 ${
+            className={`flex h-8 w-[8.5rem] items-center gap-1.5 rounded-xl pl-2.5 pr-1.5 text-left text-xs font-semibold transition-all duration-150 ${
               on ? "bg-white text-[var(--color-primary-700)] shadow-[0_1px_2px_rgba(20,36,43,0.06),0_2px_8px_rgba(20,36,43,0.06)] ring-1 ring-[var(--color-primary-200)]"
                 : "text-[var(--color-ink-500)] hover:bg-white/70 hover:text-[var(--color-ink-700)]"
             }`}>

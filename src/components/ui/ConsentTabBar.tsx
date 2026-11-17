@@ -6,9 +6,9 @@
 // custom one by name.
 
 import { useEffect, useRef, useState } from "react";
-import { FileSignature, Plus, Search, Trash2, X } from "lucide-react";
+import { FileSignature, Lock, Plus, Search, Trash2, X } from "lucide-react";
 
-export interface ConsentTab { id: string; label: string; badge?: number }
+export interface ConsentTab { id: string; label: string; badge?: number; /** Signed copy on file: can't be deleted. */ locked?: boolean }
 export interface ConsentPreset { id: string; title: string; text: string }
 
 export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemove, presets = [] }: {
@@ -48,7 +48,7 @@ export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemo
         const asking = confirm === t.id;
         return (
           <div key={t.id}
-            className={`group relative flex h-9 w-[10.5rem] items-center gap-2 rounded-xl pl-2.5 pr-1.5 text-xs font-semibold transition-all duration-150 ${
+            className={`group relative flex h-8 w-[8.5rem] items-center gap-2 rounded-xl pl-2.5 pr-1.5 text-xs font-semibold transition-all duration-150 ${
               asking ? "bg-red-50 ring-1 ring-red-200 text-red-700"
                 : on ? "bg-white text-[var(--color-primary-700)] shadow-[0_1px_2px_rgba(20,36,43,0.06),0_2px_8px_rgba(20,36,43,0.06)] ring-1 ring-[var(--color-primary-200)]"
                 : "text-[var(--color-ink-500)] hover:bg-white/70 hover:text-[var(--color-ink-700)]"
@@ -73,7 +73,10 @@ export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemo
                 {!!t.badge && (
                   <span title={`${t.badge} to fill`} className="grid h-4 min-w-4 shrink-0 place-items-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-white tabular-nums">{t.badge}</span>
                 )}
-                {editable && (
+                {t.locked && (
+                  <span title="Locked: signed copy on file" className="grid h-5 w-5 shrink-0 place-items-center text-[var(--color-ink-400)]"><Lock size={11} /></span>
+                )}
+                {editable && !t.locked && (
                   <button type="button" title={`Delete ${t.label}`} aria-label={`Delete ${t.label}`} onClick={() => setConfirm(t.id)}
                     className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[var(--color-ink-300)] transition-opacity hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)] ${on ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus:opacity-100"}`}>
                     <X size={11} />
@@ -87,7 +90,7 @@ export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemo
       {editable && (
         <div ref={boxRef} className="relative">
           <button type="button" title="Add a consent" onClick={() => setMenu((m) => !m)}
-            className={`flex h-9 items-center gap-1 rounded-xl border border-dashed px-3 text-xs font-semibold text-[var(--color-primary-700)] transition-colors hover:bg-white hover:border-[var(--color-primary-400)] ${menu ? "bg-white border-[var(--color-primary-400)]" : "border-[var(--color-primary-300)]"}`}>
+            className={`flex h-8 items-center gap-1 rounded-xl border border-dashed px-3 text-xs font-semibold text-[var(--color-primary-700)] transition-colors hover:bg-white hover:border-[var(--color-primary-400)] ${menu ? "bg-white border-[var(--color-primary-400)]" : "border-[var(--color-primary-300)]"}`}>
             <Plus size={13} /> New
           </button>
           {menu && (

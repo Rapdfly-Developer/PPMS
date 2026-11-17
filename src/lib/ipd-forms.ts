@@ -80,6 +80,8 @@ export interface ConsentItem {
   signedBy?: string;
   /** Scanned / photographed signed consent; when present it is shown instead of the wording. */
   signedFile?: { ref: string; name: string; at: string; by?: string };
+  /** Unlocked with a password after the signed copy was uploaded (locked again with Lock). */
+  unfrozen?: { by: string; at: string };
 }
 export interface ConsentsData { v: 2; items: ConsentItem[] }
 

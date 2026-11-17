@@ -29,14 +29,15 @@ import {
   counsellingImplantOptions, implantGroup, reportsValidUntil, paymentLabel, paymentTypeOf, PAYMENT_TYPES, SELF_PAY, type PaymentDoc,
 } from "@/lib/counselling";
 import {
-  saveCounsellingDetails, markFitForSurgery, reopenCounselling, revertFitForSurgery, addCounsellingInvestigations,
+  saveCounsellingDetails, unlockCounsellingConsent, lockCounsellingConsent, markFitForSurgery, reopenCounselling, revertFitForSurgery, addCounsellingInvestigations,
   postponeSurgery, resumeCounselling, saveAdvance, savePreOp, attachCounsellingReport,
   addCounsellingExtraReport, removeCounsellingReport, removeCounsellingExtraReport, rescheduleNoShow,
 } from "../actions";
 import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
 import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
 import { WeekdayHint } from "@/components/ui/WeekdayHint";
-import { SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
+import { ConsentLockBar, SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
+import { isConsentLocked } from "@/lib/consent-lock-state";
 import { PaymentDocs } from "@/components/ui/PaymentDocs";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { STATUS_META } from "../CounsellingClient";
@@ -1136,6 +1137,13 @@ export function CounsellingDetail({
 
   const activeConsent = consents.items.find((c) => c.id === consentTab) ?? consents.items[0];
   const setConsentItem = (id: string, patch: Partial<ConsentItem>) => setConsents((v) => ({ ...v, items: v.items.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
+  // A signed copy is saved straight away, which locks the consent
+  const setSignedFile = async (id: string, signedFile: ConsentItem["signedFile"]) => {
+    const next = { ...consents, items: consents.items.map((x) => (x.id === id ? { ...x, signedFile, signed: !!signedFile || x.signed, unfrozen: signedFile ? undefined : x.unfrozen } : x)) };
+    setConsents(next);
+    const r = await saveCounsellingDetails(data.visitId, { consents: next });
+    if (r?.error) setError(r.error); else router.refresh();
+  };
   const setConsentText = (id: string, text: string) => setConsentItem(id, { text });
   const consentPresets = useMemo(() => prebuiltConsents({ ...data.sheets.ctx, surgeryDate: dateOfSurgery || data.sheets.ctx.surgeryDate }), [data.sheets.ctx, dateOfSurgery]);
   const addConsent = (name?: string, preset?: { id: string; text: string }) => {
@@ -1577,7 +1585,7 @@ export function CounsellingDetail({
     <div className="flex flex-col gap-3">
       {/* Consent tabs: × deletes a consent, + New adds one */}
       <ConsentTabBar
-        items={consents.items.map((c) => ({ id: c.id, label: consentTabLabel(c), badge: rec.eligibleForSurgery ? undefined : consentMissing(c).length || undefined }))}
+        items={consents.items.map((c) => ({ id: c.id, label: consentTabLabel(c), locked: isConsentLocked(c), badge: rec.eligibleForSurgery ? undefined : consentMissing(c).length || undefined }))}
         active={activeConsent?.id ?? ""}
         onSelect={setConsentTab}
         editable={sheetsEditable}
@@ -1587,11 +1595,28 @@ export function CounsellingDetail({
       />
       {activeConsent ? consentCard(activeConsent) : <p className="text-sm italic text-[var(--color-ink-400)]">No consents. Use + New to add one.</p>}
       {/* Signed consent file for the open consent: once uploaded it replaces the wording */}
-      {activeConsent && sheetsEditable && (
+      {/* Locked once the signed copy is on file; Unlock needs the login password */}
+      {activeConsent?.signedFile && sheetsEditable && (
+        <ConsentLockBar
+          locked={isConsentLocked(activeConsent)}
+          unfrozen={activeConsent.unfrozen}
+          onUnlock={async (password) => {
+            const r = await unlockCounsellingConsent(data.visitId, activeConsent.id, password);
+            if (r.error) return r.error;
+            setConsentItem(activeConsent.id, { unfrozen: r.unfrozen });
+          }}
+          onLock={async () => {
+            const r = await lockCounsellingConsent(data.visitId, activeConsent.id);
+            if (r.error) return r.error;
+            setConsentItem(activeConsent.id, { unfrozen: undefined });
+          }}
+        />
+      )}
+      {activeConsent && sheetsEditable && !isConsentLocked(activeConsent) && (
         <SignedConsentUpload
           file={activeConsent.signedFile}
           title={activeConsent.title}
-          onChange={(signedFile) => setConsentItem(activeConsent.id, { signedFile, signed: !!signedFile || activeConsent.signed })}
+          onChange={(signedFile) => void setSignedFile(activeConsent.id, signedFile)}
         />
       )}
     </div>
