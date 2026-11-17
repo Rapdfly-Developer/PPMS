@@ -481,7 +481,10 @@ export async function addInvestigationOrder(
   udid: string,
   data: { category: string; testName: string; priority: string; laterality?: string; notes?: string }
 ) {
-  const user = await requireVisitPerm(visitId, "investigations.create");
+  // Ordering a test after the consult is normal, so a finalised visit still
+  // takes new investigation orders (like follow-up edits); ownership still applies
+  const user = await requireAnyPermission("emr.edit", "investigations.create");
+  await assertVisitOwner(visitId);
   // Prevent duplicate: check existing orders with normalized name match
   const existing = await prisma.investigationOrder.findMany({ where: { visitId }, select: { testName: true } });
   const norm = normalizeInvName(data.testName);

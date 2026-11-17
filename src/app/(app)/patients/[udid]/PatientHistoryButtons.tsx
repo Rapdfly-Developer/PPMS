@@ -322,7 +322,7 @@ function InvOrderPanel({ patientId, udid, onOrdered }: { patientId: string; udid
 
   useEffect(() => {
     if (!open || target) return;
-    void getPatientLatestVisit(patientId).then(setTarget).catch(() => setError("Could not find a visit to order on."));
+    void getPatientLatestVisit(patientId).then((v) => (v ? setTarget(v) : setError("This patient has no visit of yours to order on."))).catch(() => setError("Could not find a visit to order on."));
   }, [open, target, patientId]);
 
   useEffect(() => {

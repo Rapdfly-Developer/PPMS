@@ -8,7 +8,7 @@ import { writeAudit } from "@/lib/audit";
 import Anthropic from "@anthropic-ai/sdk";
 import { formatComplaintDisplay } from "@/lib/appointment-cc";
 import { istTodayRange, istTodayStr } from "@/lib/ist";
-import { patientRecordScope } from "@/lib/patient-access";
+import { patientRecordScope, visitRecordScope } from "@/lib/patient-access";
 import { getStaffHospitalId } from "@/lib/booking-scope";
 import { getNoShowRegistry, noShowScopeFor } from "@/lib/noShowRegistry";
 import { isAppointmentSessionClosed, isAppointmentSessionOver } from "@/lib/sessionClose";
@@ -547,9 +547,12 @@ export async function transferPatient(patientId: string, toHospitalId: string, r
 
 /** The visit new investigation orders from the patient profile are added to: the latest one. */
 export async function getPatientLatestVisit(patientId: string) {
-  await requireAnyPermission("investigations.view");
+  const user = await requireAnyPermission("investigations.view");
+  // The latest visit this user may order on (own visits for a doctor, own hospital for staff)
+  const scope = await visitRecordScope(user);
+  if (!scope) return null;
   const v = await prisma.visit.findFirst({
-    where: { patientId },
+    where: { patientId, ...scope },
     orderBy: { date: "desc" },
     select: { id: true, date: true },
   });
