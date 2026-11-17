@@ -15,7 +15,7 @@ const rupees = (n: unknown) => (typeof n === "number" ? `₹${n.toLocaleString("
 const day = (v: unknown) => {
   if (!v) return null;
   const d = new Date(String(v));
-  return isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  return isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 };
 
 export async function getCounsellingActivity(input: {

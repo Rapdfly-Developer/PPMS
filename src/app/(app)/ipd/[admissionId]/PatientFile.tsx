@@ -33,6 +33,7 @@ import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
 import { OtNotesView } from "./OtNotesView";
 import type { OtNotesCopy } from "@/lib/ot";
+import { WeekdayHint } from "@/components/ui/WeekdayHint";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -79,7 +80,9 @@ export interface FileData {
   payment: { type: string | null; mode: string | null; scheme: string | null; policy: string | null; eligibleBy: string | null; eligibleAt: string | null } | null;
   forms: FormRow[];
   defaults: Record<string, unknown>;
-  orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
+  orders: FileInfo["orders"];
+  /** The patient's latest EMR drug allergy (Counselling edits included). */
+  drugAllergy: { text: string; nkda: boolean };
   doctorNotes: { id: string; text: string; by: string; at: string }[];
   activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
   me: string;
@@ -91,8 +94,8 @@ export interface FileData {
 export interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean; ot?: boolean }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "-");
-const fmtTime = (iso: string) => format(new Date(iso), "d MMM yyyy, h:mm a");
+const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : "-");
+const fmtTime = (iso: string) => format(new Date(iso), "EEE, d MMM yyyy, h:mm a");
 const istInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "");
 
 const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-75 disabled:cursor-not-allowed";
@@ -536,7 +539,7 @@ function DetailsDialog({ d, onClose, onDone }: { d: FileData; onClose: () => voi
         <div><label className={labelCls}>Ward No.</label><input value={ward} onChange={(e) => setWard(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>Floor No.</label><input value={floor} onChange={(e) => setFloor(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>File No.</label><input value={fileNo} onChange={(e) => setFileNo(e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Expected Discharge</label><input type="date" value={edd} min={istInput(d.admittedOn)} onChange={(e) => setEdd(e.target.value)} className={inputCls} /></div>
+        <div><label className={labelCls}>Expected Discharge</label><div className="flex items-center gap-2"><input type="date" value={edd} min={istInput(d.admittedOn)} onChange={(e) => setEdd(e.target.value)} className={inputCls} /><WeekdayHint value={edd} /></div></div>
         <div className="col-span-2">
           <label className={labelCls}>Ward Type</label>
           <div className="flex flex-wrap gap-2">
@@ -760,6 +763,16 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
               {/* Patient first; then the document's title (eye + surgery + implant + anaesthesia), ward / file / floor, admission type */}
               <p className="text-sm text-[var(--color-ink-600)]">
                 <span className="font-semibold text-[var(--color-ink-900)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
+                {/* Drug allergy, as in the EMR banner */}
+                {d.drugAllergy.nkda ? (
+                  <span className="ml-2 inline-flex items-center gap-1 align-middle text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <CheckCircle2 size={10} />NKDA
+                  </span>
+                ) : d.drugAllergy.text ? (
+                  <span className="ml-2 inline-flex items-center gap-1 align-middle text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                    <AlertTriangle size={10} />{d.drugAllergy.text.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(", ")}
+                  </span>
+                ) : null}
               </p>
               <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-0.5">{title}</p>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">

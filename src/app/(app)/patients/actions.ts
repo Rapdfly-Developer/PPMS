@@ -545,6 +545,17 @@ export async function transferPatient(patientId: string, toHospitalId: string, r
 
 // ── Patient History Drawers ──────────────────────────────────────────────────
 
+/** The visit new investigation orders from the patient profile are added to: the latest one. */
+export async function getPatientLatestVisit(patientId: string) {
+  await requireAnyPermission("investigations.view");
+  const v = await prisma.visit.findFirst({
+    where: { patientId },
+    orderBy: { date: "desc" },
+    select: { id: true, date: true },
+  });
+  return v ? { id: v.id, date: v.date.toISOString() } : null;
+}
+
 export async function getPatientInvestigations(patientId: string) {
   await requireAnyPermission("investigations.view");
   const visits = await prisma.visit.findMany({

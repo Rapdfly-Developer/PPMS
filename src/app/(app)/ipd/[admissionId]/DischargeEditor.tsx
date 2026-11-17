@@ -6,6 +6,7 @@ import { fileHref } from "@/lib/file-href";
 import { ChipRow, SuggestField } from "./customOptions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { DISCHARGE_TYPES, courseFromNotes, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
+import { WeekdayHint } from "@/components/ui/WeekdayHint";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
 
@@ -26,7 +27,7 @@ export interface DischargeContext {
 }
 
 const rows = (s: string, min = 2) => Math.max(min, Math.min(12, s.split("\n").length + 1));
-const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000);
 const plusDays = (n: number) => { const d = istToday(); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const plusMonths = (n: number) => { const d = istToday(); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
@@ -59,6 +60,7 @@ function Field({ label, value, onChange, editable, type = "text", placeholder, c
     <div className={`flex items-center gap-2 min-w-0 ${className ?? ""}`}>
       <label className={labelIn}>{label}</label>
       <input type={type} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} placeholder={editable ? placeholder : "-"} className={`${inputCls} flex-1`} />
+      {type === "date" && <WeekdayHint value={value} />}
     </div>
   );
 }

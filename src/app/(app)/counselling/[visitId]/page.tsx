@@ -5,7 +5,7 @@ import { visitRecordScope } from "@/lib/patient-access";
 import { counsellingStatus, parsePaymentDocs, SUPERSEDED } from "@/lib/counselling";
 import { getCounsellingActivity } from "@/lib/counselling-activity";
 import { CounsellingDetail, type CounsellingDetailData } from "./CounsellingDetail";
-import { defaultConsents, defaultEducation, upgradeConsents, type FormContext } from "@/lib/ipd-forms";
+import { completeEducation, defaultConsents, defaultEducation, upgradeConsents, type FormContext } from "@/lib/ipd-forms";
 import { parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 
@@ -31,6 +31,7 @@ export default async function CounsellingVisitPage({
       advisedSurgeryName: true,
       advisedSurgeryEye: true,
       advisedSurgeryAnaesthesia: true,
+      advisedSurgeryImplant: true,
       advisedSurgeryDate: true,
       advisedSurgeryNotes: true,
       patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
@@ -88,13 +89,13 @@ export default async function CounsellingVisitPage({
     patientName: visit.patient.name, age: visit.patient.age, sex: visit.patient.sex,
     patientId: visit.patient.uhid ?? visit.patient.udid ?? visit.patient.id,
     hospital: visit.hospital.name, doctor: visit.doctor.name,
-    surgery: visit.advisedSurgeryName, eye: visit.advisedSurgeryEye, implant: rec?.implant ?? null,
+    surgery: visit.advisedSurgeryName, eye: visit.advisedSurgeryEye, implant: rec?.implant ?? visit.advisedSurgeryImplant ?? null,
     anaesthesia: visit.advisedSurgeryAnaesthesia,
     surgeryDate: (rec?.dateOfSurgery ?? visit.advisedSurgeryDate)?.toISOString() ?? null, type: "PRE_OP",
   };
   const ownerId = user.role === "DOCTOR" ? user.profileId : await getOwnerDoctorId(user.id);
   const templates = ownerId
-    ? (await prisma.ipdTemplate.findMany({ where: { doctorId: ownerId, kind: "EDUCATION" }, orderBy: { updatedAt: "desc" } })).map((t) => {
+    ? (await prisma.ipdTemplate.findMany({ where: { doctorId: ownerId, kind: { in: ["EDUCATION", "EDUCATION_PRE"] } }, orderBy: { updatedAt: "desc" } })).map((t) => {
         let items: string[] = [];
         try { const x = JSON.parse(t.items); if (Array.isArray(x)) items = x.filter((i): i is string => typeof i === "string"); } catch { /* ignore */ }
         return { id: t.id, kind: t.kind, name: t.name, surgery: t.surgery, items };
@@ -130,7 +131,7 @@ export default async function CounsellingVisitPage({
     })),
     status: counsellingStatus(rec),
     rec: {
-      implant: rec?.implant ?? "",
+      implant: rec?.implant ?? visit.advisedSurgeryImplant ?? "",
       dateOfSurgery: (rec?.dateOfSurgery ?? visit.advisedSurgeryDate)?.toISOString() ?? null,
       paymentMode: rec?.paymentMode ?? "",
       paymentType: rec?.paymentType ?? "",
@@ -166,7 +167,7 @@ export default async function CounsellingVisitPage({
       templates,
       implant: parseCounsellingImplant(rec?.implantDetails),
       consents: upgradeConsents(parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx), ctx),
-      education: parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx),
+      education: completeEducation(parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx), ctx),
     },
   };
 

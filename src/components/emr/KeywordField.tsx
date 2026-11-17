@@ -493,6 +493,7 @@ export function KeywordInput({
   className,
   builtIns,
   legacyKeys,
+  compact = false,
 }: {
   fieldKey: string;
   value: string;
@@ -504,6 +505,8 @@ export function KeywordInput({
   /** Older localStorage keys whose keywords should be folded into this field. */
   legacyKeys?: readonly string[];
   className?: string;
+  /** One line only: the suggestions still drop down, but no keyword chips row below. */
+  compact?: boolean;
 }) {
   const [tick, setTick] = useState(0);
   const suggest = useKeywordSuggest({ fieldKey, value, onChange, builtIns, onSaved: () => setTick((t) => t + 1) });
@@ -530,7 +533,7 @@ export function KeywordInput({
       />
       {!disabled && suggest.menu}
       </div>
-      {!disabled && (
+      {!disabled && !compact && (
         <div data-overview-hide className="flex flex-wrap items-center gap-1.5">
           <AddKeywordButton getValue={() => value} fieldKey={fieldKey} builtIns={builtIns} onRefresh={() => setTick((t) => t + 1)} />
           <KeywordChips key={tick} fieldKey={fieldKey} builtIns={builtIns} legacyKeys={legacyKeys} typed={value} onAppend={(kw) => onChange(appendKeywordAsBullet(value, kw))} onRemoveFromText={(kw) => onChange(removeKeywordFromText(value, kw))} disabled={false} />

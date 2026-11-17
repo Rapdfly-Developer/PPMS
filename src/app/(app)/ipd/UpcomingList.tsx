@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { User, X, Eye, CalendarClock } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { CASHLESS_TYPES, LATERALITY_LABEL, paymentLabel } from "@/lib/counselling";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
 export interface UpcomingRow {
   visitId: string;
@@ -31,7 +32,7 @@ export interface UpcomingRow {
 }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
 const rupees = (n: number | null) => (n != null ? `₹ ${n.toLocaleString("en-IN")}` : null);
 
 function paymentText(r: UpcomingRow) {
@@ -66,9 +67,7 @@ function SurgeryCell({ r }: { r: UpcomingRow }) {
   if (!r.surgery) return <span className="italic text-caption text-[var(--color-ink-300)]">-</span>;
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] break-words">
-      {r.laterality && <span className="clinical-laterality mr-1">{r.laterality}</span>}
-      {r.surgery}
-      {r.anaesthesia && <span className="block text-caption font-normal text-[var(--color-ink-500)]">{r.anaesthesia}</span>}
+      <SurgeryInline eye={r.laterality} surgery={r.surgery} anaesthesia={r.anaesthesia} />
     </span>
   );
 }

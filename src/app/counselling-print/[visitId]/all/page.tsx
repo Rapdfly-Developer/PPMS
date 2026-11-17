@@ -6,11 +6,12 @@ import { LATERALITY_LABEL, CASHLESS_TYPES, paymentLabel, parsePaymentDocs, impla
 import { implantFieldsFor } from "@/lib/counselling-sheets";
 import { loadCounsellingPrint, SEX } from "../load";
 import { EducationPrintBody } from "../../EducationPrintBody";
+import { surgeryText } from "@/components/ui/SurgeryInline";
 
 export const metadata = { title: "Counselling" };
 
 const rupees = (n: unknown) => (n == null ? "" : `Rs. ${Number(n).toLocaleString("en-IN")}`);
-const day = (d: Date | string | null | undefined) => (d ? format(new Date(d), "d MMM yyyy") : "");
+const day = (d: Date | string | null | undefined) => (d ? format(new Date(d), "EEE, d MMM yyyy") : "");
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -32,7 +33,7 @@ function H2({ children }: { children: React.ReactNode }) {
  */
 export default async function CounsellingAllPrintPage({ params, searchParams }: {
   params: Promise<{ visitId: string }>;
-  searchParams: Promise<{ print?: string; s?: string; i?: string; e?: string; c?: string | string[] }>;
+  searchParams: Promise<{ print?: string; s?: string; i?: string; e?: string; d?: string; c?: string | string[] }>;
 }) {
   const { visitId } = await params;
   const q = await searchParams;
@@ -42,7 +43,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
   const chosenConsents = consents.items.filter((c) => consentIds.includes(c.id));
 
   const hospital = { name: v.hospital.name, logoUrl: v.hospital.logoUrl, address: v.hospital.address, contact: v.hospital.contact, email: v.hospital.email };
-  const procedure = [ctx.eye, ctx.surgery].filter(Boolean).join(" ");
+  const procedure = surgeryText(ctx.eye, ctx.surgery, ctx.anaesthesia);
   const baseBoxes: [string, string][] = [
     ["Patient", ctx.patientName],
     ["Age / Gender", `${ctx.age} yrs / ${SEX[ctx.sex] ?? ctx.sex}`],
@@ -63,13 +64,11 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Surgical Counselling" title="Counselling Sheet" dateText={`Date: ${format(new Date(), "d MMM yyyy")}`} boxes={baseBoxes} />
+            kicker="Surgical Counselling" title="Counselling Sheet" dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
           <H2>Surgery</H2>
           <table className="w-full border-collapse text-[12px]">
             <tbody>
-              <Row label="Surgery" value={v.advisedSurgeryName} />
-              <Row label="Eye" value={v.advisedSurgeryEye ? LATERALITY_LABEL[v.advisedSurgeryEye] ?? v.advisedSurgeryEye : ""} />
-              <Row label="Anaesthesia" value={v.advisedSurgeryAnaesthesia} />
+              <Row label="Surgery" value={surgeryText(v.advisedSurgeryEye ? LATERALITY_LABEL[v.advisedSurgeryEye] ?? v.advisedSurgeryEye : "", v.advisedSurgeryName, v.advisedSurgeryAnaesthesia)} />
               {v.advisedSurgeryNotes?.trim() && <Row label="Surgery notes" value={v.advisedSurgeryNotes} />}
               <Row label="Type of implant" value={rec?.implant} />
               <Row label="Tentative date" value={day(rec?.dateOfSurgery ?? v.advisedSurgeryDate)} />
@@ -126,7 +125,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Surgical Counselling" title="Investigations" dateText={`Date: ${format(new Date(), "d MMM yyyy")}`} boxes={baseBoxes} />
+            kicker="Surgical Counselling" title="Investigations" dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
           {orders.length === 0 ? (
             <p className="mt-4 text-[12.5px]">No investigations ordered.</p>
           ) : (
@@ -165,7 +164,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Informed Consent" title={c.title} dateText="Date: ____________"
+            kicker="Informed Consent" title={c.title} dateText="Date: ____________" bleed="7mm"
             boxes={[
               ["Patient", ctx.patientName],
               ["Age / Gender", `${ctx.age} yrs / ${SEX[ctx.sex] ?? ctx.sex}`],
@@ -173,7 +172,6 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
               ["Hospital No.", pid],
               ["Procedure", procedure],
               ["Surgeon", `Dr. ${ctx.doctor}`],
-              ["Anaesthesia", ctx.anaesthesia ?? ""],
             ]} />
           <ConsentPrintBody c={c} doctor={ctx.doctor} qualifications={v.doctor.qualifications} />
         </>
@@ -181,14 +179,15 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
     });
   }
 
-  if (q.e === "1") {
+  if (q.e === "1" || q.d === "1") {
+    const part = q.e === "1" && q.d === "1" ? undefined : q.e === "1" ? "education" as const : "diet" as const;
     pages.push({
       key: "edu",
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Before your operation" title="Patient Education & Diet" dateText={`Date: ${format(new Date(), "d MMM yyyy")}`} boxes={baseBoxes} />
-          <EducationPrintBody e={education} />
+            kicker="Before your operation" title={part === "education" ? "Patient Education" : part === "diet" ? "Diet" : "Patient Education & Diet"} dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
+          <EducationPrintBody e={education} surgeryDate={ctx.surgeryDate} part={part} />
         </>
       ),
     });
@@ -202,7 +201,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
         {pages.length === 0 && <p className="text-center text-sm text-gray-500">Nothing chosen to print.</p>}
         {pages.map((p, n) => (
           <div key={p.key}
-            className={`mx-auto w-[210mm] max-w-full bg-white pt-0 shadow-sm print:shadow-none print:w-auto text-black ${n > 0 ? "break-before-page" : ""} ${
+            className={`cp-print mx-auto w-[210mm] max-w-full bg-white pt-0 shadow-sm print:shadow-none print:w-auto text-black ${n > 0 ? "break-before-page" : ""} ${
               p.consent ? `px-[7mm] pb-[10mm] print:pb-0 flex flex-col box-border ${CONSENT_PAGE_MIN_H}` : "px-[14mm] pb-[12mm] print:py-0"
             }`}
             style={{ fontFamily: "Arial, Helvetica, sans-serif" }}>

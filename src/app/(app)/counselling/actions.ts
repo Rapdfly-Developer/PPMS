@@ -9,6 +9,7 @@ import { istDateTime, istDayRange, istTodayStr } from "@/lib/ist";
 import { reportsValidUntil, surgeryLine, SUPERSEDED } from "@/lib/counselling";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
+import { saveDrugAllergy, syncConsentsToIpd, syncImplantName, syncImplantToIpd } from "@/lib/care-sync";
 
 type Result = { error?: string };
 
@@ -32,6 +33,10 @@ async function loadVisit(visitId: string, ...permissions: string[]) {
 function refresh(visitId: string) {
   revalidatePath("/counselling");
   revalidatePath(`/counselling/${visitId}`);
+  revalidatePath("/emr/[udid]", "page");
+  // Reports, implant and consents are shared with the patient page and IPD
+  revalidatePath("/patients/[udid]", "page");
+  revalidatePath("/ipd", "layout");
 }
 
 /** "YYYY-MM-DD" (IST) → start of that IST day; "" → null. */
@@ -86,7 +91,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (rec?.fitForSurgery && dateChanged) {
     if (!nextDate) return { error: "The surgery date is required after Eligibility for surgery." };
     if (rec.reportsValidUntil && nextDate > rec.reportsValidUntil) {
-      return { error: `The reports are valid only till ${rec.reportsValidUntil.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
+      return { error: `The reports are valid only till ${rec.reportsValidUntil.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
     }
   }
 
@@ -147,66 +152,24 @@ export async function saveCounsellingDetails(visitId: string, data: {
   // Consents changed here are carried into the IPD file made from this counselling
   if (data.consents !== undefined) await syncConsentsToIpd(visitId, rec?.consents ?? null, data.consents);
   // Drug allergy entered in Counselling goes into the EMR allergies of this
-  // visit and of the patient's latest visit, so the EMR shows the same
+  // visit and of the patient's latest visit, so the EMR and IPD show the same
   if (data.allergies !== undefined || data.nkda !== undefined) {
-    const allergies = (data.allergies ?? "").trim().slice(0, 2000);
-    const nkda = !allergies && !!data.nkda;
     const scope = await visitRecordScope(user);
-    const latest = scope
-      ? await prisma.visit.findFirst({ where: { patientId: visit.patientId, ...scope }, orderBy: { date: "desc" }, select: { id: true } })
-      : null;
-    for (const id of [...new Set([visitId, latest?.id].filter((x): x is string => !!x))]) {
-      const ge = await prisma.generalExamination.findUnique({ where: { visitId: id }, select: { allergies: true, nkda: true } });
-      if ((ge?.allergies ?? "").trim() === allergies && !!ge?.nkda === nkda) continue;
-      await prisma.generalExamination.upsert({
-        where: { visitId: id },
-        create: { visitId: id, allergies: allergies || null, nkda },
-        update: { allergies: allergies || null, nkda },
+    if (scope) {
+      await saveDrugAllergy({
+        userId: user.id, patientId: visit.patientId, scope, visitIds: [visitId],
+        allergies: data.allergies ?? "", nkda: !!data.nkda, action: "ALLERGIES_UPDATED_FROM_COUNSELLING", detail: { counsellingVisitId: visitId },
       });
-      await writeAudit(user.id, "GeneralExamination", id, "ALLERGIES_UPDATED_FROM_COUNSELLING", { from: { allergies: ge?.allergies ?? null, nkda: !!ge?.nkda }, to: { allergies: allergies || null, nkda }, counsellingVisitId: visitId });
     }
-    revalidatePath("/emr/[udid]", "page");
   }
+  // Type of Implant is the EMR's advised implant too, and the IPD file's implant
+  if (patch.implant !== undefined && (patch.implant ?? null) !== (rec?.implant ?? null)) {
+    await syncImplantName(visitId, (patch.implant as string | null) ?? null, "COUNSELLING");
+  }
+  // Implant details carried into the IPD Implant form
+  if (data.implantDetails !== undefined && patch.implantDetails !== rec?.implantDetails) await syncImplantToIpd(visitId, data.implantDetails);
   refresh(visitId);
   return {};
-}
-
-type ConsentItemLike = { id: string; title?: string; text?: string; [k: string]: unknown };
-const consentItems = (x: unknown): ConsentItemLike[] => {
-  const items = (x as { items?: unknown } | null)?.items;
-  return Array.isArray(items) ? items.filter((i): i is ConsentItemLike => !!i && typeof (i as ConsentItemLike).id === "string") : [];
-};
-
-/**
- * Bring the IPD Consents form (when the ward has saved one and it isn't frozen)
- * in line with Counselling: wording and titles follow Counselling, consents
- * added here appear, consents deleted here go. The ward's signatures and the
- * consents added only in IPD stay.
- */
-async function syncConsentsToIpd(visitId: string, before: string | null, after: unknown) {
-  const admissions = await prisma.ipdAdmission.findMany({ where: { counsellingVisitId: visitId }, select: { id: true } });
-  if (!admissions.length) return;
-  let prev: unknown = null;
-  try { prev = before ? JSON.parse(before) : null; } catch { /* unreadable */ }
-  const prevIds = new Set(consentItems(prev).map((i) => i.id));
-  const next = consentItems(after);
-  const nextIds = new Set(next.map((i) => i.id));
-  for (const a of admissions) {
-    const form = await prisma.ipdForm.findUnique({ where: { admissionId_key: { admissionId: a.id, key: "consents" } } });
-    if (!form || form.frozen) continue; // not saved yet: IPD already starts from Counselling
-    let data: { items?: unknown; [k: string]: unknown } = {};
-    try { data = JSON.parse(form.data); } catch { continue; }
-    const ipd = consentItems(data);
-    const byId = new Map(ipd.map((i) => [i.id, i]));
-    const items = [
-      // Counselling's consents, in its order, keeping what the ward recorded on them
-      ...next.map((c) => ({ ...(byId.get(c.id) ?? { signed: false }), id: c.id, title: c.title ?? "", text: c.text ?? "", signedFile: c.signedFile ?? undefined })),
-      // Consents added only in IPD (not removed in Counselling)
-      ...ipd.filter((i) => !nextIds.has(i.id) && !prevIds.has(i.id)),
-    ];
-    await prisma.ipdForm.update({ where: { id: form.id }, data: { data: JSON.stringify({ ...data, items }) } });
-  }
-  revalidatePath(`/ipd`, "layout");
 }
 
 // ── E. Fit for surgery ──────────────────────────────────────────────────────
@@ -452,10 +415,10 @@ const REPORT_PERMS = ["counselling.reports", "emr.edit", "emr.labReports.upload"
 
 type OrderRow = NonNullable<Awaited<ReturnType<typeof prisma.investigationOrder.findFirst>>>;
 
-/** An order of this counselling visit whose report can still be changed here. */
+/** Any of this patient's orders (from any visit) whose report can be changed here. */
 async function editableOrder(visitId: string, orderId: string): Promise<{ error: string } | { user: { id: string }; order: OrderRow }> {
   const { user, visit } = await loadVisit(visitId, ...REPORT_PERMS);
-  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visitId: visit.id, status: { not: SUPERSEDED } } });
+  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visit: { patientId: visit.patientId }, status: { not: SUPERSEDED } } });
   if (!order) return { error: "Order not found." };
   return { user, order };
 }

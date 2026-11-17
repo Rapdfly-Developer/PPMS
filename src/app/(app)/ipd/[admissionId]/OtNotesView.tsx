@@ -8,7 +8,7 @@ import { isOtNotesCopy, type OtNotesCopy } from "@/lib/ot";
 import type { OtNotesData } from "@/lib/ipd-forms";
 import { OtNotesForm, type FileInfo } from "./IpdForms";
 
-const t = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : "-");
+const t = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy, h:mm a") : "-");
 
 export function OtResultBanner({ value }: { value: OtNotesCopy }) {
   const times = value.times ?? { shiftedToOt: null, begun: null, anaesthesia: null, ended: null, aborted: null };

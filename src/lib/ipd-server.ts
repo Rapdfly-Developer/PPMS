@@ -23,7 +23,7 @@ const STAGE = (r: { eligibleForSurgery: boolean; fitForSurgery: boolean; surgery
  */
 export async function counsellingSheetFor(patientId: string, scope: Prisma.VisitWhereInput): Promise<CounsellingSheet | null> {
   const select = {
-    id: true, advisedSurgeryName: true, advisedSurgeryEye: true, advisedSurgeryAnaesthesia: true, advisedSurgeryDate: true,
+    id: true, advisedSurgeryName: true, advisedSurgeryEye: true, advisedSurgeryAnaesthesia: true, advisedSurgeryDate: true, advisedSurgeryImplant: true,
     counsellingRecord: { select: { implant: true, dateOfSurgery: true, eligibleForSurgery: true, fitForSurgery: true, surgeryDeferred: true } },
   } as const;
   const base = { ...scope, patientId, finalizedAt: { not: null }, surgeryAdvised: true, advisedSurgeryName: { not: null } };
@@ -35,7 +35,7 @@ export async function counsellingSheetFor(patientId: string, scope: Prisma.Visit
     visitId: v.id,
     surgery: v.advisedSurgeryName ?? "",
     laterality: v.advisedSurgeryEye,
-    implant: v.counsellingRecord?.implant ?? null,
+    implant: v.counsellingRecord?.implant ?? v.advisedSurgeryImplant ?? null,
     anaesthesia: v.advisedSurgeryAnaesthesia,
     date: (v.counsellingRecord?.dateOfSurgery ?? v.advisedSurgeryDate)?.toISOString() ?? null,
     stage: STAGE(v.counsellingRecord),

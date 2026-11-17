@@ -11,20 +11,22 @@ const exact = { printColorAdjust: "exact", WebkitPrintColorAdjust: "exact" } as 
 
 export interface PrintHospital { name: string; logoUrl: string | null; address: string | null; contact: string | null; email: string | null }
 
-export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dateText, boxes, badge }: {
+export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dateText, boxes, badge, bleed = "14mm" }: {
   hospital: PrintHospital; doctor: string; specialty: string | null; title: string; kicker: string; dateText: string;
   boxes: [string, string][];
   /** Optional tag under the date (e.g. signed / draft). */
   badge?: React.ReactNode;
+  /** The page's side padding: the accent line and band reach the page edges (consents use 7mm). */
+  bleed?: string;
 }) {
   const logo = hospital.logoUrl ? (fileHref(hospital.logoUrl) ?? hospital.logoUrl) : null;
   return (
     <div style={{ fontFamily: "Inter, Arial, Helvetica, sans-serif" }}>
       {/* Brand accent line (full page width) */}
-      <div style={{ margin: "0 -14mm", height: 4, background: `linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%)`, ...exact }} />
+      <div style={{ margin: `0 -${bleed}`, height: 4, background: `linear-gradient(90deg,${INK} 0%,${BRAND} 50%,${MINT} 100%)`, ...exact }} />
 
       {/* Header band (full page width) */}
-      <div style={{ margin: "0 -14mm", padding: "10px 14mm 10px", background: "#DCEFEC", ...exact }}>
+      <div style={{ margin: `0 -${bleed}`, padding: `10px ${bleed} 10px`, background: "#DCEFEC", ...exact }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", alignItems: "flex-start", gap: 18 }}>
           {/* Left: logo card + hospital */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12, minWidth: 0 }}>
@@ -73,7 +75,7 @@ export function IpdPrintHeader({ hospital, doctor, specialty, title, kicker, dat
       </div>
 
       {/* Divider */}
-      <div style={{ margin: "0 -14mm 8px", height: 1, background: RULE, ...exact }} />
+      <div style={{ margin: `0 -${bleed} 8px`, height: 1, background: RULE, ...exact }} />
 
       {/* Patient band: ruled grid, label over value, four per row */}
       <div style={{ borderTop: `2px solid ${BRAND}`, borderBottom: `1px solid ${RULE}`, marginBottom: 8, ...exact }}>

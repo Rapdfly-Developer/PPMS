@@ -19,7 +19,7 @@ const ACCENT = "#0f5f5c";
 const TEXT = "#111111", RULE = "#404040", SHADE = "#D4D4D4", TINT = "#E6EFEE", ALERT = "#991B1B";
 const exact = "[print-color-adjust:exact] [-webkit-print-color-adjust:exact]";
 const day = (s?: string | null) =>
-  s ? new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
+  s ? new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
 const dateTime = (s: string) =>
   new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };

@@ -13,6 +13,7 @@ import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
 import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, wardTypeText, type IpdStatus } from "@/lib/ipd";
 import { UpcomingList, type UpcomingRow } from "./UpcomingList";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
 export interface IpdRow {
   id: string;
@@ -57,7 +58,7 @@ const STATUS_PILL: Record<IpdStatus, string> = {
 };
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
 
 /** Which Today tab a patient in the ward belongs to. */
 function tabOf(r: IpdRow): Tab {
@@ -101,11 +102,8 @@ function SurgeryText({ r }: { r: IpdRow }) {
   if (!r.surgery) return <span className="text-label sm:text-sm text-[var(--color-ink-600)]">{admissionTypeText(r.type, r.typeOther)}</span>;
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] break-words">
-      {r.laterality && <span className="clinical-laterality mr-1">{r.laterality}</span>}
-      {r.surgery}
-      {(r.implant || r.anaesthesia) && (
-        <span className="block text-caption font-normal text-[var(--color-ink-500)]">{[r.implant, r.anaesthesia].filter(Boolean).join(" · ")}</span>
-      )}
+      <SurgeryInline eye={r.laterality} surgery={r.surgery} anaesthesia={r.anaesthesia} />
+      {r.implant && <span className="block text-caption font-normal text-[var(--color-ink-500)]">{r.implant}</span>}
     </span>
   );
 }
@@ -423,7 +421,7 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
       <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
         {card === "TODAY"
           ? `${inHouse.length} in the hospital`
-          : calDay ? `Admitted or discharging on ${format(calDay, "d MMM yyyy")}` : `Admitted or discharging in ${format(month, "MMMM yyyy")}`}
+          : calDay ? `Admitted or discharging on ${format(calDay, "EEE, d MMM yyyy")}` : `Admitted or discharging in ${format(month, "MMMM yyyy")}`}
         {" · "}showing {activeList.length}
       </p>
 

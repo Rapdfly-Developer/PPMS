@@ -17,6 +17,7 @@ import { convertNotesToCC } from "@/lib/appointment-cc";
 import { canRecordRefraction } from "@/lib/refraction-access";
 import { medicationLaterality } from "@/lib/medication-laterality";
 import { counsellingSheetFor } from "@/lib/ipd-server";
+import { syncImplantName } from "@/lib/care-sync";
 
 async function assertVisitAccess(visitId: string) {
   const user = await requireUser();
@@ -116,6 +117,16 @@ function revalidate(udid: string) {
 // Defer it to after the response is sent so the "Saved" indicator appears faster.
 function revalidateAfter(udid: string) {
   after(() => revalidate(udid));
+}
+
+/** Investigations are one list for the patient: the EMR, the patient page,
+ *  Counselling, IPD and OT all show it, so refresh every one of them. */
+function revalidateInvestigations(udid: string) {
+  revalidate(udid);
+  revalidatePath(`/patients/${udid}`);
+  revalidatePath("/counselling", "layout");
+  revalidatePath("/ipd", "layout");
+  revalidatePath("/ot", "layout");
 }
 
 // ── Persistent consultation / refraction clocks ─────────────────────────
@@ -479,7 +490,7 @@ export async function addInvestigationOrder(
   }
   await prisma.investigationOrder.create({ data: { visitId, ...data } });
   await writeAudit(user.id, "InvestigationOrder", visitId, "ADD", data);
-  revalidate(udid);
+  revalidateInvestigations(udid);
 }
 
 /** An investigation is frozen 2 months after it was ordered: no more changes, on any page. */
@@ -496,7 +507,7 @@ export async function deleteInvestigationOrder(id: string, udid: string) {
   if (await isInvestigationFrozen(id)) return;
   await prisma.investigationOrder.delete({ where: { id } });
   await writeAudit(user.id, "InvestigationOrder", id, "DELETE", {});
-  revalidate(udid);
+  revalidateInvestigations(udid);
 }
 
 /**
@@ -515,7 +526,7 @@ export async function updateInvestigationDoctorNotes(id: string, udid: string, d
 
   await prisma.investigationOrder.update({ where: { id }, data: { doctorNotes: doctorNotes || null } });
   await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_DOCTOR_NOTES", { doctorNotes });
-  revalidateAfter(udid);
+  after(() => revalidateInvestigations(udid));
 }
 
 export async function updateInvestigationNotes(id: string, udid: string, notes: string) {
@@ -526,7 +537,7 @@ export async function updateInvestigationNotes(id: string, udid: string, notes: 
 
   await prisma.investigationOrder.update({ where: { id }, data: { notes: notes || null } });
   await writeAudit(user.id, "InvestigationOrder", id, "UPDATE_NOTES", { notes });
-  revalidateAfter(udid);
+  after(() => revalidateInvestigations(udid));
 }
 
 export async function updateInvestigationStatus(id: string, udid: string, status: string) {
@@ -534,7 +545,7 @@ export async function updateInvestigationStatus(id: string, udid: string, status
   if (await isInvestigationFrozen(id)) return;
   await prisma.investigationOrder.update({ where: { id }, data: { status } });
   await writeAudit(user.id, "InvestigationOrder", id, "STATUS", { status });
-  revalidate(udid);
+  revalidateInvestigations(udid);
 }
 
 export async function attachResult(id: string, udid: string, resultRef: string): Promise<{ error?: string }> {
@@ -547,7 +558,7 @@ export async function attachResult(id: string, udid: string, resultRef: string):
     data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" },
   });
   await writeAudit(user.id, "InvestigationOrder", id, "RESULT_ATTACHED", { resultRef });
-  revalidate(udid);
+  revalidateInvestigations(udid);
   return {};
 }
 
@@ -565,7 +576,7 @@ export async function removeResult(id: string, udid: string): Promise<{ error?: 
       : { resultRef: null, resultAt: null, status: "PENDING" },
   });
   await writeAudit(user.id, "InvestigationOrder", id, "RESULT_REMOVED", {});
-  revalidate(udid);
+  revalidateInvestigations(udid);
   return {};
 }
 
@@ -583,7 +594,7 @@ export async function addExtraResult(id: string, udid: string, resultRef: string
     await prisma.investigationOrder.update({ where: { id }, data: { extraResultRefs: JSON.stringify(extras) } });
     await writeAudit(user.id, "InvestigationOrder", id, "RESULT_ADDED", { resultRef });
   }
-  revalidate(udid);
+  revalidateInvestigations(udid);
   return {};
 }
 
@@ -596,7 +607,7 @@ export async function removeExtraResult(id: string, udid: string, resultRef: str
   const extras = parseExtraResults(order.extraResultRefs).filter((x) => x.ref !== resultRef);
   await prisma.investigationOrder.update({ where: { id }, data: { extraResultRefs: extras.length ? JSON.stringify(extras) : null } });
   await writeAudit(user.id, "InvestigationOrder", id, "EXTRA_RESULT_REMOVED", { resultRef });
-  revalidate(udid);
+  revalidateInvestigations(udid);
   return {};
 }
 
@@ -850,8 +861,13 @@ export async function saveSurgicalCounselling(
     advisedSurgeryDate: data.date ? istDayRange(data.date).dayStart : null,
     advisedSurgeryNotes: data.notes.trim() || null,
   };
+  const before = await prisma.visit.findUnique({ where: { id: visitId }, select: { advisedSurgeryImplant: true } });
   await prisma.visit.update({ where: { id: visitId }, data: patch });
   await writeAudit(user.id, "Visit", visitId, "SURGICAL_COUNSELLING_SAVE", patch);
+  // The implant is Counselling's Type of Implant and the IPD file's implant too
+  if ((before?.advisedSurgeryImplant ?? null) !== patch.advisedSurgeryImplant) {
+    await syncImplantName(visitId, patch.advisedSurgeryImplant, "EMR");
+  }
   revalidate(udid);
   revalidatePath("/counselling");
   return {};

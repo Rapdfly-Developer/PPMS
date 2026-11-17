@@ -2,25 +2,44 @@
 
 // Consent tabs, shared by Counselling and the IPD Consents form. Each consent
 // is a soft pill of the same size; × closes (deletes) it after a confirm, and
-// "+ New" at the end adds one by name.
+// "+ New" opens a small menu: a prebuilt consent (with its wording) or a
+// custom one by name.
 
-import { useState } from "react";
-import { FileSignature, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { FileSignature, Plus, Search, Trash2, X } from "lucide-react";
 
 export interface ConsentTab { id: string; label: string; badge?: number }
+export interface ConsentPreset { id: string; title: string; text: string }
 
-export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemove }: {
+export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemove, presets = [] }: {
   items: ConsentTab[];
   active: string;
   onSelect: (id: string) => void;
   editable: boolean;
-  onAdd: (title: string) => void;
+  /** A custom consent (title only), or a prebuilt one (its id and wording). */
+  onAdd: (title: string, preset?: ConsentPreset) => void;
   onRemove: (id: string) => void;
+  /** Prebuilt consents offered by "+ New" (those already on the sheet are hidden). */
+  presets?: ConsentPreset[];
 }) {
-  const [adding, setAdding] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [q, setQ] = useState("");
   const [title, setTitle] = useState("");
   const [confirm, setConfirm] = useState<string | null>(null);
-  const commit = () => { if (title.trim()) onAdd(title.trim()); setTitle(""); setAdding(false); };
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  // Close the menu on an outside click
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => { if (!boxRef.current?.contains(e.target as Node)) { setMenu(false); setQ(""); setTitle(""); } };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menu]);
+
+  const have = new Set(items.map((i) => i.id));
+  const available = presets.filter((p) => !have.has(p.id) && p.title.toLowerCase().includes(q.trim().toLowerCase()));
+  const done = () => { setMenu(false); setQ(""); setTitle(""); };
+  const addCustom = () => { if (title.trim()) { onAdd(title.trim()); done(); } };
 
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-surface-sunken)]/70 p-1.5">
@@ -65,17 +84,43 @@ export function ConsentTabBar({ items, active, onSelect, editable, onAdd, onRemo
           </div>
         );
       })}
-      {editable && (adding ? (
-        <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Consent name, then Enter"
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") { setTitle(""); setAdding(false); } }}
-          onBlur={commit}
-          className="h-9 w-[13rem] rounded-xl border border-[var(--color-primary-300)] bg-white px-3 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
-      ) : (
-        <button type="button" title="Add a consent" onClick={() => setAdding(true)}
-          className="flex h-9 items-center gap-1 rounded-xl border border-dashed border-[var(--color-primary-300)] px-3 text-xs font-semibold text-[var(--color-primary-700)] transition-colors hover:bg-white hover:border-[var(--color-primary-400)]">
-          <Plus size={13} /> New
-        </button>
-      ))}
+      {editable && (
+        <div ref={boxRef} className="relative">
+          <button type="button" title="Add a consent" onClick={() => setMenu((m) => !m)}
+            className={`flex h-9 items-center gap-1 rounded-xl border border-dashed px-3 text-xs font-semibold text-[var(--color-primary-700)] transition-colors hover:bg-white hover:border-[var(--color-primary-400)] ${menu ? "bg-white border-[var(--color-primary-400)]" : "border-[var(--color-primary-300)]"}`}>
+            <Plus size={13} /> New
+          </button>
+          {menu && (
+            <div className="absolute left-0 top-full z-40 mt-1.5 w-80 overflow-hidden rounded-2xl bg-white shadow-[0_16px_40px_-12px_rgba(15,23,42,0.3)] ring-1 ring-black/5">
+              {/* Prebuilt consents, with their wording */}
+              <div className="relative border-b border-[var(--color-border)]/70 p-2">
+                <Search size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)]" />
+                <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search prebuilt consents"
+                  className="h-8 w-full rounded-full border border-[var(--color-border)] bg-white pl-7 pr-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+              </div>
+              <div className="max-h-64 overflow-y-auto py-1">
+                <p className="px-3 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Prebuilt</p>
+                {available.map((p) => (
+                  <button key={p.id} type="button" onClick={() => { onAdd(p.title, p); done(); }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-[var(--color-primary-50)]">
+                    <span className="grid h-5 w-5 shrink-0 place-items-center rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)]"><FileSignature size={11} /></span>
+                    <span className="truncate text-[12.5px] text-[var(--color-ink-800)]">{p.title}</span>
+                  </button>
+                ))}
+                {available.length === 0 && <p className="px-3 py-1.5 text-[12px] text-[var(--color-ink-400)]">{q ? "No matching consent." : "All prebuilt consents are added."}</p>}
+              </div>
+              {/* Or a custom one, by name */}
+              <div className="flex items-center gap-1.5 border-t border-[var(--color-border)]/70 bg-[var(--color-surface-sunken)]/40 p-2">
+                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Custom consent name"
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } if (e.key === "Escape") done(); }}
+                  className="h-8 min-w-0 flex-1 rounded-full border border-[var(--color-border)] bg-white px-3 text-[12.5px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+                <button type="button" disabled={!title.trim()} onClick={addCustom}
+                  className="h-8 shrink-0 rounded-full bg-[var(--color-primary-600)] px-3 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40">Add custom</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

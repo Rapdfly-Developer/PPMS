@@ -1284,3 +1284,49 @@ h1, h2, h3, h4 { text-wrap: balance; }
 }
 .ppms-landing.lp-cursor-on [data-lp-btn]:not([class*="hover:-translate-y"]):hover { translate: 0 -1px; }
 .ppms-landing.lp-cursor-on [data-lp-btn]:not([class*="hover:-translate-y"]):active { translate: 0 0; }
+
+/* Counselling prints: the EMR summary print's look (lib/pdf.ts): Segoe UI,
+   firm black text, small uppercase section labels, open tables with thin
+   row rules instead of boxed cells. */
+.cp-print {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif !important;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #000;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.cp-print * { font-family: inherit !important; }
+.cp-print h2, .cp-print h3 {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+  color: #000 !important;
+  margin: 14px 0 6px !important;
+}
+.cp-print table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.cp-print th, .cp-print td {
+  border: 0 !important;
+  background: transparent !important;
+  padding: 4px 12px 4px 0 !important;
+  font-size: 10.5px !important;
+  line-height: 1.35;
+  vertical-align: top;
+  color: #000;
+}
+.cp-print th {
+  font-size: 8.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #D3E6E2 !important;
+  padding-bottom: 5px !important;
+}
+.cp-print tbody tr + tr td { border-top: 1px solid #D3E6E2 !important; }
+.cp-print td:first-child { font-weight: 600; color: #334155; }
+.cp-print ol, .cp-print ul { font-size: 10.5px !important; line-height: 1.55 !important; }
+.cp-print b, .cp-print strong { font-weight: 700; }
+@media print {
+  .cp-print, .cp-print * { color: #000 !important; }
+}

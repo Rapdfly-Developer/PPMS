@@ -546,7 +546,7 @@ function PresetAppliedBadge({
 }
 
 /* ── Autocomplete drug-name input (used in the preset form) ─────────────────── */
-function DrugNameInput({
+export function DrugNameInput({
   value,
   onChange,
   className,
@@ -641,7 +641,7 @@ function DrugNameInput({
 }
 
 /* ── Generic autocomplete for short option lists (dose, duration) ────────────── */
-function OptionsInput({
+export function OptionsInput({
   value,
   options,
   onChange,
@@ -1817,7 +1817,7 @@ const ANESTHESIA_KEYWORDS = [
 ];
 
 // Default keywords for Minor Procedure notes; "+ Keyword" adds the doctor's own.
-const MED_INSTRUCTION_KEYWORDS = [
+export const MED_INSTRUCTION_KEYWORDS = [
   "Shake well before use",
   "Wait 5 minutes between drops",
   "At bedtime",
@@ -2236,10 +2236,10 @@ function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { vi
   );
 }
 
-const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
+export const ROUTE_OPTIONS = ["Topical", "Oral", "IM", "IV", "Subconjunctival", "Intravitreal", "Subtenon"];
 // Systemic routes carry no eye; every other route is given a laterality.
 const NO_LATERALITY_ROUTES = ["Oral", "IV", "IM"];
-const routeHasLaterality = (r: string | null | undefined) => !!r && !NO_LATERALITY_ROUTES.includes(r);
+export const routeHasLaterality = (r: string | null | undefined) => !!r && !NO_LATERALITY_ROUTES.includes(r);
 
 const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
   {
@@ -2269,11 +2269,11 @@ const ADVISE_KEYWORDS: { group: string; items: string[] }[] = [
 ];
 const ALL_ADVISE_KEYWORDS = ADVISE_KEYWORDS.flatMap((group) => group.items);
 
-type TaperLevel = { dose: string; frequency: string; durationNum: string; durationUnit: string };
+export type TaperLevel = { dose: string; frequency: string; durationNum: string; durationUnit: string };
 
-const blankTaper = (): TaperLevel => ({ dose: "", frequency: "", durationNum: "", durationUnit: "days" });
+export const blankTaper = (): TaperLevel => ({ dose: "", frequency: "", durationNum: "", durationUnit: "days" });
 
-function formatTaperSteps(levels: TaperLevel[]): string[] {
+export function formatTaperSteps(levels: TaperLevel[]): string[] {
   return levels
     .filter((l) => l.frequency && l.durationNum)
     .map((l) => `${l.dose.trim() ? `${l.dose.trim()} · ` : ""}${l.frequency} × ${l.durationNum} ${l.durationUnit}`);

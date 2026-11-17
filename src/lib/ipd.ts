@@ -311,7 +311,7 @@ export const DISCHARGE_WARNING_SIGNS =
 const istDay = (d?: Date | string | null) =>
   d ? new Date(new Date(d).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "";
 const dayLabel = (d: Date | string) =>
-  new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
 const parseJson = <T,>(s: string | null | undefined, fallback: T): T => {
   if (!s) return fallback;

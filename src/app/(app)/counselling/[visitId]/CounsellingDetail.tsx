@@ -10,12 +10,11 @@ import {
   Upload, X, AlertTriangle, Info, CalendarClock, IndianRupee, RotateCcw, Search,
   ChevronRight, Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
   MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, ChevronLeft,
-  Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, Trash2, UserX,
+  Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, UserX, Utensils,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
 import { useSidebar } from "@/components/ui/SidebarContext";
-import { printInPlace } from "@/lib/print-in-place";
-import { CONSENT_DECLARATION, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
+import { CONSENT_DECLARATION, educationStage, prebuiltConsents, stagePoints, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
 import { EducationForm, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
 import type { SavedTemplate } from "../../ipd/[admissionId]/templatesUi";
@@ -36,12 +35,16 @@ import {
 } from "../actions";
 import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
 import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
+import { WeekdayHint } from "@/components/ui/WeekdayHint";
+import { SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
+import { PaymentDocs } from "@/components/ui/PaymentDocs";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { STATUS_META } from "../CounsellingClient";
 import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { CounsellingOverview, CounsellingPrintModal } from "./CounsellingPrintOverview";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
 export interface CounsellingOrder {
   id: string;
@@ -132,8 +135,8 @@ const IN_VIEW_OF_SUGGESTIONS = [
   "Bleeding risk",
 ];
 
-const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "—");
-const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : null);
+const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : "-");
+const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy, h:mm a") : null);
 const rupees = (n: number | null) => (n == null ? "—" : `₹${n.toLocaleString("en-IN")}`);
 
 /** Custom implants are remembered per surgery, so they only come back for that surgery. */
@@ -167,82 +170,6 @@ function AutoGrowTextarea({ value, onChange, placeholder, className }: { value: 
     el.style.height = `${el.scrollHeight + 2}px`;
   }, [value]);
   return <textarea ref={ref} rows={4} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={className} />;
-}
-
-/** The uploaded signed consent, shown large: an image in full width, a PDF in a tall viewer. */
-function SignedConsentView({ file, title }: { file: { ref: string; name: string; at: string }; title: string }) {
-  const url = fileHref(file.ref)!;
-  const isPdf = /\.pdf(\?|$)/i.test(file.ref) || /\.pdf$/i.test(file.name);
-  const isImg = /\.(png|jpe?g|webp|gif)(\?|$)/i.test(file.ref) || /\.(png|jpe?g|webp|gif)$/i.test(file.name);
-  return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
-        <span className="inline-flex items-center gap-1.5 font-semibold"><CheckCircle2 size={14} /> Signed consent uploaded</span>
-        <span className="text-emerald-700/80">{file.name} · {format(new Date(file.at), "d MMM yyyy, h:mm a")}</span>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50">
-        {isImg ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={`Signed ${title}`} className="mx-auto block max-h-[85vh] w-auto max-w-full object-contain" />
-        ) : isPdf ? (
-          <iframe src={`${url}#view=FitH`} title={`Signed ${title}`} className="block h-[85vh] w-full bg-white" />
-        ) : (
-          <a href={url} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-6 text-sm font-medium text-[var(--color-primary-700)] hover:underline">
-            <FileText size={16} /> Open {file.name}
-          </a>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Upload, replace or remove the signed consent file of the open consent. */
-function SignedConsentUpload({ file, title, onChange }: {
-  file?: { ref: string; name: string; at: string };
-  title: string;
-  onChange: (f: { ref: string; name: string; at: string } | undefined) => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [confirm, setConfirm] = useState(false);
-  const ref = useRef<HTMLInputElement>(null);
-  const upload = async (f: File | undefined) => {
-    if (ref.current) ref.current.value = "";
-    if (!f) return;
-    setBusy(true);
-    setError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", f);
-      const res = await fetch("/api/uploads", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      onChange({ ref: json.url, name: f.name, at: new Date().toISOString() });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/30 p-1.5 pl-3">
-      <input ref={ref} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
-      <Upload size={14} className="shrink-0 text-[var(--color-primary-500)]" />
-      <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
-        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. Saved with the Save button.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above.</>}
-      </p>
-      {error && <span className="text-xs text-red-600">{error}</span>}
-      {file && (confirm ? (
-        <button type="button" onClick={() => { onChange(undefined); setConfirm(false); }} className="h-8 rounded-full bg-red-600 px-3 text-xs font-semibold text-white hover:bg-red-700">Remove file?</button>
-      ) : (
-        <button type="button" onClick={() => setConfirm(true)} className="h-8 inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] bg-white px-3 text-xs font-semibold text-[var(--color-ink-500)] hover:border-red-300 hover:text-red-600"><Trash2 size={12} /> Remove</button>
-      ))}
-      <button type="button" disabled={busy} onClick={() => ref.current?.click()}
-        className="h-8 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60">
-        <Upload size={12} className={busy ? "animate-pulse" : ""} /> {busy ? "Uploading..." : file ? "Replace file" : "Upload signed consent"}
-      </button>
-    </div>
-  );
 }
 
 /* ── Modal shell ─────────────────────────────────────────────────────────── */
@@ -368,11 +295,11 @@ function UploadButton({ visitId, orderId, label, addMore = false, onDone }: { vi
 function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
   order: CounsellingOrder; visitId: string; canUpload: boolean; onView: (url: string) => void; onChanged: () => void;
 }) {
-  // Only this surgery's orders can be changed here
-  const locked = !canUpload || !order.current;
+  // Any of the patient's reports can be changed here (same as the EMR)
+  const locked = !canUpload;
 
   const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
-  const orderedAt = format(new Date(order.createdAt), "dd MMM yyyy, h:mm a");
+  const orderedAt = format(new Date(order.createdAt), "EEE, dd MMM yyyy, h:mm a");
 
   const lateralityBadge = (
     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
@@ -432,7 +359,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
           </div>
           {order.resultAt && (
             <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
-              <Clock size={10} />Uploaded {format(new Date(order.resultAt), "dd MMM yyyy, h:mm a")}
+              <Clock size={10} />Uploaded {format(new Date(order.resultAt), "EEE, dd MMM yyyy, h:mm a")}
             </span>
           )}
         </div>
@@ -458,7 +385,7 @@ function InvestigationsPanel({ data, canUpload, onChanged, action }: { data: Cou
   const grouped = useMemo(() => {
     const map = new Map<string, CounsellingOrder[]>();
     for (const o of data.orders) {
-      const key = format(new Date(o.createdAt), "dd MMM yyyy");
+      const key = format(new Date(o.createdAt), "EEE, dd MMM yyyy");
       map.set(key, [...(map.get(key) ?? []), o]);
     }
     return [...map.entries()];
@@ -536,7 +463,7 @@ function NoShowModal({ pending, error, onClose, newDate, fit, oldestReport, vali
       <div className="space-y-3">
         <div className={`rounded-xl border px-3.5 py-3 ${expiredNow || !validForNew ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
           <p className="text-sm font-semibold text-[var(--color-ink-900)]">
-            The investigations were taken {ago} ago{taken ? ` (${format(taken, "d MMM yyyy")})` : ""}.
+            The investigations were taken {ago} ago{taken ? ` (${format(taken, "EEE, d MMM yyyy")})` : ""}.
           </p>
           {validUntil && (
             <p className={`mt-1 text-caption font-medium ${expiredNow || !validForNew ? "text-red-700" : "text-amber-800"}`}>
@@ -790,66 +717,6 @@ const CASHLESS_ICON: Record<string, React.ReactNode> = {
   OTHER:       <MoreHorizontal size={13} />,
 };
 
-/** Insurance card, pre-authorisation, scheme card or letter: upload, view, remove. Saved with the common Save. */
-function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean; /** Button tooltip. */ hint?: string }) {
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
-  const upload = async (files: FileList | null) => {
-    if (!files?.length) return;
-    setUploading(true);
-    setError("");
-    try {
-      const added: PaymentDoc[] = [];
-      for (const file of Array.from(files)) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/api/uploads", { method: "POST", body: fd });
-        const json = await res.json();
-        if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-        added.push({ ref: json.url, name: file.name, at: new Date().toISOString() });
-      }
-      onChange([...docs, ...added]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
-    }
-  };
-
-  if (button) {
-    if (!editable) return null;
-    return (
-      <span className="relative shrink-0">
-        <input ref={fileRef} type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.docx" className="hidden" onChange={(e) => upload(e.target.files)} />
-        <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-          title={error || hint || `Upload ${typeLabel.toLowerCase()} document (card, pre-authorisation, letter)`}
-          className={`h-8 inline-flex items-center gap-1 px-2.5 rounded-full border border-dashed text-xs font-semibold transition-colors disabled:opacity-50 ${error ? "border-red-300 text-red-600" : "border-[var(--color-primary-400)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]"} bg-white`}>
-          <Upload size={12} className={uploading ? "animate-pulse" : ""} />
-          {uploading ? "..." : "Doc"}
-          {docs.length > 0 && <span className="rounded-full bg-[var(--color-primary-100)] px-1.5 text-[10px] tabular-nums">{docs.length}</span>}
-        </button>
-      </span>
-    );
-  }
-
-  return (
-    <ul className="flex flex-wrap gap-1.5">
-      {docs.map((d) => (
-        <li key={d.ref} className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-2.5 pr-1 py-0.5 text-xs">
-          <FileText size={12} className="shrink-0 text-[var(--color-primary-600)]" />
-          <a href={fileHref(d.ref)!} target="_blank" rel="noreferrer" className="truncate max-w-[220px] font-medium text-[var(--color-ink-700)] hover:text-[var(--color-primary-700)] hover:underline" title={d.name}>{d.name}</a>
-          <span className="text-[10px] text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(d.at), "d MMM")}</span>
-          {editable && (
-            <button type="button" onClick={() => onChange(docs.filter((x) => x.ref !== d.ref))} aria-label={`Remove ${d.name}`}
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-600 transition-colors"><X size={11} /></button>
-          )}
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 function SectionCard({
   id, icon, title, right, locked, lockedText, children,
@@ -1004,7 +871,7 @@ function Banner({ tone, icon, action, children }: { tone: "emerald" | "orange" |
 }
 
 /* ── Main ───────────────────────────────────────────────────────────────── */
-type SheetId = "sheet" | "investigations" | "consents" | "education";
+type SheetId = "sheet" | "investigations" | "consents" | "education" | "diet";
 
 /** Short sub-tab label for a consent (built-in ones by kind, custom ones by title). */
 const consentTabLabel = (c: ConsentItem) => (["General", "GVP", "Anaesthesia", "Negative"].includes(c.id) ? c.id : c.title);
@@ -1100,7 +967,7 @@ export function CounsellingDetail({
   }, [dirty]);
 
   /** Save everything entered on every sheet. Returns an error message, if any. */
-  async function saveAll(): Promise<string | undefined> {
+  async function saveAll(opts?: { preOp?: boolean }): Promise<string | undefined> {
     if (sheetDirty) {
       const r = await saveCounsellingDetails(data.visitId, { ...details, implantDetails: implantInfo, consents, education, ...(allergyChanged ? { allergies, nkda } : {}) });
       if (r.error) return r.error;
@@ -1110,8 +977,8 @@ export function CounsellingDetail({
       const r = await saveAdvance(data.visitId, advancePayload);
       if (r.error) return r.error;
     }
-    // Books, moves or cancels the pre-op appointment to match what was just saved
-    if (canEdit) {
+    // Books, moves or cancels the pre-op appointment to match what was just saved (not when printing)
+    if (canEdit && opts?.preOp !== false) {
       const r = await savePreOp(data.visitId, preOpTime);
       if (r.error) return r.error;
     }
@@ -1158,19 +1025,28 @@ export function CounsellingDetail({
   const consentMissing = (c: ConsentItem) => [
     !c.signedFile && !c.text.trim() && "Wording",
   ].filter((x): x is string => !!x);
-  const nbm = education.dietTypes.includes("Nil by mouth");
-  const unexplained = education.points.filter((p) => !p.done).length;
-  const noDietMeals = education.meals.filter((m) => !m.diet.trim()).map((m) => m.meal);
-  const educationMissing = [
-    education.points.length === 0 && "Education points",
-    unexplained > 0 && `${unexplained} point${unexplained > 1 ? "s" : ""} not yet explained`,
-    !education.explainedTo && "Explained to",
-    !education.language && "Language",
-    !education.teachBack && "Understanding confirmed (teach-back)",
-    education.dietTypes.length === 0 && "Diet",
-    nbm && !education.nbmFrom && "Nil by mouth from",
-    !nbm && noDietMeals.length > 0 && `Diet for ${noDietMeals.join(", ")}`,
-  ].filter((x): x is string => !!x);
+  // Education and diet are filled for both stages (pre-op and post-op)
+  const eduStages = (["pre", "post"] as const).map((k) => ({ k, label: k === "pre" ? "Pre-op" : "Post-op", st: educationStage(education, k, data.sheets.ctx) }));
+  const educationMissing = eduStages.flatMap(({ label, st }) => {
+    const pts = stagePoints(st);
+    const unexplained = pts.filter((p) => !p.done).length;
+    return [
+      pts.length === 0 && `${label}: education points`,
+      unexplained > 0 && `${label}: ${unexplained} point${unexplained > 1 ? "s" : ""} not yet explained`,
+      !st.explainedTo && `${label}: explained to`,
+      !st.language && `${label}: language`,
+      !st.teachBack && `${label}: understanding confirmed (teach-back)`,
+    ];
+  }).filter((x): x is string => !!x);
+  const dietMissing = eduStages.flatMap(({ label, st }) => {
+    const nbm = st.dietTypes.includes("Nil by mouth");
+    const noDietMeals = st.meals.filter((m) => !m.diet.trim()).map((m) => m.meal);
+    return [
+      st.dietTypes.length === 0 && `${label}: diet`,
+      nbm && !st.nbmFrom && `${label}: nil by mouth from`,
+      !nbm && noDietMeals.length > 0 && `${label}: diet for ${noDietMeals.join(", ")}`,
+    ];
+  }).filter((x): x is string => !!x);
 
   function run(fn: () => Promise<{ error?: string } | void>, after?: () => void) {
     setError("");
@@ -1227,13 +1103,22 @@ export function CounsellingDetail({
     return err ? { error: err } : {};
   }, () => { setModal(null); flashSaved(); });
 
-  /** Save first (so the print shows what is on screen), then print. */
-  const printSaved = (href: string) => run(async () => {
-    const err = await saveAll();
-    if (err) return { error: err };
-    printInPlace(href);
-    return {};
-  });
+  /**
+   * Save first (so the print shows what is on screen), then print. The print
+   * tab is opened on the click itself so the browser does not block it; if the
+   * save fails, the last saved sheets are printed and the reason is shown.
+   */
+  const printSaved = (href: string) => {
+    // A print preview (with its own Print button), not the print dialog straight away
+    const preview = `${href}${href.includes("?") ? "&" : "?"}print=0`;
+    const tab = window.open("about:blank", "_blank");
+    run(async () => {
+      const err = canEdit ? await saveAll({ preOp: false }) : undefined;
+      if (tab && !tab.closed) tab.location.href = preview;
+      else router.push(preview);
+      return err ? { error: `Not saved (${err}). The print shows the last saved sheets.` } : {};
+    });
+  };
 
   const statusLabel = expired ? "Reports Expired" : STATUS_META[data.status].label;
   const daysToSurgery = dateOfSurgery ? differenceInCalendarDays(new Date(`${dateOfSurgery}T00:00:00`), new Date()) : null;
@@ -1245,17 +1130,20 @@ export function CounsellingDetail({
   // The IPD forms take a file context; in Counselling it is this visit
   const formFile: FileInfo = {
     id: data.visitId, me: data.sheets.me, status: "ADMITTED", admittedOn: data.visitDate, surgeryDate: rec.dateOfSurgery,
-    shiftedToOtAt: null, ctx: data.sheets.ctx, orders: [], emrMeds: [], payment: null, templates: data.sheets.templates,
+    // The diet dates follow the tentative date as it is changed here
+    shiftedToOtAt: null, ctx: { ...data.sheets.ctx, surgeryDate: dateOfSurgery || data.sheets.ctx.surgeryDate }, orders: [], emrMeds: [], payment: null, templates: data.sheets.templates,
   };
 
   const activeConsent = consents.items.find((c) => c.id === consentTab) ?? consents.items[0];
   const setConsentItem = (id: string, patch: Partial<ConsentItem>) => setConsents((v) => ({ ...v, items: v.items.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
   const setConsentText = (id: string, text: string) => setConsentItem(id, { text });
-  const addConsent = (name?: string) => {
+  const consentPresets = useMemo(() => prebuiltConsents({ ...data.sheets.ctx, surgeryDate: dateOfSurgery || data.sheets.ctx.surgeryDate }), [data.sheets.ctx, dateOfSurgery]);
+  const addConsent = (name?: string, preset?: { id: string; text: string }) => {
     const title = (name ?? newConsent).trim();
     if (!title) return;
-    const id = `c-${Math.random().toString(36).slice(2, 10)}`;
-    setConsents((v) => ({ ...v, items: [...v.items, { id, title, text: "", signed: false }] }));
+    // A prebuilt consent keeps its own id (so it is offered only once) and wording
+    const id = preset?.id ?? `c-${Math.random().toString(36).slice(2, 10)}`;
+    setConsents((v) => ({ ...v, items: [...v.items, { id, title, text: preset?.text ?? "", signed: false }] }));
     setConsentTab(id);
     setNewConsent("");
   };
@@ -1365,7 +1253,7 @@ export function CounsellingDetail({
           </InlineField>
           )}
           <InlineField label="Tentative Date" tight>
-            <input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} />
+            <div className="flex flex-wrap items-center gap-2"><input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} sm:w-44`} /><WeekdayHint value={dateOfSurgery} /></div>
             {noShow && dateEditable && (
               <p className="mt-1 inline-flex items-center gap-1 text-caption font-medium text-red-600"><UserX size={12} /> No show: the date has passed. Pick a new date and Save.</p>
             )}
@@ -1669,7 +1557,7 @@ export function CounsellingDetail({
               {canFit ? fitPillButton : <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">Awaiting the doctor&apos;s review of the reports.</p>}
               {/* Same Tentative Date as the Counselling Sheet: one value, saved by Save and shown everywhere */}
               <InlineField label="Tentative Date" tight>
-                <input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} !h-8 sm:w-44`} />
+                <div className="flex flex-wrap items-center gap-2"><input type="date" value={dateOfSurgery} min={istTodayStr()} max={!noShow && rec.fitForSurgery && rec.reportsValidUntil ? istTodayStr(new Date(rec.reportsValidUntil)) : undefined} disabled={!dateEditable} onChange={(e) => setDate(e.target.value)} className={`${inputCls} !h-8 sm:w-44`} /><WeekdayHint value={dateOfSurgery} /></div>
               </InlineField>
             </div>
           </div>
@@ -1693,8 +1581,9 @@ export function CounsellingDetail({
         active={activeConsent?.id ?? ""}
         onSelect={setConsentTab}
         editable={sheetsEditable}
-        onAdd={(title) => addConsent(title)}
+        onAdd={(title, preset) => addConsent(title, preset)}
         onRemove={removeConsent}
+        presets={consentPresets}
       />
       {activeConsent ? consentCard(activeConsent) : <p className="text-sm italic text-[var(--color-ink-400)]">No consents. Use + New to add one.</p>}
       {/* Signed consent file for the open consent: once uploaded it replaces the wording */}
@@ -1708,19 +1597,12 @@ export function CounsellingDetail({
     </div>
   );
 
-  /* ── Sheet 4: Patient education & diet (one copy before the operation) ─ */
-  const educationSheet = (
+  /* ── Sheets 4 and 5: Patient education, and Diet (pre-op and post-op each) ─ */
+  const educationPart = (part: "education" | "diet") => (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--color-primary-100)] bg-gradient-to-r from-[var(--color-primary-50)] via-white to-white px-4 py-2.5">
-        <p className="inline-flex items-center gap-2.5 text-xs text-[var(--color-ink-600)]">
-          <span className="w-7 h-7 rounded-xl flex items-center justify-center bg-white text-[var(--color-primary-700)] shadow-sm ring-1 ring-[var(--color-primary-100)]"><BookOpen size={14} /></span>
-          Explain the points, set the diet, then print one copy for the patient before the operation.
-        </p>
-        <button type="button" className={btnPrimary} disabled={pending} onClick={() => printSaved(`/counselling-print/${data.visitId}/education`)}>
-          <Printer size={14} /> Print copy for patient
-        </button>
-      </div>
       <EducationForm
+        key={part}
+        part={part}
         value={education}
         change={setEducation}
         saveNow={async (v) => {
@@ -1733,6 +1615,7 @@ export function CounsellingDetail({
         log={[]}
         f={formFile}
         planOnly
+        onPrint={() => printSaved(`/counselling-print/${data.visitId}/education?part=${part}`)}
       />
     </div>
   );
@@ -1743,7 +1626,8 @@ export function CounsellingDetail({
     { id: "sheet", label: "Counselling Sheet", icon: <ClipboardList size={14} />, badge: badge(sheetMissing.length), content: counsellingSheet },
     { id: "investigations", label: "Investigations", icon: <FlaskConical size={14} />, badge: badge(invMissing.length), content: investigationsSheet },
     { id: "consents", label: "Consents", icon: <FileSignature size={14} />, badge: badge(consents.items.reduce((n, c) => n + consentMissing(c).length, 0)), content: consentsSheet },
-    { id: "education", label: "Education & Diet", icon: <BookOpen size={14} />, badge: badge(educationMissing.length), content: educationSheet },
+    { id: "education", label: "Patient Education", icon: <BookOpen size={14} />, badge: badge(educationMissing.length), content: educationPart("education") },
+    { id: "diet", label: "Diet", icon: <Utensils size={14} />, badge: badge(dietMissing.length), content: educationPart("diet") },
   ];
 
   const desktopSidebarOffset = collapsed
@@ -1939,7 +1823,7 @@ export function CounsellingDetail({
         </div>
         <button type="button" onClick={() => setShowPrint(true)} disabled={pending}
           className="h-10 inline-flex items-center gap-1.5 px-4 rounded-xl text-sm font-medium bg-white border border-[var(--color-border)] hover:border-[var(--color-primary-500)] text-[var(--color-ink-700)] disabled:opacity-50 transition-colors whitespace-nowrap">
-          <Printer size={14} /> Print <ChevronDown size={12} />
+          <Printer size={14} /> Print
         </button>
         {canEdit && (
           <button type="button" onClick={save} disabled={pending || !dirty}
@@ -1956,7 +1840,7 @@ export function CounsellingDetail({
       {showPrint && (
         <CounsellingPrintModal
           visitId={data.visitId} consents={consents.items} hasOrders={currentOrders.length > 0}
-          onPrint={(href) => (canEdit ? printSaved(href) : printInPlace(href))}
+          onPrint={printSaved}
           onClose={() => setShowPrint(false)}
         />
       )}
@@ -1979,7 +1863,7 @@ export function CounsellingDetail({
             {/* Surgery */}
             <ConfirmCard icon={<Scissors size={13} />} title="Surgery">
               <ConfirmLine inline label="Surgery">
-                {data.laterality && <span className="clinical-laterality mr-1">{data.laterality}</span>}{data.surgery}
+                <SurgeryInline eye={data.laterality} surgery={data.surgery} anaesthesia={data.anaesthesia} />
               </ConfirmLine>
               {data.anaesthesia && <ConfirmLine inline label="Anaesthesia">{data.anaesthesia}</ConfirmLine>}
               <ConfirmLine inline label="Implant">{implant || "-"}</ConfirmLine>
@@ -2227,7 +2111,7 @@ function PostponeModal({ pending, error, onClose, onSubmit }: { pending: boolean
   return (
     <Modal title="Surgery Date Not Confirmed" onClose={onClose}>
       <label className={labelCls}>Expected date</label>
-      <input type="date" value={until} min={istTodayStr()} disabled={indefinitely} onChange={(e) => setUntil(e.target.value)} className={inputCls} />
+      <div className="flex flex-wrap items-center gap-2"><input type="date" value={until} min={istTodayStr()} disabled={indefinitely} onChange={(e) => setUntil(e.target.value)} className={inputCls} /><WeekdayHint value={until} /></div>
       <label className="inline-flex items-center gap-2 text-sm text-[var(--color-ink-700)] mt-2">
         <input type="checkbox" checked={indefinitely} onChange={(e) => { setIndefinitely(e.target.checked); if (e.target.checked) setUntil(""); }} className="w-4 h-4 accent-[var(--color-primary-600)]" />
         Not decided yet

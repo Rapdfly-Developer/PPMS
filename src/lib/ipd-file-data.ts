@@ -5,10 +5,11 @@ import type { SessionUser } from "@/lib/rbac";
 import { admissionTypeText, buildDischargeDraft, otTemplateSteps } from "@/lib/ipd";
 import {
   defaultChecklist, defaultConsents, defaultEducation, defaultImplant, defaultNurse, defaultOtNotes, defaultPostOp,
-  defaultTreatment, educationAdvice, isV2, type EducationData, type FormContext,
+  completeEducation, defaultTreatment, educationAdvice, educationStage, isV2, type DrugOrder, type EducationData, type FormContext,
   upgradeConsents,
 } from "@/lib/ipd-forms";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
+import { allergyLine, latestDrugAllergy } from "@/lib/care-sync";
 import { implantFromCounselling, parseCounsellingConsents, parseCounsellingEducation } from "@/lib/counselling-sheets";
 import type { FileData } from "@/app/(app)/ipd/[admissionId]/PatientFile";
 
@@ -51,6 +52,22 @@ const ACTIVITY_TEXT: Record<string, string> = {
   DISCHARGED: "Discharged · summary signed with OTP",
 };
 
+/** Education-sheet medicines as treatment chart orders (pre-op first). */
+function educationDrugs(e: EducationData, ctx: FormContext, admittedOn: Date): DrugOrder[] {
+  const start = new Date(admittedOn.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  const meds = [...(educationStage(e, "pre", ctx).meds ?? []), ...(e.meds ?? [])];
+  const seen = new Set<string>();
+  return meds.filter((m) => {
+    const k = m.name.trim().toLowerCase();
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).map((m) => ({
+    id: `edu-${m.id}`, name: m.name.trim(), dose: m.dose, route: m.route || "Topical", eye: m.eye, frequency: m.frequency,
+    start, orderedBy: "Education sheet", instructions: [m.duration && `For ${m.duration}`, m.instructions].filter(Boolean).join(". "), stopped: false,
+  }));
+}
+
 /** The patient file for an admission in the user's scope, or null. */
 export async function loadIpdFileData(admissionId: string, user: SessionUser, returnTo?: string): Promise<FileData | null> {
   const scope = await visitRecordScope(user);
@@ -83,7 +100,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const orders = await prisma.investigationOrder.findMany({
     where: { visit: { patientId: v.patient.id, ...scope } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, updatedAt: true, createdAt: true },
+    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true },
   });
 
   // EMR details for the discharge draft: the admitting visit first, then the
@@ -109,6 +126,9 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   };
   const vaHas = (r: { re: string | null; le: string | null }) => /\d|PL|HM|CF/.test(`${r.re ?? ""}${r.le ?? ""}`);
   const segHas = (r: { re: string | null; le: string | null }) => /:"[^"]+"/.test(`${r.re ?? ""}${r.le ?? ""}`);
+
+  // Drug allergy: the patient's latest EMR entry (also edits made in Counselling)
+  const drugAllergy = await latestDrugAllergy(v.patient.id, scope);
 
   const counselling = a.counsellingVisitId
     ? await prisma.counsellingRecord.findUnique({
@@ -160,13 +180,14 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   };
   const savedEducation = (() => { const t = a.forms.find((f) => f.key === "education"); const x = t ? parse(t.data) : null; return isV2(x) ? (x as EducationData) : null; })();
   // A Pre-op file starts from the sheets filled at counselling (until the ward saves its own)
-  const education = savedEducation ?? (counselling && parseCounsellingEducation(counselling.education)) ?? defaultEducation(ctx);
+  const education = completeEducation(savedEducation ?? (counselling && parseCounsellingEducation(counselling.education)) ?? defaultEducation(ctx), ctx);
   const defaults: Record<string, unknown> = {
     implant: counselling ? implantFromCounselling(counselling.implantDetails) : defaultImplant(),
     consents: upgradeConsents((counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx), ctx),
     checklist: defaultChecklist(),
     education,
-    treatment: defaultTreatment(),
+    // The treatment chart starts with the medicines added on the education sheet (pre-op, then post-op)
+    treatment: { ...defaultTreatment(), drugs: educationDrugs(education, ctx, a.admittedOn) },
     nurse: defaultNurse(a.admissionType),
     otNotes: defaultOtNotes(ctx, otTemplateSteps(a)),
     postOpNotes: defaultPostOp(),
@@ -181,15 +202,24 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
       pastHistory: firstWith((x) => x.generalExam?.pastMedicalHistory, (t) => t !== "[]"),
       pmhOther: firstWith((x) => x.generalExam?.pmhOtherText, (t) => !!t.trim()),
       familyHistory: firstWith((x) => x.generalExam?.familyHistory, (t) => !!t.trim()),
-      allergies: firstWith((x) => x.generalExam?.allergies, (t) => !!t.trim()),
-      nkda: !!firstWith((x) => (x.generalExam?.nkda ? true : null)),
+      allergies: drugAllergy.text || null,
+      nkda: drugAllergy.nkda,
       va: firstWith((x) => x.visualAcuity, vaHas),
       iop: firstWith((x) => x.iopReadings[0], (r) => r.re != null || r.le != null),
       anterior: firstWith((x) => x.anteriorSegment, segHas),
       posterior: firstWith((x) => x.posteriorSegment, segHas),
       orders: orders.map((o) => ({ id: o.id, testName: o.testName, laterality: o.laterality, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null, createdAt: o.createdAt })),
       doctorNotes: a.doctorNotes.map((n) => ({ text: n.text, at: n.createdAt })),
-      drugs: (() => { const t = a.forms.find((f) => f.key === "treatment"); const x = t ? parse(t.data) : {}; return Array.isArray(x.drugs) ? x.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : []; })(),
+      drugs: (() => {
+        const t = a.forms.find((f) => f.key === "treatment");
+        const x = t ? parse(t.data) : {};
+        const chart = Array.isArray(x.drugs) ? x.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : [];
+        // Post-op medicines from the education sheet that are not on the chart yet
+        const named = new Set(chart.map((dr: { name?: string }) => (dr.name ?? "").trim().toLowerCase()));
+        const post = (education.meds ?? []).filter((m) => m.name.trim() && !named.has(m.name.trim().toLowerCase()))
+          .map((m) => ({ name: m.name, dose: m.dose, eye: m.eye, frequency: m.frequency }));
+        return [...chart, ...post];
+      })(),
       education: educationAdvice(education),
       diet: education.meals.filter((m) => m.diet.trim()).map((m) => ({ time: m.meal, item: m.diet })),
       followUpDate: v.followUpDate,
@@ -236,10 +266,12 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
           eligibleBy: counselling.eligibleByName, eligibleAt: counselling.confirmedAt?.toISOString() ?? null,
         }
       : null,
+    drugAllergy,
     forms: a.forms.map((f) => ({
       key: f.key,
       title: f.title,
-      data: parse(f.data),
+      // The discharge allergy follows the EMR / Counselling until the patient is discharged
+      data: f.key === "discharge" && a.status !== "DISCHARGED" ? { ...parse(f.data), allergies: allergyLine(drugAllergy) } : parse(f.data),
       attachments: (() => { const x = parse(f.attachments); return Array.isArray(x) ? x : []; })(),
       frozen: f.frozen,
       frozenAt: f.frozenAt?.toISOString() ?? null,
@@ -249,6 +281,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     orders: orders.map((o) => ({
       id: o.id, testName: o.testName, laterality: o.laterality, notes: o.notes, resultRef: o.resultRef,
       resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null, createdAt: o.createdAt.toISOString(),
+      extraResultRefs: o.extraResultRefs,
     })),
     doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString() })),
     activity,

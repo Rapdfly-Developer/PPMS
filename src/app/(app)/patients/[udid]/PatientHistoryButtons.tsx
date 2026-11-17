@@ -3,20 +3,24 @@
 import { NO_SHOW_KIND_LABEL } from "@/lib/noShowKinds";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { format, addMonths } from "date-fns";
-import { X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, Trash2, UserX, Calendar, Building2, Clock, Lock, Paperclip } from "lucide-react";
+import { Plus, Check, X, FlaskConical, Pill, Glasses, Loader2, ChevronDown, ChevronUp, Upload, UserX, Calendar, Building2, Clock, Lock, Search } from "lucide-react";
 import { parseJSON } from "@/lib/json";
 import {
   getPatientInvestigations,
+  getPatientLatestVisit,
   getPatientTreatmentHistory,
   getPatientSpectacleHistory,
   getPatientNoShows,
 } from "../actions";
-import { attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes, removeResult, addExtraResult, removeExtraResult } from "@/app/(app)/emr/[udid]/actions";
-import { ExtraResultPreview } from "@/components/emr/ExtraResultPreview";
+import { INV_CATALOG } from "@/lib/investigation-catalog";
+import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
+import { INV_IN_VIEW_OF_DEFAULTS } from "@/lib/investigation-keywords";
+import { FAVES_KEY, SESSION_KEY } from "@/app/(app)/emr/[udid]/InvestigationsTab";
+import { addInvestigationOrder, attachResult, deleteInvestigationOrder, updateInvestigationDoctorNotes, removeResult, addExtraResult, removeExtraResult } from "@/app/(app)/emr/[udid]/actions";
+import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
 import { parseExtraResults, type ExtraResult } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
 import { INV_DOCTOR_NOTE_DEFAULTS } from "@/lib/investigation-keywords";
-import { fileHref } from "@/lib/file-href";
 import { TimeStampButton } from "./PatientTimeline";
 import { medicationLaterality } from "@/lib/medication-laterality";
 
@@ -120,8 +124,8 @@ type InvVisit = Awaited<ReturnType<typeof getPatientInvestigations>>[number];
 type InvOrder = InvVisit["orders"][number];
 
 /** What the signed-in role may see and change on investigation orders. */
-export type InvPerms = { view: boolean; upload: boolean; remove: boolean; notes: boolean };
-const ALL_INV_PERMS: InvPerms = { view: true, upload: true, remove: true, notes: true };
+export type InvPerms = { view: boolean; upload: boolean; remove: boolean; notes: boolean; order?: boolean };
+const ALL_INV_PERMS: InvPerms = { view: true, upload: true, remove: true, notes: true, order: true };
 
 /** An investigation is frozen 2 months after it was ordered: no more changes. */
 const INV_FREEZE_MONTHS = 2;
@@ -132,15 +136,6 @@ const INV_PRIORITY_CLS: Record<string, string> = {
   STAT:    "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
 };
 
-/** Read-only box for a value set when the test was ordered. */
-function InvInfoBox({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`min-w-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-label leading-snug ${className}`}>
-      {children}
-    </div>
-  );
-}
-
 function InvOrderRow({ o, udid, onView, perms }: {
   o: InvOrder; idx: number; udid: string; onView: (ref: string) => void; perms: InvPerms;
 }) {
@@ -148,11 +143,8 @@ function InvOrderRow({ o, udid, onView, perms }: {
   const [localUploadedAt, setLocalUploadedAt] = useState<string | null>(o.uploadedAt ?? null);
   const [uploading, setUploading]           = useState(false);
   const [uploadError, setUploadError]       = useState("");
-  const [removing, startRemove]             = useTransition();
-  const [confirmRemove, setConfirmRemove]   = useState(false);
   const [, startTx]                         = useTransition();
   const fileRef                             = useRef<HTMLInputElement>(null);
-  const addMoreRef                          = useRef<HTMLInputElement>(null);
   const [extraFiles, setExtraFiles]         = useState<ExtraResult[]>(() => parseExtraResults(o.extraResultRefs));
 
   const hasFile = !!localResultRef;
@@ -203,224 +195,329 @@ function InvOrderRow({ o, udid, onView, perms }: {
     }
   }
 
-  // "Add more": keep the current file and attach this one as well
-  async function addMoreFile(file: File) {
-    setUploading(true); setUploadError("");
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res  = await fetch("/api/uploads", { method: "POST", body: fd });
-      const json = await res.json();
-      if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
-      const r = await addExtraResult(o.id, udid, json.url);
-      if (r?.error) setUploadError(r.error);
-      else setExtraFiles((prev) => [...prev, { ref: json.url, at: new Date().toISOString() }]);
-    } catch (err: any) {
-      setUploadError(err.message ?? "Upload failed");
-    } finally {
-      setUploading(false);
-      if (addMoreRef.current) addMoreRef.current.value = "";
-    }
-  }
-
-  function removeExtraFile(ref: string) {
-    startRemove(async () => {
-      const r = await removeExtraResult(o.id, udid, ref);
-      if (r?.error) setUploadError(r.error);
-      else setExtraFiles((prev) => prev.filter((x) => x.ref !== ref));
-    });
-  }
-
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) void uploadFile(file);
   }
 
-  function doRemoveResult() {
-    startRemove(async () => {
-      const r = await removeResult(o.id, udid);
-      if (r?.error) { setUploadError(r.error); setConfirmRemove(false); return; }
-      const [next, ...rest] = extraFiles;
-      setLocalResultRef(next ? next.ref : null);
-      setLocalUploadedAt(next ? next.at : null);
-      setExtraFiles(rest);
-      setConfirmRemove(false);
-    });
-  }
-
   const inViewOf = o.notes ? o.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
-  const btn = "flex items-center gap-1 text-caption font-medium px-2 py-1 rounded-lg border transition-colors disabled:opacity-50";
-
   const fileInput = <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFileChange} />;
-  const lateralityBadge = (
-    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
-      {o.laterality ?? ""}
-    </span>
-  );
-  const nameBox = <InvInfoBox className="font-semibold text-[var(--color-ink-900)]">{o.testName}</InvInfoBox>;
-  const inViewOfBox = (
-    <InvInfoBox className="border-dashed italic text-[var(--color-ink-600)]">
-      <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
-    </InvInfoBox>
-  );
-  const urgency = o.priority ? (
-    <span className={`text-caption font-medium px-2 py-0.5 rounded-full ${INV_PRIORITY_CLS[o.priority] ?? INV_PRIORITY_CLS.ROUTINE}`}>{o.priority}</span>
-  ) : null;
-  const orderedAtLabel = (
-    <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
-      <Clock size={10} />Ordered {format(new Date(o.createdAt), "dd MMM yyyy, h:mm a")}
-    </span>
-  );
-  const frozenNote = frozen && (
-    <p className="mt-2 flex items-center gap-1 text-caption text-[var(--color-ink-400)]">
-      <Lock size={10} /> Frozen: ordered more than {INV_FREEZE_MONTHS} months ago, no changes can be made.
-    </p>
-  );
-  const cardCls = "rounded-xl border border-[var(--color-border)] bg-white px-3 py-2.5";
+  const when = (d: string) => format(new Date(d), "EEE, d MMM yyyy, h:mm a");
+  const cell = "flex min-h-8 min-w-0 items-center py-1 leading-snug rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 text-label";
 
-  // Report not uploaded: one bar
-  if (!hasFile) {
-    return (
-      <div className={cardCls}>
-        <div className="flex flex-wrap items-center gap-2">
-          {lateralityBadge}
-          <div className="min-w-[8rem] flex-1">{nameBox}</div>
-          <div className="min-w-[8rem] flex-1">{inViewOfBox}</div>
-          {urgency}
-          {orderedAtLabel}
-          <div className="ml-auto shrink-0">
-            {fileInput}
-            {canUpload && (
-              <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-                className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
-                <Upload size={12} className={uploading ? "animate-pulse" : ""} />
-                {uploading ? "Uploading…" : "Upload"}
-              </button>
-            )}
-          </div>
+  return (
+    <div className="rounded-xl border border-[var(--color-border)] bg-white px-2.5 py-2 transition-colors hover:border-[var(--color-primary-200)]">
+      {/* One line, the same columns on every row: eye, test, in view of, notes, dates, report */}
+      <div className="flex flex-wrap items-center gap-2 lg:grid lg:grid-cols-[2rem_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.3fr)_11.5rem_6.5rem]">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
+          {o.laterality ?? ""}
+        </span>
+
+        <div className={`${cell} min-w-[9rem] flex-1 gap-1.5`} title={o.testName}>
+          <span className="min-w-0 break-words font-semibold text-[var(--color-ink-900)]">{o.testName}</span>
+          {o.priority && (
+            <span className={`ml-auto shrink-0 rounded-full px-1.5 py-px text-[10px] font-semibold ${INV_PRIORITY_CLS[o.priority] ?? INV_PRIORITY_CLS.ROUTINE}`}>{o.priority}</span>
+          )}
         </div>
-        {uploadError && <p className="text-caption text-red-600 mt-1">{uploadError}</p>}
-        {frozenNote}
+
+        <div className={`${cell} min-w-[8rem] flex-1 border-dashed italic`} title={inViewOf}>
+          <span className="min-w-0 break-words"><span className="text-[var(--color-ink-400)]">In view of: </span><span className="text-[var(--color-ink-600)]">{inViewOf}</span></span>
+        </div>
+
+        <div className="min-w-[10rem] flex-[1.3]">
+          {!hasFile ? (
+            <div className={`${cell} border-dashed bg-white text-[var(--color-ink-300)] italic`}>Report pending</div>
+          ) : canNote ? (
+            <KeywordInput
+              compact
+              fieldKey={`inv_doctor_notes:${o.testName}`}
+              value={doctorNotes}
+              onChange={setDoctorNotes}
+              builtIns={INV_DOCTOR_NOTE_DEFAULTS[o.testName]}
+              placeholder="Doctor's notes"
+              className="block min-h-8 w-full overflow-hidden rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-label leading-5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] placeholder:text-[var(--color-ink-300)]"
+            />
+          ) : (
+            <div className={cell} title={doctorNotes}>
+              <span className="min-w-0 whitespace-pre-wrap break-words"><span className="text-[var(--color-ink-400)]">Notes: </span>{doctorNotes}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col justify-center gap-0.5 text-[11px] leading-tight text-[var(--color-ink-500)] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1" title="Ordered"><Clock size={10} className="shrink-0 text-[var(--color-ink-300)]" />{when(o.createdAt)}</span>
+          {hasFile && localUploadedAt && (
+            <span className="inline-flex items-center gap-1 text-[var(--color-primary-700)]" title="Uploaded"><Upload size={10} className="shrink-0" />{when(localUploadedAt)}</span>
+          )}
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center justify-end gap-1 lg:ml-0">
+          {frozen && (
+            <span title={`Frozen: ordered more than ${INV_FREEZE_MONTHS} months ago, no changes can be made.`} className="text-[var(--color-ink-300)]"><Lock size={12} /></span>
+          )}
+          {!hasFile ? (
+            <>
+              {fileInput}
+              {canUpload ? (
+                <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-1 rounded-lg border border-dashed border-[var(--color-primary-400)] px-2 py-1 text-caption font-medium text-[var(--color-primary-600)] transition-colors hover:bg-[var(--color-primary-50)] disabled:opacity-50">
+                  <Upload size={12} className={uploading ? "animate-pulse" : ""} />
+                  {uploading ? "Uploading…" : "Upload"}
+                </button>
+              ) : <span className="text-caption text-[var(--color-ink-400)]">Pending</span>}
+            </>
+          ) : (
+            // One Report button: View, Re-upload, Delete, Add more (no inline previews)
+            <ReportFilesMenu
+              files={[{ ref: localResultRef!, at: localUploadedAt, main: true }, ...extraFiles.map((f) => ({ ref: f.ref, at: f.at, main: false }))]}
+              locked={!canUpload && !canRemove}
+              onView={(url) => onView(url)}
+              onReplace={async (url) => {
+                const r = await attachResult(o.id, udid, url);
+                if (!r?.error) { setLocalResultRef(url); setLocalUploadedAt(new Date().toISOString()); }
+                return r ?? undefined;
+              }}
+              onAddMore={async (url) => {
+                const r = await addExtraResult(o.id, udid, url);
+                if (!r?.error) setExtraFiles((prev) => [...prev, { ref: url, at: new Date().toISOString() }]);
+                return r ?? undefined;
+              }}
+              onDelete={async (f) => {
+                if (!f.main) {
+                  const r = await removeExtraResult(o.id, udid, f.ref);
+                  if (!r?.error) setExtraFiles((prev) => prev.filter((x) => x.ref !== f.ref));
+                  return r ?? undefined;
+                }
+                const r = await removeResult(o.id, udid);
+                if (!r?.error) {
+                  const [next, ...rest] = extraFiles;
+                  setLocalResultRef(next ? next.ref : null);
+                  setLocalUploadedAt(next ? next.at : null);
+                  setExtraFiles(rest);
+                }
+                return r ?? undefined;
+              }}
+            />
+          )}
+        </div>
       </div>
+      {uploadError && <p className="mt-1 text-caption text-red-600">{uploadError}</p>}
+    </div>
+  );
+}
+
+/** Compact order form: same catalog, priority, laterality, In view of and custom tests as the EMR. */
+function InvOrderPanel({ patientId, udid, onOrdered }: { patientId: string; udid: string; onOrdered: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [target, setTarget] = useState<{ id: string; date: string } | null>(null);
+  const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [priority, setPriority] = useState("ROUTINE");
+  const [eyes, setEyes] = useState<Record<string, string>>({});
+  const [testNotes, setTestNotes] = useState<Record<string, string>>({});
+  const [customTests, setCustomTests] = useState<{ name: string; category: string }[]>([]);
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!open || target) return;
+    void getPatientLatestVisit(patientId).then(setTarget).catch(() => setError("Could not find a visit to order on."));
+  }, [open, target, patientId]);
+
+  useEffect(() => {
+    try {
+      const favs: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
+      const session: { name: string; category: string }[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
+      const merged = [...favs];
+      for (const t of session) if (!merged.some((f) => f.name === t.name)) merged.push(t);
+      setCustomTests(merged);
+    } catch { /* storage unavailable */ }
+  }, []);
+
+  const toggleTest = (name: string) =>
+    setSelected((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]);
+
+  const handleAddCustom = (name: string, category: string) => {
+    const catalogCat = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === name))?.[0];
+    if (catalogCat) {
+      setActiveCategory(catalogCat);
+      setSelected((prev) => prev.includes(name) ? prev : [...prev, name]);
+      return;
+    }
+    setCustomTests((prev) => prev.some((t) => t.name === name) ? prev : [...prev, { name, category }]);
+    try {
+      const session: { name: string; category: string }[] = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "[]");
+      if (!session.some((t) => t.name === name)) sessionStorage.setItem(SESSION_KEY, JSON.stringify([...session, { name, category }]));
+    } catch {}
+    try {
+      const stored: { name: string; category: string }[] = JSON.parse(localStorage.getItem(FAVES_KEY) ?? "[]");
+      if (!stored.some((t) => t.name.toLowerCase() === name.toLowerCase())) localStorage.setItem(FAVES_KEY, JSON.stringify([...stored, { name, category }]));
+    } catch {}
+    setActiveCategory(Object.keys(INV_CATALOG).includes(category) ? category : "Other");
+    setSelected((prev) => prev.includes(name) ? prev : [...prev, name]);
+  };
+
+  const placeOrders = () => {
+    if (!target || selected.length === 0) return;
+    setError("");
+    startTransition(async () => {
+      try {
+        for (const testName of selected) {
+          const catFromCatalog = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0];
+          const cat = catFromCatalog ?? customTests.find((t) => t.name === testName)?.category ?? "Other";
+          await addInvestigationOrder(target.id, udid, { category: cat, testName, priority, laterality: eyes[testName] ?? "OU", notes: testNotes[testName] ?? "" });
+        }
+        setSelected([]);
+        setTestNotes({});
+        setOpen(false);
+        onOrdered();
+      } catch {
+        setError("Could not place the order. The visit may be locked or outside your access.");
+      }
+    });
+  };
+
+  const hasOtherCustom = customTests.some((t) => !Object.keys(INV_CATALOG).includes(t.category));
+  const categories = [...Object.keys(INV_CATALOG), ...(hasOtherCustom ? ["Other"] : [])];
+  const currentItems: { name: string; isCustom?: boolean }[] = [
+    ...(INV_CATALOG[activeCategory] ?? []),
+    ...customTests
+      .filter((t) => activeCategory === "Other" ? !Object.keys(INV_CATALOG).includes(t.category) : t.category === activeCategory)
+      .map((t) => ({ name: t.name, isCustom: true })),
+  ];
+
+  // Search runs over every category and the custom tests
+  const q = query.trim().toLowerCase();
+  const allTests: { name: string; isCustom?: boolean }[] = [
+    ...Object.values(INV_CATALOG).flat().map((i) => ({ name: i.name })),
+    ...customTests.filter((t) => !Object.values(INV_CATALOG).flat().some((i) => i.name === t.name)).map((t) => ({ name: t.name, isCustom: true })),
+  ];
+  const shown = q ? allTests.filter((t) => t.name.toLowerCase().includes(q)) : currentItems;
+  const exact = allTests.some((t) => t.name.toLowerCase() === q);
+  const addTyped = () => {
+    const name = query.trim();
+    if (!name) return;
+    const hit = allTests.find((t) => t.name.toLowerCase() === name.toLowerCase());
+    if (hit) setSelected((prev) => prev.includes(hit.name) ? prev : [...prev, hit.name]);
+    else handleAddCustom(name, "Other");
+    setQuery("");
+  };
+
+  const seg = (on: boolean) =>
+    `px-2.5 py-1 text-caption font-semibold rounded-md transition-colors ${on
+      ? "bg-white text-[var(--color-primary-700)] shadow-sm ring-1 ring-[var(--color-primary-200)]"
+      : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)]"}`;
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-primary-400)] bg-[var(--color-primary-50)] px-3 py-2 text-xs font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] transition-colors">
+        <Plus size={13} /> Order Investigations
+      </button>
     );
   }
 
-  // Report uploaded: details on top, uploaded file below
-  const isImage = /\.(jpg|jpeg|png|webp)$/i.test(localResultRef!);
-  const isPdf = /\.pdf$/i.test(localResultRef!);
   return (
-    <div className={cardCls}>
-      <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
-        {lateralityBadge}
-        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
-          <div className="w-full">{nameBox}</div>
-          {urgency}
+    <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.05)]">
+      {/* One line: search (or type a new test and press Enter), the categories, close */}
+      <div className="flex items-center gap-2 border-b border-[var(--color-border)]/70 px-3 py-1.5">
+        <div className="relative w-56 shrink-0">
+          <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)]" />
+          <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTyped(); } if (e.key === "Escape") setQuery(""); }}
+            placeholder="Search or add a test"
+            className="h-8 w-full rounded-full border border-[var(--color-border)] bg-white pl-7 pr-3 text-[12.5px] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
         </div>
-        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5 overflow-hidden">
-          <div className="w-full">{inViewOfBox}</div>
-          <span className="inline-flex items-start gap-1 text-caption text-[var(--color-ink-500)]">
-            <Clock size={10} className="mt-0.5 shrink-0" />Ordered {format(new Date(o.createdAt), "dd MMM yyyy, h:mm a")}
-          </span>
+        <div className={`flex min-w-0 flex-1 flex-wrap gap-1 ${q ? "opacity-40" : ""}`}>
+          {categories.map((cat) => (
+            <button key={cat} type="button" onClick={() => { setActiveCategory(cat); setQuery(""); }}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-caption font-medium transition-colors ${activeCategory === cat && !q
+                ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-200)]"
+                : "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-800)]"}`}>
+              {cat}
+            </button>
+          ))}
         </div>
-        <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
-          <div className="w-full">
-            {canNote ? (
-              <KeywordInput
-                fieldKey={`inv_doctor_notes:${o.testName}`}
-                value={doctorNotes}
-                onChange={setDoctorNotes}
-                builtIns={INV_DOCTOR_NOTE_DEFAULTS[o.testName]}
-                placeholder="Doctor's notes"
-              />
-            ) : (
-              <InvInfoBox className="text-[var(--color-ink-700)] whitespace-pre-wrap">
-                <span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{doctorNotes}
-              </InvInfoBox>
-            )}
-          </div>
-          {localUploadedAt && (
-            <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
-              <Clock size={10} />Uploaded {format(new Date(localUploadedAt), "dd MMM yyyy, h:mm a")}
-            </span>
-          )}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          {fileInput}
-          {(canUpload || canRemove) && (
-            <div className="flex items-center gap-1">
-              {canUpload && (
-                <button type="button" disabled={uploading} onClick={() => fileRef.current?.click()}
-                  className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
-                  <Upload size={12} className={uploading ? "animate-pulse" : ""} />
-                  {uploading ? "Uploading…" : "Re-upload"}
-                </button>
-              )}
-              {canUpload && (
-                <>
-                  <input ref={addMoreRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden"
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) void addMoreFile(f); }} />
-                  <button type="button" disabled={uploading} onClick={() => addMoreRef.current?.click()}
-                    className={`${btn} border-dashed border-[var(--color-primary-400)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)]`}>
-                    <Upload size={12} /> Add more
-                  </button>
-                </>
-              )}
-              {canRemove && (confirmRemove ? (
-                <>
-                  <button onClick={doRemoveResult} disabled={removing}
-                    className="text-caption font-semibold px-2 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 transition-colors">
-                    {removing ? "…" : "Remove"}
-                  </button>
-                  <button onClick={() => setConfirmRemove(false)}
-                    className="text-caption font-semibold px-2 py-1 rounded-lg border border-[var(--color-border)] text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] transition-colors">
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button onClick={() => setConfirmRemove(true)}
-                  className={`${btn} border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-red-300 hover:text-red-600 hover:bg-red-50`}>
-                  <Trash2 size={12} /> Delete
-                </button>
-              ))}
-            </div>
-          )}
-          {uploadError && <p className="text-caption text-red-600">{uploadError}</p>}
-        </div>
+        <button type="button" onClick={() => setOpen(false)} aria-label="Close order form"
+          className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"><X size={14} /></button>
       </div>
 
-      {/* Uploaded file(s) */}
-      <div className="mt-3 flex flex-wrap items-start gap-3 rounded-xl border border-[var(--color-border)] p-2">
-        {isImage ? (
-          <img
-            src={fileHref(localResultRef)!}
-            alt={`${o.testName} result`}
-            className="max-h-52 rounded-lg cursor-pointer object-contain"
-            onClick={() => onView(localResultRef!)}
-          />
-        ) : isPdf ? (
-          <div className="relative h-52 w-40 overflow-hidden rounded-lg border border-[var(--color-border)]">
-            <iframe src={`${fileHref(localResultRef)!}#toolbar=0&navpanes=0`} title={`${o.testName} result`} className="h-full w-full pointer-events-none" />
-            <button type="button" onClick={() => onView(localResultRef!)} aria-label="View report" className="absolute inset-0 cursor-pointer" />
+      <div className="space-y-2 px-3 py-2">
+
+        <div className="flex flex-wrap gap-1.5">
+          {shown.map((item) => {
+            const on = selected.includes(item.name);
+            return (
+              <button key={item.name} type="button" onClick={() => toggleTest(item.name)}
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-caption transition-colors ${on
+                  ? "border-[var(--color-primary-500)] bg-[var(--color-primary-600)] text-white font-semibold"
+                  : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"}`}>
+                {on ? <Check size={11} /> : <Plus size={11} className="text-[var(--color-ink-300)]" />}{item.name}
+                {item.isCustom && <span className={`rounded-full px-1 text-micro ${on ? "bg-white/20" : "bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"}`}>Custom</span>}
+              </button>
+            );
+          })}
+          {q && !exact && (
+            <button type="button" onClick={addTyped}
+              className="flex items-center gap-1 rounded-full border border-dashed border-[var(--color-primary-400)] px-2.5 py-1 text-caption font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
+              <Plus size={11} /> Add &quot;{query.trim()}&quot;
+            </button>
+          )}
+        </div>
+
+        {selected.length > 0 && (
+          <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
+            {selected.map((name) => (
+              <div key={name} className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] px-2 py-1">
+                <span className="shrink-0 whitespace-nowrap text-caption font-semibold text-[var(--color-ink-800)]" title={name}>{name}</span>
+                {/* The eye for this test, on its own line */}
+                <div className="flex shrink-0 rounded-md bg-[var(--color-surface-sunken)] p-0.5">
+                  {LATERALITY.map((l) => {
+                    const on = (eyes[name] ?? "OU") === l;
+                    return (
+                      <button key={l} type="button" onClick={() => setEyes((prev) => ({ ...prev, [name]: l }))}
+                        className={`rounded px-1.5 py-0.5 text-[10.5px] font-bold transition-colors ${on
+                          ? "bg-white text-[var(--color-primary-700)] shadow-sm ring-1 ring-[var(--color-primary-200)]"
+                          : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"}`}>{l}</button>
+                    );
+                  })}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <KeywordInput
+                    compact
+                    fieldKey={`inv_in_view_of:${name}`}
+                    builtIns={INV_IN_VIEW_OF_DEFAULTS[name]}
+                    value={testNotes[name] ?? ""}
+                    onChange={(v) => setTestNotes((prev) => ({ ...prev, [name]: v }))}
+                    placeholder="In view of…"
+                    className="block min-h-7 w-full overflow-hidden text-xs leading-5 rounded-md border border-[var(--color-border)] px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-[var(--color-primary-400)] placeholder:text-[var(--color-ink-300)]"
+                  />
+                </div>
+                <button type="button" onClick={() => toggleTest(name)} aria-label={`Remove ${name}`}
+                  className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-500"><X size={11} /></button>
+              </div>
+            ))}
           </div>
-        ) : (
-          <button
-            onClick={() => onView(localResultRef!)}
-            className="flex items-center gap-2 text-xs text-[var(--color-primary-700)] bg-[var(--color-primary-50)] border border-[var(--color-primary-200)] px-3 py-2 rounded-lg hover:bg-[var(--color-primary-100)] transition-colors"
-          >
-            <Paperclip size={13} /> {o.testName} result file, click to view
-          </button>
         )}
-        {extraFiles.map((file) => (
-          <ExtraResultPreview
-            key={file.ref}
-            file={file}
-            label={`${o.testName} result`}
-            onOpen={() => onView(file.ref)}
-            onRemove={canRemove ? () => removeExtraFile(file.ref) : undefined}
-          />
-        ))}
       </div>
-      {frozenNote}
+
+      {/* Priority and Place order on one line */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-border)]/70 bg-[var(--color-surface-sunken)]/50 px-3 py-2">
+        <div className="flex rounded-lg bg-[var(--color-surface-sunken)] p-0.5">
+          {ORDER_PRIORITIES.map((p) => (
+            <button key={p} type="button" onClick={() => setPriority(p)} className={seg(priority === p)}>{p.charAt(0) + p.slice(1).toLowerCase()}</button>
+          ))}
+        </div>
+        <span className="text-caption text-[var(--color-ink-400)]">
+          {target ? `On visit of ${format(new Date(target.date), "EEE, d MMM yyyy")}` : ""}
+        </span>
+        <button type="button" disabled={pending || !target || selected.length === 0} onClick={placeOrders}
+          className="ml-auto rounded-full bg-[var(--color-primary-600)] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[var(--color-primary-700)] disabled:opacity-40">
+          {pending ? "Placing…" : selected.length ? `Order ${selected.length} test${selected.length > 1 ? "s" : ""}` : "Order"}
+        </button>
+      </div>
+      {error && <p className="px-3 pb-2 text-caption text-red-600">{error}</p>}
     </div>
   );
 }
@@ -442,7 +539,9 @@ function InvestigationsDrawer({
 
   return (
     <>
-      <Drawer open={open} onClose={onClose} title="Previous Investigation Orders" icon={<FlaskConical size={16} />} xwide>
+      {/* Load afresh on every open, so changes made in the EMR, Counselling or IPD show */}
+      <Drawer open={open} onClose={() => { setData(null); onClose(); }} title="Previous Investigation Orders" icon={<FlaskConical size={16} />} xwide>
+        {perms.order && <InvOrderPanel patientId={patientId} udid={udid} onOrdered={() => setData(null)} />}
         {isPending && (
           <div className="flex justify-center py-10">
             <Loader2 size={22} className="animate-spin text-[var(--color-primary-500)]" />
@@ -454,7 +553,7 @@ function InvestigationsDrawer({
             {/* Visit date header */}
             <div className="flex items-center gap-2 mb-2">
               <span className="text-caption font-semibold text-[var(--color-ink-700)]">
-                {format(new Date(v.date), "dd MMM yyyy")}
+                {format(new Date(v.date), "EEE, dd MMM yyyy")}
               </span>
               {v.hospitalName && (
                 <span className="text-caption text-[var(--color-ink-400)]">· {v.hospitalName}</span>
@@ -482,9 +581,10 @@ function InvestigationsDrawer({
       {/* Lightbox */}
       {lightbox && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80" onClick={() => setLightbox(null)}>
+          {/* The Report menu hands over the file's address already */}
           {lightbox.match(/\.(jpg|jpeg|png|webp)$/i)
-            ? <img src={fileHref(lightbox)!} alt="Result" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
-            : <iframe src={fileHref(lightbox)!} className="w-full max-w-3xl h-[80vh] rounded-xl bg-white" title="Result" onClick={(e) => e.stopPropagation()} />
+            ? <img src={lightbox} alt="Result" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
+            : <iframe src={lightbox} className="w-full max-w-3xl h-[80vh] rounded-xl bg-white" title="Result" onClick={(e) => e.stopPropagation()} />
           }
           <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-2.5 rounded-xl">
             <X size={18} />

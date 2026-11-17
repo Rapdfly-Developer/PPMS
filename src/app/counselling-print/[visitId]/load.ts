@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { visitRecordScope } from "@/lib/patient-access";
-import { defaultConsents, defaultEducation, upgradeConsents, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
+import { completeEducation, defaultConsents, defaultEducation, upgradeConsents, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
 import { parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
 import { SUPERSEDED } from "@/lib/counselling";
 
@@ -44,7 +44,7 @@ export async function loadCounsellingPrint(visitId: string) {
     surgeryDate: (rec?.dateOfSurgery ?? v.advisedSurgeryDate)?.toISOString() ?? null, type: "PRE_OP",
   };
   const consents: ConsentsData = upgradeConsents(parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx), ctx);
-  const education: EducationData = parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx);
+  const education: EducationData = completeEducation(parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx), ctx);
   const implantDetails = parseCounsellingImplant(rec?.implantDetails);
   return { v, pid, ctx, consents, education, implantDetails };
 }

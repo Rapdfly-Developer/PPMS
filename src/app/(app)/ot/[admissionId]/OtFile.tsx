@@ -53,8 +53,8 @@ type Item = { key: string; title: string; display: boolean };
 
 const SEX_LONG: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
 const fmtTime = (iso: string | null) => (iso ? format(new Date(iso), "h:mm a") : "-");
-const fmtFull = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, h:mm a") : "-");
-const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : "-");
+const fmtFull = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy, h:mm a") : "-");
+const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : "-");
 const istDay = (iso: string) => new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 

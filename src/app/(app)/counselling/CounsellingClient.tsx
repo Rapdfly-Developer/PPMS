@@ -247,8 +247,8 @@ function SurgeryChip({ r }: { r: CounsellingRow }) {
       <span className="inline-flex max-w-full flex-wrap items-center gap-x-1 px-2.5 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-800)] font-medium text-caption break-words">
         {r.laterality && <span className="clinical-laterality shrink-0">{r.laterality}</span>}
         {r.surgery}
+        {r.anaesthesia && <><span aria-hidden className="text-[var(--color-primary-300)]">·</span><span className="font-normal italic text-[var(--color-ink-500)]">{r.anaesthesia}</span></>}
       </span>
-      {r.anaesthesia && <span className="pl-1 text-caption text-[var(--color-ink-500)]">{r.anaesthesia}</span>}
     </span>
   );
 }
@@ -256,10 +256,10 @@ function SurgeryChip({ r }: { r: CounsellingRow }) {
 function TentativeDate({ r }: { r: CounsellingRow }) {
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
-      {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
+      {r.tentativeDate ? format(new Date(r.tentativeDate), "EEE, d MMM yyyy") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
       {r.tentativeDate && <span className="block mt-1"><DaysTag r={r} /></span>}
       {r.status === "POSTPONED" && !r.postponedIndefinitely && r.postponedUntil && (
-        <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "d MMM yyyy")}</span>
+        <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "EEE, d MMM yyyy")}</span>
       )}
     </span>
   );

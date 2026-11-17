@@ -547,6 +547,7 @@ export default async function PatientProfilePage({
               upload: userCan(user, "emr.labReports.upload") || userCan(user, "emr.labReports.edit") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
               remove: userCan(user, "emr.labReports.edit") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
               notes:  userCan(user, "investigations.create") || userCan(user, "investigations.edit") || userCan(user, "emr.edit"),
+              order:  userCan(user, "investigations.create"),
             }}
           />
         </div>

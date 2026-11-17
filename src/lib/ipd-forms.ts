@@ -126,6 +126,68 @@ export const CONSENT_KINDS = [
   { id: "Negative", title: "High-risk / Negative Consent" },
 ];
 
+/** Further consents that can be added from "+ New": title and wording for this patient. */
+const MORE_CONSENTS: { id: string; title: string; text: (c: FormContext, proc: string, who: string) => string }[] = [
+  {
+    id: "PremiumIOL", title: "Consent for Premium IOL (Toric / Multifocal)",
+    text: (c, proc, who) => `I, ${who}, have chosen a premium intraocular lens (toric / multifocal / extended depth of focus) for ${proc}.
+
+The doctor has explained that this lens is meant to reduce my dependence on glasses but cannot guarantee freedom from glasses. I may see glare, haloes or rings around lights, especially at night, and contrast may be slightly lower. A toric lens may rotate and need repositioning. The extra cost of the lens has been explained to me.`,
+  },
+  {
+    id: "SecondEye", title: "Consent for Surgery on the Second Eye",
+    text: (c, proc, who) => `I, ${who}, consent to ${proc} on my ${eyeName(c.eye)}, my second eye. I understand that the result in my first eye does not guarantee the same result in this eye, and that the risks explained for the first eye apply again.`,
+  },
+  {
+    id: "Tamponade", title: "Consent for Silicone Oil / Gas Tamponade",
+    text: (c, proc, who) => `I, ${who}, consent to silicone oil or gas being placed inside my ${eyeName(c.eye)} during ${proc} to support the retina.
+
+I understand that I must keep the head position advised, that I must not travel by air or to high altitude while gas is in the eye, that vision stays poor while oil is in the eye, and that a further operation is usually needed to remove silicone oil. Raised eye pressure, cataract and corneal problems can occur.`,
+  },
+  {
+    id: "Injection", title: "Consent for Intravitreal Injection",
+    text: (c, proc, who) => `I, ${who}, consent to an injection of medicine into my ${eyeName(c.eye)} (intravitreal injection) as advised by Dr. ${c.doctor}.
+
+The need for repeated injections, the cost, and the risks, including infection inside the eye (endophthalmitis), raised eye pressure, bleeding, retinal detachment and cataract, have been explained to me. I will report pain, redness or a drop in vision at once.`,
+  },
+  {
+    id: "DonorTissue", title: "Consent for Donor Cornea / Tissue",
+    text: (c, proc, who) => `I, ${who}, consent to the use of donor tissue (cornea / amniotic membrane) supplied by an eye bank for ${proc}.
+
+I understand that donor tissue is screened but a very small risk of infection remains, that the graft may be rejected or fail and need further treatment or surgery, and that long-term drops and regular follow-up are needed.`,
+  },
+  {
+    id: "GuardianGA", title: "Consent by Parent / Guardian (General Anaesthesia)",
+    text: (c, proc, who) => `I, the parent / guardian of ${who}, consent to ${proc} under general anaesthesia.
+
+The operation, the anaesthesia, the fasting instructions and the risks, including rare reactions to anaesthesia, have been explained to me in a language I understand. I will stay with the child before and after the operation.`,
+  },
+  {
+    id: "MedicalRisk", title: "Consent for Surgery with Medical Risk",
+    text: (c, proc, who) => `I, ${who}, understand that my general health condition (such as diabetes, high blood pressure, heart, kidney or lung disease, or blood thinners) increases the risks of ${proc} and of anaesthesia.
+
+I agree to follow my physician's advice, and I accept that the operation may be postponed or stopped if my condition is not safe on the day.`,
+  },
+  {
+    id: "Photo", title: "Consent for Photography & Video",
+    text: (c, proc, who) => `I, ${who}, consent to photographs and video recordings of my eye being taken before, during and after ${proc} for my medical record, and for teaching or publication without showing my identity. I may withdraw this consent at any time.`,
+  },
+  {
+    id: "HighRiskRefusal", title: "Refusal / Against Medical Advice",
+    text: (c, proc, who) => `I, ${who}, have been advised ${proc} by Dr. ${c.doctor}. The reasons, benefits and the risks of not having it have been explained to me. I have decided not to undergo it at present, against medical advice, and I take responsibility for this decision.`,
+  },
+];
+
+/** Every prebuilt consent with wording for this patient: the standard four, then the rest. */
+export function prebuiltConsents(c: FormContext): { id: string; title: string; text: string }[] {
+  const proc = [c.eye, c.surgery].filter(Boolean).join(" ") || "the advised procedure";
+  const who = `${c.patientName} (${c.age} yrs, ${c.sex.toLowerCase()}, ID ${c.patientId})`;
+  return [
+    ...CONSENT_KINDS.map((k) => ({ id: k.id, title: k.title, text: consentText(k.id, c) })),
+    ...MORE_CONSENTS.map((k) => ({ id: k.id, title: k.title, text: k.text(c, proc, who) })),
+  ];
+}
+
 export function defaultConsents(c: FormContext): ConsentsData {
   return { v: 2, items: CONSENT_KINDS.map((k) => ({ id: k.id, title: k.title, text: consentText(k.id, c), signed: false })) };
 }
@@ -279,6 +341,28 @@ const EDU_POINTS: Record<string, string[]> = {
   ],
 };
 
+/** Pre-op education: what to do before the operation (common points, then the surgery's own). */
+const PRE_COMMON = [
+  "Bring all your medicines, reports and spectacles on the day of admission",
+  "Take a head bath the day before surgery; do not apply oil, kajal or make-up",
+  "Continue BP and diabetes medicines unless the doctor says otherwise",
+  "Tell the doctor if you take blood thinners (aspirin, clopidogrel, warfarin); stop them only if advised",
+  "Come with one attendant; wear loose, comfortable clothes and no jewellery",
+];
+const EDU_PRE_POINTS: Record<string, string[]> = {
+  cataract: [...PRE_COMMON, "Start the antibiotic eye drops as advised before surgery", "A light breakfast is allowed for surgery under local anaesthesia"],
+  glaucoma: [...PRE_COMMON, "Continue your glaucoma drops until the day of surgery unless told otherwise", "Inform the doctor if you are on Diamox (acetazolamide) tablets"],
+  retina: [...PRE_COMMON, "Practise the head position that may be needed after surgery", "Plan for someone to help at home while you keep the head position"],
+  cornea: [...PRE_COMMON, "The surgery date depends on donor tissue; keep your phone reachable", "Start the drops as advised before surgery"],
+  pterygium: [...PRE_COMMON, "Start the drops as advised before surgery"],
+  lacrimal: [...PRE_COMMON, "Do not take aspirin or painkillers that thin the blood unless advised", "Tell the doctor about any nose block, cold or sinus problem"],
+  lid: [...PRE_COMMON, "Do not take aspirin or blood thinners unless advised"],
+  squint: [...PRE_COMMON, "Nil by mouth for 6 hours before surgery if under general anaesthesia", "Bring your glasses for the review"],
+  socket: [...PRE_COMMON, "Nil by mouth for 6 hours before surgery if under general anaesthesia", "The artificial eye is fitted a few weeks after surgery"],
+  icl: [...PRE_COMMON, "Stop soft contact lenses 1 week (hard lenses 3 weeks) before the measurements and surgery"],
+  general: [...PRE_COMMON, "Follow the fasting instructions given by the anaesthetist"],
+};
+
 function categoryOf(surgery?: string | null): string {
   const s = (surgery ?? "").toLowerCase();
   if (!s) return "general";
@@ -299,28 +383,200 @@ export interface EducationSet { id: string; label: string; points: string[]; min
 
 export const MEDICAL_SET_LABEL = "Medical / conservative treatment";
 
-/** One built-in set per surgery in the surgery list, plus medical treatment. */
+export type EduStageKey = "pre" | "post";
+
+/** Points that belong to one surgery, added to its group's points, so every surgery's set is its own. */
+const SURGERY_EDU: Record<string, { pre: string[]; post: string[] }> = {
+  "Phacoemulsification with IOL": {
+    pre: ["The cataract is removed through a tiny cut under drops or a block; usually no stitches are needed", "Tell us if you wore contact lenses in the last 2 weeks; the lens power is measured from your eye"],
+    post: ["Vision usually clears in a few days; new glasses are checked after 4 weeks", "Mild grittiness and watering for a few days are normal"],
+  },
+  "Manual Small Incision Cataract Surgery (MSICS) with IOL": {
+    pre: ["The surgery is done under a block injection; you stay awake but the eye will not move", "Arrange someone to take you home; you cannot drive on the day"],
+    post: ["Vision improves over 1-2 weeks; a little astigmatism may need glasses", "Do not lift more than 5 kg for 4 weeks; the cut is larger than in phaco"],
+  },
+  "Extracapsular Cataract Extraction (ECCE) with IOL": {
+    pre: ["The surgery needs a larger opening and stitches; recovery is longer than phaco", "Stop aspirin only if your doctor or physician advises"],
+    post: ["Stitches may be removed or adjusted at follow-up to reduce astigmatism", "Avoid any pressure on the eye for 6 weeks; wear the shield at night"],
+  },
+  "Phacoemulsification with Toric IOL": {
+    pre: ["The eye is marked before surgery to line up the toric lens; keep your head still during marking", "Stop soft contact lenses 1 week before the measurements"],
+    post: ["Do not rub the eye; rubbing can turn the toric lens", "Tell us if vision looks tilted or blurred; the lens position will be checked"],
+  },
+  "Phacoemulsification with Multifocal IOL": {
+    pre: ["A multifocal lens gives distance and near vision; some people see rings (haloes) around lights at night", "Glasses may still be needed for some fine work"],
+    post: ["Haloes and glare at night settle over weeks to months as the brain adapts", "Avoid night driving until the doctor says your vision is ready"],
+  },
+  "Secondary IOL Implantation": {
+    pre: ["A lens is placed in an eye that has none; it may be fixed with stitches or glue", "Bring your present glasses (aphakic glasses) on the day"],
+    post: ["Vision settles over 2-4 weeks; new glasses are given after that", "Avoid bending and heavy lifting for 4 weeks so the lens stays centred"],
+  },
+  "Trabeculectomy with MMC": {
+    pre: ["Tell the doctor if you have had eye surgery before", "A new drainage opening (bleb) is made under the upper lid to lower eye pressure"],
+    post: ["Stop glaucoma drops in the operated eye only as told; continue them in the other eye", "Do eye massage only if it is taught to you", "Avoid swimming and dusty places for 1 month; the bleb can get infected"],
+  },
+  "Combined Phaco-Trabeculectomy": {
+    pre: ["The cataract and the pressure surgery are done together in one sitting"],
+    post: ["Frequent visits are needed in the first month to check eye pressure", "Vision and eye pressure both take a few weeks to settle"],
+  },
+  "Glaucoma Drainage Device (Ahmed Valve) Implantation": {
+    pre: ["A small tube and plate (valve) will be placed to drain fluid from the eye"],
+    post: ["Eye pressure can be low or high in the first weeks; keep every visit", "Report at once if the tube area becomes red or the tube shows"],
+  },
+  "Pars Plana Vitrectomy (PPV)": {
+    pre: ["The jelly inside the eye is removed; the surgery may take 1-2 hours", "Tell the doctor about any planned air travel"],
+    post: ["Vision stays blurred for some weeks while the eye heals", "Keep the head position if a gas bubble was used"],
+  },
+  "PPV with Silicone Oil Injection": {
+    pre: ["Silicone oil will hold the retina in place; a second surgery to remove it is usually needed after 3-6 months", "Plan for face-down or side positioning at home"],
+    post: ["Keep the advised head position (often face-down) for the days told", "Vision is poor while the oil is in the eye; glasses are changed after oil removal", "Keep the oil-removal appointment; the oil should not stay too long"],
+  },
+  "PPV with Endolaser": {
+    pre: ["Laser will be applied inside the eye during the surgery", "Keep blood sugar and blood pressure well controlled before surgery"],
+    post: ["Keep blood sugar and blood pressure under control to protect the retina", "Some dimness of side vision after laser is expected"],
+  },
+  "Silicone Oil Removal": {
+    pre: ["This surgery takes out the silicone oil placed earlier", "Bring your previous surgery notes"],
+    post: ["Vision may change after the oil is removed; new glasses after 4 weeks", "Report a curtain or shadow in vision at once; the retina is checked again"],
+  },
+  "Scleral Buckling": {
+    pre: ["A silicone band is stitched on the outside of the eye and stays there", "Avoid heavy exertion before surgery if the retina is detached"],
+    post: ["Pain, swelling and redness are more than other eye surgeries for 1-2 weeks; take painkillers as charted", "Your spectacle power may change; new glasses after 6 weeks"],
+  },
+  "Penetrating Keratoplasty (PK)": {
+    pre: ["A donor cornea replaces your cornea; the date may move if tissue is not available"],
+    post: ["Stitches stay for months; never rub the eye and report a loose stitch", "Steroid drops are used for a long time; never stop them on your own"],
+  },
+  "DSAEK / DMEK": {
+    pre: ["Only the inner layer of the cornea is replaced; an air bubble holds it in place", "Practise lying flat on your back"],
+    post: ["Lie flat on your back (face up) as advised, usually for 1-2 days", "Do not fly or go to high altitude until the air bubble is gone"],
+  },
+  "Pterygium Excision with Conjunctival Autograft": {
+    pre: ["The growth is removed and covered with a thin graft from your own eye", "Wear sunglasses from now; sun and dust make it grow"],
+    post: ["Do not rub the eye; the graft can move"],
+  },
+  "Dacryocystorhinostomy (DCR)": {
+    pre: ["A new tear passage is made into the nose", "Tell the doctor about any nose bleeding problem"],
+    post: ["Watering may continue for a few weeks until the passage heals", "A syringing test is done at follow-up to check the passage"],
+  },
+  "Ptosis Correction": {
+    pre: ["The lid is lifted; the height may be checked while you are awake", "Bring old photographs if you have them"],
+    post: ["The eye may not close fully for some days; use the lubricant ointment at night as charted", "Do not rub or pull the lid"],
+  },
+  "Strabismus Surgery": {
+    pre: ["The eye muscles are adjusted; one or both eyes may be operated", "Children are usually operated under general anaesthesia"],
+    post: ["Continue patching or eye exercises as advised", "The eye may look red for 2-3 weeks"],
+  },
+  "Evisceration with Orbital Implant": {
+    pre: ["The inside of the eye is removed and an implant placed; the white of the eye stays", "Counselling about the artificial eye is available"],
+    post: ["Keep the clear shell (conformer) in place; do not remove it"],
+  },
+  "Enucleation with Orbital Implant": {
+    pre: ["The whole eye is removed and an implant placed in the socket", "Arrange someone to help at home for the first few days"],
+    post: ["Keep the clear shell (conformer) in place; do not remove it", "Report fever or a bad smell from the socket"],
+  },
+  "Implantable Collamer Lens (ICL)": {
+    pre: ["A small laser opening (PI) may be done before the surgery"],
+    post: ["Haloes at night are common in the first weeks", "Keep the eye pressure check on the day after surgery"],
+  },
+};
+
+/** One built-in set per surgery in the surgery list, plus medical treatment (post-op education). */
 export const BUILTIN_EDUCATION_SETS: EducationSet[] = [
-  ...SURGERY_OPTIONS.map((s) => ({ id: `s:${s}`, label: s, points: EDU_POINTS[categoryOf(s)] })),
+  ...SURGERY_OPTIONS.map((s) => ({ id: `s:${s}`, label: s, points: [...(SURGERY_EDU[s]?.post ?? []), ...EDU_POINTS[categoryOf(s)]] })),
   { id: "s:medical", label: MEDICAL_SET_LABEL, points: EDU_POINTS.general },
 ];
 
+/** The same, for pre-op education. */
+export const BUILTIN_PRE_EDUCATION_SETS: EducationSet[] = [
+  ...SURGERY_OPTIONS.map((s) => ({ id: `p:${s}`, label: s, points: [...(SURGERY_EDU[s]?.pre ?? []), ...EDU_PRE_POINTS[categoryOf(s)]] })),
+  { id: "p:medical", label: MEDICAL_SET_LABEL, points: EDU_PRE_POINTS.general },
+];
+
+export const builtinEducationSets = (stage: EduStageKey) => (stage === "pre" ? BUILTIN_PRE_EDUCATION_SETS : BUILTIN_EDUCATION_SETS);
+
 /** The set that matches the patient's surgery (any surgery name, even one not in the list). */
-export function educationSetFor(surgery?: string | null, type?: string): EducationSet {
-  const exact = BUILTIN_EDUCATION_SETS.find((x) => x.label.toLowerCase() === (surgery ?? "").trim().toLowerCase());
+export function educationSetFor(surgery?: string | null, type?: string, stage: EduStageKey = "post"): EducationSet {
+  const sets = builtinEducationSets(stage);
+  const exact = sets.find((x) => x.label.toLowerCase() === (surgery ?? "").trim().toLowerCase());
   if (exact) return exact;
-  if (surgery?.trim()) return { id: `s:${surgery.trim()}`, label: surgery.trim(), points: EDU_POINTS[categoryOf(surgery)] };
-  return type === "PRE_OP" ? BUILTIN_EDUCATION_SETS[0] : BUILTIN_EDUCATION_SETS[BUILTIN_EDUCATION_SETS.length - 1];
+  const pts = stage === "pre" ? EDU_PRE_POINTS : EDU_POINTS;
+  if (surgery?.trim()) return { id: `${stage === "pre" ? "p" : "s"}:${surgery.trim()}`, label: surgery.trim(), points: pts[categoryOf(surgery)] };
+  return type === "PRE_OP" ? sets[0] : sets[sets.length - 1];
+}
+
+/** Prebuilt variants of a surgery's set, for the patient in front of you. */
+const VARIANT_POINTS: Record<string, { pre: string[]; post: string[] }> = {
+  "Diabetic patient": {
+    pre: [
+      "Check your blood sugar on the morning of surgery and bring the readings",
+      "Ask the doctor whether to take your insulin / diabetes tablets on the morning of surgery",
+      "Do not skip meals while on diabetes medicines; carry a biscuit or sweet in case sugar drops",
+    ],
+    post: [
+      "Keep blood sugar well controlled; high sugar slows healing and raises the risk of infection",
+      "Check sugar more often while using steroid eye drops",
+      "Report redness, pain or a drop in vision early; infections can be faster with diabetes",
+    ],
+  },
+  "Elderly patient": {
+    pre: [
+      "Come with a family member who can help with the drops at home",
+      "Bring a written list of every medicine you take",
+      "Use your walking aid; the eye may be covered after surgery",
+    ],
+    post: [
+      "A family member should put the drops; keep a written drop chart with times",
+      "Move carefully; with one eye covered, balance is harder; do not use stairs alone on the first day",
+      "Keep a light on at night to avoid falls",
+    ],
+  },
+  "Child": {
+    pre: [
+      "No food for 6 hours and clear water only until 2 hours before surgery (general anaesthesia)",
+      "Bring a favourite toy or blanket for comfort",
+      "Tell the doctor about any cough, cold or fever before the surgery day",
+    ],
+    post: [
+      "Keep the child from rubbing the eye; arm guards may be used at night",
+      "Give drops while the child is lying down; a parent should hold the head gently",
+      "No swimming, sand play or contact games until the doctor allows",
+    ],
+  },
+};
+
+/**
+ * Every prebuilt set for a surgery: the standard set, a brief one (the key
+ * points only) and versions for a diabetic patient, an elderly patient and a
+ * child. The standard set's label is the surgery itself.
+ */
+export function educationSetsFor(surgery: string | null | undefined, type: string | undefined, stage: EduStageKey): EducationSet[] {
+  const base = educationSetFor(surgery, type, stage);
+  const name = base.label;
+  return [
+    base,
+    { id: `${base.id}:brief`, label: `${name} · Brief`, points: base.points.slice(0, 5) },
+    ...Object.entries(VARIANT_POINTS).map(([k, v]) => ({ id: `${base.id}:${k}`, label: `${name} · ${k}`, points: [...base.points, ...v[stage]] })),
+  ];
 }
 
 export const DIET_TYPES = ["Normal", "Diabetic", "Soft", "Liquid", "Low salt", "Nil by mouth"];
 export const MEAL_AMOUNTS = ["Full", "Half", "Refused"] as const;
 
 export interface Meal { meal: string; time: string; diet: string }
-export interface EducationData {
-  v: 2;
+export interface EduPoint { text: string; done: boolean }
+/** A further patient education added to the sheet (its own title and points). */
+export interface EduSet { id: string; title: string; points: EduPoint[] }
+/** A medicine in the EMR prescription format. */
+export interface EduMed {
+  id: string; route: string; eye: string; name: string; dose: string; frequency: string; duration: string; instructions: string;
+}
+/** Education and diet for one stage (pre-op or post-op). */
+export interface EducationStage {
   preset: string;
-  points: { text: string; done: boolean }[];
+  points: EduPoint[];
+  sets?: EduSet[];
+  meds?: EduMed[];
   explainedTo: string;
   language: string;
   teachBack: boolean;
@@ -328,8 +584,22 @@ export interface EducationData {
   dietTypes: string[];
   nbmFrom: string;
   meals: Meal[];
+  /** How many days the diet is followed: before surgery (pre-op) or from the day of surgery (post-op). */
+  dietDays?: string;
+}
+/**
+ * The top-level fields are the post-op stage (what older sheets held and what
+ * the discharge summary uses); `pre` is the pre-op stage.
+ */
+export interface EducationData extends EducationStage {
+  v: 2;
+  pre?: EducationStage;
   log: LogEntry[];
 }
+
+/** One-line medicine, as printed. */
+export const eduMedText = (m: EduMed) =>
+  [m.name, m.eye && m.route !== "Oral" ? m.eye : "", m.dose, m.frequency, m.duration && `for ${m.duration}`, m.instructions].filter(Boolean).join(" · ");
 
 export const DEFAULT_MEALS: Meal[] = [
   { meal: "Early morning", time: "06:00", diet: "Tea / coffee / milk" },
@@ -340,19 +610,186 @@ export const DEFAULT_MEALS: Meal[] = [
   { meal: "Dinner", time: "20:00", diet: "" },
 ];
 
-export function defaultEducation(c: Pick<FormContext, "surgery" | "type">): EducationData {
-  const set = educationSetFor(c.surgery, c.type);
+type DietPlan = Pick<EducationStage, "dietTypes" | "nbmFrom" | "dietDays"> & { meals: [string, string][] };
+const meals = (m: [string, string][]): Meal[] => DEFAULT_MEALS.map((x) => ({ ...x, diet: m.find(([k]) => k === x.meal)?.[1] ?? x.diet }));
+
+/** The diet a surgery starts with, before and after the operation (by its kind of surgery and anaesthesia). */
+const SURGERY_DIET: Record<string, { pre: DietPlan; post: DietPlan }> = {
+  // Local / topical anaesthesia: a light meal is allowed
+  cataract: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "1", meals: [["Breakfast", "Light breakfast: idli / upma"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "7", meals: [["Breakfast", "Idli, sambar"], ["Lunch", "Rice, dal, vegetables, curd"], ["Dinner", "Chapati, dal"]] },
+  },
+  icl: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "1", meals: [["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "7", meals: [["Breakfast", "Idli, sambar"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, dal"]] },
+  },
+  pterygium: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "1", meals: [["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "7", meals: [["Breakfast", "Idli, sambar"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, dal"]] },
+  },
+  // Glaucoma: water in small amounts through the day, little salt
+  glaucoma: {
+    pre: { dietTypes: ["Normal", "Low salt"], nbmFrom: "", dietDays: "2", meals: [["Early morning", "Tea / milk (small cup)"], ["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, vegetables, less salt"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal", "Low salt"], nbmFrom: "", dietDays: "14", meals: [["Early morning", "Small cup of tea / milk; drink water a little at a time"], ["Lunch", "Rice, dal, vegetables, less salt"], ["Dinner", "Chapati, vegetables"]] },
+  },
+  // Retina: longer surgery; soft food while keeping the head position
+  retina: {
+    pre: { dietTypes: ["Normal", "Diabetic"], nbmFrom: "", dietDays: "3", meals: [["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, green vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Soft"], nbmFrom: "", dietDays: "14", meals: [["Breakfast", "Idli / upma (eat while keeping the head position)"], ["Mid-morning", "Fruit / juice"], ["Lunch", "Soft rice, dal, vegetables"], ["Dinner", "Soft chapati, dal"]] },
+  },
+  // Cornea: protein for healing
+  cornea: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "2", meals: [["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "14", meals: [["Breakfast", "Idli, sambar, egg / sprouts"], ["Lunch", "Rice, dal, vegetables, curd"], ["Evening", "Milk, fruit"], ["Dinner", "Chapati, dal / paneer"]] },
+  },
+  // Usually general anaesthesia: nil by mouth before, liquids then soft after
+  lacrimal: {
+    pre: { dietTypes: ["Nil by mouth"], nbmFrom: "22:00", dietDays: "1", meals: [] },
+    post: { dietTypes: ["Soft"], nbmFrom: "", dietDays: "7", meals: [["Breakfast", "Idli, sambar (not hot)"], ["Lunch", "Soft rice, dal"], ["Dinner", "Soft chapati, dal"]] },
+  },
+  lid: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "1", meals: [["Breakfast", "Light breakfast"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, vegetables"]] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "7", meals: [["Breakfast", "Idli, sambar"], ["Lunch", "Rice, dal, vegetables"], ["Dinner", "Chapati, dal"]] },
+  },
+  squint: {
+    pre: { dietTypes: ["Nil by mouth"], nbmFrom: "22:00", dietDays: "1", meals: [] },
+    post: { dietTypes: ["Liquid", "Soft"], nbmFrom: "", dietDays: "3", meals: [["Breakfast", "Milk / porridge once fully awake"], ["Lunch", "Soft rice, dal"], ["Dinner", "Soft chapati, dal"]] },
+  },
+  socket: {
+    pre: { dietTypes: ["Nil by mouth"], nbmFrom: "22:00", dietDays: "1", meals: [] },
+    post: { dietTypes: ["Liquid", "Soft"], nbmFrom: "", dietDays: "5", meals: [["Breakfast", "Milk / porridge"], ["Lunch", "Soft rice, dal"], ["Dinner", "Soft chapati, dal"]] },
+  },
+  general: {
+    pre: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "1", meals: [] },
+    post: { dietTypes: ["Normal"], nbmFrom: "", dietDays: "7", meals: [] },
+  },
+};
+
+/** The pre-op or post-op diet for a surgery. */
+export function dietFor(surgery: string | null | undefined, stage: EduStageKey): Pick<EducationStage, "dietTypes" | "nbmFrom" | "meals" | "dietDays"> {
+  const plan = (SURGERY_DIET[categoryOf(surgery)] ?? SURGERY_DIET.general)[stage];
+  return { dietTypes: [...plan.dietTypes], nbmFrom: plan.nbmFrom, dietDays: plan.dietDays, meals: meals(plan.meals) };
+}
+
+export function defaultEducationStage(c: Pick<FormContext, "surgery" | "type">, stage: EduStageKey): EducationStage {
+  const set = educationSetFor(c.surgery, c.type, stage);
   return {
-    v: 2, preset: set.label,
+    preset: set.label,
     points: set.points.map((text) => ({ text, done: false })),
+    sets: [], meds: [],
     explainedTo: "", language: "English", teachBack: false, notes: "",
-    dietTypes: ["Normal"], nbmFrom: "", meals: DEFAULT_MEALS.map((m) => ({ ...m })), log: [],
+    ...dietFor(c.surgery, stage),
   };
 }
 
-/** Plain-text advice for the discharge summary. */
+export function defaultEducation(c: Pick<FormContext, "surgery" | "type">): EducationData {
+  return { v: 2, ...defaultEducationStage(c, "post"), pre: defaultEducationStage(c, "pre"), log: [] };
+}
+
+/** A stage of the sheet; older sheets have no pre-op stage yet, so it starts from the standard set. */
+export function educationStage(e: EducationData, stage: EduStageKey, c: Pick<FormContext, "surgery" | "type">): EducationStage {
+  return foldSets(stage === "pre" ? e.pre ?? defaultEducationStage(c, "pre") : postStage(e));
+}
+
+/** One set per stage: points from education added as further sets (older sheets) join the set's points. */
+function foldSets(s: EducationStage): EducationStage {
+  if (!s.sets?.length) return s;
+  const seen = new Set(s.points.map((p) => p.text));
+  const extra = s.sets.flatMap((x) => x.points).filter((p) => !seen.has(p.text) && (seen.add(p.text), true));
+  return { ...s, points: [...s.points, ...extra], sets: [] };
+}
+
+/** The post-op stage: the sheet's top-level fields. */
+export const postStage = (e: EducationStage): EducationStage => ({
+  preset: e.preset, points: e.points, sets: e.sets, meds: e.meds,
+  explainedTo: e.explainedTo, language: e.language, teachBack: e.teachBack, notes: e.notes,
+  dietTypes: e.dietTypes, nbmFrom: e.nbmFrom, meals: e.meals, dietDays: e.dietDays,
+});
+
+const DAY_MS = 24 * 3600 * 1000;
+/** Day and date in IST, e.g. "Mon, 14 Nov 2026" (no year: "Mon, 14 Nov"). */
+export function dayDate(d: Date | string, year = true): string {
+  const x = typeof d === "string" ? new Date(d.length === 10 ? `${d}T00:00:00+05:30` : d) : d;
+  return x.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kolkata" }).replace(/^(\w{3}) /, "$1, ");
+}
+
+/**
+ * When a stage's diet is followed: pre-op, the N days before the surgery day;
+ * post-op, N days from the surgery day. Null without a surgery date or days.
+ */
+export function dietWindow(stage: EduStageKey, days: string | undefined, surgeryDate: string | null): { from: Date; to: Date; surgery: Date } | null {
+  const n = Number(days);
+  if (!surgeryDate || !Number.isInteger(n) || n < 1) return null;
+  const surgery = new Date(surgeryDate.length === 10 ? `${surgeryDate}T00:00:00+05:30` : surgeryDate);
+  if (isNaN(surgery.getTime())) return null;
+  return stage === "pre"
+    ? { from: new Date(surgery.getTime() - n * DAY_MS), to: new Date(surgery.getTime() - DAY_MS), surgery }
+    : { from: surgery, to: new Date(surgery.getTime() + (n - 1) * DAY_MS), surgery };
+}
+
+/** "5 days", "2 weeks", "1 month" → days; null when it can't be read (e.g. "Long-term"). */
+export function durationDays(d: string | undefined): number | null {
+  const m = (d ?? "").trim().match(/^(\d+)\s*(day|week|month|year)s?$/i);
+  if (!m) return null;
+  const n = Number(m[1]);
+  return n * ({ day: 1, week: 7, month: 30, year: 365 } as Record<string, number>)[m[2].toLowerCase()];
+}
+
+/**
+ * The dates a medicine on the education sheet is used: pre-op, the days just
+ * before the surgery day; post-op, from the surgery day. "" without a date.
+ */
+export function medDates(stage: EduStageKey, duration: string | undefined, surgeryDate: string | null): string {
+  const n = durationDays(duration);
+  if (!n) return "";
+  const w = dietWindow(stage, String(n), surgeryDate);
+  return w ? `${dayDate(w.from, false)} → ${dayDate(w.to)}` : "";
+}
+
+/** The diet window as one sentence, for prints and summaries. */
+export function dietStory(stage: EduStageKey, days: string | undefined, surgeryDate: string | null): string {
+  const n = Number(days);
+  if (!Number.isInteger(n) || n < 1) return "";
+  const w = dietWindow(stage, days, surgeryDate);
+  const dd = `${n} day${n > 1 ? "s" : ""}`;
+  if (!w) return stage === "pre" ? `Follow this diet for ${dd} before the surgery.` : `Follow this diet for ${dd} from the day of surgery.`;
+  return stage === "pre"
+    ? `From ${dayDate(w.from, false)} to ${dayDate(w.to)} (${dd}), the days before surgery on ${dayDate(w.surgery)}.`
+    : `From the surgery day, ${dayDate(w.from, false)}, to ${dayDate(w.to)} (${dd}).`;
+}
+
+/** A saved sheet with both stages (older sheets get the standard pre-op stage). */
+export function completeEducation(e: EducationData, c: Pick<FormContext, "surgery" | "type">): EducationData {
+  const pre = e.pre ? forSurgery(e.pre, c, "pre") : defaultEducationStage(c, "pre");
+  const post = forSurgery(postStage(e), c, "post");
+  return { ...e, ...post, pre };
+}
+
+/**
+ * A stage that still holds another surgery's standard set (none of it
+ * explained yet) starts again from this surgery's set and diet; the doctor's
+ * own sets and anything already explained are kept.
+ */
+function forSurgery(s: EducationStage, c: Pick<FormContext, "surgery" | "type">, stage: EduStageKey): EducationStage {
+  if (!c.surgery) return s;
+  const own = educationSetFor(c.surgery, c.type, stage);
+  const other = builtinEducationSets(stage).some((x) => x.label === s.preset) && s.preset !== own.label;
+  // The diet is untouched (the old plain default): give it the surgery's diet
+  const plainDiet = !s.dietDays && s.dietTypes.join() === "Normal" && !s.nbmFrom
+    && JSON.stringify(s.meals) === JSON.stringify(DEFAULT_MEALS);
+  let next = s;
+  if (other && !s.points.some((p) => p.done)) next = { ...next, preset: own.label, points: own.points.map((text) => ({ text, done: false })), sets: [] };
+  if (plainDiet) next = { ...next, ...dietFor(c.surgery, stage) };
+  return next;
+}
+
+/** Every point of a stage: its main set, then the education added to it. */
+export const stagePoints = (s: EducationStage): EduPoint[] => [...s.points, ...(s.sets ?? []).flatMap((x) => x.points)];
+
+/** Plain-text advice for the discharge summary (post-op education). */
 export function educationAdvice(e: EducationData): string {
-  const pts = e.points.map((p) => `• ${p.text}`);
+  const pts = stagePoints(e).map((p) => `• ${p.text}`);
   return [...pts, e.notes.trim()].filter(Boolean).join("\n");
 }
 

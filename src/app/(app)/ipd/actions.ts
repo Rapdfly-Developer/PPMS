@@ -9,6 +9,9 @@ import { istDayRange, istTodayStr } from "@/lib/ist";
 import { sendMail } from "@/lib/mailer";
 import { counsellingSheetFor } from "@/lib/ipd-server";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
+import { allergyFromLine, allergyLine, latestDrugAllergy, saveDrugAllergy, syncConsentsToCounselling, syncImplantToCounselling } from "@/lib/care-sync";
+import { parseExtraResults } from "@/lib/investigation-extra-results";
+import { SUPERSEDED } from "@/lib/counselling";
 import {
   IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
   type LogEntry,
@@ -120,7 +123,102 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
     create: { admissionId, key, title: titleOf(key, admission.forms), data: next },
     update: { data: next },
   });
+  await syncOut(admission, key, row?.data ?? null, data);
   refresh(admissionId);
+  return {};
+}
+
+/**
+ * Carry a saved IPD form into the other modules: the implant and consents go
+ * back to the counselling sheet, the discharge allergy back to the EMR.
+ */
+async function syncOut(
+  admission: Awaited<ReturnType<typeof loadAdmission>>["admission"],
+  key: string, before: string | null, data: unknown,
+) {
+  const cv = admission.counsellingVisitId;
+  if (key === "implant" && cv) await syncImplantToCounselling(cv, data);
+  if (key === "consents" && cv) await syncConsentsToCounselling(cv, before, data);
+  if (key === "discharge" && admission.status !== "DISCHARGED") {
+    const next = typeof (data as { allergies?: unknown })?.allergies === "string" ? (data as { allergies: string }).allergies.trim() : null;
+    let prev: string | null = null;
+    try { const p = before ? JSON.parse(before) : null; prev = typeof p?.allergies === "string" ? p.allergies.trim() : null; } catch { /* unreadable */ }
+    // Only when the allergy was changed in this form (first save: against the EMR's)
+    if (next !== null && next !== prev) {
+      const user = await requireAnyPermission("ipd.edit", "ipd.discharge");
+      const scope = await visitRecordScope(user);
+      if (scope && (prev !== null || next !== allergyLine(await latestDrugAllergy(admission.visit.patientId, scope)))) {
+        const a = allergyFromLine(next);
+        await saveDrugAllergy({
+          userId: user.id, patientId: admission.visit.patientId, scope, visitIds: [admission.visitId],
+          allergies: a.allergies, nkda: a.nkda, action: "ALLERGIES_UPDATED_FROM_IPD", detail: { admissionId: admission.id },
+        });
+      }
+    }
+  }
+}
+
+/* ── Investigation reports (the same records as the EMR and Counselling) ── */
+
+const REPORT_PERMS = ["ipd.edit", "emr.edit", "emr.labReports.upload", "emr.labReports.edit", "investigations.edit"];
+
+async function reportOrder(admissionId: string, orderId: string) {
+  const { user, admission } = await loadAdmission(admissionId, ...REPORT_PERMS);
+  const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visit: { patientId: admission.visit.patientId }, status: { not: SUPERSEDED } } });
+  if (!order) throw new Error("Order not found");
+  return { user, admission, order };
+}
+
+function refreshReports(admissionId: string) {
+  refresh(admissionId);
+  revalidatePath("/emr/[udid]", "page");
+  revalidatePath("/patients/[udid]", "page");
+  revalidatePath("/counselling", "layout");
+  revalidatePath("/ot", "layout");
+}
+
+/** Upload or re-upload the report (replaces the current file). */
+export async function attachIpdReport(admissionId: string, orderId: string, resultRef: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  await prisma.investigationOrder.update({ where: { id: order.id }, data: { resultRef, resultAt: new Date(), status: "RESULT_AVAILABLE" } });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "RESULT_ATTACHED", { resultRef, from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
+/** "Add more": attach a further report file. */
+export async function addIpdExtraReport(admissionId: string, orderId: string, resultRef: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  if (!order.resultRef) return attachIpdReport(admissionId, orderId, resultRef);
+  const extras = [...parseExtraResults(order.extraResultRefs), { ref: resultRef, at: new Date().toISOString() }];
+  await prisma.investigationOrder.update({ where: { id: order.id }, data: { extraResultRefs: JSON.stringify(extras) } });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "RESULT_ADDED", { resultRef, from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
+/** Remove the report; with more files attached, the next one takes its place. */
+export async function removeIpdReport(admissionId: string, orderId: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  const [next, ...rest] = parseExtraResults(order.extraResultRefs);
+  await prisma.investigationOrder.update({
+    where: { id: order.id },
+    data: next
+      ? { resultRef: next.ref, resultAt: new Date(next.at), extraResultRefs: rest.length ? JSON.stringify(rest) : null }
+      : { resultRef: null, resultAt: null, status: "PENDING" },
+  });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "RESULT_REMOVED", { from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
+/** Remove one file that was added with "Add more". */
+export async function removeIpdExtraReport(admissionId: string, orderId: string, resultRef: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  const extras = parseExtraResults(order.extraResultRefs).filter((x) => x.ref !== resultRef);
+  await prisma.investigationOrder.update({ where: { id: order.id }, data: { extraResultRefs: extras.length ? JSON.stringify(extras) : null } });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "EXTRA_RESULT_REMOVED", { resultRef, from: "IPD" });
+  refreshReports(admissionId);
   return {};
 }
 
@@ -306,10 +404,12 @@ async function templateOwner(...permissions: string[]) {
   return { user, doctorId };
 }
 
-const TEMPLATE_KINDS = ["OT", "EDUCATION"];
+const TEMPLATE_KINDS = ["OT", "EDUCATION", "EDUCATION_PRE"];
+/** Education sets are also kept from the Counselling sheet. */
+const TEMPLATE_PERMS = ["ipd.edit", "counselling.edit"];
 
 export async function saveIpdTemplate(kind: string, name: string, surgery: string | null, items: string[]): Promise<Result & { id?: string }> {
-  const { doctorId, user } = await templateOwner("ipd.edit");
+  const { doctorId, user } = await templateOwner(...TEMPLATE_PERMS);
   if (!TEMPLATE_KINDS.includes(kind)) return { error: "Unknown template type." };
   const n = name.trim().slice(0, 120);
   if (!n) return { error: "Enter a name." };
@@ -320,11 +420,12 @@ export async function saveIpdTemplate(kind: string, name: string, surgery: strin
   });
   await writeAudit(user.id, "IpdTemplate", t.id, "TEMPLATE_SAVED", { kind, name: n }, { moduleName: "IPD", userName: user.name });
   revalidatePath("/ipd", "layout");
+  revalidatePath("/counselling", "layout");
   return { id: t.id };
 }
 
 export async function renameIpdTemplate(id: string, name: string): Promise<Result> {
-  const { doctorId } = await templateOwner("ipd.edit");
+  const { doctorId } = await templateOwner(...TEMPLATE_PERMS);
   const n = name.trim().slice(0, 120);
   if (!n) return { error: "Enter a name." };
   const r = await prisma.ipdTemplate.updateMany({ where: { id, doctorId }, data: { name: n } });
@@ -333,8 +434,22 @@ export async function renameIpdTemplate(id: string, name: string): Promise<Resul
   return {};
 }
 
+/** Change a saved set: name, surgery and its points. */
+export async function updateIpdTemplate(id: string, name: string, surgery: string | null, items: string[]): Promise<Result> {
+  const { doctorId } = await templateOwner(...TEMPLATE_PERMS);
+  const n = name.trim().slice(0, 120);
+  if (!n) return { error: "Enter a name." };
+  const list = items.map((x) => String(x).trim()).filter(Boolean).slice(0, 100).map((x) => x.slice(0, 1000));
+  if (!list.length) return { error: "Add at least one point." };
+  const r = await prisma.ipdTemplate.updateMany({ where: { id, doctorId }, data: { name: n, surgery: surgery?.trim() || null, items: JSON.stringify(list) } });
+  if (!r.count) return { error: "Template not found." };
+  revalidatePath("/ipd", "layout");
+  revalidatePath("/counselling", "layout");
+  return {};
+}
+
 export async function deleteIpdTemplate(id: string): Promise<Result> {
-  const { doctorId } = await templateOwner("ipd.edit");
+  const { doctorId } = await templateOwner(...TEMPLATE_PERMS);
   const r = await prisma.ipdTemplate.deleteMany({ where: { id, doctorId } });
   if (!r.count) return { error: "Template not found." };
   revalidatePath("/ipd", "layout");

@@ -12,6 +12,7 @@ import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
 import { OT_STAGE_LABEL, OT_STAGE_PILL, type OtStage } from "@/lib/ot";
 import { setOtOrder } from "./actions";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
 export interface OtRow {
   id: string;
@@ -39,7 +40,7 @@ export interface OtRow {
 
 type Card = "TODAY" | "UPCOMING" | "OVERALL";
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
 const time = (iso: string | null) => (iso ? format(new Date(iso), "h:mm a") : null);
 /** The day of the operation: begun, else shifted to OT. */
 const otDate = (r: OtRow) => r.begunAt ?? r.shiftedToOtAt;
@@ -68,11 +69,8 @@ function SurgeryLine({ r }: { r: OtRow }) {
   if (!r.surgery) return <span className="italic text-caption text-[var(--color-ink-300)]">Surgery not recorded</span>;
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] break-words">
-      {r.laterality && <span className="clinical-laterality mr-1">{r.laterality}</span>}
-      {r.surgery}
-      {(r.implant || r.anaesthesia) && (
-        <span className="block text-caption font-normal text-[var(--color-ink-500)]">{[r.implant, r.anaesthesia].filter(Boolean).join(" · ")}</span>
-      )}
+      <SurgeryInline eye={r.laterality} surgery={r.surgery} anaesthesia={r.anaesthesia} />
+      {r.implant && <span className="block text-caption font-normal text-[var(--color-ink-500)]">{r.implant}</span>}
     </span>
   );
 }
@@ -350,7 +348,7 @@ export function OtClient({ rows, canArrange }: { rows: OtRow[]; canArrange: bool
         <>
           <Calendar rows={reached} month={month} onMonth={(d) => { setMonth(d); setCalDay(null); }} selected={calDay} onSelect={setCalDay} />
           <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3">
-            {calDay ? `Operations on ${format(calDay, "d MMM yyyy")}` : `Operations in ${format(month, "MMMM yyyy")}`} · showing {overallList.length}
+            {calDay ? `Operations on ${format(calDay, "EEE, d MMM yyyy")}` : `Operations in ${format(month, "MMMM yyyy")}`} · showing {overallList.length}
           </p>
           {overallList.length === 0
             ? empty("No operations on these dates", "Pick another day or month.")

@@ -5,55 +5,41 @@ import { createPortal } from "react-dom";
 import { Printer, X, Check, Scissors, Package, Wallet, FlaskConical, FileSignature, BookOpen, Utensils, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/Card";
-import { Block } from "@/app/(app)/patients/[udid]/VisitSummaryTabs";
-import type { ConsentItem, EducationData } from "@/lib/ipd-forms";
+import { Block, Cols, DataTable, TD, TD_MUTED, TH } from "@/app/(app)/patients/[udid]/VisitSummaryTabs";
+import { dietStory, eduMedText, postStage, type ConsentItem, type EducationData, type EducationStage } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
 import { implantGroup } from "@/lib/counselling";
 import type { PaymentDoc } from "@/lib/counselling";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
-/* ── Print pop-up (same look as the EMR Print) ──────────────────────────── */
+/* ── Print pop-up: tick what to print, then Print ───────────────────────── */
 
-type PrintMode = "short" | "long" | "custom";
-const MODES: { id: PrintMode; label: string }[] = [
-  { id: "short", label: "Short Print" },
-  { id: "long", label: "Long Print" },
-  { id: "custom", label: "Custom Print" },
-];
+interface PrintRow { id: string; label: string; sub?: boolean; hasData: boolean }
 
-interface PrintRow { id: string; label: string; short: boolean; sub?: boolean; hasData: boolean }
-
-function PrintCheck({ checked, locked, onToggle, label }: { checked: boolean; locked: boolean; onToggle: () => void; label: string }) {
+function PrintCheck({ checked, onToggle, label }: { checked: boolean; onToggle: () => void; label: string }) {
   return (
-    <label className={`relative inline-grid place-items-center align-middle ${locked ? "cursor-default" : "cursor-pointer"}`}>
-      <input
-        type="checkbox" checked={checked} readOnly={locked} aria-readonly={locked} tabIndex={locked ? -1 : 0}
-        onChange={locked ? undefined : onToggle} onClick={locked ? (e) => e.preventDefault() : undefined} aria-label={label}
-        className={`peer appearance-none w-4 h-4 rounded-[4px] border-[1.5px] bg-white transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-100)] focus-visible:ring-offset-1 border-[var(--color-ink-300)] ${
-          locked ? "checked:bg-[var(--color-primary-400)] checked:border-[var(--color-primary-400)]" : "hover:border-[var(--color-primary-500)] checked:bg-[var(--color-primary-600)] checked:border-[var(--color-primary-600)]"
-        }`}
-      />
+    <span className="relative inline-grid place-items-center align-middle">
+      <input type="checkbox" checked={checked} onChange={onToggle} aria-label={label}
+        className="peer appearance-none w-4 h-4 rounded-[4px] border-[1.5px] bg-white border-[var(--color-ink-300)] transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-100)] hover:border-[var(--color-primary-500)] checked:bg-[var(--color-primary-600)] checked:border-[var(--color-primary-600)] cursor-pointer" />
       <Check size={11} strokeWidth={3} className="pointer-events-none absolute text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-150" />
-    </label>
+    </span>
   );
 }
 
-/**
- * Short: Counselling Sheet and Investigations. Long: every sheet, each consent
- * included. Custom: only the ticked ones. Prints the saved sheets.
- */
+/** Tick the sheets to print (each consent on its own), then Print. Prints the saved sheets. */
 export function CounsellingPrintModal({ visitId, consents, hasOrders, onPrint, onClose }: {
   visitId: string; consents: ConsentItem[]; hasOrders: boolean; onPrint: (href: string) => void; onClose: () => void;
 }) {
   const rows: PrintRow[] = [
-    { id: "s", label: "Counselling Sheet", short: true, hasData: true },
-    { id: "i", label: "Investigations", short: true, hasData: hasOrders },
-    { id: "consents", label: "Consents", short: false, hasData: consents.length > 0 },
-    ...consents.map((c) => ({ id: `c:${c.id}`, label: c.title, short: false, sub: true, hasData: !!c.text.trim() })),
-    { id: "e", label: "Education & Diet", short: false, hasData: true },
+    { id: "s", label: "Counselling Sheet", hasData: true },
+    { id: "i", label: "Investigations", hasData: hasOrders },
+    { id: "consents", label: "Consents", hasData: consents.length > 0 },
+    ...consents.map((c) => ({ id: `c:${c.id}`, label: c.title, sub: true, hasData: !!(c.text.trim() || c.signedFile) })),
+    { id: "e", label: "Patient Education", hasData: true },
+    { id: "d", label: "Diet", hasData: true },
   ];
   const consentRowIds = consents.map((c) => `c:${c.id}`);
-  const [mode, setMode] = useState<PrintMode>("short");
-  const [custom, setCustom] = useState<Record<string, boolean>>(() => Object.fromEntries(rows.map((r) => [r.id, r.short])));
+  const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(rows.map((r) => [r.id, r.hasData])));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -61,101 +47,57 @@ export function CounsellingPrintModal({ visitId, consents, hasOrders, onPrint, o
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const isChecked = (id: string) => {
-    if (mode === "custom") return !!custom[id];
-    if (mode === "long") return true;
-    return !!rows.find((r) => r.id === id)?.short;
-  };
-
   const toggle = (id: string) => {
-    setMode("custom");
-    const next = { ...custom, [id]: !custom[id] };
+    const next = { ...on, [id]: !on[id] };
     // Consents ticks / unticks every consent; it is on while any consent is
     if (id === "consents") for (const c of consentRowIds) next[c] = next.consents;
     if (consentRowIds.includes(id)) next.consents = consentRowIds.some((c) => next[c]);
-    setCustom(next);
+    setOn(next);
   };
-
-  const startFrom = (preset: "short" | "long") => {
-    setMode("custom");
-    setCustom(Object.fromEntries(rows.map((r) => [r.id, preset === "long" ? true : r.short])));
-  };
+  const all = rows.every((r) => on[r.id]);
+  const setAll = (v: boolean) => setOn(Object.fromEntries(rows.map((r) => [r.id, v])));
 
   const params = new URLSearchParams();
-  if (isChecked("s")) params.set("s", "1");
-  if (isChecked("i")) params.set("i", "1");
-  if (isChecked("e")) params.set("e", "1");
-  for (const c of consents) if (isChecked(`c:${c.id}`)) params.append("c", c.id);
+  for (const k of ["s", "i", "e", "d"]) if (on[k]) params.set(k, "1");
+  for (const c of consents) if (on[`c:${c.id}`]) params.append("c", c.id);
   const anyChosen = [...params.keys()].length > 0;
 
   return createPortal(
     <div className="fixed inset-0 z-[210] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-2xl shadow-[0_24px_48px_-16px_rgba(15,23,42,0.28)] ring-1 ring-black/5 w-full max-w-md max-h-[85vh] flex flex-col overflow-hidden">
-        <div className="flex items-start justify-between px-5 pt-4 pb-3">
-          <div>
-            <h2 className="text-sm font-semibold tracking-tight text-[var(--color-ink-900)]">Print</h2>
-            <p className="text-caption text-[var(--color-ink-400)] mt-0.5">Choose a print, or tick sheets for a custom print</p>
-          </div>
+      <div className="bg-white rounded-2xl shadow-[0_24px_48px_-16px_rgba(15,23,42,0.28)] ring-1 ring-black/5 w-full max-w-sm max-h-[85vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <h2 className="text-sm font-semibold tracking-tight text-[var(--color-ink-900)]">Print</h2>
           <button onClick={onClose} aria-label="Close"
             className="grid place-items-center w-7 h-7 -mr-1 rounded-md text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-900)] transition-colors">
             <X size={15} />
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 px-4 pb-2">
-          <div className="sticky top-0 z-10 bg-white pt-0.5 pb-3">
-            <div className="relative grid grid-cols-3 rounded-lg bg-[var(--color-surface-sunken)] p-1">
-              <span aria-hidden
-                className="absolute top-1 bottom-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-md bg-[var(--color-primary-800)] shadow-sm transition-transform duration-200 ease-out"
-                style={{ transform: `translateX(${MODES.findIndex((m) => m.id === mode) * 100}%)` }} />
-              {MODES.map((m) => (
-                <button key={m.id} type="button" onClick={() => setMode(m.id)} aria-pressed={mode === m.id}
-                  className={`relative z-[1] py-1.5 rounded-md text-caption font-medium transition-colors duration-200 ${mode === m.id ? "text-white" : "text-[var(--color-ink-600)] hover:text-[var(--color-ink-900)]"}`}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            {mode === "custom" && (
-              <div className="mt-2 flex items-center gap-1.5">
-                <span className="text-micro text-[var(--color-ink-400)] mr-0.5">Start from</span>
-                {(["short", "long"] as const).map((preset) => (
-                  <button key={preset} type="button" onClick={() => startFrom(preset)}
-                    className="px-2 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-micro font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] hover:border-[var(--color-primary-300)] transition-colors">
-                    {preset === "short" ? "Short" : "Long"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <table className="w-full table-fixed border-separate border-spacing-0">
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="group">
-                  <td className={`${r.sub ? "pl-7 pr-2.5 py-1.5" : "px-2.5 py-2"} border-t border-[var(--color-border)]/70 group-hover:bg-[var(--color-primary-50)]/50 transition-colors`}>
-                    <div className="flex items-center gap-x-2">
-                      <span className={`${r.sub ? "text-caption" : "text-caption sm:text-[13px]"} truncate ${r.hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>{r.label}</span>
-                      {!r.hasData && <span className="ml-auto shrink-0 text-micro text-[var(--color-ink-300)]">no data</span>}
-                    </div>
-                  </td>
-                  <td className="w-16 text-center py-2 border-t border-[var(--color-border)]/70 bg-[var(--color-primary-50)]">
-                    <PrintCheck checked={isChecked(r.id)} locked={mode !== "custom"} onToggle={() => toggle(r.id)} label={r.label} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="overflow-y-auto flex-1 px-3 pb-2">
+          <label className="flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-caption font-semibold text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]">
+            Select all
+            <PrintCheck checked={all} onToggle={() => setAll(!all)} label="Select all" />
+          </label>
+          {rows.map((r) => (
+            <label key={r.id} className={`flex cursor-pointer items-center justify-between gap-2 rounded-lg border-t border-[var(--color-border)]/60 ${r.sub ? "pl-7 pr-2.5 py-1.5" : "px-2.5 py-2"} hover:bg-[var(--color-primary-50)]/50 transition-colors`}>
+              <span className={`${r.sub ? "text-caption" : "text-[13px]"} truncate ${r.hasData ? "text-[var(--color-ink-800)]" : "text-[var(--color-ink-400)]"}`}>
+                {r.label}{!r.hasData && <span className="ml-2 text-micro text-[var(--color-ink-300)]">no data</span>}
+              </span>
+              <PrintCheck checked={!!on[r.id]} onToggle={() => toggle(r.id)} label={r.label} />
+            </label>
+          ))}
         </div>
 
         <div className="flex justify-end gap-2 px-4 py-3 border-t border-[var(--color-border)]">
-          <button type="button" disabled={!anyChosen}
-            onClick={() => { onPrint(`/counselling-print/${visitId}/all?${params.toString()}`); onClose(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--color-primary-800)] text-white hover:bg-[var(--color-primary-700)] disabled:opacity-40 transition-colors">
-            <Printer size={13} /> Print
-          </button>
           <button type="button" onClick={onClose}
             className="px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-900)] transition-colors">
             Cancel
+          </button>
+          <button type="button" disabled={!anyChosen}
+            onClick={() => { onPrint(`/counselling-print/${visitId}/all?${params.toString()}`); onClose(); }}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)] disabled:opacity-40 transition-colors">
+            <Printer size={13} /> Print
           </button>
         </div>
       </div>
@@ -166,14 +108,15 @@ export function CounsellingPrintModal({ visitId, consents, hasOrders, onPrint, o
 
 /* ── Overview (same idea as the EMR Overview: the open sheet as a read-only summary) ── */
 
-const day = (d: string | null | undefined) => (d ? format(new Date(d), "d MMM yyyy") : "");
+const day = (d: string | null | undefined) => (d ? format(new Date(d), "EEE, d MMM yyyy") : "");
 
+/** A label / value row, laid out like the EMR summary's two-column rows (30% / 70%). */
 function KV({ label, value }: { label: string; value: React.ReactNode }) {
   if (value == null || value === "" || value === false) return null;
   return (
-    <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-3 py-1 text-sm">
-      <span className="text-[var(--color-ink-400)]">{label}</span>
-      <span className="min-w-0 font-medium text-[var(--color-ink-900)] break-words">{value}</span>
+    <div className="grid grid-cols-[30%_70%] border-b border-[var(--color-border)]/60 last:border-b-0">
+      <span className={TD_MUTED}>{label}</span>
+      <span className={`${TD} min-w-0 break-words`}>{value}</span>
     </div>
   );
 }
@@ -185,7 +128,7 @@ function Empty({ children }: { children: React.ReactNode }) {
 export interface OverviewOrder { id: string; testName: string; laterality: string | null; notes: string | null; doctorNotes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }
 
 export function CounsellingOverview(p: {
-  sheet: "sheet" | "investigations" | "consents" | "education";
+  sheet: "sheet" | "investigations" | "consents" | "education" | "diet";
   surgery: string; laterality: string | null; anaesthesia: string | null; surgeryNotes: string | null;
   implant: string; dateOfSurgery: string; implantInfo: CounsellingImplant;
   payment: string; payerLabel: string; payer: string; idLabel: string; payerId: string; docs: PaymentDoc[];
@@ -200,10 +143,9 @@ export function CounsellingOverview(p: {
     const i = p.implantInfo;
     const hasImplant = hasCounsellingImplant(i);
     body = (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <Block label="Surgery" icon={<Scissors size={12} className={iconCls} />}>
-          <KV label="Surgery" value={<>{p.laterality && <span className="clinical-laterality mr-1">{p.laterality}</span>}{p.surgery}</>} />
-          <KV label="Anaesthesia" value={p.anaesthesia} />
+          <KV label="Surgery" value={<SurgeryInline eye={p.laterality} surgery={p.surgery} anaesthesia={p.anaesthesia} />} />
           <KV label="Surgery notes" value={p.surgeryNotes} />
           <KV label="Type of implant" value={p.implant} />
           <KV label="Tentative date" value={p.dateOfSurgery ? day(p.dateOfSurgery) : ""} />
@@ -244,84 +186,132 @@ export function CounsellingOverview(p: {
     );
   } else if (p.sheet === "investigations") {
     body = (
-      <div className="space-y-5">
+      <div className="space-y-4">
         <Block label="Doctor review" icon={<ShieldCheck size={12} className={iconCls} />}>
           <KV label="Eligible for surgery" value={p.fit ? `Yes${p.fitBy ? `, marked by ${p.fitBy}` : ""}${p.fitAt ? ` on ${day(p.fitAt)}` : ""}` : "Not yet"} />
         </Block>
         <Block label="Investigations" icon={<FlaskConical size={12} className={iconCls} />}>
           {p.orders.length === 0 ? <Empty>No investigations ordered.</Empty> : (
-            <ul className="divide-y divide-[var(--color-border)]/70">
-              {p.orders.map((o) => (
-                <li key={o.id} className="py-2 text-sm">
-                  <div className="flex flex-wrap items-baseline gap-x-2">
-                    <span className="font-semibold text-[var(--color-ink-900)]">
-                      {o.laterality && <span className="clinical-laterality mr-1">{o.laterality}</span>}{o.testName}
-                    </span>
-                    <span className={`text-caption ${o.resultRef ? "text-emerald-700" : "text-amber-700"}`}>
-                      {o.resultRef ? `Uploaded ${day(o.resultAt)}` : "Report pending"}
-                    </span>
-                  </div>
-                  {o.notes?.trim() && <p className="text-caption text-[var(--color-ink-500)]">In view of: {o.notes}</p>}
-                  {o.doctorNotes?.trim() && <p className="text-caption text-[var(--color-ink-600)]">Doctor&apos;s notes: {o.doctorNotes}</p>}
-                </li>
-              ))}
-            </ul>
+            <DataTable minWidth={420}>
+              <Cols widths={["10%", "32%", "34%", "24%"]} />
+              <thead><tr>{["Eye", "Investigation", "Notes", "Report"].map((h) => <th key={h} className={TH}>{h}</th>)}</tr></thead>
+              <tbody className="divide-y divide-[var(--color-border)]">
+                {p.orders.map((o) => (
+                  <tr key={o.id}>
+                    <td className={TD}>{o.laterality ? <span className="clinical-laterality">{o.laterality}</span> : "-"}</td>
+                    <td className={`${TD} font-medium text-[var(--color-ink-900)]`}>{o.testName}</td>
+                    <td className={TD_MUTED}>
+                      {o.notes?.trim() && <span className="block">In view of: {o.notes}</span>}
+                      {o.doctorNotes?.trim() && <span className="block text-[var(--color-ink-600)]">Doctor: {o.doctorNotes}</span>}
+                      {!o.notes?.trim() && !o.doctorNotes?.trim() && "-"}
+                    </td>
+                    <td className={`${TD} ${o.resultRef ? "text-emerald-700" : "text-amber-700"}`}>{o.resultRef ? `Uploaded ${day(o.resultAt)}` : "Pending"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </DataTable>
           )}
         </Block>
       </div>
     );
   } else if (p.sheet === "consents") {
+    // One bordered table, like the EMR's refraction: a tinted header row, one row per consent
+    const TH_CELL = "px-3 py-2 text-left text-micro font-bold uppercase tracking-widest text-[var(--color-ink-400)] border-r border-[var(--color-border)] last:border-r-0";
+    const TD_NAME = "px-3 py-2 align-top text-caption font-semibold text-[var(--color-primary-700)] border-r border-[var(--color-border)]";
+    const TD_TEXT = "px-3 py-2 align-top text-caption leading-snug text-[var(--color-ink-700)] border-r border-[var(--color-border)] whitespace-pre-line";
+    const TD_STAT = "px-3 py-2 align-top text-caption bg-[var(--color-surface-sunken)]";
     body = (
-      <div className="space-y-5">
-        {p.consents.length === 0 ? <Empty>No consents added.</Empty> : p.consents.map((c) => (
-          <Block key={c.id} label={c.title} icon={<FileSignature size={12} className={iconCls} />}>
-            {c.text.trim()
-              ? <p className="text-sm leading-relaxed text-[var(--color-ink-700)] whitespace-pre-line">{c.text}</p>
-              : <Empty>No wording yet.</Empty>}
-          </Block>
-        ))}
-      </div>
+      <Block label="Consents" icon={<FileSignature size={12} className={iconCls} />}>
+        {p.consents.length === 0 ? <Empty>No consents added.</Empty> : (
+          <div className="rounded-lg border border-[var(--color-border)] overflow-hidden overflow-x-auto">
+            <table className="w-full min-w-[520px] table-fixed border-collapse">
+              <colgroup><col style={{ width: "24%" }} /><col style={{ width: "56%" }} /><col style={{ width: "20%" }} /></colgroup>
+              <thead>
+                <tr className="bg-[var(--color-primary-50)]">
+                  <th className={TH_CELL}>Consent</th>
+                  <th className={TH_CELL}>Wording</th>
+                  <th className={`${TH_CELL} bg-[var(--color-surface-sunken)]`}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p.consents.map((c) => (
+                  <tr key={c.id} className="border-t border-[var(--color-border)]">
+                    <td className={TD_NAME}>{c.title}</td>
+                    <td className={TD_TEXT}>
+                      {c.signedFile ? <span className="text-[var(--color-ink-500)]">Signed copy uploaded: {c.signedFile.name}</span>
+                        : c.text.trim() ? c.text : <span className="text-[var(--color-ink-300)]">No wording yet</span>}
+                    </td>
+                    <td className={TD_STAT}>
+                      {c.signedFile
+                        ? <span className="font-semibold text-emerald-700">Signed · {day(c.signedFile.at)}</span>
+                        : c.text.trim() ? <span className="text-[var(--color-ink-600)]">Ready to sign</span>
+                        : <span className="text-amber-700">Wording needed</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Block>
     );
   } else {
-    const e = p.education;
-    const nbm = e.dietTypes.includes("Nil by mouth");
+    // Pre-op and post-op, education or diet (the two sheets)
+    const pre = p.education.pre;
+    const post = postStage(p.education);
+    const stages = [pre && { label: "Pre-op", k: "pre" as const, st: pre }, { label: "Post-op", k: "post" as const, st: post }].filter((x): x is { label: string; k: "pre" | "post"; st: EducationStage } => !!x);
     body = (
-      <div className="space-y-5">
-        <Block label={`Education${e.preset ? ` · ${e.preset}` : ""}`} icon={<BookOpen size={12} className={iconCls} />}>
-          {e.points.length === 0 ? <Empty>No points yet.</Empty> : (
-            <ol className="space-y-1">
-              {e.points.map((pt, n) => (
-                <li key={n} className="flex gap-2 text-sm">
-                  <span className={`mt-0.5 grid place-items-center w-4 h-4 rounded-full shrink-0 ${pt.done ? "bg-emerald-500 text-white" : "border border-[var(--color-ink-300)]"}`}>
-                    {pt.done && <Check size={10} strokeWidth={3} />}
-                  </span>
-                  <span className="text-[var(--color-ink-700)]">{pt.text}</span>
-                </li>
+      <div className="space-y-4">
+        {stages.map(({ label, k, st }) => {
+          if (p.sheet === "diet") {
+            const nbm = st.dietTypes.includes("Nil by mouth");
+            return (
+              <Block key={label} label={`${label} diet`} icon={<Utensils size={12} className={iconCls} />}>
+                <KV label="Follow" value={dietStory(k, st.dietDays, p.dateOfSurgery || null)} />
+                <KV label="Diet" value={st.dietTypes.join(", ")} />
+                <KV label="Nil by mouth from" value={nbm ? st.nbmFrom : ""} />
+                {!nbm && st.meals.some((m) => m.diet.trim()) && (
+                  <ul className="mt-1 divide-y divide-[var(--color-border)]/70">
+                    {st.meals.filter((m) => m.diet.trim()).map((m) => (
+                      <li key={m.meal} className="grid grid-cols-[30%_15%_55%] py-1.5 text-caption leading-snug">
+                        <span className="text-[var(--color-ink-400)]">{m.meal}</span>
+                        <span className="tabular-nums text-[var(--color-ink-500)]">{m.time}</span>
+                        <span className="font-medium text-[var(--color-ink-900)]">{m.diet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Block>
+            );
+          }
+          const groups = [{ title: st.preset, points: st.points }, ...(st.sets ?? []).map((x) => ({ title: x.title, points: x.points }))];
+          return (
+            <Block key={label} label={`${label} patient education`} icon={<BookOpen size={12} className={iconCls} />}>
+              {groups.every((g) => g.points.length === 0) ? <Empty>No points yet.</Empty> : groups.filter((g) => g.points.length > 0).map((g, gi) => (
+                <div key={gi} className="mb-2">
+                  {g.title && <p className="mb-1 text-xs font-semibold text-[var(--color-ink-500)]">{g.title}</p>}
+                  <ol className="space-y-1">
+                    {g.points.map((pt, n) => (
+                      <li key={n} className="flex gap-2 text-caption leading-snug">
+                        <span className={`mt-0.5 grid place-items-center w-4 h-4 rounded-full shrink-0 ${pt.done ? "bg-emerald-500 text-white" : "border border-[var(--color-ink-300)]"}`}>
+                          {pt.done && <Check size={10} strokeWidth={3} />}
+                        </span>
+                        <span className="text-[var(--color-ink-700)]">{pt.text}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               ))}
-            </ol>
-          )}
-          <div className="mt-2">
-            <KV label="Explained to" value={e.explainedTo} />
-            <KV label="Language" value={e.language} />
-            <KV label="Understood" value={e.teachBack ? "Yes (teach-back)" : ""} />
-            <KV label="Notes" value={e.notes.trim()} />
-          </div>
-        </Block>
-        <Block label="Diet" icon={<Utensils size={12} className={iconCls} />}>
-          <KV label="Diet" value={e.dietTypes.join(", ")} />
-          <KV label="Nil by mouth from" value={nbm ? e.nbmFrom : ""} />
-          {!nbm && e.meals.some((m) => m.diet.trim()) && (
-            <ul className="mt-1 divide-y divide-[var(--color-border)]/70">
-              {e.meals.filter((m) => m.diet.trim()).map((m) => (
-                <li key={m.meal} className="grid grid-cols-[9rem_4rem_minmax(0,1fr)] gap-3 py-1 text-sm">
-                  <span className="text-[var(--color-ink-400)]">{m.meal}</span>
-                  <span className="tabular-nums text-[var(--color-ink-500)]">{m.time}</span>
-                  <span className="font-medium text-[var(--color-ink-900)]">{m.diet}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Block>
+              {(st.meds ?? []).length > 0 && <KV label="Medicines" value={(st.meds ?? []).map(eduMedText).join("; ")} />}
+              <div className="mt-2">
+                <KV label="Explained to" value={st.explainedTo} />
+                <KV label="Language" value={st.language} />
+                <KV label="Understood" value={st.teachBack ? "Yes (teach-back)" : ""} />
+                <KV label="Notes" value={st.notes.trim()} />
+              </div>
+            </Block>
+          );
+        })}
       </div>
     );
   }

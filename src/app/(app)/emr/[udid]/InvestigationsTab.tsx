@@ -20,8 +20,8 @@ import {
   X, Search, Trash2, Lock,
 } from "lucide-react";
 
-const FAVES_KEY   = "ppms_inv_favorites";
-const SESSION_KEY = "ppms_inv_session_customs";
+export const FAVES_KEY   = "ppms_inv_favorites";
+export const SESSION_KEY = "ppms_inv_session_customs";
 import clsx from "clsx";
 import { MatchHighlight } from "@/components/ui/MatchHighlight";
 
@@ -497,12 +497,14 @@ function reportFiles(order: { resultRef: string; resultAt?: string | Date | null
 const ALL_CATALOG_NAMES = Object.values(INV_CATALOG).flat().map((i) => i.name);
 const CATALOG_CATEGORIES = Object.keys(INV_CATALOG);
 
-function AddCustomTestModal({
+export function AddCustomTestModal({
   onAdd,
   onClose,
+  zClass = "z-50",
 }: {
   onAdd: (name: string, category: string) => void;
   onClose: () => void;
+  zClass?: string;
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(CATALOG_CATEGORIES[0]);
@@ -522,7 +524,7 @@ function AddCustomTestModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 ${zClass} flex items-center justify-center p-4`}
       style={{ background: "rgba(0,0,0,0.45)" }}
       onClick={onClose}
     >
