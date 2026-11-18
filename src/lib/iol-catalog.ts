@@ -100,6 +100,24 @@ export function rememberModel(manufacturer: string, model: string, aConstant: st
   write(CUSTOM_KEY, [...rest, m]);
 }
 
+/** True for a manufacturer added on this device (not one of the catalog's). */
+export function isCustomManufacturer(name: string): boolean {
+  return !IOL_CATALOG.some((c) => same(c.manufacturer, name))
+    && (customManufacturers().some((m) => same(m, name)) || customModels().some((m) => same(m.manufacturer, name)));
+}
+
+/** Forget a custom manufacturer along with the custom models saved under it. */
+export function removeCustomManufacturer(name: string) {
+  if (!isCustomManufacturer(name)) return;
+  write(CUSTOM_MAKERS_KEY, customManufacturers().filter((m) => !same(m, name)));
+  write(CUSTOM_KEY, customModels().filter((m) => !same(m.manufacturer, name)));
+}
+
+/** Forget a custom model (catalog models can't be removed). */
+export function removeCustomModel(manufacturer: string, model: string) {
+  write(CUSTOM_KEY, customModels().filter((x) => !(same(x.manufacturer, manufacturer) && same(x.model, model))));
+}
+
 /** True for a model added by a user on this device. */
 export function isCustomModel(manufacturer: string, model: string): boolean {
   return customModels().some((x) => same(x.manufacturer, manufacturer) && same(x.model, model));

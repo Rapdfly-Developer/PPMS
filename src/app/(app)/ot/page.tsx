@@ -47,7 +47,7 @@ export default async function OtPage() {
       fileNo: a.fileNo,
       ipdStatus: a.status,
       upcoming,
-      stage: upcoming ? null : otStage(c, requiredKeys(a.admissionType, a.forms.map((f) => f.key))),
+      stage: upcoming ? null : otStage(c, requiredKeys(a.admissionType, a.forms.map((f) => f.key), a.fileTabs)),
       sequence: c?.sequence ?? 0,
       shiftedToOtAt: a.shiftedToOtAt?.toISOString() ?? null,
       begunAt: c?.begunAt?.toISOString() ?? null,

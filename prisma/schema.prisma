@@ -1616,6 +1616,10 @@ model IpdAdmission {
   dischargeOtp       String?
   dischargeOtpExpires DateTime?
 
+  // Patient file: created from the patient profile with the chosen tabs
+  fileTabs           String[]  @default([])
+  fileCreatedAt      DateTime?
+
   forms              IpdForm[]
   doctorNotes        IpdDoctorNote[]
   otCase             OtCase?

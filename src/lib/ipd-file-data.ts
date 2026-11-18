@@ -1,5 +1,6 @@
 // Server-only: builds the IPD patient file (shared by the IPD file page and the OT file page).
 import { prisma } from "@/lib/prisma";
+import { istTodayStr } from "@/lib/ist";
 import { visitRecordScope } from "@/lib/patient-access";
 import type { SessionUser } from "@/lib/rbac";
 import { admissionTypeText, buildDischargeDraft, otTemplateSteps } from "@/lib/ipd";
@@ -10,7 +11,8 @@ import {
 } from "@/lib/ipd-forms";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
 import { allergyLine, latestDrugAllergy } from "@/lib/care-sync";
-import { implantFromCounselling, parseCounsellingConsents, parseCounsellingEducation } from "@/lib/counselling-sheets";
+import { implantFromCounselling, parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
+import { CASHLESS_TYPES, paymentLabel, parsePaymentDocs, SUPERSEDED } from "@/lib/counselling";
 import type { FileData } from "@/app/(app)/ipd/[admissionId]/PatientFile";
 
 /** Category shown as the coloured badge, as on the patient Time Stamp. */
@@ -19,6 +21,8 @@ const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "di
   TYPE_CHANGED: "update",
   FORM_FROZEN: "form",
   FORM_ADDED: "form",
+  FORM_REMOVED: "form",
+  FILE_CREATED: "form",
   PHOTO_ADDED: "form",
   SHIFTED_TO_OT: "ot",
   OT_FORM_VERIFIED: "ot",
@@ -38,6 +42,8 @@ const ACTIVITY_TEXT: Record<string, string> = {
   TYPE_CHANGED: "Type of admission changed",
   FORM_FROZEN: "Form frozen",
   FORM_ADDED: "Form added",
+  FORM_REMOVED: "Tab removed",
+  FILE_CREATED: "Patient file created",
   PHOTO_ADDED: "Photo attached",
   SHIFTED_TO_OT: "Shifted to OT",
   OT_FORM_VERIFIED: "Form verified in OT",
@@ -80,11 +86,11 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
       doctorNotes: { orderBy: { createdAt: "desc" } },
       visit: {
         select: {
-          id: true, date: true, finalizedAt: true,
+          id: true, date: true, finalizedAt: true, status: true,
           followUpDate: true,
           hospital: { select: { name: true, address: true, contact: true, logoUrl: true } },
           doctor: { select: { name: true, qualifications: true, medicalRegNumber: true } },
-          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
+          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
           medications: { select: { drugName: true, dosage: true, frequency: true, route: true, laterality: true, instructions: true }, orderBy: { createdAt: "asc" } },
@@ -98,7 +104,8 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
 
   // Investigation reports: every order for this patient within the user's scope
   const orders = await prisma.investigationOrder.findMany({
-    where: { visit: { patientId: v.patient.id, ...scope } },
+    // Reports replaced by a No Show retake are history (as in Counselling)
+    where: { visit: { patientId: v.patient.id, ...scope }, status: { not: SUPERSEDED } },
     orderBy: { createdAt: "desc" },
     select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true },
   });
@@ -133,9 +140,37 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const counselling = a.counsellingVisitId
     ? await prisma.counsellingRecord.findUnique({
         where: { visitId: a.counsellingVisitId },
-        select: { paymentType: true, paymentMode: true, schemeName: true, policyNumber: true, eligibleByName: true, confirmedAt: true, implantDetails: true, consents: true, education: true },
+        select: {
+          paymentType: true, paymentMode: true, schemeName: true, policyNumber: true, eligibleByName: true, confirmedAt: true, implantDetails: true, consents: true, education: true,
+          implant: true, dateOfSurgery: true, paymentDocs: true, estimateAmount: true, advancePaid: true, advanceReceived: true,
+          fitForSurgery: true, fitByName: true, doctorReviewedAt: true,
+          visit: { select: { advisedSurgeryName: true, advisedSurgeryEye: true, advisedSurgeryNotes: true, advisedSurgeryAnaesthesia: true, advisedSurgeryImplant: true, advisedSurgeryDate: true } },
+        },
       })
     : null;
+
+  // The Counselling module's sheet (surgery, implant details, payment), shown as a tab of the file
+  const rupees = (n: unknown) => (n == null ? "" : `₹${Number(n).toLocaleString("en-IN")}`);
+  const counsellingSheet = counselling ? (() => {
+    const cv = counselling.visit;
+    const cashless = CASHLESS_TYPES.find((t) => t.value === counselling.paymentType);
+    return {
+      surgery: cv.advisedSurgeryName ?? a.surgery ?? "",
+      laterality: cv.advisedSurgeryEye ?? a.laterality,
+      anaesthesia: cv.advisedSurgeryAnaesthesia ?? a.anaesthesia,
+      surgeryNotes: cv.advisedSurgeryNotes,
+      implant: counselling.implant ?? cv.advisedSurgeryImplant ?? "",
+      dateOfSurgery: (counselling.dateOfSurgery ?? cv.advisedSurgeryDate)?.toISOString() ?? "",
+      implantInfo: parseCounsellingImplant(counselling.implantDetails),
+      payment: paymentLabel(counselling.paymentMode, counselling.paymentType),
+      payerLabel: cashless?.nameLabel ?? "", payer: cashless ? counselling.schemeName ?? "" : "",
+      idLabel: cashless?.idLabel ?? "", payerId: cashless ? counselling.policyNumber ?? "" : "",
+      docs: cashless ? parsePaymentDocs(counselling.paymentDocs) : [],
+      estimate: rupees(counselling.estimateAmount),
+      advance: counselling.advancePaid != null ? rupees(counselling.advancePaid) : counselling.advanceReceived ? "Received" : "",
+      fit: counselling.fitForSurgery, fitBy: counselling.fitByName, fitAt: counselling.doctorReviewedAt?.toISOString() ?? null,
+    };
+  })() : null;
 
   const audit = await prisma.auditLog.findMany({
     where: { entityType: "IpdAdmission", entityId: a.id },
@@ -148,7 +183,8 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
       let detail = "";
       try {
         const nv = l.newValue ? JSON.parse(l.newValue) : null;
-        if (l.action === "FORM_FROZEN" || l.action === "FORM_ADDED") detail = nv?.title ?? "";
+        if (l.action === "FORM_FROZEN" || l.action === "FORM_ADDED" || l.action === "FORM_REMOVED") detail = nv?.title ?? "";
+        if (l.action === "FILE_CREATED" && Array.isArray(nv?.tabs)) detail = nv.tabs.join(", ");
         if (l.action === "PHOTO_ADDED") detail = nv?.name ?? "";
         if (typeof nv?.detail === "string" && l.action.startsWith("OT_")) detail = nv.detail;
         if (l.action === "TYPE_CHANGED") detail = `${admissionTypeText(nv?.from ?? "")} → ${admissionTypeText(nv?.to ?? "", nv?.other)}`;
@@ -183,6 +219,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const education = completeEducation(savedEducation ?? (counselling && parseCounsellingEducation(counselling.education)) ?? defaultEducation(ctx), ctx);
   const defaults: Record<string, unknown> = {
     implant: counselling ? implantFromCounselling(counselling.implantDetails) : defaultImplant(),
+    counselling: { v: 1, verify: { patient: null, eye: null, implant: null, power: null, expiry: null } },
     consents: upgradeConsents((counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx), ctx),
     checklist: defaultChecklist(),
     education,
@@ -229,9 +266,11 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const data: FileData = {
     id: a.id,
     visitId: v.id,
+    // As in the EMR: a closed visit stays editable until midnight (IST) of the day it was finalized
+    visitOpen: v.status !== "CLOSED" || (!!v.finalizedAt && istTodayStr(v.finalizedAt) === istTodayStr()),
     udid,
     returnTo: returnTo && returnTo.startsWith("/") ? returnTo : `/patients/${udid}?source=ipd&returnTo=${encodeURIComponent("/ipd")}`,
-    patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? udid, photoUrl: v.patient.photoUrl },
+    patient: { name: v.patient.name, age: v.patient.age, sex: v.patient.sex, id: v.patient.uhid ?? udid, mobile: v.patient.mobile, photoUrl: v.patient.photoUrl },
     doctor: v.doctor.name,
     hospital: v.hospital.name,
     letterhead: {
@@ -255,6 +294,11 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     floor: a.floor,
     fileNo: a.fileNo,
     status: a.status,
+    fileTabs: a.fileTabs,
+    counsellingVisitId: a.counsellingVisitId,
+    fileCreated: !!a.fileCreatedAt,
+    visitDate: v.date.toISOString(),
+    counsellingSheet,
     shiftedToOtAt: a.shiftedToOtAt?.toISOString() ?? null,
     returnedFromOtAt: a.returnedFromOtAt?.toISOString() ?? null,
     dischargedAt: a.dischargedAt?.toISOString() ?? null,

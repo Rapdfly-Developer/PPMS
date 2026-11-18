@@ -17,6 +17,9 @@ import {
   AIContent,
 } from "./VisitSummaryTabs";
 import { transferPatient, generateLongitudinalSummary } from "../actions";
+import { createIpdFile } from "../../ipd/actions";
+import { FileTabsDialog, summaryTitle } from "../../ipd/[admissionId]/FileTabsDialog";
+import { ALWAYS_TABS, IPD_FORMS, tabChoices } from "@/lib/ipd";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { AiDisclaimer } from "@/components/ui/AiDisclaimer";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
@@ -821,6 +824,7 @@ export function PatientProfileClient({
   canOpenTodayVisit = false,
   showTodayVisit = true,
   ipdFileHref = null,
+  ipdCreate = null,
   allowEmrEdit = true,
   timelineEntries = [],
   todayVisitSummary = null,
@@ -839,6 +843,8 @@ export function PatientProfileClient({
   showTodayVisit?: boolean;
   /** Set when opened from IPD: shows "Open Patient File" instead of the visit buttons. */
   ipdFileHref?: string | null;
+  /** Set when the IPD file is not created yet: the button reads "Create Patient File". */
+  ipdCreate?: { admissionId: string; type: string; hasCounselling: boolean; visitDate: string } | null;
   /** False when navigating from the Total Dispensed card — EMR is view-only, no edit allowed. */
   allowEmrEdit?: boolean;
   timelineEntries?: TimelineEntry[];
@@ -852,9 +858,27 @@ export function PatientProfileClient({
   const todayIsFinalized = hasToday && todayVisit!.status === "CLOSED";
   const [showFinalizedModal, setShowFinalizedModal] = useState(false);
   const emrReturnTo = profileReturnPath ?? `/patients/${udid}`;
+  const [creatingFile, setCreatingFile] = useState(false);
+  const fileRouter = useRouter();
 
   return (
     <>
+      {creatingFile && ipdCreate && ipdFileHref && (
+        <FileTabsDialog
+          title="Create Patient File"
+          sub="Choose the tabs for this file. They are filled with the details already recorded. Tabs can be added or removed later."
+          always={ALWAYS_TABS.map((k) => ({ key: k, title: k === "summary" ? summaryTitle(ipdCreate.visitDate) : IPD_FORMS.find((f) => f.key === k)?.title ?? k }))}
+          choices={tabChoices(ipdCreate.type, ipdCreate.hasCounselling).map((f) => ({ key: f.key, title: f.title, preOp: !!f.preOpOnly }))}
+          initial={tabChoices(ipdCreate.type, ipdCreate.hasCounselling).map((f) => f.key)}
+          confirmLabel="Create file"
+          onConfirm={async (tabs) => {
+            const r = await createIpdFile(ipdCreate.admissionId, tabs);
+            if (r.error) return r.error;
+            fileRouter.push(ipdFileHref);
+          }}
+          onClose={() => setCreatingFile(false)}
+        />
+      )}
       {showFinalizedModal && todayVisit && (
         <FinalizedVisitModal
           visitId={todayVisit.id}
@@ -888,7 +912,16 @@ export function PatientProfileClient({
         )}
 
         {/* Opened from IPD - the patient file replaces the visit buttons */}
-        {ipdFileHref ? (
+        {ipdFileHref && ipdCreate ? (
+          <button
+            type="button"
+            onClick={() => setCreatingFile(true)}
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            <FolderOpen size={16} />
+            Create Patient File
+          </button>
+        ) : ipdFileHref ? (
           <Link
             href={ipdFileHref}
             className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"

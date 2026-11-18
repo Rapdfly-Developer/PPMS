@@ -9,7 +9,8 @@ import { useMemo, useState } from "react";
 import { useSuggest } from "./Suggest";
 import { TypeSelect } from "./TypeSelect";
 import {
-  addCustomManufacturer, allManufacturers, findModel, isCustomModel, modelsOf, rememberModel,
+  addCustomManufacturer, allManufacturers, findModel, isCustomManufacturer, isCustomModel, modelsOf, rememberModel,
+  removeCustomManufacturer, removeCustomModel,
 } from "@/lib/iol-catalog";
 
 export interface IolValue { manufacturer: string; model: string; aConstant: string }
@@ -55,11 +56,12 @@ export function IolPowerInput({ value, onChange, disabled, className }: {
   );
 }
 
-function Combo({ value, onChange, options, ns, onAdd, disabled, placeholder, className }: {
+function Combo({ value, onChange, options, ns, onAdd, onRemove, canRemove, disabled, placeholder, className }: {
   value: string; onChange: (v: string) => void; options: string[]; ns: string; onAdd: (v: string) => void;
+  onRemove: (v: string) => void; canRemove: (v: string) => boolean;
   disabled?: boolean; placeholder?: string; className: string;
 }) {
-  const { inputProps, menu } = useSuggest({ term: value, options, ns, onPick: onChange, onAddNew: onAdd, openOnFocus: true });
+  const { inputProps, menu } = useSuggest({ term: value, options, ns, onPick: onChange, onAddNew: onAdd, onRemove, canRemove, openOnFocus: true });
   return (
     <div className="relative flex-1 min-w-0">
       <input value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={className} {...inputProps} />
@@ -106,10 +108,18 @@ export function IolFields({ value, onChange, disabled, inputClass, row }: {
       {row("manufacturer", "Manufacturer",
         <Combo value={value.manufacturer} onChange={setManufacturer} options={makers} ns="iol_manufacturer" disabled={disabled}
           placeholder="e.g. Alcon" className={inputClass}
-          onAdd={(m) => { addCustomManufacturer(m); setRev((r) => r + 1); setManufacturer(m); }} />)}
+          onAdd={(m) => { addCustomManufacturer(m); setRev((r) => r + 1); setManufacturer(m); }}
+          canRemove={isCustomManufacturer}
+          onRemove={(m) => { removeCustomManufacturer(m); setRev((r) => r + 1); if (value.manufacturer === m) onChange({ manufacturer: "", model: "", aConstant: "" }); }} />)}
       {row("model", "Model",
         <Combo value={value.model} onChange={setModel} options={models.map((m) => m.model)} ns="iol_model" disabled={disabled}
           placeholder={value.manufacturer ? `${value.manufacturer} models` : "e.g. AcrySof IQ SN60WF"} className={inputClass}
+          canRemove={(m) => isCustomModel(value.manufacturer || findModel("", m)?.manufacturer || "", m)}
+          onRemove={(m) => {
+            removeCustomModel(value.manufacturer || findModel("", m)?.manufacturer || "", m);
+            setRev((r) => r + 1);
+            if (value.model === m) onChange({ model: "", aConstant: "" });
+          }}
           onAdd={(model) => {
             rememberModel(value.manufacturer || "Other", model, value.aConstant);
             if (!value.manufacturer) addCustomManufacturer("Other");

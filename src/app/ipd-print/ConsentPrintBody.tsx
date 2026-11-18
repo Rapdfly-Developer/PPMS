@@ -1,4 +1,24 @@
 import { CONSENT_DECLARATION, type ConsentItem } from "@/lib/ipd-forms";
+import { fileHref } from "@/lib/file-href";
+
+type SignedFile = NonNullable<ConsentItem["signedFile"]>;
+
+/** Is the uploaded signed copy a PDF (printed from the browser's own viewer)? */
+export const isPdfFile = (f: SignedFile) => /\.pdf(\?|$)/i.test(f.name) || /\.pdf(\?|$)/i.test(f.ref);
+
+/** The uploaded signed copy of a consent, as the printed page. */
+export function SignedConsentPrint({ c }: { c: ConsentItem & { signedFile: SignedFile } }) {
+  const href = fileHref(c.signedFile.ref)!;
+  if (isPdfFile(c.signedFile)) {
+    return (
+      <p className="py-10 text-center text-[13px]">
+        The signed copy of <b>{c.title}</b> is a PDF (<a href={href} target="_blank" rel="noreferrer" className="underline">{c.signedFile.name}</a>). Open it to print.
+      </p>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={href} alt={`Signed ${c.title}`} className="mx-auto block max-w-full max-h-[272mm] object-contain" />;
+}
 
 /** Page height left inside the A4 page margins (297mm - 2 x 10mm), less a little for rounding. */
 export const CONSENT_PAGE_MIN_H = "min-h-[272mm]";

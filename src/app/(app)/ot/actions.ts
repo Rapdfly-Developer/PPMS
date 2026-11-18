@@ -54,7 +54,7 @@ const clean = (s: unknown, max = 2000) => (typeof s === "string" ? s.trim().slic
 const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 const fmtTime = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 
-const required = (a: Loaded["admission"]) => requiredKeys(a.admissionType, a.forms.map((f) => f.key));
+const required = (a: Loaded["admission"]) => requiredKeys(a.admissionType, a.forms.map((f) => f.key), a.fileTabs);
 const inOt = (a: Loaded["admission"]) => a.status === "IN_OT";
 
 /** The draft OT notes from the IPD file (or the surgery's preset when none was saved). */

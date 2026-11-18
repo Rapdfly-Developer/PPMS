@@ -11,13 +11,12 @@ import {
 } from "lucide-react";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
-import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText, wardTypeText, type IpdStatus } from "@/lib/ipd";
+import { ADMISSION_TYPE_LABEL, IPD_STATUS_LABEL, admissionTypeText } from "@/lib/ipd";
 import { UpcomingList, type UpcomingRow } from "./UpcomingList";
-import { SurgeryInline } from "@/components/ui/SurgeryInline";
 
 export interface IpdRow {
   id: string;
-  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; photoUrl: string | null };
+  patient: { id: string; name: string; udid: string; uhid: string | null; age: number; sex: string; mobile: string | null; photoUrl: string | null };
   doctor: string;
   diagnoses: { description: string; laterality: string | null }[];
   type: string;
@@ -41,37 +40,24 @@ export interface IpdRow {
 }
 
 type Card = "TODAY" | "UPCOMING" | "OVERALL";
-const TABS = ["Pre-op", "Post-op", "Non-op"] as const;
+const TABS = ["Pre-op", "Post-op", "Conservative", "Overall"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_META: Record<Tab, { glyph: React.ReactNode; hint: string; icon: string; count: string }> = {
   "Pre-op":  { glyph: <Scissors size={13} />,    hint: "Admitted for surgery, before OT",       icon: "bg-amber-100 text-amber-600",     count: "bg-amber-100 text-amber-700" },
   "Post-op": { glyph: <Activity size={13} />,    hint: "Back in the ward after surgery",        icon: "bg-emerald-100 text-emerald-600", count: "bg-emerald-100 text-emerald-700" },
-  "Non-op":  { glyph: <Stethoscope size={13} />, hint: "Conservative management and others",    icon: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]", count: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
-};
-
-const STATUS_PILL: Record<IpdStatus, string> = {
-  ADMITTED:   "bg-sky-50 text-sky-700 border border-sky-200",
-  IN_OT:      "bg-violet-50 text-violet-700 border border-violet-200",
-  POST_OP:    "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  DISCHARGED: "bg-slate-100 text-slate-600 border border-slate-200",
+  "Conservative":  { glyph: <Stethoscope size={13} />, hint: "Conservative management and others",    icon: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]", count: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]" },
+  "Overall":       { glyph: <Layers size={13} />,      hint: "Every patient under this card",          icon: "bg-sky-100 text-sky-600",         count: "bg-sky-100 text-sky-700" },
 };
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
 const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
 
-/** Which Today tab a patient in the ward belongs to. */
+/** Which tab a patient belongs to (Overall holds everyone). */
 function tabOf(r: IpdRow): Tab {
   if (r.status === "POST_OP") return "Post-op";
-  return r.type === "PRE_OP" ? "Pre-op" : "Non-op";
-}
-
-function StatusPill({ status }: { status: string }) {
-  return (
-    <span className={`inline-flex items-center text-micro sm:text-caption font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${STATUS_PILL[status as IpdStatus] ?? STATUS_PILL.ADMITTED}`}>
-      {IPD_STATUS_LABEL[status as IpdStatus] ?? status}
-    </span>
-  );
+  if (r.status === "DISCHARGED" && r.type === "PRE_OP" && r.surgeryDate) return "Post-op";
+  return r.type === "PRE_OP" ? "Pre-op" : "Conservative";
 }
 
 function Completion({ r }: { r: IpdRow }) {
@@ -98,12 +84,23 @@ function Avatar({ r }: { r: IpdRow }) {
   );
 }
 
+/** Surgery as a chip, with the laterality in bold (same as the Counselling list). */
 function SurgeryText({ r }: { r: IpdRow }) {
-  if (!r.surgery) return <span className="text-label sm:text-sm text-[var(--color-ink-600)]">{admissionTypeText(r.type, r.typeOther)}</span>;
+  if (!r.surgery) {
+    return (
+      <span className="block min-w-0">
+        <span className="block text-label sm:text-sm text-[var(--color-ink-700)]">{admissionTypeText(r.type, r.typeOther)}</span>
+        {r.reason && <span className="block text-caption text-[var(--color-ink-500)] mt-0.5 line-clamp-2">{r.reason}</span>}
+      </span>
+    );
+  }
   return (
-    <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] break-words">
-      <SurgeryInline eye={r.laterality} surgery={r.surgery} anaesthesia={r.anaesthesia} />
-      {r.implant && <span className="block text-caption font-normal text-[var(--color-ink-500)]">{r.implant}</span>}
+    <span className="flex min-w-0 flex-col items-start gap-1">
+      <span className="inline-flex max-w-full flex-wrap items-center gap-x-1 px-2.5 py-0.5 rounded-full border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] text-[var(--color-primary-800)] font-medium text-caption break-words">
+        {r.laterality && <span className="clinical-laterality shrink-0">{r.laterality}</span>}
+        {r.surgery}
+        {r.anaesthesia && <><span aria-hidden className="text-[var(--color-primary-300)]">·</span><span className="font-normal italic text-[var(--color-ink-500)]">{r.anaesthesia}</span></>}
+      </span>
     </span>
   );
 }
@@ -119,7 +116,6 @@ function Dates({ r }: { r: IpdRow }) {
     <span className="flex flex-col gap-0.5">
       {line("DOA", day(r.admittedOn))}
       {r.type === "PRE_OP" && line("DOS", day(r.surgeryDate))}
-      {r.dischargedAt ? line("DOD", day(r.dischargedAt)) : line("EDD", day(r.expectedDischarge))}
     </span>
   );
 }
@@ -130,16 +126,20 @@ function PatientCell({ r }: { r: IpdRow }) {
       <Avatar r={r} />
       <div className="min-w-0">
         <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-900)] truncate">{r.patient.name}</p>
-        <p className="text-caption text-[var(--color-ink-400)] mt-0.5">
-          {r.patient.uhid ?? r.patient.udid} · {r.patient.age}y/{SEX_SHORT[r.patient.sex] ?? r.patient.sex}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+          <span className="font-mono text-micro sm:text-caption bg-[#F0F8F6] text-[#115E59] px-1.5 py-0.5 rounded shrink-0">{r.patient.uhid ?? r.patient.udid}</span>
+          <span className="text-micro sm:text-caption text-[var(--color-ink-400)]">
+            {r.patient.age}y · {SEX_SHORT[r.patient.sex] ?? r.patient.sex}{r.patient.mobile ? ` · ${r.patient.mobile}` : ""}
+          </span>
+        </div>
+        {wardText(r) && <p className="text-caption text-[var(--color-ink-500)] mt-0.5">{wardText(r)}</p>}
       </div>
     </div>
   );
 }
 
 function wardText(r: IpdRow) {
-  return [r.ward && `Ward ${r.ward}`, wardTypeText(r.wardType), r.floor && `Floor ${r.floor}`, r.fileNo && `File ${r.fileNo}`].filter(Boolean).join(" · ");
+  return [r.ward && `Ward ${r.ward}`, r.floor && `Floor ${r.floor}`].filter(Boolean).join(" · ");
 }
 
 const profileHref = (r: IpdRow) => `/patients/${r.patient.udid}?source=ipd&returnTo=${encodeURIComponent("/ipd")}`;
@@ -147,7 +147,7 @@ const profileHref = (r: IpdRow) => `/patients/${r.patient.udid}?source=ipd&retur
 function ListCols() {
   return (
     <colgroup>
-      <col className="w-[21%]" /><col className="w-[17%]" /><col className="w-[21%]" /><col className="w-[15%]" /><col className="w-[12%]" /><col className="w-[11%]" /><col className="w-[3%]" />
+      <col className="w-[32%]" /><col className="w-[34%]" /><col className="w-[18%]" /><col className="w-[16%]" />
     </colgroup>
   );
 }
@@ -158,7 +158,7 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
       <ListCols />
       <thead>
         <tr className="border-b border-[var(--color-border)]">
-          {["Patient", "Admission", "Surgery", "Dates", "Completion", "Status", ""].map((h) => (
+          {["Patient", "Surgery", "Dates", "Completion"].map((h) => (
             <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
           ))}
         </tr>
@@ -167,16 +167,9 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
         {list.map((r) => (
           <tr key={r.id} onClick={() => onOpen(r)} className="border-b border-[var(--color-border)] last:border-0 cursor-pointer transition-colors hover:bg-[var(--color-surface-sunken)]">
             <td className="px-4 py-3"><PatientCell r={r} /></td>
-            <td className="px-4 py-3">
-              <span className="block text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">{admissionTypeText(r.type, r.typeOther)}</span>
-              {r.reason && <span className="block text-caption text-[var(--color-ink-600)] mt-0.5 line-clamp-2">{r.reason}</span>}
-              {wardText(r) && <span className="block text-caption text-[var(--color-ink-500)] mt-0.5">{wardText(r)}</span>}
-            </td>
-            <td className="px-4 py-3">{r.surgery ? <SurgeryText r={r} /> : <span className="italic text-caption text-[var(--color-ink-300)]">-</span>}</td>
+            <td className="px-4 py-3"><SurgeryText r={r} /></td>
             <td className="px-4 py-3"><Dates r={r} /></td>
             <td className="px-4 py-3"><Completion r={r} /></td>
-            <td className="px-4 py-3"><StatusPill status={r.status} /></td>
-            <td className="px-4 py-3 text-right"><ChevronRight size={16} className="inline text-[var(--color-ink-300)]" /></td>
           </tr>
         ))}
       </tbody>
@@ -187,14 +180,10 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
 function MobileCard({ r }: { r: IpdRow }) {
   return (
     <Link href={profileHref(r)} className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 hover:border-[var(--color-primary-300)] transition-colors">
-      <div className="flex items-start justify-between gap-2">
-        <PatientCell r={r} />
-        <StatusPill status={r.status} />
-      </div>
+      <PatientCell r={r} />
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs">
-        <span className="text-[var(--color-ink-400)]">Admission</span>
-        <span className="text-[var(--color-ink-700)]">{admissionTypeText(r.type, r.typeOther)}{wardText(r) ? ` · ${wardText(r)}` : ""}</span>
-        {r.surgery && <><span className="text-[var(--color-ink-400)]">Surgery</span><SurgeryText r={r} /></>}
+        <span className="text-[var(--color-ink-400)]">Surgery</span>
+        <SurgeryText r={r} />
         <span className="text-[var(--color-ink-400)]">Dates</span>
         <Dates r={r} />
       </div>
@@ -298,10 +287,6 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
 
   // Today = everyone currently in the hospital (not discharged)
   const inHouse = useMemo(() => filtered.filter((r) => r.status !== "DISCHARGED"), [filtered]);
-  const byTab = useMemo(() => Object.fromEntries(TABS.map((t) => [t, inHouse.filter((r) => tabOf(r) === t)])) as Record<Tab, IpdRow[]>, [inHouse]);
-  // Selected tab; until one is picked, the first tab that has patients (as in Counselling)
-  const tab: Tab = pickedTab ?? TABS.find((t) => byTab[t].length > 0) ?? "Pre-op";
-
   const overallList = useMemo(() => {
     if (!calDay) return filtered.filter((r) => {
       const a = new Date(r.admittedOn); const d = r.dischargedAt ?? r.expectedDischarge;
@@ -320,10 +305,19 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
     return upcoming.filter((u) => [u.patient.name, u.patient.udid, u.patient.uhid ?? "", u.surgery ?? "", u.doctor].join(" ").toLowerCase().includes(q));
   }, [upcoming, search]);
 
+  // Tabs under every card: Pre-op / Post-op / Conservative / Overall.
+  // Upcoming patients are all waiting for surgery, so they are Pre-op.
+  const cardList = card === "TODAY" ? inHouse : overallList;
+  const byTab = useMemo(() => Object.fromEntries(TABS.map((t) => [t, t === "Overall" ? cardList : cardList.filter((r) => tabOf(r) === t)])) as Record<Tab, IpdRow[]>, [cardList]);
+  const upcomingByTab: Record<Tab, UpcomingRow[]> = { "Pre-op": upcomingList, "Post-op": [], "Conservative": [], "Overall": upcomingList };
+  const tabCount = (t: Tab) => (card === "UPCOMING" ? upcomingByTab[t] : byTab[t]).length;
+  // Selected tab; until one is picked, the first tab that has patients (as in Counselling)
+  const tab: Tab = pickedTab ?? TABS.find((t) => tabCount(t) > 0) ?? "Pre-op";
+
   const filtersActive = !!(search || typeFilter !== "ALL" || statusFilter !== "ALL" || dateFrom || dateTo);
   const dateInputCls = "px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent";
   const open = (r: IpdRow) => router.push(profileHref(r));
-  const activeList = card === "TODAY" ? byTab[tab] : overallList;
+  const activeList = byTab[tab];
 
   return (
     <div className="fade-in pb-24">
@@ -410,61 +404,58 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
 
       {card === "OVERALL" && <Calendar rows={filtered} month={month} onMonth={(d) => { setMonth(d); setCalDay(null); }} selected={calDay} onSelect={setCalDay} />}
 
-      {card === "UPCOMING" ? (
-        <>
-          <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
-            Counselling partially completed, not yet admitted · showing {upcomingList.length}
-          </p>
-          <UpcomingList list={upcomingList} canView={canViewCounselling} />
-        </>
-      ) : (<>
       <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3 mt-2">
-        {card === "TODAY"
+        {card === "UPCOMING"
+          ? "Counselling partially completed, not yet admitted"
+          : card === "TODAY"
           ? `${inHouse.length} in the hospital`
           : calDay ? `Admitted or discharging on ${format(calDay, "EEE, d MMM yyyy")}` : `Admitted or discharging in ${format(month, "MMMM yyyy")}`}
-        {" · "}showing {activeList.length}
+        {" · "}showing {tabCount(tab)}
       </p>
 
-      {/* Today: Pre-op / Post-op / Non-op tabs */}
-      {card === "TODAY" && (
-        <div role="tablist" aria-label="Patients in the hospital" className="flex items-end gap-1 overflow-x-auto px-1 -mb-px relative z-[1] [scrollbar-width:none]">
-          {TABS.map((t) => {
-            const m = TAB_META[t];
-            const on = t === tab;
-            return (
-              <button key={t} type="button" role="tab" aria-selected={on} onClick={() => setTab(t)}
-                title={m.hint} style={on ? undefined : { borderColor: "transparent" }}
-                className={`shrink-0 inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
-                  on
-                    ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
-                    : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"
-                }`}>
-                <span className={`w-5 h-5 rounded-md flex items-center justify-center ${on ? m.icon : "text-[var(--color-ink-400)]"}`}>{m.glyph}</span>
-                {t}
-                <span className={`rounded-full px-1.5 py-px text-micro font-bold tabular-nums ${on ? m.count : "bg-white/70 text-[var(--color-ink-500)]"}`}>{byTab[t].length}</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Pre-op / Post-op / Conservative / Overall tabs under every card */}
+      <div role="tablist" aria-label="Patients" className="flex items-end gap-1 overflow-x-auto px-1 -mb-px relative z-[1] [scrollbar-width:none]">
+        {TABS.map((t) => {
+          const m = TAB_META[t];
+          const on = t === tab;
+          return (
+            <button key={t} type="button" role="tab" aria-selected={on} onClick={() => setTab(t)}
+              title={m.hint} style={on ? undefined : { borderColor: "transparent" }}
+              className={`shrink-0 inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
+                on
+                  ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
+                  : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"
+              }`}>
+              <span className={`w-5 h-5 rounded-md flex items-center justify-center ${on ? m.icon : "text-[var(--color-ink-400)]"}`}>{m.glyph}</span>
+              {t}
+              <span className={`rounded-full px-1.5 py-px text-micro font-bold tabular-nums ${on ? m.count : "bg-white/70 text-[var(--color-ink-500)]"}`}>{tabCount(t)}</span>
+            </button>
+          );
+        })}
+      </div>
 
+      {card === "UPCOMING" ? (
+        <div className="[&>div]:rounded-tl-none">
+          <UpcomingList list={upcomingByTab[tab]} canView={canViewCounselling} />
+        </div>
+      ) : (<>
       {activeList.length === 0 ? (
-        <div className={`rounded-xl ${card === "TODAY" ? "rounded-tl-none" : ""} border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center gap-3 py-16 text-center`}>
+        <div className={`rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col items-center gap-3 py-16 text-center`}>
           <BedDouble size={36} className="text-[var(--color-ink-200)]" />
           <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-500)]">
-            {rows.length === 0 ? "No admitted patients" : filtersActive ? "No results match your filters" : card === "TODAY" ? `No ${tab.toLowerCase()} patients in the hospital` : "No patients on these dates"}
+            {rows.length === 0 ? "No admitted patients" : filtersActive ? "No results match your filters" : tab !== "Overall" ? `No ${tab.toLowerCase()} patients` + (card === "TODAY" ? " in the hospital" : " on these dates") : card === "TODAY" ? "No patients in the hospital" : "No patients on these dates"}
           </p>
           <p className="text-caption sm:text-xs text-[var(--color-ink-400)]">
-            {rows.length === 0 ? "Save the Admit tab in the EMR Patient Disposition card, then Finalize & Sign the visit." : card === "TODAY" ? TAB_META[tab].hint : "Pick another day or month."}
+            {rows.length === 0 ? "Save the Admit tab in the EMR Patient Disposition card, then Finalize & Sign the visit." : card === "TODAY" ? TAB_META[tab].hint : "Pick another day, month or tab."}
           </p>
         </div>
       ) : (
         <>
-          <div className={`hidden lg:block rounded-xl ${card === "TODAY" ? "rounded-tl-none" : ""} border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden`}>
-            {card === "TODAY" && <p className="px-4 pt-2.5 text-micro font-medium text-[var(--color-ink-400)]">{TAB_META[tab].hint}</p>}
+          <div className={`hidden lg:block rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden`}>
+            <p className="px-4 pt-2.5 text-micro font-medium text-[var(--color-ink-400)]">{TAB_META[tab].hint}</p>
             <Table list={activeList} onOpen={open} />
           </div>
-          <div className={`lg:hidden rounded-xl ${card === "TODAY" ? "rounded-tl-none" : ""} border border-[var(--color-border)] bg-[var(--color-surface)] p-2 space-y-2`}>
+          <div className={`lg:hidden rounded-xl rounded-tl-none border border-[var(--color-border)] bg-[var(--color-surface)] p-2 space-y-2`}>
             {activeList.map((r) => <MobileCard key={r.id} r={r} />)}
           </div>
         </>

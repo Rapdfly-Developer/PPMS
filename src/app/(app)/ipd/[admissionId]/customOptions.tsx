@@ -137,6 +137,7 @@ export function SuggestField({ storeKey, builtIns, value, onChange, apply, disab
     ns: ns(storeKey), term, options: o.all,
     onPick: (x) => onChange(put(value, x)),
     onAddNew: (x) => { const t = o.add(x); if (t) onChange(put(value, t)); },
+    onRemove: o.remove, canRemove: o.isCustom,
   });
   return (
     <div className={className}>
@@ -165,6 +166,11 @@ export function SelectWithCustom({ storeKey, builtIns, value, onChange, disabled
       <select value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={className}>
         {opts.map((x) => <option key={x}>{x}</option>)}
       </select>
+      {!disabled && o.isCustom(value) && (
+        <button type="button" title={`Remove "${value}" from your options`} aria-label={`Remove ${value}`}
+          onClick={() => { o.remove(value); onChange(builtIns[0] ?? ""); }}
+          className="shrink-0 rounded-full border border-red-200 p-1 text-red-600 hover:bg-red-50"><X size={12} /></button>
+      )}
       {!disabled && <AddCustom label="" placeholder="New option" onAdd={(v) => { const t = o.add(v); if (t) onChange(t); }} />}
     </div>
   );

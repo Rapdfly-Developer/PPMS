@@ -20,7 +20,7 @@ export default async function IpdPage() {
       visit: {
         select: {
           finalizedAt: true,
-          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, photoUrl: true } },
+          patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
           doctor: { select: { name: true } },
           diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
         },
@@ -49,7 +49,7 @@ export default async function IpdPage() {
     floor: a.floor,
     fileNo: a.fileNo,
     status: a.status,
-    ...completion(a.admissionType, a.forms),
+    ...completion(a.admissionType, a.forms, a.fileTabs),
   }));
 
   // Upcoming: Fit for surgery (with or without the advance), date confirmed, not yet admitted

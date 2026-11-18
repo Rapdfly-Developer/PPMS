@@ -1,5 +1,6 @@
-import { notFound } from "next/navigation";
-import { ConsentPrintBody, CONSENT_PAGE_MIN_H } from "@/app/ipd-print/ConsentPrintBody";
+import { notFound, redirect } from "next/navigation";
+import { fileHref } from "@/lib/file-href";
+import { ConsentPrintBody, CONSENT_PAGE_MIN_H, isPdfFile, SignedConsentPrint } from "@/app/ipd-print/ConsentPrintBody";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 import { PrintBar } from "@/app/ipd-print/[admissionId]/PrintBar";
 import { loadCounsellingPrint, SEX } from "../../load";
@@ -16,6 +17,22 @@ export default async function CounsellingConsentPrintPage({ params, searchParams
   const { v, pid, ctx, consents } = await loadCounsellingPrint(visitId);
   const c = consents.items.find((x) => x.id === decodeURIComponent(consentId));
   if (!c) notFound();
+
+  // Signed copy uploaded: print that, not the blank form (a PDF opens in the browser's viewer)
+  if (c.signedFile) {
+    if (isPdfFile(c.signedFile)) redirect(fileHref(c.signedFile.ref)!);
+    return (
+      <main className="min-h-screen bg-gray-100 print:bg-white">
+        <style>{"@page { size: A4; margin: 10mm 0; }"}</style>
+        <PrintBar autoPrint={print !== "0"} title={c.title} />
+        <div className="py-6 print:py-0">
+          <div className="mx-auto w-[210mm] max-w-full bg-white shadow-sm print:shadow-none print:w-auto">
+            <SignedConsentPrint c={{ ...c, signedFile: c.signedFile }} />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-100 print:bg-white">

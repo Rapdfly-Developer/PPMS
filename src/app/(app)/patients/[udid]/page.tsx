@@ -358,14 +358,19 @@ export default async function PatientProfilePage({
 
   // Opened from IPD: "Open Patient File" replaces Today's Visit / View Last Visit EMR
   let ipdFileHref: string | null = null;
+  // First time: "Create Patient File" asks which tabs the file gets
+  let ipdCreate: { admissionId: string; type: string; hasCounselling: boolean; visitDate: string } | null = null;
   if (source === "ipd" && userCan(user, "ipd.view")) {
     const ipdScope = await visitRecordScope(user);
     const adm = ipdScope ? await prisma.ipdAdmission.findFirst({
       where: { patientId: patient.id, visit: { ...ipdScope, finalizedAt: { not: null } } },
       orderBy: { admittedOn: "desc" },
-      select: { id: true },
+      select: { id: true, fileCreatedAt: true, admissionType: true, counsellingVisitId: true, visit: { select: { date: true } } },
     }) : null;
     if (adm) ipdFileHref = `/ipd/${adm.id}?returnTo=${encodeURIComponent(profileReturnPath)}`;
+    if (adm && !adm.fileCreatedAt && userCan(user, "ipd.edit")) {
+      ipdCreate = { admissionId: adm.id, type: adm.admissionType, hasCounselling: !!adm.counsellingVisitId, visitDate: adm.visit.date.toISOString() };
+    }
   }
 
   return (
@@ -565,6 +570,7 @@ export default async function PatientProfilePage({
           allowEmrEdit={source !== "total-dispensed"}
             showTodayVisit={showTodayVisit}
             ipdFileHref={ipdFileHref}
+            ipdCreate={ipdCreate}
             timelineEntries={timelineEntries}
             todayVisitSummary={todayVisitSummary}
             lastVisitSummary={lastVisitSummary}

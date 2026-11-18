@@ -5,7 +5,7 @@ export type AdmissionType = "CONSERVATIVE" | "PRE_OP" | "OTHERS";
 export type IpdStatus = "ADMITTED" | "IN_OT" | "POST_OP" | "DISCHARGED";
 
 /** Ward type chosen at admission. */
-export const WARD_TYPE_LABEL: Record<string, string> = { MALE: "Male ward", FEMALE: "Female ward", OTHER: "Other ward" };
+export const WARD_TYPE_LABEL: Record<string, string> = { MALE: "Male ward", FEMALE: "Female ward", SPECIAL: "Special ward", VIP: "VIP ward", OTHER: "Others" };
 export const wardTypeText = (t: string | null | undefined) => (t ? WARD_TYPE_LABEL[t] ?? t : "");
 
 export const ADMISSION_TYPE_LABEL: Record<AdmissionType, string> = {
@@ -29,7 +29,7 @@ export function admissionTypeText(type: string, other?: string | null): string {
 /* ── Forms ───────────────────────────────────────────────────────────────── */
 
 export type FormKey =
-  | "summary" | "investigations" | "implant" | "consents" | "checklist"
+  | "summary" | "investigations" | "counselling" | "implant" | "consents" | "checklist"
   | "education" | "treatment" | "nurse" | "otNotes" | "discharge" | "postOpNotes";
 
 export interface FormDef {
@@ -46,7 +46,7 @@ export interface FormDef {
 export const IPD_FORMS: FormDef[] = [
   { key: "summary",        title: "Today's Long Summary",          display: true },
   { key: "investigations", title: "Investigation Reports",         display: true },
-  { key: "implant",        title: "Implant Details",               preOpOnly: true },
+  { key: "counselling",    title: "Counselling Sheet",             preOpOnly: true },
   { key: "consents",       title: "Consents",                      preOpOnly: true },
   { key: "checklist",      title: "Surgery Checklist",             preOpOnly: true },
   { key: "education",      title: "Patient Education & Diet Chart", postOp: true },
@@ -59,14 +59,27 @@ export const IPD_FORMS: FormDef[] = [
 
 export const isCustomKey = (key: string) => key.startsWith("custom-");
 
+/** Tabs every patient file has: the long summary and the investigations. */
+export const ALWAYS_TABS: string[] = ["summary", "investigations"];
+
 /** Fixed forms that apply to this admission type, in order. */
 export function formsFor(type: string): FormDef[] {
   return IPD_FORMS.filter((f) => !f.preOpOnly || type === "PRE_OP");
 }
 
-/** Keys that count towards completion: fixed forms for the type + custom forms. */
-export function requiredKeys(type: string, customKeys: string[]): string[] {
-  return [...formsFor(type).map((f) => f.key), ...customKeys.filter(isCustomKey)];
+/** Tabs that can be picked for the file (besides the two it always has). */
+export function tabChoices(type: string, hasCounselling: boolean): FormDef[] {
+  return formsFor(type).filter((f) => !ALWAYS_TABS.includes(f.key) && (f.key !== "counselling" || hasCounselling));
+}
+
+/** The file's fixed tabs, in order: the two it always has + the ones chosen for it. */
+export function tabsFor(type: string, fileTabs: string[]): FormDef[] {
+  return formsFor(type).filter((f) => ALWAYS_TABS.includes(f.key) || fileTabs.includes(f.key));
+}
+
+/** Keys that count towards completion: the file's fixed tabs + custom forms (the long summary is the EMR, not frozen). */
+export function requiredKeys(type: string, formKeys: string[], fileTabs: string[]): string[] {
+  return [...tabsFor(type, fileTabs).map((f) => f.key).filter((k) => k !== "summary"), ...formKeys.filter(isCustomKey)];
 }
 
 /** Can the form's main content be changed? (Running logs follow logsOpen.) */
@@ -423,8 +436,8 @@ export const dischargeTypeLabel = (v: string) => DISCHARGE_TYPES.find((t) => t.v
 
 
 /** Count frozen required forms. */
-export function completion(type: string, forms: { key: string; frozen: boolean }[]): { done: number; total: number } {
-  const keys = requiredKeys(type, forms.map((f) => f.key));
+export function completion(type: string, forms: { key: string; frozen: boolean }[], fileTabs: string[]): { done: number; total: number } {
+  const keys = requiredKeys(type, forms.map((f) => f.key), fileTabs);
   const frozen = new Set(forms.filter((f) => f.frozen).map((f) => f.key));
   return { done: keys.filter((k) => frozen.has(k)).length, total: keys.length };
 }

@@ -645,7 +645,9 @@ const ADMIT_REASON_KEYWORDS = [
 const WARD_TYPES = [
   { value: "MALE",   label: "Male ward" },
   { value: "FEMALE", label: "Female ward" },
-  { value: "OTHER",  label: "Other" },
+  { value: "SPECIAL", label: "Special ward" },
+  { value: "VIP",    label: "VIP ward" },
+  { value: "OTHER",  label: "Others" },
 ] as const;
 
 const fmtDay = (d: string | Date | null | undefined) =>

@@ -895,7 +895,7 @@ export async function saveAdmission(
   const dateRe = /^\d{4}-\d{2}-\d{2}$/;
   if (!dateRe.test(data.admittedOn)) return { error: "Enter the date of admission." };
   if (data.admittedTime && !/^\d{2}:\d{2}$/.test(data.admittedTime)) return { error: "Invalid time of admission." };
-  if (data.wardType && !["MALE", "FEMALE", "OTHER"].includes(data.wardType)) return { error: "Invalid ward type." };
+  if (data.wardType && !["MALE", "FEMALE", "SPECIAL", "VIP", "OTHER"].includes(data.wardType)) return { error: "Invalid ward type." };
   if (data.expectedDischarge && !dateRe.test(data.expectedDischarge)) return { error: "Invalid expected discharge date." };
   if (data.expectedDischarge && data.expectedDischarge < data.admittedOn) return { error: "Expected discharge can't be before the date of admission." };
 

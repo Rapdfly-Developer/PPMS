@@ -5,17 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
 import {
-  ArrowLeft, BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, User, FileText,
-  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer,
+  BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, FileText,
+  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer, Hash, Phone, Upload, ExternalLink,
 } from "lucide-react";
+import { ComplaintChips } from "@/components/ui/ComplaintChips";
+import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
 import {
-  ADMISSION_TYPE_LABEL, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  formsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
+  ADMISSION_TYPE_LABEL, ALWAYS_TABS, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
+  tabChoices, tabsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
 import {
-  isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
+  IMPLANT_VERIFY, isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
   type OtNotesData, type PostOpData, type TreatmentData,
 } from "@/lib/ipd-forms";
 import { SaveIndicator, useAutoSave } from "@/lib/useAutoSave";
@@ -23,17 +25,22 @@ import { ChipRow, SuggestField } from "./customOptions";
 import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import {
   ChecklistForm, ConsentsForm, DoctorNoteComposer, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
-  OtNotesForm, PostOpForm, TreatmentForm, type FileInfo, type NewLog,
+  OtNotesForm, PostOpForm, TreatmentForm, type EducationPart, type FileInfo, type NewLog,
 } from "./IpdForms";
 import {
-  addCustomForm, addDoctorNote, addFormAttachment, addFormLog, changeAdmissionType, confirmDischarge,
-  freezeForm, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
+  addCustomForm, addDoctorNote, addFileTabs, addFormAttachment, addFormLog, changeAdmissionType, confirmDischarge, createIpdFile,
+  freezeForm, removeFileTab, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
 } from "../actions";
+import { FileTabsDialog, summaryTitle } from "./FileTabsDialog";
+export { summaryTitle };
+import { CounsellingOverview } from "../../counselling/[visitId]/CounsellingPrintOverview";
+import { CounsellingDetail, type CounsellingDetailData } from "../../counselling/[visitId]/CounsellingDetail";
+import type { CounsellingImplant } from "@/lib/counselling-sheets";
+import type { PaymentDoc } from "@/lib/counselling";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
 import { OtNotesView } from "./OtNotesView";
 import type { OtNotesCopy } from "@/lib/ot";
-import { WeekdayHint } from "@/components/ui/WeekdayHint";
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 
@@ -49,9 +56,11 @@ export interface FormRow {
 export interface FileData {
   id: string;
   visitId: string;
+  /** The admitting visit can still be edited in the EMR (not closed, or finalized today). */
+  visitOpen: boolean;
   udid: string;
   returnTo: string;
-  patient: { name: string; age: number; sex: string; id: string; photoUrl: string | null };
+  patient: { name: string; age: number; sex: string; id: string; mobile?: string | null; photoUrl: string | null };
   doctor: string;
   hospital: string;
   letterhead: { hospital: string; address: string | null; contact: string | null; logoUrl: string | null; doctor: string; qualifications: string | null; regNo: string | null };
@@ -72,6 +81,17 @@ export interface FileData {
   floor: string | null;
   fileNo: string | null;
   status: string;
+  /** Tabs chosen for the file (with the two it always has); empty until the file is created. */
+  fileTabs: string[];
+  fileCreated: boolean;
+  /** Date of the admitting visit (the long summary's day). */
+  visitDate: string;
+  /** The Counselling module's sheet, for the Counselling Sheet tab. */
+  counsellingSheet: CounsellingSheet | null;
+  /** The admitting counselling visit (its sheet is edited in the Counselling Sheet tab). */
+  counsellingVisitId: string | null;
+  /** The Counselling module's sheet itself, editable here; set by the page. */
+  counsellingDetail?: { data: CounsellingDetailData; canEdit: boolean } | null;
   shiftedToOtAt: string | null;
   returnedFromOtAt: string | null;
   dischargedAt: string | null;
@@ -90,6 +110,15 @@ export interface FileData {
   ctx: FormContext;
   emrMeds: FileInfo["emrMeds"];
 }
+
+export interface CounsellingSheet {
+  surgery: string; laterality: string | null; anaesthesia: string | null; surgeryNotes: string | null;
+  implant: string; dateOfSurgery: string; implantInfo: CounsellingImplant;
+  payment: string; payerLabel: string; payer: string; idLabel: string; payerId: string; docs: PaymentDoc[];
+  estimate: string; advance: string;
+  fit: boolean; fitBy: string | null; fitAt: string | null;
+}
+
 
 export interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean; ot?: boolean }
 
@@ -149,8 +178,10 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
 
 const STRUCTURED = new Set(["implant", "consents", "checklist", "education", "treatment", "nurse", "otNotes", "postOpNotes"]);
 
-export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
+export function FormPanel({ d, keyName, title, display, row, can, onRefresh, part }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
+  /** Education form: which of its two tabs (Patient Education or Diet Chart) is shown. */
+  part?: EducationPart;
 }) {
   const defaults = (d.defaults[keyName] ?? { text: "" }) as FormJson;
   const initial: FormJson = (() => {
@@ -163,6 +194,12 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState("");
   const [confirmFreeze, setConfirmFreeze] = useState(false);
+  const [emrPrompt, setEmrPrompt] = useState(false);
+  const router = useRouter();
+  const emrHref = (edit: boolean) => {
+    const back = encodeURIComponent(`/ipd/${d.id}`);
+    return `/emr/${d.udid}?visit=${d.visitId}${edit ? "" : "&source=view-only"}&returnTo=${back}`;
+  };
   const [pending, start] = useTransition();
   const frozen = !!row?.frozen;
   const editable = can.edit && formEditable(keyName, frozen, d.status) && !display;
@@ -208,10 +245,11 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
     case "otFinal": body = <OtNotesView value={row?.data as OtNotesCopy} f={info} />; break;
     case "summary": body = <LongSummary visitId={d.visitId} complaint={d.complaint} diagnoses={d.diagnoses} />; break;
     case "investigations": body = <InvestigationsForm f={info} />; break;
+    case "counselling": body = <CounsellingSheetForm sheet={d.counsellingSheet} detail={d.counsellingDetail ?? null} value={value} change={change} editable={editable} me={d.me} />; break;
     case "implant": body = <ImplantForm {...props} value={value as ImplantData} change={change} saveNow={saveNow} />; break;
     case "consents": body = <ConsentsForm {...props} value={value as ConsentsData} change={change} saveNow={saveNow} />; break;
     case "checklist": body = <ChecklistForm {...props} value={value as ChecklistData} change={change} saveNow={saveNow} />; break;
-    case "education": body = <EducationForm {...props} value={value as EducationData} change={change} saveNow={saveNow} />; break;
+    case "education": body = <EducationForm {...props} value={value as EducationData} change={change} saveNow={saveNow} part={part} />; break;
     case "treatment": body = <TreatmentForm {...props} value={value as TreatmentData} change={change} saveNow={saveNow} />; break;
     case "nurse": body = <NurseForm {...props} value={value as NurseData} change={change} saveNow={saveNow} />; break;
     case "otNotes": body = <OtNotesForm {...props} value={value as OtNotesData} change={change} saveNow={saveNow} template={(d.defaults.otNotes as OtNotesData).steps} />; break;
@@ -238,7 +276,12 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
           {keyName === "discharge" && (
             <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print</button>
           )}
-          {keyName === "otFinal" ? (
+          {keyName === "summary" ? (
+            // The long summary is the EMR itself: open the visit (an open visit asks edit or view)
+            <button type="button" onClick={() => (d.visitOpen ? setEmrPrompt(true) : router.push(emrHref(false)))} className={btnPrimary}>
+              <ExternalLink size={14} /> Open EMR
+            </button>
+          ) : keyName === "otFinal" ? (
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
               <Scissors size={12} /> From OT · saved by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
             </span>
@@ -255,8 +298,24 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh }: {
           )}
         </div>
       </div>
-      {frozen && editable && (
+      {frozen && editable && keyName !== "summary" && (
         <p className="text-caption text-emerald-700">Confirmed · stays editable until discharge.</p>
+      )}
+      {emrPrompt && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={() => setEmrPrompt(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl text-center" onClick={(e) => e.stopPropagation()}>
+            <button type="button" onClick={() => setEmrPrompt(false)} aria-label="Close" className="absolute top-3 right-3 p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+            <p className="text-base font-bold text-[var(--color-ink-900)]">Open EMR</p>
+            <p className="mt-1 text-sm text-[var(--color-ink-500)]">This visit is still open. Open it to edit or only to view?</p>
+            <div className="mt-4 flex gap-3">
+              <button type="button" onClick={() => router.push(emrHref(false))}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]">View Only</button>
+              <button type="button" onClick={() => router.push(emrHref(true))}
+                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)]">Edit</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {body}
@@ -305,9 +364,9 @@ function Photos({ d, keyName, list, canAdd, onRefresh }: { d: FileData; keyName:
   if (!canAdd && list.length === 0) return null;
   const picker = canAdd && (
     <>
-      <input ref={ref} type="file" accept="image/*,.pdf" capture="environment" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+      <input ref={ref} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
       <button disabled={busy} onClick={() => ref.current?.click()} className="inline-flex items-center gap-1.5 text-caption font-semibold text-[var(--color-primary-700)] hover:underline disabled:opacity-60">
-        {busy ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} Add photo
+        {busy ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />} Upload file
       </button>
     </>
   );
@@ -526,11 +585,10 @@ function DetailsDialog({ d, onClose, onDone }: { d: FileData; onClose: () => voi
   const [wardType, setWardType] = useState(d.wardType ?? "");
   const [floor, setFloor] = useState(d.floor ?? "");
   const [fileNo, setFileNo] = useState(d.fileNo ?? "");
-  const [edd, setEdd] = useState(istInput(d.expectedDischarge));
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const save = () => start(async () => {
-    const r = await updateAdmissionDetails(d.id, { ward, wardType, floor, fileNo, expectedDischarge: edd });
+    const r = await updateAdmissionDetails(d.id, { ward, wardType, floor, fileNo, expectedDischarge: istInput(d.expectedDischarge) });
     if (r.error) setError(r.error); else onDone();
   });
   return (
@@ -539,7 +597,6 @@ function DetailsDialog({ d, onClose, onDone }: { d: FileData; onClose: () => voi
         <div><label className={labelCls}>Ward No.</label><input value={ward} onChange={(e) => setWard(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>Floor No.</label><input value={floor} onChange={(e) => setFloor(e.target.value)} className={inputCls} /></div>
         <div><label className={labelCls}>File No.</label><input value={fileNo} onChange={(e) => setFileNo(e.target.value)} className={inputCls} /></div>
-        <div><label className={labelCls}>Expected Discharge</label><div className="flex items-center gap-2"><input type="date" value={edd} min={istInput(d.admittedOn)} onChange={(e) => setEdd(e.target.value)} className={inputCls} /><WeekdayHint value={edd} /></div></div>
         <div className="col-span-2">
           <label className={labelCls}>Ward Type</label>
           <div className="flex flex-wrap gap-2">
@@ -673,19 +730,68 @@ export function dischargeCtx(d: FileData): DischargeContext {
   };
 }
 
+/* ── Counselling Sheet: the Counselling module's sheet + implant verification ── */
+
+type VerifyKey = (typeof IMPLANT_VERIFY)[number]["key"];
+
+function CounsellingSheetForm({ sheet, detail, value, change, editable, me }: {
+  sheet: CounsellingSheet | null; detail: { data: CounsellingDetailData; canEdit: boolean } | null;
+  value: FormJson; change: (v: FormJson) => void; editable: boolean; me: string;
+}) {
+  if (!sheet) return <p className="text-sm text-[var(--color-ink-500)]">No counselling record for this admission.</p>;
+  const verify = (value.verify ?? {}) as Record<VerifyKey, { by: string; at: string } | null>;
+  const done = IMPLANT_VERIFY.filter((i) => verify[i.key]).length;
+  return (
+    <div className="space-y-4">
+      {detail
+        ? <CounsellingDetail data={detail.data} embed canEdit={detail.canEdit && editable} canFit={false} canAddInvestigations={false} canUpload={false} canViewProfile={false} />
+        : <CounsellingOverview sheet="sheet" {...sheet} orders={[]} consents={[]} education={{} as EducationData} />}
+      <div className={`rounded-xl border p-3 sm:p-4 ${done === IMPLANT_VERIFY.length ? "border-emerald-200 bg-emerald-50/40" : "border-[var(--color-border)]"}`}>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <p className="text-sm font-bold text-[var(--color-ink-900)]">Implant verification</p>
+          <span className="text-caption font-semibold text-[var(--color-ink-500)] tabular-nums">{done} of {IMPLANT_VERIFY.length} checked</span>
+        </div>
+        <ul className="divide-y divide-[var(--color-border)]">
+          {IMPLANT_VERIFY.map((i) => {
+            const t = verify[i.key];
+            return (
+              <li key={i.key} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <span className="text-sm text-[var(--color-ink-800)]">{i.label}</span>
+                <span className="flex items-center gap-2">
+                  {t && <span className="text-caption text-[var(--color-ink-400)]">{t.by} · {fmtTime(t.at)}</span>}
+                  <button type="button" disabled={!editable}
+                    onClick={() => change({ ...value, v: 1, verify: { ...verify, [i.key]: t ? null : { by: me, at: new Date().toISOString() } } })}
+                    className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold border transition-colors disabled:cursor-default ${t ? "bg-emerald-600 border-emerald-600 text-white" : "border-[var(--color-border)] text-[var(--color-ink-600)] enabled:hover:bg-[var(--color-surface-sunken)]"}`}>
+                    <CheckCircle2 size={12} /> {t ? "Verified" : "Verify"}
+                  </button>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
 export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   const router = useRouter();
   const refresh = () => router.refresh();
-  const fixed = formsFor(d.type);
+  const fixed = tabsFor(d.type, d.fileTabs);
   const custom = d.forms.filter((f) => isCustomKey(f.key));
   const rowOf = (key: string) => d.forms.find((f) => f.key === key);
-  const items = useMemo(() => [
-    ...fixed.map((f) => ({ key: f.key as string, title: f.title, display: !!f.display, preOp: !!f.preOpOnly })),
-    ...custom.map((f) => ({ key: f.key, title: f.title, display: false, preOp: false })),
-  ], [fixed, custom]);
-  const required = items.map((i) => i.key);
+  // Patient education and diet are two tabs (as in Counselling) over the one education form
+  type Item = { key: string; form: string; title: string; display: boolean; preOp: boolean; part?: EducationPart };
+  const items = useMemo<Item[]>(() => [
+    ...fixed.flatMap((f): Item[] => f.key === "education"
+      ? [{ key: "education", form: "education", title: "Patient Education", display: false, preOp: !!f.preOpOnly, part: "education" },
+         { key: "diet", form: "education", title: "Diet Chart", display: false, preOp: !!f.preOpOnly, part: "diet" }]
+      : [{ key: f.key, form: f.key, title: f.key === "summary" ? summaryTitle(d.visitDate) : f.title, display: !!f.display, preOp: !!f.preOpOnly }]),
+    ...custom.map((f) => ({ key: f.key, form: f.key, title: f.title, display: false, preOp: false })),
+  ], [fixed, custom, d.visitDate]);
+  const required = [...new Set(items.map((i) => i.form))].filter((k) => k !== "summary");
   const frozenCount = required.filter((k) => rowOf(k)?.frozen).length;
   const allFrozen = frozenCount === required.length;
 
@@ -694,14 +800,11 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   const otFinal = rowOf("otFinal");
   const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || picked === "activity" || (picked === "otFinal" && !!otFinal) ? picked : (items[0]?.key ?? "summary");
   const [dialog, setDialog] = useState<null | "details" | "type" | "ot" | "discharge" | "addForm">(null);
-  const [newForm, setNewForm] = useState("");
+  const [removing, setRemoving] = useState<{ key: string; title: string } | null>(null);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
 
   const status = d.status as IpdStatus;
-  const title = d.surgery
-    ? [d.laterality, d.surgery].filter(Boolean).join(" ") + (d.implant && !/^(none|nil|na|-)$/i.test(d.implant.trim()) ? ` + ${d.implant}` : "") + (d.anaesthesia ? ` · ${d.anaesthesia}` : "")
-    : admissionTypeText(d.type, d.typeOther);
   const showOt = canGoToOt(d.type) && status === "ADMITTED" && can.shiftOt;
   const showDischarge = can.discharge && canDischargeNow(d.type, status);
   const savedSummary = rowOf("discharge")?.data;
@@ -712,12 +815,33 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
     const r = await shiftToOt(d.id);
     if (r.error) setError(r.error); else refresh();
   });
-  const addForm = () => start(async () => {
-    const r = await addCustomForm(d.id, newForm);
-    if (r.error) { setError(r.error); return; }
-    setDialog(null); setNewForm("");
-    if (r.key) setSel(r.key);
+  // Tabs: picked when the file is created, added or removed later
+  const choices = tabChoices(d.type, !!d.counsellingSheet).map((f) => ({ key: f.key as string, title: f.title, preOp: !!f.preOpOnly }));
+  const always = ALWAYS_TABS.map((k) => ({ key: k, title: k === "summary" ? summaryTitle(d.visitDate) : IPD_FORMS.find((f) => f.key === k)?.title ?? k }));
+  const tabsOpen = can.edit && (status === "ADMITTED" || status === "POST_OP");
+  const createFile = async (tabs: string[]) => {
+    const r = await createIpdFile(d.id, tabs);
+    if (r.error) return r.error;
     refresh();
+  };
+  const addTabs = async (tabs: string[], name: string) => {
+    if (tabs.length) { const r = await addFileTabs(d.id, tabs); if (r.error) return r.error; }
+    let key: string | undefined;
+    if (name) {
+      if (status !== "ADMITTED") return "Custom forms can only be added before OT.";
+      const r = await addCustomForm(d.id, name);
+      if (r.error) return r.error;
+      key = r.key;
+    }
+    setDialog(null);
+    setSel(key ?? tabs[0] ?? sel);
+    refresh();
+  };
+  const doRemove = () => start(async () => {
+    if (!removing) return;
+    const r = await removeFileTab(d.id, removing.key);
+    setRemoving(null);
+    if (r.error) setError(r.error); else { setSel(items[0]?.key ?? "summary"); refresh(); }
   });
 
   // Chrome-style tabs: the selected tab joins the form panel below it
@@ -744,119 +868,189 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
 
   return (
     <div className="fade-in pb-24">
-      {/* Top bar */}
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <Link href={d.returnTo} className="inline-flex items-center gap-1.5 text-label sm:text-sm font-medium text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)]"><ArrowLeft size={15} /> Back</Link>
-        {can.profile && (
-          <Link href={`/patients/${d.udid}?source=ipd&returnTo=${encodeURIComponent("/ipd")}`} className={btnGhost}><User size={14} /> Patient Profile</Link>
-        )}
-      </div>
+      {/* Patient banner (same style as the Counselling and EMR banners) */}
+      <section
+        className="relative rounded-2xl overflow-hidden mb-3"
+        style={{
+          background: "linear-gradient(135deg, #0E8282 0%, #0C7676 55%, #0A6C6C 100%)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+          border: "1px solid rgba(255,255,255,0.10)",
+        }}
+      >
+        <svg aria-hidden="true" className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.055 }} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="ipd-dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+              <circle cx="2" cy="2" r="1.2" fill="#38BDF8" />
+            </pattern>
+            <pattern id="ipd-cross" x="4" y="4" width="64" height="64" patternUnits="userSpaceOnUse">
+              <rect x="29" y="22" width="6" height="20" rx="1" fill="#2DD4BF" />
+              <rect x="22" y="29" width="20" height="6" rx="1" fill="#2DD4BF" />
+            </pattern>
+            <pattern id="ipd-ecg" x="0" y="0" width="160" height="48" patternUnits="userSpaceOnUse">
+              <polyline points="0,24 20,24 28,8 36,40 44,16 52,32 60,24 80,24 88,8 96,40 104,16 112,32 120,24 160,24"
+                fill="none" stroke="#38BDF8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#ipd-dots)" />
+          <rect x="60%" width="40%" height="100%" fill="url(#ipd-cross)" />
+          <rect y="60%" width="100%" height="40%" fill="url(#ipd-ecg)" />
+        </svg>
 
-      {/* Header: laterality + surgery + implant + anaesthesia, ward / file / floor */}
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 mb-3">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-start gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-[var(--color-primary-100)] flex items-center justify-center shrink-0 overflow-hidden">
-              {d.patient.photoUrl ? <img src={fileHref(d.patient.photoUrl)!} alt={d.patient.name} className="w-full h-full object-cover" /> : <User size={16} className="text-[var(--color-primary-700)]" />}
-            </div>
-            <div className="min-w-0">
-              {/* Patient first; then the document's title (eye + surgery + implant + anaesthesia), ward / file / floor, admission type */}
-              <p className="text-sm text-[var(--color-ink-600)]">
-                <span className="font-semibold text-[var(--color-ink-900)]">{d.patient.name}</span> · {d.patient.age}y/{SEX_SHORT[d.patient.sex] ?? d.patient.sex} · {d.patient.id}
-                {/* Drug allergy, as in the EMR banner */}
-                {d.drugAllergy.nkda ? (
-                  <span className="ml-2 inline-flex items-center gap-1 align-middle text-caption font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <CheckCircle2 size={10} />NKDA
+        <div className="relative z-10 p-3 sm:p-4">
+          <div className="flex flex-col lg:flex-row lg:items-stretch gap-3 lg:gap-5">
+            {/* Left: photo + patient details */}
+            <div className="flex gap-3 flex-1 min-w-0">
+              <div className="shrink-0">
+                <PatientPhoto src={d.patient.photoUrl ? fileHref(d.patient.photoUrl)! : null} alt={d.patient.name} statusDot={null} />
+              </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <h2 className="text-base sm:text-lg font-bold text-white leading-tight tracking-tight">{d.patient.name}</h2>
+                  <span className="text-xs font-medium text-white/60">{d.patient.age}y · {SEX_SHORT[d.patient.sex] ?? d.patient.sex}</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 ring-1 ring-white/20 px-2 py-0.5 text-micro font-semibold text-white">
+                    <span className={`w-1.5 h-1.5 rounded-full ${status === "IN_OT" ? "bg-violet-300" : status === "POST_OP" ? "bg-emerald-300" : status === "DISCHARGED" ? "bg-slate-300" : "bg-sky-300"}`} />
+                    {IPD_STATUS_LABEL[status] ?? status}
                   </span>
-                ) : d.drugAllergy.text ? (
-                  <span className="ml-2 inline-flex items-center gap-1 align-middle text-caption font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                    <AlertTriangle size={10} />{d.drugAllergy.text.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(", ")}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-white/65">
+                  <span className="inline-flex items-center gap-1 text-teal-100 font-mono font-semibold tracking-wide">
+                    <Hash size={10} />{d.patient.id}
                   </span>
-                ) : null}
-              </p>
-              <p className="text-sm font-semibold text-[var(--color-ink-900)] mt-0.5">{title}</p>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
-                <span>Ward <b className="text-[var(--color-ink-800)]">{d.ward || "-"}</b>{d.wardType ? ` (${wardTypeText(d.wardType)})` : ""}</span>
-                <span>File <b className="text-[var(--color-ink-800)]">{d.fileNo || "-"}</b></span>
-                <span>Floor <b className="text-[var(--color-ink-800)]">{d.floor || "-"}</b></span>
-                {can.edit && status !== "DISCHARGED" && (
-                  <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-[var(--color-primary-700)] hover:underline"><Pencil size={11} /> Edit</button>
+                  {d.patient.mobile && (
+                    <span className="inline-flex items-center gap-1"><Phone size={10} />{d.patient.mobile}</span>
+                  )}
+                  {/* Drug allergy, as in the EMR banner */}
+                  {d.drugAllergy.nkda ? (
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-emerald-400/15 text-emerald-300 border border-emerald-400/25">
+                      <CheckCircle2 size={10} />NKDA
+                    </span>
+                  ) : d.drugAllergy.text ? (
+                    <span className="inline-flex items-center gap-1 text-caption px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/25">
+                      <AlertTriangle size={10} />{d.drugAllergy.text.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join(", ")}
+                    </span>
+                  ) : null}
+                </div>
+                {(d.complaint || d.diagnoses.length > 0) && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {d.complaint && <ComplaintChips value={d.complaint} tone="dark" />}
+                    {d.diagnoses.map((x, i) => (
+                      <span key={i} className="clinical-diagnosis-chip-dark inline-flex items-center gap-1 text-caption px-2.5 py-0.5 rounded-full border">
+                        {x.laterality && <span className="clinical-laterality">{x.laterality}</span>}{x.description}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
-              {d.reason && <p className="mt-0.5 text-xs text-[var(--color-ink-500)]">Reason <b className="text-[var(--color-ink-800)] font-semibold">{d.reason}</b></p>}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-xs text-[var(--color-ink-500)]">
-                <span>DOA <b className="text-[var(--color-ink-800)]">{fmtDay(d.admittedOn)}</b></span>
-                {d.type === "PRE_OP" && <span>DOS <b className="text-[var(--color-ink-800)]">{fmtDay(d.surgeryDate)}</b></span>}
-                {d.dischargedAt
-                  ? <span>DOD <b className="text-[var(--color-ink-800)]">{fmtDay(d.dischargedAt)}</b></span>
-                  : <span>Expected DOD <b className="text-[var(--color-ink-800)]">{fmtDay(d.expectedDischarge)}</b></span>}
-                <span>
+            </div>
+
+            {/* Right: surgery (or admission) | dates, in one glass panel */}
+            <div className="lg:w-[52%] shrink-0 rounded-2xl bg-white/[0.08] ring-1 ring-white/15 backdrop-blur-sm grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="min-w-0 px-4 py-3">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">{d.surgery ? "Surgery" : "Admission"}</p>
+                <p className="mt-1 text-base sm:text-lg font-bold text-white leading-snug">
+                  {d.surgery ? (
+                    <>
+                      {d.laterality && (
+                        <span className="mr-2 inline-flex items-center rounded-md bg-white px-1.5 py-px align-[3px] text-xs font-extrabold text-[#0A6C6C]">{d.laterality}</span>
+                      )}
+                      {d.surgery}
+                      {d.implant && !/^(none|nil|na|-)$/i.test(d.implant.trim()) && <span className="font-medium text-white/80"> + {d.implant}</span>}
+                      {d.anaesthesia && (
+                        <span className="font-medium italic text-white/70">
+                          <span className="mx-2 not-italic text-white/40">·</span>{d.anaesthesia}
+                        </span>
+                      )}
+                    </>
+                  ) : admissionTypeText(d.type, d.typeOther)}
+                </p>
+                <p className="mt-1 text-caption text-white/70">
                   {admissionTypeText(d.type, d.typeOther)}
                   {can.admit && status === "ADMITTED" && (
-                    <button onClick={() => setDialog("type")} className="ml-1.5 font-semibold text-[var(--color-primary-700)] hover:underline">Change</button>
+                    <button onClick={() => setDialog("type")} className="ml-1.5 font-semibold text-teal-100 underline-offset-2 hover:underline">Change</button>
                   )}
-                </span>
+                  {d.reason && <span className="text-white/60"> · {d.reason}</span>}
+                </p>
+              </div>
+              {/* Soft separator: a line that fades out at both ends */}
+              <div className="relative px-4 py-3 flex flex-col justify-center gap-0.5 sm:min-w-[11rem] text-caption text-white/60 before:absolute before:pointer-events-none before:top-0 before:left-4 before:right-4 before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/40 before:to-transparent sm:before:left-0 sm:before:right-auto sm:before:top-3 sm:before:bottom-3 sm:before:h-auto sm:before:w-px sm:before:bg-gradient-to-b">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50 mb-0.5">Dates</p>
+                <span className="whitespace-nowrap"><span className="inline-block w-10 font-semibold">DOA</span><b className="text-white">{fmtDay(d.admittedOn)}</b></span>
+                {d.type === "PRE_OP" && <span className="whitespace-nowrap"><span className="inline-block w-10 font-semibold">DOS</span><b className="text-white">{fmtDay(d.surgeryDate)}</b></span>}
+                {d.dischargedAt && <span className="whitespace-nowrap"><span className="inline-block w-10 font-semibold">DOD</span><b className="text-white">{fmtDay(d.dischargedAt)}</b></span>}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full ${
-              status === "IN_OT" ? "bg-violet-50 text-violet-700 border border-violet-200"
-                : status === "POST_OP" ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                : status === "DISCHARGED" ? "bg-slate-100 text-slate-600 border border-slate-200"
-                : "bg-sky-50 text-sky-700 border border-sky-200"}`}>
-              <BedDouble size={12} /> {IPD_STATUS_LABEL[status] ?? status}
-            </span>
-            <span className="text-xs font-semibold text-[var(--color-ink-500)] tabular-nums">Forms frozen {frozenCount}/{required.length}</span>
-            <div className="flex flex-wrap justify-end gap-2">
+          {/* Ward / file / floor, forms frozen, and the actions */}
+          <div className="mt-3 pt-3 border-t border-white/15 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/65">
+            <span><BedDouble size={12} className="inline -mt-0.5 mr-1 text-teal-200" />Ward <b className="text-white">{d.ward || "-"}</b>{d.wardType ? ` (${wardTypeText(d.wardType)})` : ""}</span>
+            <span>File <b className="text-white">{d.fileNo || "-"}</b></span>
+            <span>Floor <b className="text-white">{d.floor || "-"}</b></span>
+            {can.edit && status !== "DISCHARGED" && (
+              <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-teal-100 hover:underline"><Pencil size={11} /> Edit</button>
+            )}
+            <span className="tabular-nums">Forms frozen <b className="text-white">{frozenCount}/{required.length}</b></span>
+            <div className="ml-auto flex flex-wrap justify-end gap-2">
               {showOt && (
                 <button
                   disabled={!allFrozen || pending}
                   onClick={() => setDialog("ot")}
                   title={allFrozen ? "Shift the file to OT" : "Freeze every form to unlock"}
-                  className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${allFrozen ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-400)] border border-[var(--color-border)] cursor-not-allowed"}`}
+                  className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors ${allFrozen ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-white/10 text-white/50 ring-1 ring-white/15 cursor-not-allowed"}`}
                 >
                   {allFrozen ? <Scissors size={14} /> : <Lock size={14} />} Shift to OT
                 </button>
               )}
               {showDischarge && (
-                <button onClick={() => setDialog("discharge")} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg bg-[var(--color-primary-600)] text-white hover:bg-[var(--color-primary-700)]">
+                <button onClick={() => setDialog("discharge")} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-lg bg-white text-[#0A6C6C] hover:bg-teal-50">
                   <LogOut size={14} /> Discharge
                 </button>
               )}
             </div>
           </div>
         </div>
-        {status === "IN_OT" && (
-          <div className="mt-2.5 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2 text-sm text-[var(--color-ink-700)]">
-            In OT since {d.shiftedToOtAt ? fmtTime(d.shiftedToOtAt) : "-"}. The file returns to the post-op ward from the OT module.
-            {can.ot && <Link href={`/ot/${d.id}`} className="ml-2 font-semibold underline">Open in OT</Link>}
-          </div>
-        )}
-        {status === "DISCHARGED" && (
-          <div className="mt-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            Discharged by {d.dischargedBy} on {d.dischargedAt ? fmtTime(d.dischargedAt) : "-"} · summary signed with OTP. The file is read-only.
-            {d.dischargeNotes && <span className="block mt-1 text-slate-600">Notes: {d.dischargeNotes}</span>}
-          </div>
-        )}
-        {error && <div className="mt-3"><ErrorLine text={error} /></div>}
-      </div>
+      </section>
+
+      {status === "IN_OT" && (
+        <div className="mb-3 rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2 text-sm text-[var(--color-ink-700)]">
+          In OT since {d.shiftedToOtAt ? fmtTime(d.shiftedToOtAt) : "-"}. The file returns to the post-op ward from the OT module.
+          {can.ot && <Link href={`/ot/${d.id}`} className="ml-2 font-semibold underline">Open in OT</Link>}
+        </div>
+      )}
+      {status === "DISCHARGED" && (
+        <div className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          Discharged by {d.dischargedBy} on {d.dischargedAt ? fmtTime(d.dischargedAt) : "-"} · summary signed with OTP. The file is read-only.
+          {d.dischargeNotes && <span className="block mt-1 text-slate-600">Notes: {d.dischargeNotes}</span>}
+        </div>
+      )}
+      {error && <div className="mb-3"><ErrorLine text={error} /></div>}
 
       {/* Forms as tabs | selected form */}
       <div>
         <div ref={tabsRef} role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex items-end gap-1 overflow-x-auto px-1 pt-1 -mb-px bg-[var(--color-bg)] [scrollbar-width:thin]">
           {items.map((i) => {
-            const r = rowOf(i.key);
+            const r = rowOf(i.form);
+            const formTitle = i.part ? "Patient Education & Diet Chart" : i.title;
             return tabBtn(
               i.key,
               <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
-              r?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
-              (r?.attachments?.length ?? 0) > 0 ? <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" /> : undefined,
+              i.key === "summary" ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
+                : r?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
+              <>
+                {(r?.attachments?.length ?? 0) > 0 && <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" />}
+                {tabsOpen && sel === i.key && !ALWAYS_TABS.includes(i.key) && !r?.frozen && (
+                  <span role="button" tabIndex={0} aria-label={`Remove ${i.title}`} title="Remove this tab"
+                    onClick={(e) => { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); } }}
+                    className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-red-50 hover:text-red-600">
+                    <X size={12} />
+                  </span>
+                )}
+              </>,
             );
           })}
-          {can.edit && status === "ADMITTED" && (
-            <button type="button" onClick={() => { setDialog("addForm"); setError(""); }} title="Add custom form" aria-label="Add custom form"
+          {tabsOpen && d.fileCreated && (
+            <button type="button" onClick={() => { setDialog("addForm"); setError(""); }} title="Add tabs" aria-label="Add tabs"
               className="shrink-0 mb-1 w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
               <Plus size={16} />
             </button>
@@ -875,7 +1069,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
             : sel === "otFinal" && otFinal ? (
               <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
             ) : selItem ? (
-              <FormPanel key={`${selItem.key}-${rowOf(selItem.key)?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.key} title={selItem.title} display={selItem.display} row={rowOf(selItem.key)} can={can} onRefresh={refresh} />
+              <FormPanel key={`${selItem.form}-${rowOf(selItem.form)?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.form} title={selItem.title} display={selItem.display} row={rowOf(selItem.form)} can={can} onRefresh={refresh} part={selItem.part} />
             ) : null}
         </section>
       </div>
@@ -893,16 +1087,41 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
       )}
       {dialog === "discharge" && <DischargeDialog d={d} summary={summaryNow} onClose={() => setDialog(null)} onDone={() => { setDialog(null); refresh(); }} />}
       {dialog === "addForm" && (
-        <Modal title="Add a custom form" onClose={() => setDialog(null)}>
-          <input autoFocus value={newForm} onChange={(e) => setNewForm(e.target.value)} placeholder="Form name, e.g. Physician fitness" className={inputCls} />
-          <div className="mt-4 space-y-3">
-            <ErrorLine text={error} />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setDialog(null)} className={btnGhost}>Cancel</button>
-              <button disabled={pending || !newForm.trim()} onClick={addForm} className={btnPrimary}>Add</button>
-            </div>
-          </div>
-        </Modal>
+        <FileTabsDialog
+          title="Add tabs"
+          sub="Tick the tabs to add. They are filled with the details already recorded."
+          always={[]}
+          choices={choices.filter((c) => !d.fileTabs.includes(c.key))}
+          initial={[]}
+          confirmLabel="Add"
+          custom={status === "ADMITTED"}
+          onConfirm={addTabs}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {/* First time: create the file with the chosen tabs */}
+      {!d.fileCreated && can.edit && (
+        <FileTabsDialog
+          title="Create Patient File"
+          sub="Choose the tabs for this file. They are filled with the details already recorded. Tabs can be added or removed later."
+          always={always}
+          choices={choices}
+          initial={choices.map((c) => c.key)}
+          confirmLabel="Create file"
+          onConfirm={(tabs) => createFile(tabs)}
+          onClose={() => router.push(d.returnTo)}
+        />
+      )}
+      {removing && (
+        <ConfirmDialog
+          title={`Remove ${removing.title}?`}
+          message={isCustomKey(removing.key)
+            ? "The tab and what is written in it are removed."
+            : "The tab is removed from the file. What was entered is kept and comes back if the tab is added again."}
+          confirmLabel="Remove"
+          onConfirm={doRemove}
+          onCancel={() => setRemoving(null)}
+        />
       )}
     </div>
   );

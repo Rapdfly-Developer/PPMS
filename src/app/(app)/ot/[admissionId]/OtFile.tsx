@@ -18,7 +18,7 @@ import {
   OT_STAGE_LABEL, POSTOP_KEYWORDS, SHIFT_DELAY_KEYWORDS, SHIFT_DELAY_MIN, buildOtNotesCopy, eventText,
   minutesBetween, otNotesOpen, otStage, stepKeywords, type OtNotesCopy, type OtOutcome, type VerifyMap,
 } from "@/lib/ot";
-import { ErrorLine, FormPanel, LongSummary, Modal, dischargeCtx, type Can, type FileData } from "../../ipd/[admissionId]/PatientFile";
+import { ErrorLine, FormPanel, LongSummary, Modal, dischargeCtx, summaryTitle, type Can, type FileData } from "../../ipd/[admissionId]/PatientFile";
 import { OtNotesView } from "../../ipd/[admissionId]/OtNotesView";
 import { PostOpForm, Seg } from "../../ipd/[admissionId]/IpdForms";
 import { DischargeEditor } from "../../ipd/[admissionId]/DischargeEditor";
@@ -91,6 +91,7 @@ function KeywordBox({ label, value, onChange, keywords, storeKey, rows = 2, plac
     ns: `ipd_${storeKey}`, term: single ? value : "", options: o.all, keepOrder: true, openOnFocus: true, numbered: true, max: 40, inline,
     onPick: (x) => onChange(x),
     onAddNew: (x) => { const t = o.add(x); if (t) onChange(t); },
+    onRemove: o.remove, canRemove: o.isCustom,
   });
   if (single) {
     return (
@@ -164,7 +165,9 @@ const elapsed = (from: string, now: number) => {
 
 /* ── Page ──────────────────────────────────────────────────────────────── */
 
-export function OtFile({ d, oc, items, draft, can }: { d: FileData; oc: OtCaseData; items: Item[]; draft: OtNotesData; can: OtCan }) {
+export function OtFile({ d, oc, items: given, draft, can }: { d: FileData; oc: OtCaseData; items: Item[]; draft: OtNotesData; can: OtCan }) {
+  // The long summary shows its day and date (or Today's)
+  const items = given.map((i) => (i.key === "summary" ? { ...i, title: summaryTitle(d.visitDate) } : i));
   const router = useRouter();
   const refresh = () => router.refresh();
   const required = items.map((i) => i.key);

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { differenceInCalendarDays, format, startOfDay } from "date-fns";
 import {
   ClipboardCheck, Search, Filter, X, Clock, CheckCircle2, ShieldCheck,
-  ChevronRight, CalendarDays, Scissors, UserX, Wallet, Landmark, Building2, HeartHandshake, MoreHorizontal,
+  CalendarDays, Scissors, UserX, Wallet, Landmark, Building2, HeartHandshake, MoreHorizontal,
 } from "lucide-react";
 import { TealSelect } from "@/components/ui/TealSelect";
 import { fileHref } from "@/lib/file-href";
@@ -155,7 +155,7 @@ const GROUP_META: Record<string, { glyph: React.ReactNode; hint?: string; icon: 
 function ListCols() {
   return (
     <colgroup>
-      <col className="w-[40%]" /><col className="w-[37%]" /><col className="w-[20%]" /><col className="w-[3%]" />
+      <col className="w-[40%]" /><col className="w-[37%]" /><col className="w-[23%]" />
     </colgroup>
   );
 }
@@ -272,9 +272,6 @@ function PatientRow({ r, onOpen }: { r: CounsellingRow; onOpen: () => void }) {
       <td className="px-4 py-3"><PatientInfo r={r} /></td>
       <td className="px-4 py-3"><SurgeryChip r={r} /></td>
       <td className="px-4 py-3 whitespace-nowrap"><TentativeDate r={r} /></td>
-      <td className="px-4 py-3 text-right">
-        <ChevronRight size={16} className="inline text-[var(--color-ink-300)]" />
-      </td>
     </tr>
   );
 }
@@ -481,7 +478,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
               <ListCols />
               <thead>
                 <tr className="border-b border-[var(--color-border)]">
-                  {["Patient", "Surgery", "Tentative", ""].map((h) => (
+                  {["Patient", "Surgery", "Tentative"].map((h) => (
                     <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
                   ))}
                 </tr>

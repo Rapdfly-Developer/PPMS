@@ -1,0 +1,167 @@
+import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
+import { counsellingStatus, parsePaymentDocs, SUPERSEDED } from "@/lib/counselling";
+import { getCounsellingActivity } from "@/lib/counselling-activity";
+import type { CounsellingDetailData } from "@/app/(app)/counselling/[visitId]/CounsellingDetail";
+import { completeEducation, defaultConsents, defaultEducation, upgradeConsents, type FormContext } from "@/lib/ipd-forms";
+import { parseCounsellingConsents, parseCounsellingEducation, parseCounsellingImplant } from "@/lib/counselling-sheets";
+import { getOwnerDoctorId } from "@/lib/role-permissions";
+
+/** Everything the Counselling sheet needs (the Counselling module and the IPD file's Counselling Sheet tab). */
+export async function loadCounsellingDetail(
+  visitId: string,
+  user: { id: string; name: string; role: string; profileId?: string | null },
+  scope: Prisma.VisitWhereInput,
+): Promise<CounsellingDetailData | null> {
+  const visit = await prisma.visit.findFirst({
+    where: { id: visitId, ...scope, surgeryAdvised: true, finalizedAt: { not: null }, advisedSurgeryName: { not: null } },
+    select: {
+      id: true,
+      date: true,
+      finalizedAt: true,
+      patientId: true,
+      advisedSurgeryName: true,
+      advisedSurgeryEye: true,
+      advisedSurgeryAnaesthesia: true,
+      advisedSurgeryImplant: true,
+      advisedSurgeryDate: true,
+      advisedSurgeryNotes: true,
+      patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
+      doctor: { select: { id: true, name: true } },
+      hospital: { select: { name: true } },
+      generalExam: { select: { chiefComplaint: true } },
+      diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
+      counsellingRecord: true,
+    },
+  });
+  if (!visit) return null;
+
+  // Investigation history: every order for this patient within the user's scope.
+  const orders = await prisma.investigationOrder.findMany({
+    where: { visit: { patientId: visit.patientId, ...scope } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, visitId: true, testName: true, category: true, laterality: true, notes: true, priority: true,
+      doctorNotes: true, status: true, extraResultRefs: true, resultRef: true, resultAt: true, updatedAt: true, createdAt: true,
+    },
+  });
+
+  // Drug allergy: the patient's latest EMR entry (any visit, also ones after this
+  // counselling visit), so a change made in the EMR shows here too
+  const allergyVisits = await prisma.visit.findMany({
+    where: { patientId: visit.patientId, ...scope },
+    orderBy: { date: "desc" },
+    take: 12,
+    select: { generalExam: { select: { allergies: true, nkda: true } } },
+  });
+  const latestAllergy = allergyVisits.find((x) => x.generalExam?.allergies?.trim() || x.generalExam?.nkda)?.generalExam;
+  const allergyText = latestAllergy?.allergies?.trim() ?? "";
+  const drugAllergy = { text: allergyText, nkda: !allergyText && !!latestAllergy?.nkda };
+
+  const rec = visit.counsellingRecord;
+  const preOp = rec?.preOpAppointmentId
+    ? await prisma.appointment.findUnique({ where: { id: rec.preOpAppointmentId }, select: { dateTime: true, status: true } })
+    : null;
+
+  const activity = await getCounsellingActivity({
+    visitId: visit.id,
+    visitDate: visit.date,
+    finalizedAt: visit.finalizedAt,
+    doctorName: visit.doctor.name,
+    surgery: [visit.advisedSurgeryEye, visit.advisedSurgeryName].filter(Boolean).join(" "),
+    orders: orders.filter((o) => o.visitId === visit.id).map((o) => ({
+      id: o.id, testName: o.testName, createdAt: o.createdAt, resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt) : null,
+    })),
+    rec,
+    preOp,
+  });
+
+  // Sheets: saved ones, or the same hospital-standard starts as the IPD forms
+  const ctx: FormContext = {
+    patientName: visit.patient.name, age: visit.patient.age, sex: visit.patient.sex,
+    patientId: visit.patient.uhid ?? visit.patient.udid ?? visit.patient.id,
+    hospital: visit.hospital.name, doctor: visit.doctor.name,
+    surgery: visit.advisedSurgeryName, eye: visit.advisedSurgeryEye, implant: rec?.implant ?? visit.advisedSurgeryImplant ?? null,
+    anaesthesia: visit.advisedSurgeryAnaesthesia,
+    surgeryDate: (rec?.dateOfSurgery ?? visit.advisedSurgeryDate)?.toISOString() ?? null, type: "PRE_OP",
+  };
+  const ownerId = user.role === "DOCTOR" ? user.profileId : await getOwnerDoctorId(user.id);
+  const templates = ownerId
+    ? (await prisma.ipdTemplate.findMany({ where: { doctorId: ownerId, kind: { in: ["EDUCATION", "EDUCATION_PRE"] } }, orderBy: { updatedAt: "desc" } })).map((t) => {
+        let items: string[] = [];
+        try { const x = JSON.parse(t.items); if (Array.isArray(x)) items = x.filter((i): i is string => typeof i === "string"); } catch { /* ignore */ }
+        return { id: t.id, kind: t.kind, name: t.name, surgery: t.surgery, items };
+      })
+    : [];
+
+  const data: CounsellingDetailData = {
+    visitId: visit.id,
+    visitDate: visit.date.toISOString(),
+    surgery: visit.advisedSurgeryName ?? "",
+    laterality: visit.advisedSurgeryEye,
+    anaesthesia: visit.advisedSurgeryAnaesthesia,
+    surgeryNotes: visit.advisedSurgeryNotes,
+    drugAllergy,
+    doctorName: visit.doctor.name,
+    patient: { ...visit.patient, udid: visit.patient.udid ?? visit.patient.id },
+    chiefComplaint: visit.generalExam?.chiefComplaint ?? null,
+    diagnoses: visit.diagnoses,
+    orders: orders.map((o) => ({
+      id: o.id,
+      // Reports replaced by a No Show retake stay in the history only
+      current: o.visitId === visit.id && o.status !== SUPERSEDED,
+      testName: o.testName,
+      priority: o.priority,
+      doctorNotes: o.doctorNotes,
+      extraResultRefs: o.extraResultRefs,
+      category: o.category,
+      laterality: o.laterality,
+      notes: o.notes,
+      resultRef: o.resultRef,
+      resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null,
+      createdAt: o.createdAt.toISOString(),
+    })),
+    status: counsellingStatus(rec),
+    rec: {
+      implant: rec?.implant ?? visit.advisedSurgeryImplant ?? "",
+      dateOfSurgery: (rec?.dateOfSurgery ?? visit.advisedSurgeryDate)?.toISOString() ?? null,
+      paymentMode: rec?.paymentMode ?? "",
+      paymentType: rec?.paymentType ?? "",
+      schemeName: rec?.schemeName ?? "",
+      policyNumber: rec?.policyNumber ?? "",
+      paymentDocs: parsePaymentDocs(rec?.paymentDocs),
+      estimateAmount: rec?.estimateAmount != null ? Number(rec.estimateAmount) : null,
+      outOfPocketAmount: rec?.outOfPocketAmount != null ? Number(rec.outOfPocketAmount) : null,
+      coveredAmount: rec?.coveredAmount != null ? Number(rec.coveredAmount) : null,
+      advancePaid: rec?.advancePaid != null ? Number(rec.advancePaid) : null,
+      advanceReceived: rec?.advanceReceived ?? false,
+      preOpTime: rec?.preOpTime ?? "",
+      fitForSurgery: rec?.fitForSurgery ?? false,
+      eligibleForSurgery: rec?.eligibleForSurgery ?? false,
+      surgeryDeferred: rec?.surgeryDeferred ?? false,
+      postponedUntil: rec?.postponedUntil?.toISOString() ?? null,
+      postponedIndefinitely: rec?.postponedIndefinitely ?? false,
+      postponeReason: rec?.deferralNotes ?? "",
+      investigationDetails: rec?.investigationDetails ?? "",
+      reportsValidUntil: rec?.reportsValidUntil?.toISOString() ?? null,
+      fitByName: rec?.fitByName ?? null,
+      eligibleByName: rec?.eligibleByName ?? null,
+      enteredAt: rec?.createdAt.toISOString() ?? null,
+      fitAt: rec?.doctorReviewedAt?.toISOString() ?? null,
+      postponedAt: rec?.postponedAt?.toISOString() ?? null,
+      eligibleAt: rec?.confirmedAt?.toISOString() ?? null,
+    },
+    preOp: preOp ? { dateTime: preOp.dateTime.toISOString(), status: preOp.status } : null,
+    activity,
+    sheets: {
+      me: user.name,
+      ctx,
+      templates,
+      implant: parseCounsellingImplant(rec?.implantDetails),
+      consents: upgradeConsents(parseCounsellingConsents(rec?.consents) ?? defaultConsents(ctx), ctx),
+      education: completeEducation(parseCounsellingEducation(rec?.education) ?? defaultEducation(ctx), ctx),
+    },
+  };
+
+  return data;
+}

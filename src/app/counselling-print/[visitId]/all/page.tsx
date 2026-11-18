@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { ConsentPrintBody, CONSENT_PAGE_MIN_H } from "@/app/ipd-print/ConsentPrintBody";
+import { ConsentPrintBody, CONSENT_PAGE_MIN_H, SignedConsentPrint } from "@/app/ipd-print/ConsentPrintBody";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 import { PrintBar } from "@/app/ipd-print/[admissionId]/PrintBar";
 import { LATERALITY_LABEL, CASHLESS_TYPES, paymentLabel, parsePaymentDocs, implantGroup } from "@/lib/counselling";
@@ -161,7 +161,8 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
     pages.push({
       key: `c-${c.id}`,
       consent: true,
-      node: (
+      // Signed copy uploaded: that is the page, not the blank form
+      node: c.signedFile ? <SignedConsentPrint c={{ ...c, signedFile: c.signedFile }} /> : (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
             kicker="Informed Consent" title={c.title} dateText="Date: ____________" bleed="7mm"

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requirePermission, userCan } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { loadIpdFileData } from "@/lib/ipd-file-data";
-import { formsFor, isCustomKey } from "@/lib/ipd";
+import { isCustomKey, tabsFor } from "@/lib/ipd";
 import { isV2, type OtNotesData } from "@/lib/ipd-forms";
 import { isOtNotesCopy, parseVerified } from "@/lib/ot";
 import { OtFile, type OtCaseData } from "./OtFile";
@@ -45,7 +45,7 @@ export default async function OtFilePage({ params }: { params: Promise<{ admissi
 
   // The forms to verify again: the file's forms for its admission type, plus custom ones
   const items = [
-    ...formsFor(d.type).map((f) => ({ key: f.key as string, title: f.title, display: !!f.display })),
+    ...tabsFor(d.type, d.fileTabs).map((f) => ({ key: f.key as string, title: f.title, display: !!f.display })),
     ...d.forms.filter((f) => isCustomKey(f.key)).map((f) => ({ key: f.key, title: f.title, display: false })),
   ];
 

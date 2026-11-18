@@ -38,6 +38,7 @@ function refresh(visitId: string) {
   // Reports, implant and consents are shared with the patient page and IPD
   revalidatePath("/patients/[udid]", "page");
   revalidatePath("/ipd", "layout");
+  revalidatePath("/ot", "layout");
 }
 
 /** "YYYY-MM-DD" (IST) → start of that IST day; "" → null. */

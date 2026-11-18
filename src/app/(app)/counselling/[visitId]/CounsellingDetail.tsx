@@ -152,6 +152,12 @@ function getCustomImplants(surgery: string): string[] {
   }
 }
 
+function forgetImplant(surgery: string, value: string): string[] {
+  const next = getCustomImplants(surgery).filter((s) => s !== value);
+  try { localStorage.setItem(implantLibraryKey(surgery), JSON.stringify(next)); } catch {}
+  return next;
+}
+
 function rememberImplant(surgery: string, value: string): string[] {
   const current = getCustomImplants(surgery);
   const v = value.trim();
@@ -678,6 +684,11 @@ function SuggestInput({
     setCustom(next);
     try { localStorage.setItem(libraryKey, JSON.stringify(next)); } catch {}
   };
+  const forget = (o: string) => {
+    const next = custom.filter((c) => c !== o);
+    setCustom(next);
+    try { localStorage.setItem(libraryKey, JSON.stringify(next)); } catch {}
+  };
   const q = value.trim().toLowerCase();
   const matches = [...new Set([...options, ...custom])].filter((o) => !q || o.toLowerCase().includes(q));
 
@@ -697,11 +708,19 @@ function SuggestInput({
       {open && !disabled && matches.length > 0 && (
         <div className="absolute z-30 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
           {matches.map((o) => (
-            <button key={o} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(o); setOpen(false); }}
-              className={`flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--color-primary-50)] ${o === value ? "text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"}`}>
+            <div key={o} onMouseDown={(e) => e.preventDefault()} onClick={() => { onChange(o); setOpen(false); }}
+              className={`flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-[var(--color-primary-50)] ${o === value ? "text-[var(--color-primary-700)] font-semibold" : "text-[var(--color-ink-700)]"}`}>
               <span><MatchHighlight text={o} term={value} /></span>
-              {o === value && <Check size={14} />}
-            </button>
+              <span className="flex items-center gap-1">
+                {o === value && <Check size={14} />}
+                {custom.includes(o) && !options.includes(o) && (
+                  <button type="button" title={`Remove "${o}" from your options`} aria-label={`Remove ${o}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => { e.stopPropagation(); forget(o); }}
+                    className="rounded-full p-0.5 text-[var(--color-ink-400)] hover:bg-black/10 hover:text-red-600"><X size={12} /></button>
+                )}
+              </span>
+            </div>
           ))}
         </div>
       )}
@@ -878,9 +897,11 @@ type SheetId = "sheet" | "investigations" | "consents" | "education" | "diet";
 const consentTabLabel = (c: ConsentItem) => (["General", "GVP", "Anaesthesia", "Negative"].includes(c.id) ? c.id : c.title);
 
 export function CounsellingDetail({
-  data, canEdit, canFit, canAddInvestigations, canUpload, canViewProfile,
+  data, canEdit, canFit, canAddInvestigations, canUpload, canViewProfile, embed = false,
 }: {
   data: CounsellingDetailData;
+  /** Only the Counselling Sheet with its own Save (the IPD file's Counselling Sheet tab). */
+  embed?: boolean;
   canEdit: boolean;
   canFit: boolean;
   /** Ordering more investigations has its own permission (not for counsellors unless the Super Admin ticks it). */
@@ -979,7 +1000,7 @@ export function CounsellingDetail({
       if (r.error) return r.error;
     }
     // Books, moves or cancels the pre-op appointment to match what was just saved (not when printing)
-    if (canEdit && opts?.preOp !== false) {
+    if (canEdit && !embed && opts?.preOp !== false) {
       const r = await savePreOp(data.visitId, preOpTime);
       if (r.error) return r.error;
     }
@@ -1250,10 +1271,16 @@ export function CounsellingDetail({
               {implantOpen && editable && implants.length > 0 && (
                 <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
                   {implants.map((s) => (
-                    <button key={s} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
-                      className="block w-full text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
-                      <MatchHighlight text={s} term={implant} />
-                    </button>
+                    <div key={s} onMouseDown={(e) => e.preventDefault()} onClick={() => { setImplant(s); setImplantOpen(false); }}
+                      className="flex w-full items-center justify-between gap-2 cursor-pointer text-left px-3 py-1.5 text-sm text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]">
+                      <span><MatchHighlight text={s} term={implant} /></span>
+                      {customImplants.includes(s) && (
+                        <button type="button" title={`Remove "${s}" from your options`} aria-label={`Remove ${s}`}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={(e) => { e.stopPropagation(); setCustomImplants(forgetImplant(data.surgery, s)); }}
+                          className="shrink-0 rounded-full p-0.5 text-[var(--color-ink-400)] hover:bg-black/10 hover:text-red-600"><X size={12} /></button>
+                      )}
+                    </div>
                   ))}
                 </div>
               )}
@@ -1504,6 +1531,7 @@ export function CounsellingDetail({
               </div>
             )}
             {/* Pre-op appointment: booked by Save on the surgery date at this time */}
+            {!embed && <>
             <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <label className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-[var(--color-ink-400)] uppercase tracking-[0.08em] whitespace-nowrap">
                 <CalendarClock size={13} /> Pre-op time
@@ -1519,6 +1547,7 @@ export function CounsellingDetail({
               </span>
             </div>
             {canEdit && <p className="text-caption text-[var(--color-ink-400)]">Saved with the Save button below.</p>}
+            </>}
           </div>
         )}
       </SectionCard>
@@ -1654,6 +1683,31 @@ export function CounsellingDetail({
     { id: "education", label: "Patient Education", icon: <BookOpen size={14} />, badge: badge(educationMissing.length), content: educationPart("education") },
     { id: "diet", label: "Diet", icon: <Utensils size={14} />, badge: badge(dietMissing.length), content: educationPart("diet") },
   ];
+
+  // IPD file: the same sheet, saved to the same counselling record
+  if (embed) return (
+    <div className="flex flex-col gap-3">
+      {counsellingSheet}
+      {canEdit && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {error && <p className="mr-auto text-sm text-red-600">{error}</p>}
+          {savedFlash && <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700"><CheckCircle2 size={13} /> Saved</span>}
+          <button type="button" onClick={save} disabled={pending || !dirty}
+            className="h-9 inline-flex items-center gap-2 px-4 rounded-xl text-sm font-semibold disabled:opacity-50 transition-colors bg-[var(--color-primary-700)] text-white hover:bg-[var(--color-primary-800)]">
+            <Save size={15} />
+            {pending ? "Saving..." : "Save"}
+          </button>
+        </div>
+      )}
+      {modal === "noShow" && (
+        <NoShowModal
+          pending={pending} error={error} onClose={() => setModal(null)}
+          newDate={dateOfSurgery} fit={rec.fitForSurgery} oldestReport={oldestReport} validUntil={validUntil}
+          onKeep={() => rescheduleSave(false)} onRetake={() => rescheduleSave(true)}
+        />
+      )}
+    </div>
+  );
 
   const desktopSidebarOffset = collapsed
     ? "min-[1025px]:left-16"

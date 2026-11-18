@@ -14,8 +14,8 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { checkOwnPassword, keepLockedConsents, withUnlock } from "@/lib/consent-lock";
 import { SUPERSEDED } from "@/lib/counselling";
 import {
-  IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys,
-  type LogEntry,
+  ALWAYS_TABS, IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys, tabChoices,
+  type LogEntry, WARD_TYPE_LABEL,
 } from "@/lib/ipd";
 
 type Result = { error?: string };
@@ -60,7 +60,7 @@ export async function updateAdmissionDetails(admissionId: string, data: {
   if (data.expectedDischarge && !/^\d{4}-\d{2}-\d{2}$/.test(data.expectedDischarge)) return { error: "Invalid expected discharge date." };
   const expectedDischarge = data.expectedDischarge ? istDayRange(data.expectedDischarge).dayStart : null;
   if (expectedDischarge && expectedDischarge < admission.admittedOn) return { error: "Expected discharge can't be before the date of admission." };
-  if (data.wardType && !["MALE", "FEMALE", "OTHER"].includes(data.wardType)) return { error: "Invalid ward type." };
+  if (data.wardType && !(data.wardType in WARD_TYPE_LABEL)) return { error: "Invalid ward type." };
   const patch = {
     ward: data.ward.trim() || null,
     wardType: data.wardType || null,
@@ -272,7 +272,7 @@ export async function removeIpdExtraReport(admissionId: string, orderId: string,
 export async function freezeForm(admissionId: string, key: string, data?: unknown): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
   if (admission.status !== "ADMITTED") return { error: "Forms can only be frozen while the patient is in the ward before OT." };
-  if (!requiredKeys(admission.admissionType, admission.forms.map((f) => f.key)).includes(key)) return { error: "This form does not apply to the admission." };
+  if (!requiredKeys(admission.admissionType, admission.forms.map((f) => f.key), admission.fileTabs).includes(key)) return { error: "This form does not apply to the admission." };
   const row = admission.forms.find((f) => f.key === key);
   if (row?.frozen) return {};
   if (data !== undefined) {
@@ -351,6 +351,55 @@ export async function addCustomForm(admissionId: string, title: string): Promise
   return { key };
 }
 
+/* ── Patient file tabs ─────────────────────────────────────────────────── */
+
+const tabTitle = (key: string) => IPD_FORMS.find((f) => f.key === key)?.title ?? key;
+
+/** Create the patient file with the chosen tabs (the long summary and investigations always). */
+export async function createIpdFile(admissionId: string, tabs: string[]): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (admission.fileCreatedAt) return {};
+  const allowed = new Set(tabChoices(admission.admissionType, !!admission.counsellingVisitId).map((f) => f.key as string));
+  const picked = [...ALWAYS_TABS, ...tabs.filter((t) => allowed.has(t))];
+  await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { fileTabs: picked, fileCreatedAt: new Date() } });
+  await audit(user.id, user.name, admissionId, "FILE_CREATED", { tabs: picked.map(tabTitle) });
+  refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/** Add tabs to the patient file. */
+export async function addFileTabs(admissionId: string, tabs: string[]): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (admission.status !== "ADMITTED" && admission.status !== "POST_OP") return { error: "Tabs can't be changed now." };
+  const allowed = new Set(tabChoices(admission.admissionType, !!admission.counsellingVisitId).map((f) => f.key as string));
+  const added = tabs.filter((t) => allowed.has(t) && !admission.fileTabs.includes(t));
+  if (!added.length) return {};
+  await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { fileTabs: [...admission.fileTabs, ...added] } });
+  for (const k of added) await audit(user.id, user.name, admissionId, "FORM_ADDED", { key: k, title: tabTitle(k) });
+  refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/** Remove a tab. Frozen tabs stay; a fixed tab keeps its entries (adding it back restores them). */
+export async function removeFileTab(admissionId: string, key: string): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (admission.status !== "ADMITTED" && admission.status !== "POST_OP") return { error: "Tabs can't be changed now." };
+  if (ALWAYS_TABS.includes(key)) return { error: "This tab is always part of the file." };
+  const row = admission.forms.find((f) => f.key === key);
+  if (row?.frozen) return { error: "A frozen tab can't be removed." };
+  if (isCustomKey(key)) {
+    if (!row) return {};
+    await prisma.ipdForm.delete({ where: { id: row.id } });
+    await audit(user.id, user.name, admissionId, "FORM_REMOVED", { key, title: row.title });
+  } else {
+    if (!admission.fileTabs.includes(key)) return {};
+    await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { fileTabs: admission.fileTabs.filter((t) => t !== key) } });
+    await audit(user.id, user.name, admissionId, "FORM_REMOVED", { key, title: tabTitle(key) });
+  }
+  refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
 /* ── Doctor's notes ────────────────────────────────────────────────────── */
 
 export async function addDoctorNote(admissionId: string, text: string): Promise<Result> {
@@ -369,7 +418,7 @@ export async function shiftToOt(admissionId: string): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.shiftOt");
   if (admission.status !== "ADMITTED") return { error: "The file is not in the ward." };
   if (!canGoToOt(admission.admissionType)) return { error: "Conservative admissions are not shifted to OT." };
-  const keys = requiredKeys(admission.admissionType, admission.forms.map((f) => f.key));
+  const keys = requiredKeys(admission.admissionType, admission.forms.map((f) => f.key), admission.fileTabs);
   const frozen = new Set(admission.forms.filter((f) => f.frozen).map((f) => f.key));
   const missing = keys.filter((k) => !frozen.has(k));
   if (missing.length) return { error: `Freeze every form first (${missing.length} left).` };

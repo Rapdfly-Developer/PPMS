@@ -6,7 +6,7 @@
 // this device (like the keywords themselves).
 
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { MatchHighlight } from "./MatchHighlight";
 
 /* ── Usage counts ─────────────────────────────────────────────────────── */
@@ -115,6 +115,9 @@ export interface SuggestOptions {
   onPick: (option: string) => void;
   /** Offer "+ Save as keyword" for text that isn't a keyword yet. */
   onAddNew?: (text: string) => void;
+  /** Show a small × on the options this says can be removed (custom ones), and call this when it is clicked. */
+  onRemove?: (option: string) => void;
+  canRemove?: (option: string) => boolean;
   /** Keep the given order (e.g. surgery steps) instead of most used first. */
   keepOrder?: boolean;
   /** Show the list on focus even when nothing is typed. */
@@ -131,7 +134,7 @@ export interface SuggestOptions {
  * `menu` right after it inside a `relative` wrapper. ↑ ↓ move, Enter or Tab
  * pick, Esc closes. Picking counts as a use, so it ranks higher next time.
  */
-export function useSuggest({ term, options, ns, onPick, onAddNew, keepOrder, openOnFocus, numbered, max = 8, inline }: SuggestOptions) {
+export function useSuggest({ term, options, ns, onPick, onAddNew, onRemove, canRemove, keepOrder, openOnFocus, numbered, max = 8, inline }: SuggestOptions) {
   const counts = useUseCounts(ns);
   const [focused, setFocused] = useState(false);
   const [closedFor, setClosedFor] = useState<string | null>(null);
@@ -178,10 +181,10 @@ export function useSuggest({ term, options, ns, onPick, onAddNew, keepOrder, ope
   const menu = open ? (
     <div role="listbox" className={`${inline ? "relative mt-1 max-h-48" : "absolute left-0 right-0 top-full mt-1 z-50 max-h-64"} overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1`}>
       {rows.map((row, i) => (
-        <button key={`${row.kind}-${row.text}`} type="button" role="option" aria-selected={i === idx}
+        <div key={`${row.kind}-${row.text}`} role="option" aria-selected={i === idx}
           onMouseDown={(e) => { e.preventDefault(); choose(row); }}
           onMouseEnter={() => setActive(i)}
-          className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm ${i === idx ? "bg-[var(--color-primary-50)] text-[var(--color-primary-800)]" : "text-[var(--color-ink-700)]"}`}>
+          className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm cursor-pointer ${i === idx ? "bg-[var(--color-primary-50)] text-[var(--color-primary-800)]" : "text-[var(--color-ink-700)]"}`}>
           {row.kind === "add" ? (
             <><Plus size={13} className="shrink-0 text-[var(--color-primary-600)]" /><span>Save <b className="font-semibold">&quot;{row.text}&quot;</b> as a keyword</span></>
           ) : (
@@ -189,9 +192,14 @@ export function useSuggest({ term, options, ns, onPick, onAddNew, keepOrder, ope
               {numbered && <span className="w-5 shrink-0 text-right text-xs tabular-nums text-[var(--color-ink-400)]">{options.indexOf(row.text) + 1}.</span>}
               <span className="flex-1 min-w-0 truncate"><Highlight text={row.text} term={t} /></span>
               {(counts[row.text.toLowerCase()] ?? 0) > 1 && !keepOrder && <span className="text-micro text-[var(--color-ink-300)]">used {counts[row.text.toLowerCase()]}×</span>}
+              {onRemove && canRemove?.(row.text) && (
+                <button type="button" title={`Remove "${row.text}" from your options`} aria-label={`Remove ${row.text}`}
+                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(row.text); }}
+                  className="shrink-0 rounded-full p-0.5 text-[var(--color-ink-400)] hover:bg-black/10 hover:text-red-600"><X size={12} /></button>
+              )}
             </>
           )}
-        </button>
+        </div>
       ))}
       <p className="px-3 pt-1 pb-0.5 text-micro text-[var(--color-ink-300)] border-t border-[var(--color-border)] mt-1">↑ ↓ to move · Enter to pick · Esc to close</p>
     </div>

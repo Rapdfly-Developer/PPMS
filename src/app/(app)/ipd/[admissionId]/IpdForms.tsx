@@ -1,5 +1,6 @@
 "use client";
 
+import { fileHref } from "@/lib/file-href";
 import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { paymentLabel } from "@/lib/counselling";
@@ -400,6 +401,8 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
   const setItem = (c: ConsentItem) => change({ ...v, items: items.map((x) => (x.id === c.id ? c : x)) });
   const print = (c: ConsentItem) => start(async () => {
     if (editable) { const err = await saveNow(v); if (err) { setError(err); return; } }
+    // A signed PDF prints from the browser's own viewer
+    if (c.signedFile && /\.pdf(\?|$)/i.test(c.signedFile.name || c.signedFile.ref)) { window.open(fileHref(c.signedFile.ref)!, "_blank"); return; }
     printInPlace(`/ipd-print/${f.id}/consent/${encodeURIComponent(c.id)}`);
   });
   const add = (title: string, preset?: { id: string; text: string }) => {
