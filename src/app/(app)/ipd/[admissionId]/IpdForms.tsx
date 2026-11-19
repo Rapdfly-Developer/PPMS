@@ -1485,52 +1485,118 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
     const days = Math.round((new Date(`${date}T00:00:00`).getTime() - new Date(`${istDate(new Date(base))}T00:00:00`).getTime()) / 86400000);
     return days >= 0 ? `POD ${days}` : "";
   };
-  const add = () => {
+  const [draft, setDraft] = useState<PostOpReview | null>(null);
+  const [isNew, setIsNew] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const begin = (r?: PostOpReview) => {
+    if (r) { setDraft({ ...r }); setIsNew(false); return; }
     const date = istDate();
-    const r: PostOpReview = {
-      id: uid(), date, pod: podFor(date), vaRe: "", vaLe: "", iopRe: "", iopLe: "",
+    setDraft({
+      id: uid(), date, pod: podFor(date), at: new Date().toISOString(), vaRe: "", vaLe: "", iopRe: "", iopLe: "",
       lids: "", conjunctiva: "", cornea: "", ac: "", pupil: "", lens: "", fundus: "", complaints: "", plan: "", by: f.me,
-    };
-    change({ ...v, reviews: [r, ...reviews] });
+    });
+    setIsNew(true);
   };
-  const set = (id: string, k: keyof PostOpReview, x: string) => change({ ...v, reviews: reviews.map((r) => (r.id === id ? { ...r, [k]: x } : r)) });
+  const save = () => {
+    if (!draft) return;
+    const r = isNew ? draft : { ...draft, by: f.me, editedAt: new Date().toISOString() };
+    change({ ...v, reviews: isNew ? [r, ...reviews] : reviews.map((x) => (x.id === r.id ? r : x)) });
+    setDraft(null);
+  };
+  const set = (k: keyof PostOpReview, x: string) => setDraft((d) => (d ? { ...d, [k]: x } : d));
+  const when = (r: PostOpReview) => `${format(new Date(r.at ?? `${r.date}T00:00:00`), "EEE, d MMM yyyy")}${r.at ? ` · ${format(new Date(r.at), "h:mm a")}` : ""}`;
+  const hasData = !!draft && [draft.vaRe, draft.vaLe, draft.iopRe, draft.iopLe, draft.lids, draft.conjunctiva, draft.cornea, draft.ac, draft.pupil, draft.lens, draft.fundus, draft.complaints, draft.plan].some((x) => x.trim());
 
   return (
     <div className="space-y-3">
-      {editable && <button type="button" onClick={add} className={btnP}><Plus size={13} /> Add today&apos;s review</button>}
-      {reviews.length === 0 && <p className="text-sm italic text-[var(--color-ink-400)]">No post-operative reviews yet.</p>}
-      {reviews.map((r) => (
-        <Card key={r.id} title={`${format(new Date(`${r.date}T00:00:00`), "EEE, d MMM yyyy")}${r.pod ? ` · ${r.pod}` : ""}`} sub={`Reviewed by ${r.by}`}
-          right={editable && (
-            <div className="flex gap-1.5">
-              <button type="button" onClick={() => change({ ...v, reviews: reviews.map((x) => (x.id === r.id ? { ...x, ...POSTOP_NORMAL } : x)) })} className={btnG}><CheckCircle2 size={12} /> Normal findings</button>
-              <button type="button" onClick={() => change({ ...v, reviews: reviews.filter((x) => x.id !== r.id) })} className={btnG} aria-label="Remove review"><Trash2 size={12} /></button>
+      {editable && !draft && <button type="button" onClick={() => begin()} className={btnP}><Plus size={13} /> Add Note</button>}
+
+      {draft && (
+        <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/70 px-4 py-2">
+            <span className="text-xs font-bold text-[var(--color-ink-800)]">{format(new Date(`${draft.date}T00:00:00`), "EEE, d MMM yyyy")}{draft.pod ? ` · ${draft.pod}` : ""}</span>
+            <button type="button" onClick={() => setDraft((d) => (d ? { ...d, ...POSTOP_NORMAL } : d))} className={btnG}><CheckCircle2 size={12} /> Normal findings</button>
+          </div>
+          <div className="space-y-3 px-4 py-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field label="Vision RE" value={draft.vaRe} onChange={(x) => set("vaRe", x)} opts={FO.postopVision} />
+              <Field label="Vision LE" value={draft.vaLe} onChange={(x) => set("vaLe", x)} opts={FO.postopVision} />
+              <Field label="IOP RE (mmHg)" value={draft.iopRe} onChange={(x) => set("iopRe", x)} />
+              <Field label="IOP LE (mmHg)" value={draft.iopLe} onChange={(x) => set("iopLe", x)} />
             </div>
-          )}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Vision RE" value={r.vaRe} onChange={(x) => set(r.id, "vaRe", x)} disabled={!editable} opts={FO.postopVision} />
-            <Field label="Vision LE" value={r.vaLe} onChange={(x) => set(r.id, "vaLe", x)} disabled={!editable} opts={FO.postopVision} />
-            <Field label="IOP RE (mmHg)" value={r.iopRe} onChange={(x) => set(r.id, "iopRe", x)} disabled={!editable} />
-            <Field label="IOP LE (mmHg)" value={r.iopLe} onChange={(x) => set(r.id, "iopLe", x)} disabled={!editable} />
+            <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
+              <table className="w-full">
+                <tbody>
+                  {POSTOP_EXAM.map((x) => (
+                    <tr key={x.key}>
+                      <td className={`${td} w-40 font-semibold text-xs uppercase tracking-wide text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)]/50`}>{x.label}</td>
+                      <td className={td}><input value={draft[x.key]} onChange={(e) => set(x.key, e.target.value)} placeholder={POSTOP_NORMAL[x.key]} className={inp} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <Area label="Complaints" value={draft.complaints} onChange={(x) => set("complaints", x)} rows={2} opts={FO.postopComplaints} chipsBelow />
+              <Area label="Plan" value={draft.plan} onChange={(x) => set("plan", x)} rows={2} opts={FO.postopPlan} chipsBelow />
+            </div>
           </div>
-          <div className="mt-3 rounded-lg border border-[var(--color-border)] overflow-hidden">
-            <table className="w-full">
-              <tbody>
-                {POSTOP_EXAM.map((x) => (
-                  <tr key={x.key}>
-                    <td className={`${td} w-40 font-semibold text-xs uppercase tracking-wide text-[var(--color-ink-500)] bg-[var(--color-surface-sunken)]/50`}>{x.label}</td>
-                    <td className={td}><input value={r[x.key]} disabled={!editable} onChange={(e) => set(r.id, x.key, e.target.value)} placeholder={editable ? POSTOP_NORMAL[x.key] : "-"} className={inp} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 px-4 py-2.5">
+            <button type="button" onClick={() => setDraft(null)} className="inline-flex items-center rounded-lg px-3.5 py-1.5 text-xs font-semibold text-[var(--color-ink-500)] hover:bg-white hover:text-[var(--color-ink-800)]">Cancel</button>
+            <button type="button" disabled={!hasData} onClick={save} className={btnP}><Check size={13} /> Save</button>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-3">
-            <Area label="Complaints" value={r.complaints} onChange={(x) => set(r.id, "complaints", x)} disabled={!editable} rows={2} opts={FO.postopComplaints} />
-            <Area label="Plan" value={r.plan} onChange={(x) => set(r.id, "plan", x)} disabled={!editable} rows={2} opts={FO.postopPlan} />
-          </div>
-        </Card>
-      ))}
+        </section>
+      )}
+
+      {reviews.length === 0 && !draft ? (
+        <p className="text-sm italic text-[var(--color-ink-400)]">No post-operative notes yet.</p>
+      ) : (
+        <ol className="space-y-2">
+          {reviews.map((r) => {
+            const isOpen = expanded === r.id;
+            const exam = POSTOP_EXAM.filter((x) => r[x.key]);
+            const vision = [r.vaRe && `RE ${r.vaRe}`, r.vaLe && `LE ${r.vaLe}`].filter(Boolean).join("  ·  ");
+            const iop = [r.iopRe && `RE ${r.iopRe}`, r.iopLe && `LE ${r.iopLe}`].filter(Boolean).join("  ·  ");
+            return (
+              <li key={r.id} className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--color-surface-sunken)]/70 px-3.5 py-2">
+                  <button type="button" onClick={() => setExpanded(isOpen ? null : r.id)} aria-expanded={isOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    <ChevronRight size={14} className={`shrink-0 text-[var(--color-ink-400)] transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                    <span className="text-xs font-bold text-[var(--color-ink-800)]">{when(r)}</span>
+                    {r.pod && <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-px text-[10px] font-semibold text-[var(--color-ink-600)]">{r.pod}</span>}
+                    <span className="truncate text-xs text-[var(--color-ink-500)]">{r.by}</span>
+                    {r.editedAt && <span className="rounded-full bg-amber-50 px-2 py-px text-[10px] font-semibold text-amber-700">Edited {format(new Date(r.editedAt), "h:mm a")}</span>}
+                  </button>
+                  {editable && !draft && (
+                    <div className="flex gap-1.5">
+                      <button type="button" onClick={() => begin(r)} className={btnG}><Pencil size={11} /> Edit</button>
+                      <button type="button" onClick={() => change({ ...v, reviews: reviews.filter((x) => x.id !== r.id) })} className={btnG} aria-label="Remove note"><Trash2 size={12} /></button>
+                    </div>
+                  )}
+                </div>
+                {isOpen && (
+                  <div className="space-y-2.5 border-t border-[var(--color-border)] px-3.5 py-3 text-sm">
+                    {(vision || iop) && (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {vision && <div><p className={`${lblIn} mb-0.5`}>Vision</p><p className="text-[var(--color-ink-800)]">{vision}</p></div>}
+                        {iop && <div><p className={`${lblIn} mb-0.5`}>IOP (mmHg)</p><p className="text-[var(--color-ink-800)]">{iop}</p></div>}
+                      </div>
+                    )}
+                    {exam.length > 0 && (
+                      <div>
+                        <p className={`${lblIn} mb-1`}>Findings</p>
+                        <div className="space-y-0.5">{exam.map((x) => <p key={x.key} className="text-[var(--color-ink-800)]"><span className="font-semibold text-[var(--color-ink-500)]">{x.label}:</span> {r[x.key]}</p>)}</div>
+                      </div>
+                    )}
+                    {r.complaints && <div><p className={`${lblIn} mb-0.5`}>Complaints</p><p className="whitespace-pre-line text-[var(--color-ink-800)]">{r.complaints}</p></div>}
+                    {r.plan && <div><p className={`${lblIn} mb-0.5`}>Plan</p><p className="whitespace-pre-line text-[var(--color-ink-800)]">{r.plan}</p></div>}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </div>
   );
 }

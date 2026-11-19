@@ -913,6 +913,7 @@ export interface PostOpReview {
   lids: string; conjunctiva: string; cornea: string; ac: string; pupil: string; lens: string; fundus: string;
   complaints: string; plan: string;
   by: string;
+  at?: string; editedAt?: string;
 }
 export interface PostOpData { v: 2; reviews: PostOpReview[] }
 export const POSTOP_NORMAL = {
