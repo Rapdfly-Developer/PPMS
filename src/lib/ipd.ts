@@ -57,6 +57,9 @@ export const IPD_FORMS: FormDef[] = [
   { key: "postOpNotes",    title: "Draft Post-op Notes",           postOp: true },
 ];
 
+/** Only these tabs have a Freeze / Unfreeze toggle (Counselling, Patient Education, Surgery Checklist). */
+export const FREEZABLE_KEYS: string[] = ["counselling", "education", "checklist"];
+
 export const isCustomKey = (key: string) => key.startsWith("custom-");
 
 /** Tabs every patient file has: the long summary and the investigations. */
@@ -79,7 +82,7 @@ export function tabsFor(type: string, fileTabs: string[]): FormDef[] {
 
 /** Keys that count towards completion: the file's fixed tabs + custom forms (the long summary is the EMR, not frozen). */
 export function requiredKeys(type: string, formKeys: string[], fileTabs: string[]): string[] {
-  return [...tabsFor(type, fileTabs).map((f) => f.key).filter((k) => k !== "summary"), ...formKeys.filter(isCustomKey)];
+  return tabsFor(type, fileTabs).map((f) => f.key).filter((k) => FREEZABLE_KEYS.includes(k));
 }
 
 /** Can the form's main content be changed? (Running logs follow logsOpen.) */
@@ -94,7 +97,7 @@ export function formEditable(key: string, frozen: boolean, status: string): bool
   if (status !== "ADMITTED" && status !== "POST_OP") return false;
   const tillDischarge = IPD_FORMS.some((f) => f.key === key && f.postOp);
   if (status === "POST_OP") return tillDischarge;
-  return !frozen || tillDischarge;
+  return !frozen || tillDischarge || !FREEZABLE_KEYS.includes(key);
 }
 
 /** Nurse / treatment / diet entries can be added until discharge (not while in OT). */
@@ -376,8 +379,22 @@ export interface DischargeInputs {
 export function courseFromNotes(notes: { text: string; at: string | Date }[]): string {
   return [...notes]
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
-    .map((n) => `${dayLabel(n.at)}: ${n.text.trim()}`)
+    .map((n) => `${dayLabel(n.at)}: ${n.text.split("\n").map((l) => l.trim()).filter(Boolean).join("; ")}`)
     .join("\n");
+}
+
+/** "till Thu, 3 Dec 2026" for a duration like "2 weeks" counted from `from` (a YYYY-MM-DD day; today when empty). */
+export function durationEnd(duration: string, from?: string | null): string {
+  const m = (duration ?? "").match(/(\d+)\s*(day|week|wk|month|mo|year|yr)/i);
+  if (!m) return "";
+  const n = Number(m[1]);
+  const u = m[2].toLowerCase();
+  const d = new Date(`${from && /^\d{4}-\d{2}-\d{2}$/.test(from) ? from : istDay(new Date())}T00:00:00Z`);
+  if (u.startsWith("d")) d.setUTCDate(d.getUTCDate() + n);
+  else if (u.startsWith("w")) d.setUTCDate(d.getUTCDate() + n * 7);
+  else if (u.startsWith("m")) d.setUTCMonth(d.getUTCMonth() + n);
+  else d.setUTCFullYear(d.getUTCFullYear() + n);
+  return `till ${d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`;
 }
 
 export function medsFromDrugs(drugs: { name: string; dose: string; eye: string; frequency: string }[]): DischargeMed[] {

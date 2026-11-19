@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { chipMatcher, CHIP_MATCH_CLASS, dropTypedTerm, type ChipMatch } from "@/lib/chip-match";
 import { bumpUse, byUse, useFold, useLoadCounts, useSuggest } from "@/components/ui/Suggest";
+import { useIpdNote } from "@/app/(app)/emr/[udid]/EmrActionsContext";
 
 /**
  * Distinguishes single from double activation (click/touch/keyboard).
@@ -286,7 +287,9 @@ function KeywordChips({
   const matchOf = chipMatcher(typed, [...shownBuiltIns, ...custom]);
   const counts = useLoadCounts(fieldKey);
   const ordered = byUse([...shownBuiltIns, ...custom], counts);
-  const { shown, toggle } = useFold(ordered, 8);
+  // The IPD doctor's notes show every keyword (no "+ n more")
+  const inIpdNote = !!useIpdNote();
+  const { shown, toggle } = useFold(ordered, inIpdNote ? 999 : 8);
 
   if (disabled || ordered.length === 0) return null;
 

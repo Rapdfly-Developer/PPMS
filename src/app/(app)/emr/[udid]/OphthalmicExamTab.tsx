@@ -28,23 +28,7 @@ import {
   POSTERIOR_SEGMENT_OPTIONS,
   LACRIMAL_SAC_CHIPS,
 } from "@/lib/constants";
-import {
-  saveVisualAcuity,
-  saveRefraction,
-  saveColourVision,
-  addIOPReading,
-  removeIOPReading,
-  saveGonioNotes,
-  saveAnteriorSegment,
-  savePosteriorSegment,
-  saveDiplopia,
-  saveHess,
-  saveRetinoscopy,
-  getRefractionForVisit,
-  saveTearFilm,
-  saveLacrimalSac,
-  markOphthalmicReviewed,
-} from "./actions";
+import { useEmrActions } from "./EmrActionsContext";
 import { format, isSameDay } from "date-fns";
 import { ChipGroup } from "@/components/ui/Chip";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -72,6 +56,7 @@ export function OphthalmicExamTab({ visit, priorVisits, udid, role, canEditVA, c
   canViewPosterior?: boolean;
   canViewOculoplasty?: boolean;
 }) {
+  const { markOphthalmicReviewed } = useEmrActions();
   const visitLocked = visit?.status === "CLOSED" && !(visit?.finalizedAt && isSameDay(new Date(visit.finalizedAt), new Date()));
   const doctorOnly = role === "DOCTOR" && !visitLocked;
   // Per-section edit flags — fall back to doctorOnly when the prop is not passed
@@ -270,6 +255,7 @@ const NEAR_COLS = [
 ];
 
 function VisualAcuityCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveVisualAcuity } = useEmrActions();
   const va = visit.visualAcuity;
   const [testMethod, setTestMethod] = useState(va?.testMethod ?? "Snellen");
   const [re, setRe] = useState(
@@ -566,6 +552,7 @@ function ArSlipUpload({
 /* ── Refraction ────────────────────────────────────────────────────────── */
 
 function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveRefraction } = useEmrActions();
   const rc = visit.refraction;
   // ── Types ──────────────────────────────────────────────────────────────────
   // duoRed: Duochrome Test (Subjective only), Red vs Green, cycles "=" → ">" → "<" (unset = "="); duoGreen is legacy (lib/duochrome)
@@ -1063,6 +1050,7 @@ const CV_METHODS = ["Ishihara", "D-15 Farnsworth", "Lanthony D-15", "HRR", "City
 const CS_METHODS = ["Pelli-Robson", "Mars Letter CS", "Vistech", "FACT"] as const;
 
 function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveColourVision } = useEmrActions();
   const cv = visit.colourVisionCS;
   const storedRe = parseJSON(cv?.re, {}) as any;
   const storedLe = parseJSON(cv?.le, {}) as any;
@@ -1302,6 +1290,7 @@ function ColourContrastTab({ visit, udid, editable, priorVisits = [] }: { visit:
 /* ── IOP ──────────────────────────────────────────────────────────────── */
 
 function IOPCard({ visit, udid, editable, priorVisits }: { visit: any; udid: string; editable: boolean; priorVisits: any[] }) {
+  const { addIOPReading, removeIOPReading } = useEmrActions();
   const [re, setRe] = useState("");
   const [le, setLe] = useState("");
   const [method, setMethod] = useState<string>(IOP_METHODS[0]);
@@ -1690,6 +1679,7 @@ function GonioscopyCard({
   editable: boolean;
   priorVisits: any[];
 }) {
+  const { saveGonioNotes } = useEmrActions();
   // method is a single shared key: one technique is used for the exam, not one
   // per eye. gonioNotes is free-form JSON, so this needs no migration and older
   // records simply parse with an empty method.
@@ -2054,6 +2044,7 @@ function findPriorSegment(
 }
 
 function AnteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveAnteriorSegment } = useEmrActions();
   const as_ = visit.anteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(as_?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(as_?.le, {}));
@@ -2297,6 +2288,7 @@ const PS_PLACEHOLDERS: Record<string, string> = {
 const PS_METHODS = ["Indirect Ophthalmoscope", "Direct Ophthalmoscope", "Slit Lamp + 90D", "Slit Lamp + 78D", "Slit Lamp + 20D", "Fundus Camera"] as const;
 
 function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { savePosteriorSegment } = useEmrActions();
   const ps = visit.posteriorSegment;
   const [re, setRe] = useState<Record<string, string>>(parseJSON(ps?.re, {}));
   const [le, setLe] = useState<Record<string, string>>(parseJSON(ps?.le, {}));
@@ -2525,6 +2517,7 @@ function PosteriorSegmentCard({ visit, udid, editable, priorVisits = [] }: { vis
 /* ── Diplopia / Hess / Retinoscopy / Tear Film ───────────────────────────── */
 
 function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+  const { saveDiplopia } = useEmrActions();
   const dc = visit.diplopiaChart;
   const [grid, setGrid] = useState<Record<string, { status: string; notes?: string }>>(parseJSON(dc?.grid, {}));
 
@@ -2550,6 +2543,7 @@ function DiplopiaCard({ visit, udid, editable }: { visit: any; udid: string; edi
 }
 
 function HessCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+  const { saveHess } = useEmrActions();
   const hc = visit.hessChart;
   const [grid, setGrid] = useState<Record<string, any>>(parseJSON(hc?.grid, {}));
   const [interpretation, setInterpretation] = useState(hc?.interpretation ?? "");
@@ -2585,6 +2579,7 @@ function HessCard({ visit, udid, editable }: { visit: any; udid: string; editabl
 }
 
 function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; editable: boolean }) {
+  const { saveRetinoscopy, getRefractionForVisit } = useEmrActions();
   type RxFields = { sph: string; cyl: string; axis: string; nearSph: string; va: string; nearVa: string };
   const emptyRx: RxFields = { sph: "", cyl: "", axis: "", nearSph: "", va: "", nearVa: "" };
   const r = visit.retinoscopy;
@@ -2738,6 +2733,7 @@ function RetinoscopyCard({ visit, udid, editable }: { visit: any; udid: string; 
 }
 
 function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveTearFilm } = useEmrActions();
   const tf = visit.tearFilm;
   const [data, setData] = useState({
     tbutRe: tf?.tbutRe ?? "", tbutLe: tf?.tbutLe ?? "",
@@ -2864,6 +2860,7 @@ function TearFilmCard({ visit, udid, editable, priorVisits = [] }: { visit: any;
 /* ── Lacrimal Sac ─────────────────────────────────────────────────────────── */
 
 function LacrimalSacCard({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveLacrimalSac } = useEmrActions();
   const ls = visit.lacrimalSac;
   const storedRe = parseJSON(ls?.re, {}) as any;
   const storedLe = parseJSON(ls?.le, {}) as any;

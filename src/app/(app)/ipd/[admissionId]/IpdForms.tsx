@@ -1,13 +1,13 @@
 "use client";
 
 import { fileHref } from "@/lib/file-href";
-import { useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { paymentLabel } from "@/lib/counselling";
 import { format } from "date-fns";
 import {
-  BookOpen, Check, CheckCircle2, ClipboardCheck, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw, Search,
-  CalendarDays, Minus, Pencil, Trash2, X, Utensils,
+  BookOpen, Check, CheckCircle2, ChevronRight, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw,
+  CalendarDays, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
 } from "lucide-react";
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
@@ -23,14 +23,11 @@ import { implantFieldsFor, type CounsellingImplant, type ImplantDoc } from "@/li
 import { addIpdExtraReport, attachIpdReport, removeIpdExtraReport, removeIpdReport } from "../actions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { EducationEditDialog, LoadOtTemplate, ManageMine, SaveAsMine, type SavedTemplate } from "./templatesUi";
-import { searchMedications } from "@/lib/ophthalmic-medications";
-import { MatchHighlight } from "@/components/ui/MatchHighlight";
-import { DOSE_OPTIONS, FREQUENCY_OPTIONS } from "@/lib/medication-options";
 import {
-  CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, DOCTOR_NOTE_CHIPS, DOCTOR_NOTE_FIELDS, EYES,
-  IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, ROUTES, SHIFTS,
-  composeDoctorNote, scheduleFor,
-  type ChecklistData, type CheckAnswer, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
+  CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, EYES,
+  IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, SHIFTS,
+  scheduleFor,
+  type ChecklistData, type CheckAnswer, type NurseEntry, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
   builtinEducationSets, prebuiltConsents, dayDate, dietWindow, educationSetFor, educationSetsFor, educationStage, medDates,
   type EduPoint, type EducationStage, type EduStageKey, type Meal,
   type FormContext, type ImplantData, type LogEntry, type NurseData, type OtNotesData, type PostOpData,
@@ -64,6 +61,8 @@ export interface FormProps<T> {
   editable: boolean;
   canLog: boolean;
   addLog: (e: NewLog) => Promise<string | undefined>;
+  noteStop?: (label: string) => Promise<string | undefined>;
+  removeDose?: (drugId: string, slot: string, date: string) => Promise<string | undefined>;
   log: LogEntry[];
   f: FileInfo;
 }
@@ -138,7 +137,9 @@ export function Seg<T extends string>({ options, value, onChange, disabled, tone
   );
 }
 
-function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className, opts }: {
+function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className, opts, lw }: {
+  /** Fixed label width class, so stacked fields line up. */
+  lw?: string;
   label: string; value: string; onChange: (v: string) => void; disabled?: boolean; type?: string; placeholder?: string; list?: string; className?: string;
   /** Type-ahead list with "+ Custom", like the other pick fields. */
   opts?: FieldOptions;
@@ -147,7 +148,7 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
     return (
       <div className={className ?? ""}>
         <div className={rowIn}>
-          <label className={lblIn}>{label}</label>
+          <label className={`${lblIn} ${lw ?? ""}`}>{label}</label>
           <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} apply={(_, pick) => pick} disabled={disabled} className="relative flex-1 min-w-0">
             {(sp) => <input {...sp} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} w-full`} />}
           </SuggestField>
@@ -158,7 +159,7 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
   }
   return (
     <div className={`${rowIn} ${className ?? ""}`}>
-      <label className={lblIn}>{label}</label>
+      <label className={`${lblIn} ${lw ?? ""}`}>{label}</label>
       <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} flex-1`} />
     </div>
   );
@@ -168,17 +169,20 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
 const addLine = (value: string, pick: string) =>
   value.split("\n").some((l) => l.trim() === pick) ? value : (value.trim() ? `${value.replace(/\s+$/, "")}\n${pick}` : pick);
 
-function Area({ label, value, onChange, disabled, placeholder, rows = 3, opts }: {
+function Area({ label, value, onChange, disabled, placeholder, rows = 3, opts, chipsBelow }: {
+  /** Keyword chips under the box instead of above it. */
+  chipsBelow?: boolean;
   label?: string; value: string; onChange: (v: string) => void; disabled?: boolean; placeholder?: string; rows?: number;
   /** Keyword chips with "+ Custom" and a type-ahead list, like the other note fields. */
   opts?: FieldOptions;
 }) {
   const box = opts ? (
     <div className="min-w-0">
-      {!disabled && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
+      {!disabled && !chipsBelow && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
       <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} disabled={disabled}>
         {(sp) => <textarea {...sp} value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />}
       </SuggestField>
+      {!disabled && chipsBelow && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
     </div>
   ) : (
     <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
@@ -459,20 +463,20 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
           onUnlock={async (password) => {
             const r = await unlockIpdConsent(f.id, current.id, password);
             if (r.error) return r.error;
-            setItem({ ...current, unfrozen: r.unfrozen });
+            setItem({ ...current, frozen: false, unfrozen: r.unfrozen });
           }}
           onLock={async () => {
             const r = await lockIpdConsent(f.id, current.id);
             if (r.error) return r.error;
-            setItem({ ...current, unfrozen: undefined });
+            setItem({ ...current, frozen: true, unfrozen: undefined });
           }}
         />
       )}
       {current && editable && !isConsentLocked(current) && (
         <SignedConsentUpload file={current.signedFile} title={current.title}
           onChange={(signedFile) => start(async () => {
-            // A signed copy is saved straight away, which locks the consent
-            const next = { ...v, items: items.map((x) => (x.id === current.id ? { ...current, signedFile, signed: !!signedFile || current.signed, unfrozen: signedFile ? undefined : current.unfrozen } : x)) };
+            // A signed copy is saved straight away; the consent locks only when Freeze is clicked
+            const next = { ...v, items: items.map((x) => (x.id === current.id ? { ...current, signedFile, signed: !!signedFile || current.signed, ...(signedFile ? {} : { frozen: undefined, unfrozen: undefined }) } : x)) };
             change(next);
             const err = await saveNow(next);
             if (err) setError(err);
@@ -1038,35 +1042,7 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
 
 /* ── 6. Treatment chart ────────────────────────────────────────────────── */
 
-function DrugSearch({ value, onChange, onPick }: { value: string; onChange: (v: string) => void; onPick: (name: string, dose?: string, route?: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const hits = searchMedications(value, 8);
-  return (
-    <div className="relative flex-1 min-w-0">
-      <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)] pointer-events-none" />
-      <input value={value} onChange={(e) => { onChange(e.target.value); setOpen(true); }} onFocus={() => setOpen(true)} onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search drug, e.g. Moxifloxacin" className={`${inp} pl-7`} />
-      {open && hits.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white shadow-lg py-1">
-          {hits.map((m) => (
-            <button key={m.id} type="button" onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onPick(m.strength && !m.name.includes(m.strength) ? `${m.name} ${m.strength}` : m.name, m.defaultDose, m.route); setOpen(false); }}
-              className="block w-full text-left px-3 py-1.5 hover:bg-[var(--color-primary-50)]">
-              <span className="text-sm font-semibold text-[var(--color-ink-800)]"><MatchHighlight text={m.name} term={value} /> {m.strength}</span>
-              <span className="block text-[11px] text-[var(--color-ink-400)]">{m.generic} · {m.form} · {m.category}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-const ROUTE_GUESS = (r?: string) => (r && /oral/i.test(r) ? "Oral" : r && /ointment/i.test(r) ? "Ointment" : r && /iv|intraven/i.test(r) ? "IV" : "Topical");
-
-export function TreatmentForm({ value: v, change, editable, canLog, addLog, log, f }: FormProps<TreatmentData>) {
-  const blank = { name: "", dose: "1 drop", route: "Topical", eye: "", frequency: "QID (Four times daily)", instructions: "" };
-  const [draft, setDraft] = useState(blank);
+export function TreatmentForm({ value: v, change, editable, canLog, addLog, removeDose, noteStop, log, f }: FormProps<TreatmentData>) {
   const { run, pending, error } = useLogger(addLog);
   const drugs = (v.drugs ?? []).map((d, i) => ({ ...d, id: d.id ?? `d${i}` }));
   const active = drugs.filter((d) => !d.stopped);
@@ -1074,127 +1050,160 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, log,
   const doses = log.filter((e) => e.kind === "dose");
   const givenToday = (id: string, slot: string) => doses.find((e) => e.meta?.drugId === id && e.meta?.slot === slot && e.meta?.date === today);
 
-  const addOrder = () => {
-    if (!draft.name.trim()) return;
-    const order: DrugOrder = { id: uid(), ...draft, name: draft.name.trim(), start: today, orderedBy: f.me, stopped: false };
-    change({ ...v, drugs: [...drugs, order] });
-    setDraft(blank);
-  };
-  const importEmr = () => {
-    const have = new Set(drugs.map((d) => d.name.toLowerCase()));
-    const add = f.emrMeds.filter((m) => !have.has(m.name.toLowerCase())).map((m): DrugOrder => ({
-      id: uid(), name: m.name, dose: m.dose, route: m.route || "Topical", eye: m.eye, frequency: m.frequency, instructions: m.instructions,
-      start: today, orderedBy: f.me, stopped: false,
-    }));
-    change({ ...v, drugs: [...drugs, ...add] });
-  };
+  const [undoErr, setUndoErr] = useState("");
+  const [undoing, startUndo] = useTransition();
+  const unGive = (d: DrugOrder, slot: string) => startUndo(async () => {
+    setUndoErr((await removeDose?.(d.id, slot, today)) ?? "");
+  });
   const give = (d: DrugOrder, slot: string) =>
     run({ text: `${d.name} ${d.dose}${d.eye ? ` ${d.eye}` : ""} given${slot ? ` (${slot} dose)` : ""}`, kind: "dose", meta: { drugId: d.id, slot: slot || "SOS", date: today } });
 
-  return (
-    <div className="space-y-3">
-      <Card title="Medication orders" sub={`${active.length} active`}
-        right={editable && f.emrMeds.length > 0 && <button type="button" onClick={importEmr} className={btnG}><ClipboardCheck size={12} /> Import EMR prescription</button>}>
-        <div className="-m-3.5 overflow-x-auto">
-          <table className="w-full min-w-[720px]">
-            <thead><tr>{["#", "Drug", "Dose", "Route", "Eye", "Frequency", "Ordered", ""].map((h, i) => <th key={i} className={th}>{h}</th>)}</tr></thead>
-            <tbody>
-              {drugs.length === 0 && <tr><td colSpan={8} className={`${td} italic text-[var(--color-ink-400)]`}>No medication orders yet.</td></tr>}
-              {drugs.map((d, i) => (
-                <tr key={d.id} className={d.stopped ? "opacity-50" : ""}>
-                  <td className={`${td} w-8 text-[var(--color-ink-400)]`}>{i + 1}</td>
-                  <td className={td}>
-                    <p className={`font-semibold ${d.stopped ? "line-through" : ""}`}>{d.name}</p>
-                    {d.instructions && <p className="text-xs text-[var(--color-ink-500)]">{d.instructions}</p>}
-                    {d.stopped && <p className="text-[11px] text-red-600">Stopped{d.stoppedBy ? ` by ${d.stoppedBy}` : ""}{d.stoppedAt ? `, ${dateTime(d.stoppedAt)}` : ""}</p>}
-                  </td>
-                  <td className={td}>{d.dose || "-"}</td>
-                  <td className={td}>{d.route || "-"}</td>
-                  <td className={`${td} font-semibold`}>{d.eye || "-"}</td>
-                  <td className={td}>{d.frequency || "-"}</td>
-                  <td className={`${td} text-xs text-[var(--color-ink-500)] whitespace-nowrap`}>{d.start ? format(new Date(`${d.start}T00:00:00`), "EEE, d MMM") : ""}<br />{d.orderedBy}</td>
-                  <td className={`${td} text-right whitespace-nowrap`}>
-                    {editable && (d.stopped
-                      ? <button type="button" onClick={() => change({ ...v, drugs: drugs.map((x) => (x.id === d.id ? { ...x, stopped: false, stoppedBy: undefined, stoppedAt: undefined } : x)) })} className={btnG}><RotateCcw size={12} /> Resume</button>
-                      : <button type="button" onClick={() => change({ ...v, drugs: drugs.map((x) => (x.id === d.id ? { ...x, stopped: true, stoppedBy: f.me, stoppedAt: new Date().toISOString() } : x)) })} className={btnG}>Stop</button>)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {editable && (
-          <div className="mt-6 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/40 p-3">
-            <p className="text-xs font-bold text-[var(--color-primary-800)] mb-2">New order</p>
-            <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr_1fr] gap-2.5">
-              <div className={rowIn}><label className={lblIn}>Drug</label><DrugSearch value={draft.name} onChange={(x) => setDraft({ ...draft, name: x })} onPick={(name, dose, route) => setDraft({ ...draft, name, dose: dose || draft.dose, route: ROUTE_GUESS(route) })} /></div>
-              <Field label="Dose" value={draft.dose} onChange={(x) => setDraft({ ...draft, dose: x })} opts={FO.treatDose} />
-              <div className={rowIn}><label className={lblIn}>Route</label><SelectWithCustom storeKey="routes" builtIns={ROUTES} value={draft.route} onChange={(x) => setDraft({ ...draft, route: x })} className={inp} /></div>
-            </div>
-            <div className="grid grid-cols-1 xl:grid-cols-[auto_minmax(16rem,1fr)_1fr] gap-2.5 mt-2.5 items-center">
-              <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={draft.eye} onChange={(x) => setDraft({ ...draft, eye: draft.eye === x ? "" : x })} /></div>
-              <div className={rowIn}><label className={lblIn}>Frequency</label><SelectWithCustom storeKey="frequencies" builtIns={FREQUENCY_OPTIONS} value={draft.frequency} onChange={(x) => setDraft({ ...draft, frequency: x })} className={inp} /></div>
-              <Field label="Instructions" value={draft.instructions} onChange={(x) => setDraft({ ...draft, instructions: x })} placeholder="e.g. Shake well; 5 min gap between drops" opts={FO.treatInstructions} />
-            </div>
-            <datalist id="ipd-dose-options">{DOSE_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist>
-            <button type="button" disabled={!draft.name.trim()} onClick={addOrder} className={`${btnP} mt-3`}><Plus size={13} /> Add order</button>
-          </div>
-        )}
-      </Card>
+  const slotIcon = (s: string) => { const h = parseInt(s, 10); return h < 11 ? <Sunrise size={11} /> : h < 17 ? <Sun size={11} /> : h < 20 ? <Sunset size={11} /> : <Moon size={11} />; };
+  const patch = (id: string, p: Partial<DrugOrder>) => change({ ...v, drugs: drugs.map((x) => (x.id === id ? { ...x, ...p } : x)) });
+  const dayLabel = (iso: string) => {
+    const d = format(new Date(iso), "yyyy-MM-dd");
+    const t = format(new Date(), "yyyy-MM-dd");
+    const yd = new Date(); yd.setDate(yd.getDate() - 1);
+    const y = format(yd, "yyyy-MM-dd");
+    return d === t ? "Today" : d === y ? "Yesterday" : format(new Date(iso), "EEE, d MMM");
+  };
+  const groups: { label: string; items: LogEntry[] }[] = [];
+  [...log].reverse().forEach((e) => {
+    const label = dayLabel(e.at);
+    const g = groups[groups.length - 1];
+    if (g && g.label === label) g.items.push(e); else groups.push({ label, items: [e] });
+  });
+  const totalSlots = active.reduce((n, d) => n + scheduleFor(d.frequency).length, 0);
+  const totalGiven = active.reduce((n, d) => n + scheduleFor(d.frequency).filter((s) => givenToday(d.id, s)).length, 0);
 
-      <Card title={`Medication administration record · ${format(new Date(), "EEEE, d MMMM yyyy")}`} sub={canLog ? "Tap a dose time when it is given" : undefined}>
-        {active.length === 0 ? <p className="text-sm italic text-[var(--color-ink-400)]">No active orders.</p> : (
-          <div className="-m-3.5 overflow-x-auto">
-            <table className="w-full min-w-[620px]">
-              <thead><tr><th className={`${th} w-[34%]`}>Drug</th><th className={th}>Doses due today</th></tr></thead>
-              <tbody>
-                {active.map((d) => {
-                  const slots = scheduleFor(d.frequency);
-                  const sos = doses.filter((e) => e.meta?.drugId === d.id && e.meta?.slot === "SOS" && e.meta?.date === today);
-                  return (
-                    <tr key={d.id}>
-                      <td className={td}><p className="font-semibold">{d.name}</p><p className="text-xs text-[var(--color-ink-500)]">{[d.dose, d.eye, d.frequency].filter(Boolean).join(" · ")}</p></td>
-                      <td className={td}>
-                        <div className="flex flex-wrap gap-1.5">
+  const TINTS = [
+    { bg: "bg-rose-50/70", ring: "ring-rose-100", chip: "bg-rose-100 text-rose-700", avatar: "bg-rose-100 text-rose-600" },
+    { bg: "bg-sky-50/70", ring: "ring-sky-100", chip: "bg-sky-100 text-sky-700", avatar: "bg-sky-100 text-sky-600" },
+    { bg: "bg-amber-50/70", ring: "ring-amber-100", chip: "bg-amber-100 text-amber-700", avatar: "bg-amber-100 text-amber-600" },
+    { bg: "bg-violet-50/70", ring: "ring-violet-100", chip: "bg-violet-100 text-violet-700", avatar: "bg-violet-100 text-violet-600" },
+    { bg: "bg-teal-50/70", ring: "ring-teal-100", chip: "bg-teal-100 text-teal-700", avatar: "bg-teal-100 text-teal-600" },
+  ];
+  const shell = "overflow-hidden rounded-3xl border border-[var(--color-primary-100)] bg-white shadow-[0_2px_14px_rgba(20,120,110,0.07)]";
+  const head = "flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-2.5";
+
+  return (
+    <div className="space-y-4">
+      <section className={shell}>
+        <div className={head}>
+          <div className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 place-items-center rounded-xl bg-white text-[var(--color-ink-600)] ring-1 ring-[var(--color-border)]"><Pill size={16} /></span>
+            <div>
+              <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-700)]">Medication chart</h3>
+              <p className="text-[11px] text-[var(--color-ink-500)]">{format(new Date(), "EEEE, d MMMM yyyy")}{canLog ? " · tap a dose time when given" : ""}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-bold">
+            <span className="rounded-full bg-[var(--color-primary-100)] px-2.5 py-1 text-[var(--color-primary-700)]">{active.length} active</span>
+            {totalSlots > 0 && <span className={`rounded-full px-2.5 py-1 ${totalGiven === totalSlots ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{totalGiven === totalSlots ? "All doses given" : `${totalGiven}/${totalSlots} given`}</span>}
+          </div>
+        </div>
+
+        <div className="p-3">
+          {drugs.length === 0 ? <p className="py-3 text-center text-sm italic text-[var(--color-ink-400)]">No medication orders yet.</p> : (
+            <ul className="space-y-1.5">
+              {drugs.map((d, idx) => {
+                const tint = TINTS[idx % TINTS.length];
+                const slots = scheduleFor(d.frequency);
+                const given = slots.filter((s) => givenToday(d.id, s)).length;
+                const sos = doses.filter((e) => e.meta?.drugId === d.id && e.meta?.slot === "SOS" && e.meta?.date === today);
+                const done = slots.length > 0 && given === slots.length;
+                return (
+                  <li key={d.id} className={`rounded-2xl px-3 py-2 ring-1 transition ${d.stopped ? "bg-[var(--color-surface-sunken)]/70 ring-[var(--color-border)]" : `${tint.bg} ${tint.ring}`}`}>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                      <span className={`relative grid h-8 w-8 shrink-0 place-items-center rounded-xl ${d.stopped ? "bg-[var(--color-ink-100)] text-[var(--color-ink-400)]" : tint.avatar}`}>
+                        <Pill size={15} />
+                        {d.eye && <span className="absolute -bottom-1 -right-1.5 rounded-full bg-white px-1 text-[8px] font-extrabold leading-3 text-[var(--color-ink-700)] shadow ring-1 ring-black/5">{d.eye}</span>}
+                      </span>
+
+                      <div className={`flex min-w-[12rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 ${d.stopped ? "opacity-60" : ""}`}>
+                        <p className={`text-sm font-extrabold leading-tight tracking-tight text-[var(--color-ink-900)] ${d.stopped ? "line-through" : ""}`}>{d.name}</p>
+                        {[d.dose, d.route, d.frequency].filter(Boolean).map((t, i) => (
+                          <span key={i} className={`rounded-full px-2 py-px text-[10.5px] font-semibold ${d.stopped ? "bg-white text-[var(--color-ink-500)]" : tint.chip}`}>{t}</span>
+                        ))}
+                      </div>
+
+                      {!d.stopped && (
+                        <div className="flex flex-wrap items-center gap-1">
                           {slots.map((s) => {
                             const g = givenToday(d.id, s);
                             return g ? (
-                              <span key={s} title={`${g.by}, ${time(g.at)}`} className="inline-flex flex-col items-center rounded-lg bg-emerald-600 px-2 py-1 text-white leading-tight">
-                                <span className="text-xs font-bold">{s}</span><span className="text-[10px] opacity-90">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>
-                              </span>
+                              <button key={s} type="button" disabled={!canLog || pending || undoing} onClick={() => unGive(d, s)} title={canLog ? `${g.by}, ${time(g.at)} · tap to undo` : `${g.by}, ${time(g.at)}`}
+                                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-500 px-2.5 py-1 text-[11px] font-bold leading-none text-white shadow-[0_1px_4px_rgba(16,185,129,0.35)] transition enabled:hover:scale-105 disabled:cursor-default">
+                                {slotIcon(s)}{s}<span className="font-medium opacity-95">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>
+                              </button>
                             ) : (
-                              <button key={s} type="button" disabled={!canLog || pending} onClick={() => give(d, s)}
-                                className="inline-flex flex-col items-center rounded-lg border border-[var(--color-border)] px-2 py-1 leading-tight text-[var(--color-ink-700)] enabled:hover:border-emerald-400 enabled:hover:bg-emerald-50 disabled:cursor-default">
-                                <span className="text-xs font-bold">{s}</span><span className="text-[10px] text-[var(--color-ink-400)]">{canLog ? "Give" : "Due"}</span>
+                              <button key={s} type="button" disabled={!canLog || pending} onClick={() => give(d, s)} title={canLog ? "Tap when given" : "Due"}
+                                className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-white bg-white/80 px-2.5 py-1 text-[11px] font-bold leading-none text-[var(--color-ink-800)] shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:bg-emerald-50 enabled:active:scale-95 disabled:cursor-default">
+                                {slotIcon(s)}{s}
                               </button>
                             );
                           })}
                           {slots.length === 0 && (
                             <>
-                              {sos.map((g, i) => <span key={i} className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>)}
-                              {canLog && <button type="button" disabled={pending} onClick={() => give(d, "")} className={btnG}>Give now (SOS)</button>}
+                              {sos.map((g, i) => <span key={i} className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>)}
+                              {canLog && <button type="button" disabled={pending} onClick={() => give(d, "")} className={`${btnG} !rounded-full !py-1`}>Give now (SOS)</button>}
                             </>
                           )}
+                          {slots.length > 0 && <span className={`ml-0.5 text-[10px] font-bold tabular-nums ${done ? "text-emerald-600" : "text-[var(--color-ink-500)]"}`}>{done ? "Done" : `${given}/${slots.length}`}</span>}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <ErrorText text={error} />
-      </Card>
+                      )}
+
+                      {editable && (
+                        d.stopped
+                          ? <button type="button" onClick={() => patch(d.id, { stopped: false, stoppedBy: undefined, stoppedAt: undefined })} className={`${btnG} ml-auto !rounded-full !py-1`}><RotateCcw size={12} /> Resume</button>
+                          : <button type="button" onClick={() => { patch(d.id, { stopped: true, stoppedBy: f.me, stoppedAt: new Date().toISOString() }); void noteStop?.([d.name, d.dose, d.eye, d.frequency].filter(Boolean).join(" ")); }} className={`${btnG} ml-auto !rounded-full !py-1 hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600`}>Stop</button>
+                      )}
+                    </div>
+                    {(d.instructions || d.stopped || d.start || d.orderedBy) && (
+                      <p className={`mt-1 pl-11 text-[10.5px] leading-snug text-[var(--color-ink-400)] ${d.stopped ? "opacity-70" : ""}`}>
+                        {d.instructions && <span className="italic text-[var(--color-ink-500)]">{d.instructions} · </span>}
+                        {d.start ? format(new Date(`${d.start}T00:00:00`), "d MMM") : ""}{d.orderedBy ? ` · ${d.orderedBy}` : ""}
+                        {d.stopped && <span className="font-semibold text-red-500"> · Stopped{d.stoppedBy ? ` by ${d.stoppedBy}` : ""}{d.stoppedAt ? `, ${dateTime(d.stoppedAt)}` : ""}</span>}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <ErrorText text={error || undoErr} />
+        </div>
+      </section>
 
       {log.length > 0 && (
-        <Card title="Administration history">
-          <ul className="space-y-1 max-h-56 overflow-y-auto text-sm">
-            {[...log].reverse().map((e, i) => (
-              <li key={i} className="flex gap-3"><span className="w-32 shrink-0 text-xs text-[var(--color-ink-400)] tabular-nums">{dateTime(e.at)}</span><span>{e.text} <span className="text-xs text-[var(--color-ink-400)]">· {e.by}</span></span></li>
+        <section className={shell}>
+          <div className={head}>
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-8 w-8 place-items-center rounded-xl bg-white text-[var(--color-ink-600)] ring-1 ring-[var(--color-border)]"><History size={16} /></span>
+              <div>
+                <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-700)]">Administration history</h3>
+                <p className="text-[11px] text-[var(--color-ink-500)]">{log.length} entr{log.length === 1 ? "y" : "ies"}</p>
+              </div>
+            </div>
+          </div>
+          <div className="max-h-72 overflow-y-auto px-4 py-3">
+            {groups.map((g) => (
+              <div key={g.label} className="mb-3 last:mb-0">
+                <p className="mb-2 inline-block rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wider text-[var(--color-primary-700)]">{g.label}</p>
+                <ul className="relative ml-2 space-y-2 border-l-2 border-dotted border-[var(--color-primary-200)] pl-5">
+                  {g.items.map((e, i) => (
+                    <li key={i} className="relative flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                      <span className={`absolute -left-[29px] grid h-5 w-5 place-items-center rounded-full ring-2 ring-white ${e.kind === "dose" ? "bg-emerald-400 text-white" : "bg-[var(--color-ink-200)] text-white"}`}><Check size={11} strokeWidth={3} /></span>
+                      <span className="w-16 shrink-0 text-xs font-semibold tabular-nums text-[var(--color-ink-400)]">{time(e.at)}</span>
+                      <span className="text-[var(--color-ink-800)]">{e.text}</span>
+                      <span className="rounded-full bg-rose-50 px-2 py-px text-[10.5px] font-medium text-rose-600">{e.by}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
-        </Card>
+          </div>
+        </section>
       )}
     </div>
   );
@@ -1207,109 +1216,152 @@ const VITAL_KEYS = [
   { key: "spo2", label: "SpO₂", ph: "%" }, { key: "rbs", label: "RBS", ph: "mg/dL" }, { key: "pain", label: "Pain (0-10)", ph: "0-10" },
 ] as const;
 
-export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }: FormProps<NurseData>) {
-  const { run, pending, error } = useLogger(addLog);
-  const [vit, setVit] = useState<Record<string, string>>({});
+export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormProps<NurseData>) {
+  const entries = v.entries ?? [];
   // Shift by the hospital's (IST) clock: 8 am-2 pm morning, 2-8 pm evening, else night
-  const [shift, setShift] = useState(() => { const h = new Date(Date.now() + 5.5 * 3600 * 1000).getUTCHours(); return h >= 8 && h < 14 ? "Morning" : h >= 14 && h < 20 ? "Evening" : "Night"; });
+  const nowShift = () => { const h = new Date(Date.now() + 5.5 * 3600 * 1000).getUTCHours(); return h >= 8 && h < 14 ? "Morning" : h >= 14 && h < 20 ? "Evening" : "Night"; };
+  const [open, setOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [vit, setVit] = useState<Record<string, string>>({});
+  const [shift, setShift] = useState(nowShift);
   const [orders, setOrders] = useState<"Yes" | "No" | "">("Yes");
   const [note, setNote] = useState("");
-  const [check, setCheck] = useState("");
-  const vitals = log.filter((e) => e.kind === "vitals");
-  const notes = log.filter((e) => e.kind === "note" || !e.kind);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [busy, start] = useTransition();
   const toggleChip = (c: string) => setNote((n) => (n.includes(c) ? n.replace(new RegExp(`(^|; )${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "").replace(/^; /, "") : n ? `${n}; ${c}` : c));
+  const dayTime = (iso: string) => `${format(new Date(iso), "EEE, d MMM yyyy")} · ${format(new Date(iso), "h:mm a")}`;
+  const hasData = Object.values(vit).some((x) => x.trim()) || note.trim();
+
+  const begin = (e?: NurseEntry) => {
+    setEditId(e?.id ?? null);
+    setVit(e?.vitals ?? {});
+    setShift(e?.shift ?? nowShift());
+    setOrders((e?.ordersFollowed as "Yes" | "No" | "") ?? "Yes");
+    setNote(e?.note ?? "");
+    setError("");
+    setOpen(true);
+  };
+  const save = () => start(async () => {
+    const now = new Date().toISOString();
+    const clean = Object.fromEntries(Object.entries(vit).filter(([, x]) => x.trim()).map(([k, x]) => [k, x.trim()]));
+    const entry: NurseEntry = editId
+      ? { ...entries.find((x) => x.id === editId)!, vitals: clean, shift, ordersFollowed: orders, note: note.trim(), by: f.me, editedAt: now }
+      : { id: uid(), at: now, by: f.me, vitals: clean, shift, ordersFollowed: orders, note: note.trim() };
+    const next = { ...v, entries: editId ? entries.map((x) => (x.id === editId ? entry : x)) : [entry, ...entries] };
+    change(next);
+    const err = await saveNow(next);
+    if (err) { setError(err); return; }
+    setOpen(false); setEditId(null);
+  });
+  const legacy = log.filter((e) => e.kind === "vitals" || e.kind === "note" || !e.kind);
 
   return (
     <div className="space-y-3">
-      <Card title="Pre-op preparation checks">
-        <ul className="divide-y divide-[var(--color-border)] -my-1.5">
-          {v.checks.map((c, i) => (
-            <li key={i} className="flex flex-wrap items-center justify-between gap-2 py-1.5">
-              <label className={`flex items-center gap-2.5 text-sm ${editable ? "cursor-pointer" : ""}`}>
-                <input type="checkbox" checked={c.done} disabled={!editable}
-                  onChange={() => change({ ...v, checks: v.checks.map((x, j) => (j === i ? { ...x, done: !x.done, by: !x.done ? f.me : undefined, at: !x.done ? new Date().toISOString() : undefined } : x)) })}
-                  className="w-4 h-4 accent-emerald-600" />
-                {c.label}
-                {c.preOp && <span className="text-[10px] font-bold rounded px-1.5 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}
-              </label>
-              {c.done && <TickNote by={c.by} at={c.at} />}
-            </li>
-          ))}
-        </ul>
-        {editable && (
-          <div className="flex gap-2 mt-2">
-            <input value={check} onChange={(e) => setCheck(e.target.value)} placeholder="Add a check" className={inp} />
-            <button type="button" disabled={!check.trim()} onClick={() => { change({ ...v, checks: [...v.checks, { label: check.trim(), done: false }] }); setCheck(""); }} className={btnG}><Plus size={13} /> Add</button>
-          </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {canLog && !open && (
+          <button type="button" onClick={() => begin()} className={btnP}><Plus size={13} /> Add Note</button>
         )}
-      </Card>
+      </div>
+      <ErrorText text={error} />
 
-      <Card title="Vitals chart">
-        <div className="-mx-3.5 -mt-3.5 overflow-x-auto">
-          <table className="w-full min-w-[640px]">
-            <thead><tr>{["Date / time", ...VITAL_KEYS.map((k) => k.label), "By"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
-            <tbody>
-              {canLog && (
-                <tr className="bg-[var(--color-primary-50)]/40">
-                  <td className={`${td} text-xs font-semibold text-[var(--color-primary-700)]`}>Now</td>
-                  {VITAL_KEYS.map((k) => (
-                    <td key={k.key} className={td}><input value={vit[k.key] ?? ""} onChange={(e) => setVit({ ...vit, [k.key]: e.target.value })} placeholder={k.ph} className={`${inp} min-w-[64px]`} /></td>
-                  ))}
-                  <td className={td}>
-                    <button type="button" disabled={pending || !Object.values(vit).some((x) => x.trim())}
-                      onClick={() => run({ text: VITAL_KEYS.filter((k) => vit[k.key]?.trim()).map((k) => `${k.label} ${vit[k.key].trim()}`).join(", "), kind: "vitals", meta: vit }, () => setVit({}))}
-                      className={btnP}>Record</button>
-                  </td>
-                </tr>
-              )}
-              {vitals.length === 0 && !canLog && <tr><td colSpan={8} className={`${td} italic text-[var(--color-ink-400)]`}>No vitals recorded.</td></tr>}
-              {[...vitals].reverse().map((e, i) => (
-                <tr key={i}>
-                  <td className={`${td} text-xs whitespace-nowrap`}>{dateTime(e.at)}</td>
-                  {VITAL_KEYS.map((k) => <td key={k.key} className={td}>{e.meta?.[k.key] || "-"}</td>)}
-                  <td className={`${td} text-xs text-[var(--color-ink-500)]`}>{e.by}</td>
-                </tr>
+      {open && (
+        <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
+          <div className="px-4 py-3">
+            <p className={`${lblIn} mb-2`}>Vitals</p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
+              {VITAL_KEYS.map((k) => (
+                <div key={k.key} className="min-w-0">
+                  <label className="mb-0.5 block text-[10.5px] font-semibold text-[var(--color-ink-500)]">{k.label}</label>
+                  <input value={vit[k.key] ?? ""} onChange={(e) => setVit({ ...vit, [k.key]: e.target.value })} placeholder={k.ph} className={`${inp} !py-1`} />
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+            </div>
+          </div>
 
-      <Card title="Nursing notes" sub="Well-being, fresh complaints and whether the doctor's orders were followed">
-        {canLog && (
-          <div className="space-y-2.5 mb-3 pb-3 border-b border-dashed border-[var(--color-border)]">
-            <div className="flex flex-wrap items-end gap-4">
-              <div className={rowIn}><label className={lblIn}>Shift</label><Seg options={SHIFTS} value={shift} onChange={setShift} /></div>
-              <div className={rowIn}><label className={lblIn}>Doctor&apos;s orders followed</label>
+          <div className="space-y-2 border-t border-[var(--color-border)] px-4 py-3">
+            <p className={lblIn}>Nursing note</p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Shift</label><Seg options={SHIFTS} value={shift} onChange={setShift} /></div>
+              <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Doctor&apos;s orders followed</label>
                 <Seg options={["Yes", "No"] as const} value={orders} onChange={setOrders} tone={(x) => (x === "Yes" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")} />
               </div>
             </div>
-            <ChipRow storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} isOn={(c) => note.includes(c)} onPick={toggleChip} />
             <SuggestField storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} value={note} onChange={setNote}>
-              {(sp) => <textarea {...sp} value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Note (type for suggestions)" className={`${inp} resize-y`} />}
+              {(sp) => <textarea {...sp} value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Well-being, fresh complaints, anything to report" className={`${inp} resize-y`} />}
             </SuggestField>
-            <button type="button" disabled={pending || !note.trim()}
-              onClick={() => run({ text: note.trim(), kind: "note", meta: { shift, ordersFollowed: orders } }, () => setNote(""))}
-              className={btnP}><Plus size={13} /> Add note</button>
+            <ChipRow storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} isOn={(c) => note.includes(c)} onPick={toggleChip} limit={99} />
           </div>
-        )}
-        {notes.length === 0 ? <p className="text-sm italic text-[var(--color-ink-400)]">No nursing notes yet.</p> : (
-          <ol className="space-y-2">
-            {[...notes].reverse().map((e, i) => (
-              <li key={i} className="rounded-lg border border-[var(--color-border)] px-3 py-2">
-                <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-ink-500)]">
-                  <span className="font-semibold text-[var(--color-ink-700)]">{dateTime(e.at)}</span>
-                  {e.meta?.shift && <span className="rounded bg-[var(--color-surface-sunken)] px-1.5 py-px font-semibold">{e.meta.shift} shift</span>}
-                  {e.meta?.ordersFollowed && <span className={`rounded px-1.5 py-px font-semibold ${e.meta.ordersFollowed === "Yes" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>Orders followed: {e.meta.ordersFollowed}</span>}
-                  <span>· {e.by}</span>
+
+          <div className="flex justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 px-4 py-2.5">
+            <button type="button" disabled={busy} onClick={() => { setOpen(false); setEditId(null); setError(""); }} className="inline-flex items-center rounded-lg px-3.5 py-1.5 text-xs font-semibold text-[var(--color-ink-500)] hover:bg-white hover:text-[var(--color-ink-800)] disabled:opacity-60">Cancel</button>
+            <button type="button" disabled={busy || !hasData} onClick={save} className={btnP}>
+              {busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Save
+            </button>
+          </div>
+        </section>
+      )}
+
+      {entries.length === 0 && legacy.length === 0 && !open ? (
+        <p className="text-sm italic text-[var(--color-ink-400)]">No nurse notes yet.</p>
+      ) : (
+        <ol className="space-y-2">
+          {entries.map((e) => {
+            const isOpen = expanded === e.id;
+            const vitals = VITAL_KEYS.filter((k) => e.vitals?.[k.key]);
+            return (
+              <li key={e.id} className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--color-surface-sunken)]/70 px-3.5 py-2">
+                  <button type="button" onClick={() => setExpanded(isOpen ? null : e.id)} aria-expanded={isOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                    <ChevronRight size={14} className={`shrink-0 text-[var(--color-ink-400)] transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                    <span className="text-xs font-bold text-[var(--color-ink-800)]">{dayTime(e.at)}</span>
+                    <span className="truncate text-xs text-[var(--color-ink-500)]">{e.by}</span>
+                    {e.editedAt && <span className="rounded-full bg-amber-50 px-2 py-px text-[10px] font-semibold text-amber-700">Edited {format(new Date(e.editedAt), "h:mm a")}</span>}
+                  </button>
+                  {canLog && !open && (
+                    <button type="button" onClick={() => begin(e)} className={btnG}><Pencil size={11} /> Edit</button>
+                  )}
                 </div>
-                <p className="text-sm text-[var(--color-ink-800)] mt-0.5">{e.text}</p>
+                {isOpen && (
+                  <div className="space-y-2.5 border-t border-[var(--color-border)] px-3.5 py-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                      {e.shift && <span className="rounded-full bg-[var(--color-surface-sunken)] px-2.5 py-0.5 font-semibold text-[var(--color-ink-700)]">{e.shift} shift</span>}
+                      {e.ordersFollowed && <span className={`rounded-full px-2.5 py-0.5 font-semibold ${e.ordersFollowed === "Yes" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>Orders followed: {e.ordersFollowed}</span>}
+                    </div>
+                    {vitals.length > 0 && (
+                      <div>
+                        <p className={`${lblIn} mb-1`}>Vitals</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {vitals.map((k) => (
+                            <span key={k.key} className="rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-xs"><span className="font-semibold text-[var(--color-ink-500)]">{k.label}</span> <span className="font-bold text-[var(--color-ink-900)]">{e.vitals[k.key]}</span></span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {e.note && (
+                      <div>
+                        <p className={`${lblIn} mb-1`}>Nursing note</p>
+                        <p className="whitespace-pre-line text-[var(--color-ink-800)]">{e.note}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </li>
-            ))}
-          </ol>
-        )}
-        <ErrorText text={error} />
-      </Card>
+            );
+          })}
+          {legacy.length > 0 && (
+            <>
+              <li className="pt-1 text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Earlier entries</li>
+              {[...legacy].reverse().map((e, i) => (
+                <li key={`l${i}`} className="rounded-xl border border-[var(--color-border)] bg-white px-3.5 py-2 text-xs text-[var(--color-ink-700)]">
+                  <span className="font-bold text-[var(--color-ink-800)]">{dayTime(e.at)}</span> <span className="text-[var(--color-ink-500)]">· {e.by}</span>
+                  <p className="mt-0.5 text-sm text-[var(--color-ink-800)]">{e.text}</p>
+                </li>
+              ))}
+            </>
+          )}
+        </ol>
+      )}
     </div>
   );
 }
@@ -1318,6 +1370,11 @@ export function NurseForm({ value: v, change, editable, canLog, addLog, log, f }
 
 export function OtNotesForm({ value: v, change, editable, template, f }: FormProps<OtNotesData> & { template: string[] }) {
   const set = (k: keyof OtNotesData, x: string) => change({ ...v, [k]: x });
+  // Procedure, implant and surgeon are fixed: they always follow the file
+  const fixed = { procedure: f.ctx.surgery ?? v.procedure, implant: f.ctx.implant ?? v.implant, surgeon: f.ctx.doctor || v.surgeon };
+  useEffect(() => {
+    if (editable && (v.procedure !== fixed.procedure || v.implant !== fixed.implant || v.surgeon !== fixed.surgeon)) change({ ...v, ...fixed });
+  }, [editable, v, fixed.procedure, fixed.implant, fixed.surgeon]); // eslint-disable-line react-hooks/exhaustive-deps
   const setStep = (i: number, x: string) => change({ ...v, steps: v.steps.map((s, j) => (j === i ? x : s)) });
   // Drag a step by its handle (pointer events, so it works with mouse and touch)
   const [drag, setDragState] = useState<{ from: number; to: number } | null>(null);
@@ -1346,17 +1403,15 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
   return (
     <div className="space-y-3">
       <Card title="Operation details">
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_auto_1fr] gap-3 items-end">
-          <Field label="Procedure" value={v.procedure} onChange={(x) => set("procedure", x)} disabled={!editable} opts={FO.otProcedure} />
-          <div className={rowIn}><label className={lblIn}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
-          <Field label="Anaesthesia" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} opts={FO.otAnaesthesia} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-          <Field label="Implant" value={v.implant} onChange={(x) => set("implant", x)} disabled={!editable} className="sm:col-span-2" opts={FO.otImplant} />
-          <Field label="Surgeon" value={v.surgeon} onChange={(x) => set("surgeon", x)} disabled={!editable} />
-          <Field label="Assistant" value={v.assistant} onChange={(x) => set("assistant", x)} disabled={!editable} />
-          <Field label="Anaesthetist" value={v.anaesthetist} onChange={(x) => set("anaesthetist", x)} disabled={!editable} />
-          <Field label="Scrub nurse" value={v.scrubNurse} onChange={(x) => set("scrubNurse", x)} disabled={!editable} />
+        <div className="grid grid-cols-1 gap-x-5 gap-y-2 lg:grid-cols-2">
+          <Field label="Procedure" lw="w-24" value={fixed.procedure} onChange={() => undefined} disabled />
+          <Field label="Implant" lw="w-24" value={fixed.implant} onChange={() => undefined} disabled />
+          <Field label="Surgeon" lw="w-24" value={fixed.surgeon} onChange={() => undefined} disabled />
+          <div className={rowIn}><label className={`${lblIn} w-24`}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
+          <Field label="Assistant" lw="w-24" value={v.assistant} onChange={(x) => set("assistant", x)} disabled={!editable} />
+          <Field label="Anaesthetist" lw="w-24" value={v.anaesthetist} onChange={(x) => set("anaesthetist", x)} disabled={!editable} />
+          <Field label="Scrub nurse" lw="w-24" value={v.scrubNurse} onChange={(x) => set("scrubNurse", x)} disabled={!editable} />
+          <Field label="Anaesthesia" lw="w-24" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} opts={FO.otAnaesthesia} />
         </div>
       </Card>
       <Card title="Procedure steps" sub="Step-by-step, from the template for this surgery"
@@ -1396,18 +1451,24 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
         {editable && <button type="button" onClick={() => change({ ...v, steps: [...v.steps, ""] })} className={`${btnG} mt-2`}><Plus size={13} /> Add step</button>}
       </Card>
       <Card title="Findings, events & instructions">
-        <div className="space-y-3">
-          <Area label="Intra-operative findings" value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} opts={FO.otFindings} />
-          <div>
-            <div className={rowIn}>
-              <label className={lblIn}>Complications</label>
-              <SuggestField storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} value={v.complications} onChange={(x) => set("complications", x)} disabled={!editable} className="relative flex-1 min-w-0">
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
+            <label className={`${lblIn} sm:pt-2`}>Intra-operative findings</label>
+            <Area value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} opts={FO.otFindings} chipsBelow />
+          </div>
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
+            <label className={`${lblIn} sm:pt-2`}>Complications</label>
+            <div className="min-w-0">
+              <SuggestField storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} value={v.complications} onChange={(x) => set("complications", x)} disabled={!editable} className="relative">
                 {(sp) => <input {...sp} value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} w-full`} />}
               </SuggestField>
+              {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
             </div>
-            {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
           </div>
-          <Area label="Post-operative instructions" value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} opts={FO.otInstructions} />
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
+            <label className={`${lblIn} sm:pt-2`}>Post-operative instructions</label>
+            <Area value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} opts={FO.otInstructions} chipsBelow />
+          </div>
         </div>
       </Card>
     </div>
@@ -1476,57 +1537,13 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
 
 /* ── Doctor's notes composer ───────────────────────────────────────────── */
 
-export function DoctorNoteComposer({ onAdd, pending }: { onAdd: (text: string) => void; pending: boolean }) {
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const set = (k: string, x: string) => setVals((v) => ({ ...v, [k]: x }));
-  const chip = (k: string, c: string) => setVals((v) => ({ ...v, [k]: v[k] ? (v[k].includes(c) ? v[k] : `${v[k]}; ${c}`) : c }));
-  const text = composeDoctorNote(vals);
-  return (
-    <Card title="New note">
-      <div className="space-y-3">
-        {DOCTOR_NOTE_FIELDS.map((fl) => (
-          <div key={fl.key}>
-            {fl.key === "va" || fl.key === "iop" ? null : (
-              <div className="grid grid-cols-1 sm:grid-cols-[7rem_1fr] items-start gap-2">
-                <label className={`${lblIn} sm:pt-2`}>{fl.label}</label>
-                <div className="min-w-0">
-                  {DOCTOR_NOTE_CHIPS[fl.key] && (
-                    <div className="mb-1.5"><ChipRow storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key]} prefix="+ " onPick={(c) => chip(fl.key, c)} /></div>
-                  )}
-                  <SuggestField storeKey={`doctor_${fl.key}`} builtIns={DOCTOR_NOTE_CHIPS[fl.key] ?? []} value={vals[fl.key] ?? ""} onChange={(x) => set(fl.key, x)}>
-                    {(sp) => <textarea {...sp} value={vals[fl.key] ?? ""} onChange={(e) => set(fl.key, e.target.value)} rows={fl.key === "plan" || fl.key === "findings" ? 2 : 1} className={`${inp} resize-y`} />}
-                  </SuggestField>
-                </div>
-              </div>
-            )}
-            {fl.key === "va" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {(["Vision RE", "Vision LE", "IOP RE", "IOP LE"] as const).map((x, i) => (
-                  <Field key={x} label={x} value={vals[`k${i}`] ?? ""} onChange={(y) => setVals((cur) => {
-                    const next = { ...cur, [`k${i}`]: y };
-                    next.va = [next.k0 && `RE ${next.k0}`, next.k1 && `LE ${next.k1}`].filter(Boolean).join(", ");
-                    next.iop = [next.k2 && `RE ${next.k2}`, next.k3 && `LE ${next.k3}`].filter(Boolean).join(", ");
-                    return next;
-                  })} />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-        <button type="button" disabled={pending || !text} onClick={() => { onAdd(text); setVals({}); }} className={btnP}>
-          {pending ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add note
-        </button>
-      </div>
-    </Card>
-  );
-}
 
 /** Renders a stored note: "Label: value" lines get bold labels. */
 export function DoctorNoteText({ text }: { text: string }) {
   return (
     <div className="space-y-0.5 text-sm text-[var(--color-ink-800)]">
       {text.split("\n").map((l, i) => {
-        const m = l.match(/^(Complaints|Vision|IOP|Findings|Assessment|Plan \/ Orders):\s*(.*)$/);
+        const m = l.match(/^(Complaints|Vision|IOP|Findings|Assessment|Plan \/ Orders|Medications added|Medications stopped):\s*(.*)$/);
         return m ? <p key={i}><span className="font-semibold text-[var(--color-ink-500)]">{m[1]}:</span> {m[2]}</p> : <p key={i} className="whitespace-pre-line">{l}</p>;
       })}
     </div>

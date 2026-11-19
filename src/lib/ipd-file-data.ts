@@ -6,7 +6,7 @@ import type { SessionUser } from "@/lib/rbac";
 import { admissionTypeText, buildDischargeDraft, otTemplateSteps } from "@/lib/ipd";
 import {
   defaultChecklist, defaultConsents, defaultEducation, defaultImplant, defaultNurse, defaultOtNotes, defaultPostOp,
-  completeEducation, defaultTreatment, educationAdvice, educationStage, isV2, type DrugOrder, type EducationData, type FormContext,
+  completeEducation, defaultTreatment, educationAdvice, educationStage, emrMedsToOrders, isV2, type EducationData, type FormContext,
   upgradeConsents,
 } from "@/lib/ipd-forms";
 import { getOwnerDoctorId } from "@/lib/role-permissions";
@@ -58,22 +58,6 @@ const ACTIVITY_TEXT: Record<string, string> = {
   DISCHARGED: "Discharged · summary signed with OTP",
 };
 
-/** Education-sheet medicines as treatment chart orders (pre-op first). */
-function educationDrugs(e: EducationData, ctx: FormContext, admittedOn: Date): DrugOrder[] {
-  const start = new Date(admittedOn.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
-  const meds = [...(educationStage(e, "pre", ctx).meds ?? []), ...(e.meds ?? [])];
-  const seen = new Set<string>();
-  return meds.filter((m) => {
-    const k = m.name.trim().toLowerCase();
-    if (!k || seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).map((m) => ({
-    id: `edu-${m.id}`, name: m.name.trim(), dose: m.dose, route: m.route || "Topical", eye: m.eye, frequency: m.frequency,
-    start, orderedBy: "Education sheet", instructions: [m.duration && `For ${m.duration}`, m.instructions].filter(Boolean).join(". "), stopped: false,
-  }));
-}
-
 /** The patient file for an admission in the user's scope, or null. */
 export async function loadIpdFileData(admissionId: string, user: SessionUser, returnTo?: string): Promise<FileData | null> {
   const scope = await visitRecordScope(user);
@@ -93,7 +77,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
           patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
           generalExam: { select: { chiefComplaint: true } },
           diagnoses: { select: { description: true, laterality: true }, orderBy: { createdAt: "asc" } },
-          medications: { select: { drugName: true, dosage: true, frequency: true, route: true, laterality: true, instructions: true }, orderBy: { createdAt: "asc" } },
+          medications: { select: { id: true, drugName: true, dosage: true, frequency: true, duration: true, route: true, laterality: true, instructions: true }, orderBy: { createdAt: "asc" } },
         },
       },
     },
@@ -223,8 +207,8 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     consents: upgradeConsents((counselling && parseCounsellingConsents(counselling.consents)) ?? defaultConsents(ctx), ctx),
     checklist: defaultChecklist(),
     education,
-    // The treatment chart starts with the medicines added on the education sheet (pre-op, then post-op)
-    treatment: { ...defaultTreatment(), drugs: educationDrugs(education, ctx, a.admittedOn) },
+    // The treatment chart starts with the EMR prescription; after that the doctor's notes add or stop medicines
+    treatment: { ...defaultTreatment(), drugs: emrMedsToOrders(v.medications, a.admittedOn) },
     nurse: defaultNurse(a.admissionType),
     otNotes: defaultOtNotes(ctx, otTemplateSteps(a)),
     postOpNotes: defaultPostOp(),
@@ -327,11 +311,12 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
       resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null, createdAt: o.createdAt.toISOString(),
       extraResultRefs: o.extraResultRefs,
     })),
-    doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString() })),
+    doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString(), editedAt: n.editedAt?.toISOString() ?? null, data: n.data ? parse(n.data) : null })),
     activity,
     me: user.name,
     templates,
     ctx,
+    postOpMeds: (education.meds ?? []).filter((m) => m.name.trim()).map((m) => [m.name.trim(), m.dose, m.eye, m.frequency].filter(Boolean).join(" ")),
     emrMeds: v.medications.map((m) => ({ name: m.drugName, dose: m.dosage ?? "", frequency: m.frequency ?? "", route: m.route ?? "", eye: m.laterality ?? "", instructions: m.instructions ?? "" })),
   };
 

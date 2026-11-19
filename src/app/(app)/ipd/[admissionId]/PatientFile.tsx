@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth, subMonths } from "date-fns";
+import { format } from "date-fns";
 import {
-  BedDouble, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, FileText,
-  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, ShieldCheck, ChevronLeft, ChevronRight, CalendarDays, Printer, Hash, Phone, Upload, ExternalLink,
+  BedDouble, Check, CheckCircle2, Circle, Lock, Camera, Plus, X, AlertTriangle, FileText,
+  Scissors, LogOut, Loader2, Pencil, History, Stethoscope, ShieldCheck, ChevronRight, Printer, Hash, Phone, Upload, ExternalLink,
 } from "lucide-react";
 import { ComplaintChips } from "@/components/ui/ComplaintChips";
 import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
+import { NoteEditor, type ChartDrug } from "./EmrCopyTabs";
+import { ActivityPanel } from "@/components/ui/ActivityTimeline";
+import { NoteSummary } from "./NoteSummary";
+import { isEmrCopy, type EmrCopy } from "@/lib/ipd-emr-copy";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
 import {
-  ADMISSION_TYPE_LABEL, ALWAYS_TABS, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
+  ADMISSION_TYPE_LABEL, ALWAYS_TABS, FREEZABLE_KEYS, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
   tabChoices, tabsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
 import {
   IMPLANT_VERIFY, isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
@@ -24,12 +28,12 @@ import { SaveIndicator, useAutoSave } from "@/lib/useAutoSave";
 import { ChipRow, SuggestField } from "./customOptions";
 import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import {
-  ChecklistForm, ConsentsForm, DoctorNoteComposer, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
+  ChecklistForm, ConsentsForm, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
   OtNotesForm, PostOpForm, TreatmentForm, type EducationPart, type FileInfo, type NewLog,
 } from "./IpdForms";
 import {
-  addCustomForm, addDoctorNote, addFileTabs, addFormAttachment, addFormLog, changeAdmissionType, confirmDischarge, createIpdFile,
-  freezeForm, removeFileTab, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
+  addCustomForm, getNoteSeed, addFileTabs, addFormAttachment, addFormLog, removeDoseLog,changeAdmissionType, confirmDischarge, createIpdFile,
+  freezeForm, unfreezeForm, noteDrugStopped, removeFileTab, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
 } from "../actions";
 import { FileTabsDialog, summaryTitle } from "./FileTabsDialog";
 export { summaryTitle };
@@ -39,6 +43,7 @@ import type { CounsellingImplant } from "@/lib/counselling-sheets";
 import type { PaymentDoc } from "@/lib/counselling";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
+import { DischargeDocument, type DischargeHeader } from "./DischargeDocument";
 import { OtNotesView } from "./OtNotesView";
 import type { OtNotesCopy } from "@/lib/ot";
 
@@ -103,12 +108,14 @@ export interface FileData {
   orders: FileInfo["orders"];
   /** The patient's latest EMR drug allergy (Counselling edits included). */
   drugAllergy: { text: string; nkda: boolean };
-  doctorNotes: { id: string; text: string; by: string; at: string }[];
+  doctorNotes: { id: string; text: string; by: string; at: string; editedAt?: string | null; data?: unknown }[];
   activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
   me: string;
   templates: FileInfo["templates"];
   ctx: FormContext;
   emrMeds: FileInfo["emrMeds"];
+  /** Post-op medicines from the Patient Education sheet (shown in the notes copy of the EMR). */
+  postOpMeds: string[];
 }
 
 export interface CounsellingSheet {
@@ -194,6 +201,7 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
   const [touched, setTouched] = useState(false);
   const [error, setError] = useState("");
   const [confirmFreeze, setConfirmFreeze] = useState(false);
+  const [editSummary, setEditSummary] = useState(false);
   const [emrPrompt, setEmrPrompt] = useState(false);
   const router = useRouter();
   const emrHref = (edit: boolean) => {
@@ -203,7 +211,9 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
   const [pending, start] = useTransition();
   const frozen = !!row?.frozen;
   const editable = can.edit && formEditable(keyName, frozen, d.status) && !display;
-  const canFreeze = can.edit && !frozen && d.status === "ADMITTED";
+  const freezable = FREEZABLE_KEYS.includes(keyName);
+  const canFreeze = freezable && can.edit && !frozen && d.status === "ADMITTED";
+  const canUnfreeze = freezable && can.edit && frozen && d.status === "ADMITTED";
   const canLog = can.edit && logsOpen(d.status);
 
   // Auto-save while editing (no Save button), like the Counselling screen
@@ -230,15 +240,31 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
     const r = await freezeForm(d.id, keyName, display ? undefined : value);
     if (r.error) setError(r.error); else onRefresh();
   });
+  const unfreeze = () => start(async () => {
+    const r = await unfreezeForm(d.id, keyName);
+    if (r.error) setError(r.error); else onRefresh();
+  });
+  const noteStop = async (label: string) => {
+    const r = await noteDrugStopped(d.id, label);
+    if (r.error) return r.error;
+    onRefresh();
+    return undefined;
+  };
   const addLog = async (e: NewLog) => {
     const r = await addFormLog(d.id, keyName, e);
     if (r.error) return r.error;
     onRefresh();
     return undefined;
   };
+  const removeDose = async (drugId: string, slot: string, date: string) => {
+    const r = await removeDoseLog(d.id, drugId, slot, date);
+    if (r.error) return r.error;
+    onRefresh();
+    return undefined;
+  };
   const log: LogEntry[] = Array.isArray(row?.data?.log) ? row!.data.log : [];
   const info: FileInfo = d;
-  const props = { value, change, saveNow, editable, canLog, addLog, log, f: info };
+  const props = { value, change, saveNow, editable, canLog, addLog, removeDose, noteStop, log, f: info };
 
   let body: React.ReactNode;
   switch (keyName) {
@@ -258,7 +284,18 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
       // A summary signed before the structured layout keeps its signed text
       body = frozen && typeof row?.data?.text === "string" && !isDischargeData(row.data)
         ? <TextForm value={row.data.text} editable={false} onChange={() => {}} mono rows={22} />
-        : <DischargeEditor value={value as DischargeData} onChange={(v) => change(v as unknown as FormJson)} editable={editable} ctx={dischargeCtx(d)} />;
+        : isDischargeData(value) && !editSummary
+        // The standard discharge summary document, filled from the file; Edit opens the form
+        ? (
+          <div className="space-y-2">
+            <FitPage><DischargeDocument s={value as DischargeData} h={dischargeHeader(d)} /></FitPage>
+          </div>
+        )
+        : (
+          <div className="space-y-2">
+            <DischargeEditor value={value as DischargeData} onChange={(v) => change(v as unknown as FormJson)} editable={editable} ctx={dischargeCtx(d)} />
+          </div>
+        );
       break;
     default:
       body = <TextForm value={value.text ?? ""} editable={editable} onChange={(t) => change({ text: t })} rows={12} />;
@@ -273,6 +310,9 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
           {keyName === "otFinal" && (
             <button type="button" onClick={() => printInPlace(`/ipd-print/${d.id}/ot-notes`)} className={btnGhost}><Printer size={14} /> Print</button>
           )}
+          {keyName === "discharge" && isDischargeData(value) && (editSummary
+            ? <button type="button" onClick={() => setEditSummary(false)} className={btnPrimary}><Check size={14} /> Done, view summary</button>
+            : editable && <button type="button" onClick={() => setEditSummary(true)} className={btnGhost}><Pencil size={14} /> Edit summary</button>)}
           {keyName === "discharge" && (
             <button type="button" disabled={pending} onClick={printSummary} className={btnGhost}><Printer size={14} /> Print</button>
           )}
@@ -285,6 +325,11 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
               <Scissors size={12} /> From OT · saved by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
             </span>
+          ) : !freezable ? null : canUnfreeze ? (
+            <button type="button" disabled={pending} onClick={unfreeze} title="Click to unfreeze"
+              className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-60">
+              <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""} · Unfreeze
+            </button>
           ) : frozen ? (
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
@@ -298,7 +343,7 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
           )}
         </div>
       </div>
-      {frozen && editable && keyName !== "summary" && (
+      {frozen && editable && freezable && (
         <p className="text-caption text-emerald-700">Confirmed · stays editable until discharge.</p>
       )}
       {emrPrompt && (
@@ -404,179 +449,88 @@ function Photos({ d, keyName, list, canAdd, onRefresh }: { d: FileData; keyName:
 function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: () => void }) {
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
+  const [editor, setEditor] = useState<{ noteId: string | null; seed: EmrCopy } | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
   const canAdd = can.doctorNotes && logsOpen(d.status);
-  const add = (text: string) => start(async () => {
-    const r = await addDoctorNote(d.id, text);
-    if (r.error) setError(r.error); else { setError(""); onRefresh(); }
+  const chart = d.forms.find((f) => f.key === "treatment");
+  const chartDrugs = (Array.isArray(chart?.data?.drugs) ? chart!.data.drugs : (d.defaults.treatment as { drugs?: unknown[] } | undefined)?.drugs ?? []) as { id?: string; name: string; dose?: string; route?: string; eye?: string; frequency?: string; instructions?: string; start?: string; stopped?: boolean }[];
+  const activeDrugs: ChartDrug[] = chartDrugs
+    .map((x, i) => ({ id: x.id ?? `d${i}`, name: x.name, dose: x.dose ?? "", route: x.route ?? "", eye: x.eye ?? "", frequency: x.frequency ?? "", instructions: x.instructions ?? "", start: x.start ?? "", stopped: !!x.stopped }))
+    .filter((x) => !x.stopped);
+
+  // Only the signed notes are listed (the EMR-style notes); plain text entries are not shown
+  const notes = d.doctorNotes.filter((n) => isEmrCopy(n.data));
+  const addNote = () => start(async () => {
+    const r = await getNoteSeed(d.id, d.postOpMeds);
+    if (r.error || !r.copy) { setError(r.error ?? "Could not start the note."); return; }
+    setError("");
+    setEditor({ noteId: null, seed: r.copy });
   });
+
   return (
     <div className="flex flex-col gap-3">
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
+        {canAdd && !editor && (
+          <button type="button" disabled={pending} onClick={addNote} className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60">
+            {pending ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add Note
+          </button>
+        )}
         <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
-        <p className="text-caption text-[var(--color-ink-400)]">Ward rounds until the patient is fit for discharge. Each note is labelled with its time.</p>
       </div>
-      {canAdd && <DoctorNoteComposer onAdd={add} pending={pending} />}
       <ErrorLine text={error} />
-      {d.doctorNotes.length === 0 ? (
-        <p className="text-sm italic text-[var(--color-ink-400)]">No notes yet.</p>
+
+      {editor && (
+        <NoteEditor key={editor.noteId ?? "new"} admissionId={d.id} udid={d.udid} patient={{ age: d.patient.age, sex: d.patient.sex }}
+          seed={editor.seed} noteId={editor.noteId} drugs={activeDrugs} onDone={() => { setEditor(null); onRefresh(); }} />
+      )}
+
+      {notes.length === 0 ? (
+        !editor && <p className="text-sm italic text-[var(--color-ink-400)]">No notes yet.</p>
       ) : (
-        <ol className="space-y-2">
-          {d.doctorNotes.map((n) => (
-            <li key={n.id} className="rounded-xl border border-[var(--color-border)] bg-white overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 bg-[var(--color-surface-sunken)]/70 border-b border-[var(--color-border)]">
-                <span className="text-xs font-bold text-[var(--color-ink-800)]">{fmtTime(n.at)}</span>
-                <span className="text-xs text-[var(--color-ink-500)]">Dr. {n.by.replace(/^Dr\.?\s*/i, "")}</span>
-              </div>
-              <div className="px-3.5 py-2.5"><DoctorNoteText text={n.text} /></div>
-            </li>
-          ))}
+        <ol className="space-y-1.5">
+          {notes.map((n) => {
+            const copy = isEmrCopy(n.data) ? n.data : null;
+            const isOpen = open === n.id;
+            const who = n.by.replace(/^Dr\.?\s*/i, "");
+            return (
+              <li key={n.id} className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-white">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <button type="button" onClick={() => setOpen(isOpen ? null : n.id)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left" aria-expanded={isOpen}>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-surface-sunken)] text-[10px] font-bold uppercase text-[var(--color-ink-600)]">{who.split(" ").map((w) => w[0]).slice(0, 2).join("")}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-semibold leading-tight text-[var(--color-ink-900)]">{format(new Date(n.at), "EEEE, d MMMM yyyy")} <span className="font-normal text-[var(--color-ink-400)]">· {format(new Date(n.at), "h:mm a")}</span></span>
+                      <span className="block truncate text-[11px] leading-tight text-[var(--color-ink-400)]">Dr. {who}{n.editedAt ? ` · edited ${format(new Date(n.editedAt), "h:mm a")}` : ""}</span>
+                    </span>
+                    <ChevronRight size={14} className={`ml-auto shrink-0 text-[var(--color-ink-300)] transition-transform ${isOpen ? "rotate-90" : ""}`} />
+                  </button>
+                  {canAdd && copy && !editor && (
+                    <button type="button" onClick={() => setEditor({ noteId: n.id, seed: copy })} className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-800)]">
+                      <Pencil size={11} /> Edit
+                    </button>
+                  )}
+                </div>
+                {isOpen && (
+                  <div className="border-t border-[var(--color-border)] px-4 py-3">
+                    {copy ? <NoteSummary copy={copy} /> : <DoctorNoteText text={n.text} />}
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
     </div>
   );
 }
 
-/* Activity: calendar + day timeline, same layout as the patient Time Stamp */
-type ActivityKind = FileData["activity"][number]["kind"];
-const KIND_CFG: Record<ActivityKind, { label: string; hex: string; dot: string; border: string; badge: string; card: string }> = {
-  admission: { label: "Admission", hex: "#0EA5E9", dot: "bg-sky-500",                    border: "border-l-sky-400",                    badge: "bg-sky-100 text-sky-700",                                    card: "bg-sky-50/40" },
-  form:      { label: "Form",      hex: "#14B8A6", dot: "bg-[var(--color-primary-500)]", border: "border-l-[var(--color-primary-400)]", badge: "bg-[var(--color-primary-100)] text-[var(--color-primary-700)]", card: "bg-[var(--color-primary-50)]/40" },
-  update:    { label: "Update",    hex: "#F59E0B", dot: "bg-amber-500",                  border: "border-l-amber-400",                  badge: "bg-amber-100 text-amber-700",                                card: "bg-amber-50/40" },
-  ot:        { label: "OT",        hex: "#8B5CF6", dot: "bg-violet-500",                 border: "border-l-violet-400",                 badge: "bg-violet-100 text-violet-700",                              card: "bg-violet-50/40" },
-  discharge: { label: "Discharge", hex: "#10B981", dot: "bg-emerald-500",                border: "border-l-emerald-400",                badge: "bg-emerald-100 text-emerald-700",                            card: "bg-emerald-50/40" },
+/* Activity: one line per event; the calendar is a floating window */
+const ACTIVITY_KINDS: Record<FileData["activity"][number]["kind"], { label: string; hex: string }> = {
+  admission: { label: "Admission", hex: "#0EA5E9" },
+  form: { label: "Form", hex: "#14B8A6" },
+  update: { label: "Update", hex: "#F59E0B" },
+  ot: { label: "OT", hex: "#8B5CF6" },
+  discharge: { label: "Discharge", hex: "#10B981" },
 };
-const ACT_DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-const dayKeyOf = (iso: string) => format(new Date(iso), "yyyy-MM-dd");
-
-function ActivityLog({ d }: { d: FileData }) {
-  const events = d.activity;
-  const todayKey = format(new Date(), "yyyy-MM-dd");
-  const latestKey = events.length ? dayKeyOf(events[0].at) : todayKey;
-  const [selectedKey, setSelectedKey] = useState(latestKey);
-  const [month, setMonth] = useState(() => startOfMonth(new Date(latestKey)));
-
-  const byDay = useMemo(() => {
-    const map: Record<string, FileData["activity"]> = {};
-    for (const e of events) (map[dayKeyOf(e.at)] ??= []).push(e);
-    for (const k in map) map[k].sort((a, b) => a.at.localeCompare(b.at));
-    return map;
-  }, [events]);
-
-  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
-  const legend = [...new Set(events.map((e) => e.kind))];
-  const dayEvents = byDay[selectedKey] ?? [];
-  const select = (key: string) => {
-    setSelectedKey(key);
-    const dt = new Date(key);
-    if (dt.getMonth() !== month.getMonth() || dt.getFullYear() !== month.getFullYear()) setMonth(startOfMonth(dt));
-  };
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Activity</h2>
-        <span className="text-caption font-semibold px-2 py-0.5 rounded-full bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{events.length} event{events.length === 1 ? "" : "s"}</span>
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)] gap-4 items-start">
-        {/* Calendar */}
-        <div className="rounded-xl border border-[var(--color-border)] px-4 pt-2.5 pb-2" style={{ background: "linear-gradient(160deg, var(--color-primary-50) 0%, #fff 60%)" }}>
-          <div className="flex items-center justify-between mb-1.5">
-            <button onClick={() => setMonth((m) => subMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Previous month">
-              <ChevronLeft size={13} />
-            </button>
-            <h3 className="text-[13px] font-bold tracking-tight text-[var(--color-ink-800)]">{format(month, "MMMM yyyy")}</h3>
-            <button onClick={() => setMonth((m) => addMonths(m, 1))} className="size-7 flex items-center justify-center rounded-full bg-white border border-[var(--color-border)] shadow-sm hover:shadow text-[var(--color-ink-500)] hover:text-[var(--color-primary-600)] transition-all" aria-label="Next month">
-              <ChevronRight size={13} />
-            </button>
-          </div>
-          <div className="grid grid-cols-7 mb-1">
-            {ACT_DAY_LABELS.map((x) => <span key={x} className="text-center text-[9px] font-bold text-[var(--color-ink-300)] uppercase tracking-widest">{x}</span>)}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: getDay(days[0]) }).map((_, i) => <div key={`b-${i}`} />)}
-            {days.map((day) => {
-              const key = format(day, "yyyy-MM-dd");
-              const list = byDay[key] ?? [];
-              const has = list.length > 0;
-              const isSel = key === selectedKey;
-              const isToday = isSameDay(day, new Date());
-              const kinds = [...new Set(list.map((e) => e.kind))];
-              return (
-                <button key={key} disabled={!has} onClick={() => select(key)}
-                  className={[
-                    "relative flex flex-col items-center justify-center w-full h-9 rounded-xl transition-all duration-150",
-                    isSel ? "bg-[var(--color-primary-600)] text-white shadow-sm"
-                      : has ? "bg-[var(--color-primary-50)] text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] cursor-pointer"
-                      : "text-[var(--color-ink-300)] cursor-default",
-                    isToday && !isSel ? "ring-2 ring-[var(--color-primary-400)] ring-offset-1" : "",
-                  ].join(" ")}>
-                  <span className="text-[11px] font-bold leading-none">{format(day, "d")}</span>
-                  {has && (
-                    <div className="flex gap-[3px] mt-[3px]">
-                      {kinds.slice(0, 3).map((k) => (
-                        <span key={k} className="w-[4px] h-[4px] rounded-full shrink-0" style={{ background: isSel ? "rgba(255,255,255,0.8)" : KIND_CFG[k].hex }} />
-                      ))}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-[var(--color-border)]/60">
-            <button onClick={() => select(todayKey)} className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-white border border-[var(--color-primary-200)] text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] shadow-sm transition-all">
-              Today
-            </button>
-            <div className="flex flex-wrap gap-x-2 gap-y-1 justify-end">
-              {legend.map((k) => (
-                <span key={k} className="flex items-center gap-1 text-[9px] font-medium text-[var(--color-ink-400)]">
-                  <span className="size-1.5 rounded-full inline-block shrink-0" style={{ background: KIND_CFG[k].hex }} />
-                  {KIND_CFG[k].label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Selected day's events */}
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-[var(--color-ink-600)] mb-3">{format(new Date(selectedKey), "EEEE, d MMMM yyyy")}</p>
-          {dayEvents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-2 rounded-xl border border-dashed border-[var(--color-border)]">
-              <CalendarDays size={28} className="text-[var(--color-ink-300)]" />
-              <p className="text-xs text-[var(--color-ink-400)]">No activity on this date</p>
-            </div>
-          ) : (
-            <div className="pl-1">
-              {dayEvents.map((e, i) => {
-                const cfg = KIND_CFG[e.kind];
-                return (
-                  <div key={i} className="relative flex gap-3">
-                    <div className="flex flex-col items-center shrink-0">
-                      <div className={`w-2.5 h-2.5 rounded-full ${cfg.dot} ring-2 ring-white shadow-sm mt-1.5 shrink-0`} />
-                      {i < dayEvents.length - 1 && <div className="w-px flex-1 bg-[var(--color-border)] mt-1" />}
-                    </div>
-                    <div className={`flex-1 min-w-0 mb-3 rounded-xl border border-[var(--color-border)] border-l-4 ${cfg.border} ${cfg.card} px-3 py-2.5`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-micro sm:text-caption font-bold uppercase tracking-wide mb-0.5 ${cfg.badge}`}>{cfg.label}</span>
-                          <p className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)] leading-tight">{e.text}</p>
-                        </div>
-                        <span className="text-caption font-medium text-[var(--color-ink-400)] shrink-0 tabular-nums">{format(new Date(e.at), "h:mm a")}</span>
-                      </div>
-                      {e.detail && <p className="mt-1 text-caption text-[var(--color-ink-600)] break-words">{e.detail}</p>}
-                      {e.by && <p className="mt-1 text-caption text-[var(--color-ink-400)]">{e.by}</p>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── Header dialogs ────────────────────────────────────────────────────── */
 
@@ -714,6 +668,38 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
 }
 
 /** What the discharge editor shows besides the summary itself. */
+/** An A4 sheet that shrinks to fit narrow screens (never wider than the space it has). */
+function FitPage({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => setZoom(Math.max(0.3, Math.min(1, (el.clientWidth - 40) / 794)));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="rounded-2xl border border-[var(--color-border)] bg-gray-100 p-3 sm:p-5">
+      <div className="mx-auto w-fit bg-white shadow-md" style={{ zoom }}>{children}</div>
+    </div>
+  );
+}
+
+export function dischargeHeader(d: FileData): DischargeHeader {
+  const discharge = d.forms.find((f) => f.key === "discharge");
+  return {
+    ...d.letterhead, specialty: null, email: null,
+    patient: d.patient,
+    fileNo: d.fileNo, ward: d.ward, wardType: d.wardType, floor: d.floor,
+    type: d.type, typeOther: d.typeOther,
+    admittedOn: d.admittedOn,
+    signed: d.status === "DISCHARGED" && d.dischargedBy && d.dischargedAt ? { by: d.dischargedBy, at: discharge?.frozenAt ?? d.dischargedAt } : null,
+  };
+}
+
 export function dischargeCtx(d: FileData): DischargeContext {
   const t = d.forms.find((f) => f.key === "treatment")?.data;
   const discharge = d.forms.find((f) => f.key === "discharge");
@@ -791,16 +777,17 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
       : [{ key: f.key, form: f.key, title: f.key === "summary" ? summaryTitle(d.visitDate) : f.title, display: !!f.display, preOp: !!f.preOpOnly }]),
     ...custom.map((f) => ({ key: f.key, form: f.key, title: f.title, display: false, preOp: false })),
   ], [fixed, custom, d.visitDate]);
-  const required = [...new Set(items.map((i) => i.form))].filter((k) => k !== "summary");
+  const required = [...new Set(items.map((i) => i.form))].filter((k) => FREEZABLE_KEYS.includes(k));
   const frozenCount = required.filter((k) => rowOf(k)?.frozen).length;
   const allFrozen = frozenCount === required.length;
 
   const [picked, setSel] = useState<string>(items[0]?.key ?? "summary");
   // A form hidden by a type change falls back to the first form
   const otFinal = rowOf("otFinal");
-  const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || picked === "activity" || (picked === "otFinal" && !!otFinal) ? picked : (items[0]?.key ?? "summary");
+  const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || (picked === "otFinal" && !!otFinal) ? picked : (items[0]?.key ?? "summary");
   const [dialog, setDialog] = useState<null | "details" | "type" | "ot" | "discharge" | "addForm">(null);
   const [removing, setRemoving] = useState<{ key: string; title: string } | null>(null);
+  const [activityOpen, setActivityOpen] = useState(false);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
 
@@ -845,10 +832,6 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   });
 
   // Chrome-style tabs: the selected tab joins the form panel below it
-  const tabsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    tabsRef.current?.querySelector<HTMLElement>(`[data-tab="${sel}"]`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [sel]);
   const tabBtn = (key: string, label: React.ReactNode, icon: React.ReactNode, extra?: React.ReactNode) => {
     const on = sel === key;
     return (
@@ -989,6 +972,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
             {can.edit && status !== "DISCHARGED" && (
               <button onClick={() => setDialog("details")} className="inline-flex items-center gap-1 font-semibold text-teal-100 hover:underline"><Pencil size={11} /> Edit</button>
             )}
+            {status === "DISCHARGED" && <span className="inline-flex items-center gap-1 rounded-full bg-emerald-400/20 px-2.5 py-0.5 font-semibold text-emerald-100"><Lock size={11} /> File frozen after discharge</span>}
             <span className="tabular-nums">Forms frozen <b className="text-white">{frozenCount}/{required.length}</b></span>
             <div className="ml-auto flex flex-wrap justify-end gap-2">
               {showOt && (
@@ -1027,14 +1011,14 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
 
       {/* Forms as tabs | selected form */}
       <div>
-        <div ref={tabsRef} role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex items-end gap-1 overflow-x-auto px-1 pt-1 -mb-px bg-[var(--color-bg)] [scrollbar-width:thin]">
+        <div role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex flex-wrap items-end gap-x-1 gap-y-0.5 px-1 pt-1 -mb-px bg-[var(--color-bg)]">
           {items.map((i) => {
             const r = rowOf(i.form);
             const formTitle = i.part ? "Patient Education & Diet Chart" : i.title;
             return tabBtn(
               i.key,
               <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
-              i.key === "summary" ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
+              i.key === "summary" || !FREEZABLE_KEYS.includes(i.form) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
                 : r?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
               <>
                 {(r?.attachments?.length ?? 0) > 0 && <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" />}
@@ -1059,13 +1043,19 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           {otFinal && tabBtn("otFinal", "OT Notes", <Scissors size={14} className="shrink-0 text-violet-600" />,
             <span className="text-micro font-bold rounded px-1 py-px bg-violet-50 text-violet-700 border border-violet-200">OT</span>)}
           {tabBtn("doctorNotes", "Doctor's Notes", <Stethoscope size={14} className="shrink-0 text-[var(--color-primary-600)]" />,
-            d.doctorNotes.length ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.length}</span> : undefined)}
-          {tabBtn("activity", "Activity", <History size={14} className="shrink-0 text-[var(--color-ink-400)]" />)}
+            d.doctorNotes.some((n) => isEmrCopy(n.data)) ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.filter((n) => isEmrCopy(n.data)).length}</span> : undefined)}
+          <button type="button" onClick={() => setActivityOpen(true)} title="Activity" aria-label="Open the activity timeline"
+            className="shrink-0 mb-1 grid h-8 w-8 place-items-center rounded-full text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-primary-700)]">
+            <History size={16} />
+          </button>
         </div>
+        {activityOpen && (
+          <ActivityPanel kicker="Activity" title={d.patient.name} onClose={() => setActivityOpen(false)} kinds={ACTIVITY_KINDS}
+            events={d.activity.map((e) => ({ at: e.at, title: e.text, detail: e.detail, by: e.by, kind: e.kind }))} />
+        )}
 
         <section className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:p-4 min-w-0 ${sel === items[0]?.key ? "rounded-tl-none" : ""}`}>
           {sel === "doctorNotes" ? <DoctorNotes d={d} can={can} onRefresh={refresh} />
-            : sel === "activity" ? <ActivityLog d={d} />
             : sel === "otFinal" && otFinal ? (
               <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
             ) : selItem ? (

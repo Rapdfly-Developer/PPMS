@@ -11,7 +11,8 @@ import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { KeywordTextarea, KeywordChipsRow, KeywordSuggest, removeKeywordFromText } from "@/components/emr/KeywordField";
 import { chipMatcher } from "@/lib/chip-match";
-import { saveGeneralExam } from "./actions";
+import { useEmrActions, useIpdNote } from "./EmrActionsContext";
+import { IpdHpiCard, IpdPostOpMedsCard } from "./IpdNoteCards";
 import { HpiBuilder } from "./HpiBuilder";
 import { createPortal } from "react-dom";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -197,6 +198,8 @@ function numWarning(value: string, range: { min: number; max: number }, label: s
 }
 
 export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: { visit: any; priorVisits: any[]; udid: string; readOnly: boolean; patient?: { age?: number | null; sex?: string | null; occupation?: string | null } }) {
+  const { saveGeneralExam } = useEmrActions();
+  const ipd = useIpdNote();
   const ge = visit.generalExam;
   // Vitals and the cards other than Chief Complaint start closed, like the Plan tab's
   // Minor Procedure / Patient Disposition cards, unless they already hold values.
@@ -388,7 +391,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       </div>
 
       {/* CHIEF COMPLAINT */}
-      <div {...(overview && !hasCC ? { "data-overview-empty-section": "" } : {})}>
+      <div className={ipd ? "pointer-events-none" : undefined} {...(overview && !hasCC ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <FieldWithHistory
           label="CHIEF COMPLAINT"
@@ -517,8 +520,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       </Card>
       </div>
 
-      {/* HISTORY OF PRESENT ILLNESS */}
-      <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
+      {/* HISTORY OF PRESENT ILLNESS (the IPD notes copy shows surgery, date and surgeon) */}
+      {ipd ? <IpdHpiCard readOnly={readOnly} /> : <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         {overview || openCards.hpi ? (
           <FieldWithHistory
@@ -600,10 +603,10 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
           <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />
         )}
       </Card>
-      </div>
+      </div>}
 
-      {/* PAST HISTORY */}
-      <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
+      {/* PAST HISTORY (the IPD notes copy shows the surgery instead) */}
+      {ipd ? null : <div {...(overview && !hasPmh ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         {overview || openCards.pmh ? (
         <>
@@ -748,10 +751,10 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
           <ClosedCardHeader label="PAST HISTORY" onClick={() => toggleCard("pmh")} />
         )}
       </Card>
-      </div>
+      </div>}
 
-      {/* CURRENT MEDICATIONS */}
-      <div {...(overview && !hasMeds ? { "data-overview-empty-section": "" } : {})}>
+      {/* CURRENT MEDICATIONS (the IPD notes copy shows the post-op medications instead) */}
+      {ipd ? <IpdPostOpMedsCard readOnly={readOnly} /> : <div {...(overview && !hasMeds ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         {overview || openCards.meds ? (
           <FieldWithHistory label="CURRENT MEDICATIONS" headerExtra={<CardChevron open onClick={() => toggleCard("meds")} />} history={histFor((g) => g.medications)} currentValue={medications} onLoad={readOnly ? undefined : (v) => setMedRows(parseMeds(v))}>
@@ -765,7 +768,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
           <ClosedCardHeader label="CURRENT MEDICATIONS" onClick={() => toggleCard("meds")} />
         )}
       </Card>
-      </div>
+      </div>}
 
       {/* SYSTEMIC HISTORY */}
       <div {...(overview && !hasOtherHistory ? { "data-overview-empty-section": "" } : {})}>

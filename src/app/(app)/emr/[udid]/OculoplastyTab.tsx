@@ -11,7 +11,7 @@ import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
 import { parseJSON } from "@/lib/json";
 import { useEMRSaveContext } from "./EmrSaveContext";
-import { saveOculoplasty } from "./actions";
+import { useEmrActions } from "./EmrActionsContext";
 import {
   EOM_VALUES, EOM_MUSCLE_LABEL, EOM_ORDER, eomDisplay, hasFindings, hasEom, hasOculoplastyData,
   type EomMuscle, type EomEye, type EyeFindings, type OculoplastyData,
@@ -450,6 +450,7 @@ function FindingsCard({
 }
 
 export function OculoplastyTab({ visit, udid, editable, priorVisits = [] }: { visit: any; udid: string; editable: boolean; priorVisits?: any[] }) {
+  const { saveOculoplasty } = useEmrActions();
   const [data, setData] = useState<OculoplastyData>(() => parseJSON<OculoplastyData>(visit.oculoplasty, {}));
   const { savePaused } = useEMRSaveContext();
   const state = useAutoSave(data, async (d) => {

@@ -5,7 +5,7 @@
 
 import { prisma } from "@/lib/prisma";
 
-type Item = { id: string; signedFile?: unknown; unfrozen?: unknown } & Record<string, unknown>;
+type Item = { id: string; signedFile?: unknown; frozen?: unknown; unfrozen?: unknown } & Record<string, unknown>;
 
 const itemsOf = (x: unknown): Item[] => {
   const o = (typeof x === "string" ? safeParse(x) : x) as { items?: unknown } | null;
@@ -31,10 +31,10 @@ export function keepLockedConsents(before: unknown, after: unknown): unknown {
   return { ...(after as object), items };
 }
 
-/** Sets or clears the unlock on one consent of a stored consents sheet. */
+/** Freezes (no unlock record) or unlocks (with who/when) one consent of a stored consents sheet. */
 export function withUnlock(sheet: unknown, consentId: string, unfrozen: { by: string; at: string } | undefined): { items: Item[] } & Record<string, unknown> {
   const base = ((typeof sheet === "string" ? safeParse(sheet) : sheet) ?? { v: 2 }) as Record<string, unknown>;
-  return { ...base, items: itemsOf(base).map((i) => (i.id === consentId ? { ...i, unfrozen } : i)) };
+  return { ...base, items: itemsOf(base).map((i) => (i.id === consentId ? { ...i, frozen: !unfrozen, unfrozen } : i)) };
 }
 
 /** True when the password is the signed-in user's own login password. */

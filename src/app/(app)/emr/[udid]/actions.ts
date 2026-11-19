@@ -880,6 +880,29 @@ export async function saveSurgicalCounselling(
    Saved on the visit; the patient enters the IPD module once the visit is
    finalized and signed. After that, changes are made in the patient file. */
 
+/** Change the counselling's tentative surgery date (to a day that is not past and within the report validity). */
+export async function changeTentativeSurgeryDate(counsellingVisitId: string, date: string): Promise<{ error?: string }> {
+  const user = await requireAnyPermission("ipd.admit", "counselling.edit");
+  const scope = await visitRecordScope(user);
+  if (!scope) return { error: "Forbidden" };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick the new tentative date." };
+  if (date < istTodayStr()) return { error: "The surgery date can't be in the past." };
+  const v = await prisma.visit.findFirst({
+    where: { id: counsellingVisitId, ...scope },
+    select: { patient: { select: { udid: true } }, counsellingRecord: { select: { dateOfSurgery: true, reportsValidUntil: true } } },
+  });
+  const rec = v?.counsellingRecord;
+  if (!v || !rec) return { error: "Counselling record not found." };
+  const istDay = (d: Date) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  if (!rec.reportsValidUntil || istDay(rec.reportsValidUntil) < istTodayStr()) return { error: "The reports are no longer valid, so the date can't be changed here. Counselling has to be redone." };
+  if (date > istDay(rec.reportsValidUntil)) return { error: `The reports are valid only until ${istDay(rec.reportsValidUntil)}. Pick a date up to then.` };
+  await prisma.counsellingRecord.update({ where: { visitId: counsellingVisitId }, data: { dateOfSurgery: istDayRange(date).dayStart } });
+  await writeAudit(user.id, "CounsellingRecord", counsellingVisitId, "DATE_CHANGED", { from: rec.dateOfSurgery, to: date, from_: "ADMIT" });
+  revalidatePath("/counselling", "layout");
+  if (v.patient.udid) revalidate(v.patient.udid);
+  return {};
+}
+
 export async function saveAdmission(
   visitId: string,
   udid: string,
@@ -908,9 +931,21 @@ export async function saveAdmission(
 
   // Counselling sheet is imported only when the doctor ticks it (any admission type)
   let preOp: Awaited<ReturnType<typeof counsellingSheetFor>> = null;
-  if (data.importCounselling) {
-    const scope = await visitRecordScope(user);
-    preOp = scope ? await counsellingSheetFor(visit.patientId, scope) : null;
+  const scopeForSheet = data.importCounselling || data.type === "PRE_OP" ? await visitRecordScope(user) : null;
+  const sheet = scopeForSheet ? await counsellingSheetFor(visit.patientId, scopeForSheet) : null;
+  if (data.importCounselling) preOp = sheet;
+
+  // The tentative surgery date has passed: A) the reports are still valid, so the date must be changed first;
+  // B) the reports have expired as well, so the patient can't be admitted
+  if (sheet?.date) {
+    const istDay = (d: Date) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+    const today = istTodayStr();
+    if (istDay(new Date(sheet.date)) < today) {
+      const valid = !!sheet.reportsValidUntil && istDay(new Date(sheet.reportsValidUntil)) >= today;
+      return { error: valid
+        ? "The tentative surgery date has passed. Change the tentative date before admitting."
+        : "The tentative surgery date has passed and the investigation reports are no longer valid, so the patient can't be admitted. Counselling has to be redone with fresh reports." };
+    }
   }
 
   const fields = {

@@ -81,6 +81,7 @@ export interface ConsentItem {
   /** Scanned / photographed signed consent; when present it is shown instead of the wording. */
   signedFile?: { ref: string; name: string; at: string; by?: string };
   /** Unlocked with a password after the signed copy was uploaded (locked again with Lock). */
+  frozen?: boolean;
   unfrozen?: { by: string; at: string };
 }
 export interface ConsentsData { v: 2; items: ConsentItem[] }
@@ -813,6 +814,19 @@ export interface DrugOrder {
 }
 export interface TreatmentData { v: 2; drugs: DrugOrder[]; log: LogEntry[] }
 
+/** The EMR prescription as the treatment chart's first set of orders. */
+export function emrMedsToOrders(
+  meds: { id: string; drugName: string; dosage?: string | null; frequency?: string | null; duration?: string | null; instructions?: string | null; route?: string | null; laterality?: string | null }[],
+  admittedOn: Date,
+): DrugOrder[] {
+  const start = new Date(admittedOn.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  return meds.filter((m) => m.drugName.trim()).map((m) => ({
+    id: `emr-${m.id}`, name: m.drugName.trim(), dose: m.dosage ?? "", route: m.route || "Topical", eye: m.laterality ?? "", frequency: m.frequency ?? "",
+    start, orderedBy: "EMR prescription",
+    instructions: [m.duration && `For ${m.duration}`, m.instructions].filter(Boolean).join(". "), stopped: false,
+  }));
+}
+
 export const ROUTES = ["Topical", "Oral", "IV", "IM", "Subconjunctival", "Intravitreal", "Ointment"];
 export const EYES = ["RE", "LE", "OU"];
 
@@ -841,7 +855,12 @@ export function defaultTreatment(): TreatmentData { return { v: 2, drugs: [], lo
 /* ── Nurse notes ───────────────────────────────────────────────────────── */
 
 export interface NurseCheck { label: string; done: boolean; preOp?: boolean; by?: string; at?: string }
-export interface NurseData { v: 2; checks: NurseCheck[]; log: LogEntry[] }
+/** A saved nurse note: vitals and nursing note taken together, with who and when. */
+export interface NurseEntry {
+  id: string; at: string; by: string; editedAt?: string;
+  vitals: Record<string, string>; shift: string; ordersFollowed: string; note: string;
+}
+export interface NurseData { v: 2; checks: NurseCheck[]; log: LogEntry[]; entries?: NurseEntry[] }
 
 export const NURSE_QUICK_NOTES = [
   "Patient comfortable", "No vomiting", "No headache", "No eye pain", "Slept well",
@@ -859,6 +878,7 @@ export function defaultNurse(type: string): NurseData {
       { label: "Passed urine", done: false },
     ],
     log: [],
+    entries: [],
   };
 }
 

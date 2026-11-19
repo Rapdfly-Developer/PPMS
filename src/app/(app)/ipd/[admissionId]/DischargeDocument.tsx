@@ -2,7 +2,7 @@
 // an "at a glance" panel; each section has a full-width ruled heading; empty
 // sections are left out. Dark inks and solid rules so it prints clearly.
 // Pure markup (no <header>/<nav>: the app's print styles hide those).
-import { admissionTypeText, dischargeTypeLabel, wardTypeText, type DischargeData } from "@/lib/ipd";
+import { admissionTypeText, dischargeTypeLabel, durationEnd, wardTypeText, type DischargeData } from "@/lib/ipd";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 
 export interface DischargeHeader {
@@ -44,6 +44,20 @@ function Label({ children }: { children: React.ReactNode }) {
 
 function Lines({ v }: { v: string }) {
   return <>{lines(v).map((l, i) => <p key={i}>{l}</p>)}</>;
+}
+
+/** "Thu, 19 Nov 2026: text" lines as a dated list (date on the left, entry beside it). */
+function Course({ v }: { v: string }) {
+  return (
+    <div className="space-y-[3px]">
+      {lines(v).map((l, i) => {
+        const m = l.match(/^([A-Za-z]{3},? \d{1,2} [A-Za-z]{3} \d{4}):\s*(.*)$/);
+        return m ? (
+          <div key={i} className="flex gap-3"><span className="w-[27mm] shrink-0 font-semibold">{m[1]}</span><span className="min-w-0">{m[2]}</span></div>
+        ) : <p key={i}>{l}</p>;
+      })}
+    </div>
+  );
 }
 
 function Bullets({ v }: { v: string }) {
@@ -91,7 +105,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   const tag = (text: string, color: string) => (
     <span className={`inline-block rounded border-[1.5px] bg-white px-2 py-[1px] text-[9px] font-bold ${exact}`} style={{ borderColor: color, color }}>{text}</span>
   );
-  const badge = h.signed ? tag("SIGNED · OTP VERIFIED", ACCENT) : tag("DRAFT · NOT SIGNED", "#92400E");
+  const badge = h.signed ? tag("SIGNED · OTP VERIFIED", ACCENT) : null;
 
   const glance: [string, string][] = [
     surgical
@@ -110,7 +124,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   );
 
   return (
-    <div className="mx-auto w-[210mm] max-w-full bg-white px-[14mm] pt-0 pb-[10mm] print:w-auto print:py-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif", color: TEXT }}>
+    <div className="mx-auto min-h-[297mm] w-[210mm] max-w-full bg-white px-[14mm] pt-0 pb-[10mm] print:min-h-0 print:w-auto print:py-0" style={{ fontFamily: "'Segoe UI', Arial, Helvetica, sans-serif", color: TEXT }}>
       <table className="w-full border-collapse">
 
         <tfoot><tr><td className="p-0">{footer}</td></tr></tfoot>
@@ -199,14 +213,15 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
               {has(s.procedure.events) && <p className="mt-1"><Label>Intra-operative: </Label>{s.procedure.events}</p>}
             </Row>
           )}
-          {has(s.course) && <Row title="Course in hospital"><Lines v={s.course} /></Row>}
+          {has(s.course) && <Row title="Course in hospital"><Course v={s.course} /></Row>}
 
           <Row title="Medicines on discharge">
             {s.meds.length === 0 ? <p>No medicines prescribed.</p> : (
-              <Grid head={["#", "Medicine", "Dose", "Eye", "How often", "For"]} widths={["5%", "35%", "13%", "8%", "22%", "17%"]}
+              <Grid head={["#", "Eye", "Medicine", "Dose", "How often", "For"]} widths={["5%", "8%", "35%", "13%", "22%", "17%"]}
                 rows={s.meds.map((m, i) => [
-                  i + 1, <span key="n" className="font-semibold">{m.name}</span>, m.dose,
-                  <span key="e" className="font-semibold">{m.eye}</span>, m.frequency, m.duration,
+                  i + 1, <span key="e" className="font-semibold">{m.eye}</span>, <span key="n" className="font-semibold">{m.name}</span>,
+                  m.dose, m.frequency,
+                  <span key="d">{m.duration}{durationEnd(m.duration, s.dischargeDate) && <span className="block text-[10px] font-medium">{durationEnd(m.duration, s.dischargeDate)}</span>}</span>,
                 ])} />
             )}
           </Row>

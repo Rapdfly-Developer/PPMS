@@ -1711,6 +1711,9 @@ model IpdDoctorNote {
   text        String
   byName      String
   createdAt   DateTime     @default(now())
+  // The signed note's own copy of the EMR (JSON); null for plain text notes
+  data        String?
+  editedAt    DateTime?
 
   @@index([admissionId, createdAt])
 }

@@ -3,7 +3,9 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
-import { saveDispense, saveFollowUp, saveSurgicalCounselling, clearSurgicalCounselling, saveAdmission, clearAdmission } from "./actions";
+import { saveDispense, changeTentativeSurgeryDate } from "./actions";
+import { useRouter } from "next/navigation";
+import { useEmrActions } from "./EmrActionsContext";
 import { AlertTriangle, History, Plus, Search, X } from "lucide-react";
 import { useEmrOverview } from "./EmrOverviewContext";
 import { appendKeywordAsBullet, KeywordChipsRow, KeywordInput, KeywordSuggest, KeywordTextarea, removeKeywordFromText } from "@/components/emr/KeywordField";
@@ -79,6 +81,7 @@ export function DispensePanel({ visit, udid }: { visit: any; udid: string }) {
 }
 
 export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: any; udid: string; priorVisits?: any[] }) {
+  const { saveFollowUp } = useEmrActions();
   const toInputDate = (d: any) => d ? new Date(d).toISOString().slice(0, 10) : "";
   const [followUpDate, setFollowUpDate] = useState(toInputDate(visit.followUpDate));
   const [inViewOf, setInViewOf]               = useState(visit.inViewOf ?? "");
@@ -261,6 +264,7 @@ const REFERRAL_IN_VIEW_OF_KEYWORDS = [
 type ReferralType = "INTERNAL" | "EXTERNAL";
 
 export function ReferralPanel({ visit, udid }: { visit: any; udid: string }) {
+  const { saveFollowUp } = useEmrActions();
   const [referralType, setReferralType]       = useState<ReferralType>(visit.referralType === "EXTERNAL" ? "EXTERNAL" : "INTERNAL");
   const [referralNote, setReferralNote]       = useState<string>(visit.referralNote ?? "");
   const [inViewOf, setInViewOf]               = useState<string>(visit.referralInViewOf ?? "");
@@ -446,6 +450,7 @@ function SearchCombo({
 }
 
 export function SurgicalCounsellingPanel({ visit, udid }: { visit: any; udid: string }) {
+  const { saveSurgicalCounselling, clearSurgicalCounselling } = useEmrActions();
   const toInputDate = (d: any) => (d ? istTodayStr(new Date(d)) : "");
   const [eye, setEye]                 = useState<string>(visit.advisedSurgeryEye ?? "");
   const [name, setName]               = useState<string>(visit.advisedSurgeryName ?? "");
@@ -677,6 +682,7 @@ function AdmitModal({ title, children, onClose }: { title: string; children: Rea
 }
 
 export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit, onClose }: { visit: any; udid: string; patientSex?: string; eligible: CounsellingSheet | null; canAdmit: boolean; onClose?: () => void }) {
+  const { saveAdmission, clearAdmission } = useEmrActions();
   const a = visit.ipdAdmission;
   // Ward type is not asked here: it follows the patient's gender and can be changed in the IPD patient file
   const sex = (patientSex ?? "").toUpperCase();
@@ -699,6 +705,10 @@ export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit,
   const [error, setError]         = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmSave, setConfirmSave]   = useState(false);
+  const router = useRouter();
+  const [datePrompt, setDatePrompt] = useState(false);
+  const [newDate, setNewDate]       = useState("");
+  const [dateErr, setDateErr]       = useState("");
   const locked = !!visit.finalizedAt || !canAdmit;
   const [pending, startTransition] = useTransition();
   const overview = useEmrOverview();
@@ -718,7 +728,25 @@ export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit,
     : importSheet ? sheet : null;
   const typeLabel = type === "OTHERS" ? other.trim() : ADMIT_TYPES.find((t) => t.value === type)?.label ?? "";
   const wardTypeLabel = WARD_TYPES.find((w) => w.value === wardType)?.label ?? "";
-  const canSubmit = !!type && !!admittedOn && (type !== "OTHERS" || !!other.trim());
+  // The counselling's tentative surgery date has passed:
+  //  A) the reports are still valid: the date has to be changed first (a prompt offers it)
+  //  B) the reports have expired too: the patient can't be admitted
+  const dayOf = (d?: string | null) => (d ? istTodayStr(new Date(d)) : "");
+  const sheetDay = dayOf(sheet?.date);
+  const validDay = dayOf(sheet?.reportsValidUntil);
+  const surgeryPassed = !a && !!sheet && !!sheetDay && sheetDay < istTodayStr() && (importSheet || type === "PRE_OP");
+  const reportsOk = !!validDay && validDay >= istTodayStr();
+  const expiredBlock = surgeryPassed && !reportsOk;
+  const needsNewDate = surgeryPassed && reportsOk;
+  const canSubmit = !!type && !!admittedOn && (type !== "OTHERS" || !!other.trim()) && !expiredBlock;
+
+  const changeDate = () =>
+    startTransition(async () => {
+      const r = await changeTentativeSurgeryDate(sheet!.visitId, newDate);
+      if (r.error) { setDateErr(r.error); return; }
+      setDatePrompt(false);
+      router.refresh();
+    });
 
   const save = () =>
     startTransition(async () => {
@@ -831,6 +859,20 @@ export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit,
         </div>
       )}
 
+      {expiredBlock && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle size={14} /> This patient can&apos;t be admitted</p>
+          <p className="mt-1 text-label sm:text-sm">The tentative surgery date ({fmtDay(sheet?.date ?? null)}) has passed and the investigation reports{validDay ? ` expired on ${fmtDay(sheet?.reportsValidUntil ?? null)}` : " are no longer valid"}. Counselling has to be redone with fresh reports before the admission.</p>
+        </div>
+      )}
+      {needsNewDate && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="flex items-center gap-1.5 font-semibold"><AlertTriangle size={14} /> The tentative surgery date has passed</p>
+          <p className="mt-1 text-label sm:text-sm">It was {fmtDay(sheet?.date ?? null)}. The reports are valid until {fmtDay(sheet?.reportsValidUntil ?? null)}, so you can set a new tentative date and continue.</p>
+          <button type="button" onClick={() => { setNewDate(istTodayStr()); setDateErr(""); setDatePrompt(true); }} className="mt-2 text-label sm:text-sm font-semibold text-amber-900 underline underline-offset-2">Change the tentative date</button>
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} /> {error}</p>}
 
       {locked ? (
@@ -845,11 +887,29 @@ export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit,
             </label>
           )}
           <div className="flex items-center gap-3">
-          <button disabled={pending || !canSubmit} onClick={() => setConfirmSave(true)} className={btnPrimary}>{isSaved ? "Update admission" : "Admit"}</button>
+          <button disabled={pending || !canSubmit} onClick={() => (needsNewDate ? (setNewDate(istTodayStr()), setDateErr(""), setDatePrompt(true)) : setConfirmSave(true))} className={btnPrimary}>{isSaved ? "Update admission" : "Admit"}</button>
           <button disabled={pending} onClick={cancel} className={btnGhost}>Cancel</button>
           {savedMsg && <span className="text-xs text-[var(--color-success-600)] font-medium">Saved · goes to IPD after Finalize &amp; Sign</span>}
           </div>
         </div>
+      )}
+
+      {/* Tentative date has passed but the reports are valid: change the date */}
+      {datePrompt && (
+        <AdmitModal title="Change the tentative surgery date" onClose={() => setDatePrompt(false)}>
+          <p className="text-sm leading-relaxed text-[var(--color-ink-700)]">
+            The tentative date <b className="text-[var(--color-ink-900)]">{fmtDay(sheet?.date ?? null)}</b> has passed. The reports are valid until <b className="text-[var(--color-ink-900)]">{fmtDay(sheet?.reportsValidUntil ?? null)}</b>. Pick a new date within that period.
+          </p>
+          <div className="mt-4">
+            <label className={labelCls}>New tentative date</label>
+            <input type="date" value={newDate} min={istTodayStr()} max={validDay || undefined} onChange={(e) => { setNewDate(e.target.value); setDateErr(""); }} className={`${inputCls} max-w-[12rem]`} />
+          </div>
+          {dateErr && <p className="mt-2 text-sm text-red-600 flex items-center gap-1.5"><AlertTriangle size={14} /> {dateErr}</p>}
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" onClick={() => setDatePrompt(false)} className={btnGhost}>Cancel</button>
+            <button type="button" disabled={pending || !newDate} onClick={changeDate} className={btnPrimary}>Update date</button>
+          </div>
+        </AdmitModal>
       )}
 
       {/* Admit: confirm the admission */}

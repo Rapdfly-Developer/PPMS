@@ -1,7 +1,7 @@
 "use client";
 
 // Signed consent file: once uploaded it replaces the consent wording. Shared by
-// Counselling and the IPD Consents form.
+// Counselling and the IPD Consents form. Lock bar: Freeze locks, Unlock needs a password.
 
 import { useRef, useState } from "react";
 import { format } from "date-fns";
@@ -66,12 +66,14 @@ export function ConsentLockBar({ locked, unfrozen, onUnlock, onLock }: {
       <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-amber-50 p-1.5 pl-3 ring-1 ring-amber-200">
         <LockOpen size={14} className="shrink-0 text-amber-600" />
         <p className="flex-1 min-w-0 text-[13px] text-amber-900">
-          Unlocked{unfrozen ? <> by <b>{unfrozen.by}</b> on {format(new Date(unfrozen.at), "EEE, d MMM yyyy, h:mm a")}</> : ""}. The signed copy can be replaced or removed.
+          {unfrozen
+            ? <>Unlocked by <b>{unfrozen.by}</b> on {format(new Date(unfrozen.at), "EEE, d MMM yyyy, h:mm a")}. The signed copy can be replaced or removed.</>
+            : <>Signed copy uploaded. Click <b>Freeze</b> to lock this consent.</>}
         </p>
         {error && <span className="text-xs text-red-600">{error}</span>}
         <button type="button" disabled={busy} onClick={() => void run(onLock)}
           className="h-8 inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-60">
-          <Lock size={12} /> Lock again
+          <Lock size={12} /> Freeze
         </button>
       </div>
     );
@@ -80,7 +82,7 @@ export function ConsentLockBar({ locked, unfrozen, onUnlock, onLock }: {
     <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[var(--color-surface-sunken)]/70 p-1.5 pl-3 ring-1 ring-[var(--color-border)]">
       <Lock size={14} className="shrink-0 text-[var(--color-ink-500)]" />
       <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
-        <b className="text-[var(--color-ink-800)]">Locked.</b> The signed copy is on file, so this consent can&apos;t be changed.
+        <b className="text-[var(--color-ink-800)]">Frozen.</b> This consent can&apos;t be changed until it is unlocked.
       </p>
       {error && <span className="text-xs text-red-600">{error}</span>}
       {asking ? (
@@ -139,7 +141,7 @@ export function SignedConsentUpload({ file, title, onChange }: {
       <input ref={ref} type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
       <Upload size={14} className="shrink-0 text-[var(--color-primary-500)]" />
       <p className="flex-1 min-w-0 text-[13px] text-[var(--color-ink-600)]">
-        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. It locks as soon as it is uploaded.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above and locks the consent.</>}
+        {file ? <>Signed copy of <b className="text-[var(--color-ink-800)]">{title}</b> is shown above. Click Freeze to lock it.</> : <>Upload the signed <b className="text-[var(--color-ink-800)]">{title}</b> (PDF or photo). It replaces the wording above.</>}
       </p>
       {error && <span className="text-xs text-red-600">{error}</span>}
       {file && (confirm ? (

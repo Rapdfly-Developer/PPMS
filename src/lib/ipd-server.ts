@@ -12,6 +12,8 @@ export interface CounsellingSheet {
   date: string | null;
   /** Counselling stage, e.g. "Eligible for surgery". */
   stage: string;
+  /** Last day the counselling reports are valid (null when not known). */
+  reportsValidUntil?: string | null;
 }
 
 const STAGE = (r: { eligibleForSurgery: boolean; fitForSurgery: boolean; surgeryDeferred: boolean } | null) =>
@@ -24,7 +26,7 @@ const STAGE = (r: { eligibleForSurgery: boolean; fitForSurgery: boolean; surgery
 export async function counsellingSheetFor(patientId: string, scope: Prisma.VisitWhereInput): Promise<CounsellingSheet | null> {
   const select = {
     id: true, advisedSurgeryName: true, advisedSurgeryEye: true, advisedSurgeryAnaesthesia: true, advisedSurgeryDate: true, advisedSurgeryImplant: true,
-    counsellingRecord: { select: { implant: true, dateOfSurgery: true, eligibleForSurgery: true, fitForSurgery: true, surgeryDeferred: true } },
+    counsellingRecord: { select: { implant: true, dateOfSurgery: true, eligibleForSurgery: true, fitForSurgery: true, surgeryDeferred: true, reportsValidUntil: true } },
   } as const;
   const base = { ...scope, patientId, finalizedAt: { not: null }, surgeryAdvised: true, advisedSurgeryName: { not: null } };
   const v =
@@ -39,6 +41,7 @@ export async function counsellingSheetFor(patientId: string, scope: Prisma.Visit
     anaesthesia: v.advisedSurgeryAnaesthesia,
     date: (v.counsellingRecord?.dateOfSurgery ?? v.advisedSurgeryDate)?.toISOString() ?? null,
     stage: STAGE(v.counsellingRecord),
+    reportsValidUntil: v.counsellingRecord?.reportsValidUntil?.toISOString() ?? null,
   };
 }
 

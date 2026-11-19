@@ -1,6 +1,8 @@
 "use server";
 
+import { emrMedsToOrders, type DrugOrder } from "@/lib/ipd-forms";
 import { prisma } from "@/lib/prisma";
+import { buildEmrCopy, isEmrCopy, noteText, withMeds, type EmrCopy } from "@/lib/ipd-emr-copy";
 import { requireAnyPermission } from "@/lib/rbac";
 import { visitRecordScope } from "@/lib/patient-access";
 import { revalidatePath } from "next/cache";
@@ -14,7 +16,7 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { checkOwnPassword, keepLockedConsents, withUnlock } from "@/lib/consent-lock";
 import { SUPERSEDED } from "@/lib/counselling";
 import {
-  ALWAYS_TABS, IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys, tabChoices,
+  ALWAYS_TABS, FREEZABLE_KEYS, IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys, tabChoices,
   type LogEntry, WARD_TYPE_LABEL,
 } from "@/lib/ipd";
 
@@ -157,6 +159,7 @@ async function setIpdConsentLock(
   admission: Awaited<ReturnType<typeof loadAdmission>>["admission"],
   consentId: string, unfrozen: { by: string; at: string } | undefined,
 ): Promise<Result & { unfrozen?: { by: string; at: string } }> {
+  if (admission.status === "DISCHARGED") return { error: "The patient is discharged; the file is frozen." };
   const row = admission.forms.find((f) => f.key === "consents");
   if (row?.frozen) return { error: "This form is frozen and can't be changed." };
   const before = await storedConsents(admission, row?.data ?? null);
@@ -210,6 +213,7 @@ const REPORT_PERMS = ["ipd.edit", "emr.edit", "emr.labReports.upload", "emr.labR
 
 async function reportOrder(admissionId: string, orderId: string) {
   const { user, admission } = await loadAdmission(admissionId, ...REPORT_PERMS);
+  if (admission.status === "DISCHARGED") throw new Error("The patient is discharged; the file is frozen.");
   const order = await prisma.investigationOrder.findFirst({ where: { id: orderId, visit: { patientId: admission.visit.patientId }, status: { not: SUPERSEDED } } });
   if (!order) throw new Error("Order not found");
   return { user, admission, order };
@@ -275,6 +279,7 @@ export async function freezeForm(admissionId: string, key: string, data?: unknow
   if (!requiredKeys(admission.admissionType, admission.forms.map((f) => f.key), admission.fileTabs).includes(key)) return { error: "This form does not apply to the admission." };
   const row = admission.forms.find((f) => f.key === key);
   if (row?.frozen) return {};
+  if (!FREEZABLE_KEYS.includes(key)) return { error: "This form is not frozen." };
   if (data !== undefined) {
     const r = await saveForm(admissionId, key, data);
     if (r.error) return r;
@@ -287,6 +292,30 @@ export async function freezeForm(admissionId: string, key: string, data?: unknow
   });
   await audit(user.id, user.name, admissionId, "FORM_FROZEN", { key, title: titleOf(key, admission.forms) });
   refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/** Unfreeze a form (before the file is shifted to OT) so it can be edited again. */
+export async function unfreezeForm(admissionId: string, key: string): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (admission.status !== "ADMITTED") return { error: "Forms can only be unfrozen while the patient is in the ward before OT." };
+  if (!FREEZABLE_KEYS.includes(key)) return { error: "This form is not frozen." };
+  const row = admission.forms.find((f) => f.key === key);
+  if (!row?.frozen) return {};
+  await prisma.ipdForm.update({ where: { admissionId_key: { admissionId, key } }, data: { frozen: false, frozenAt: null, frozenBy: null } });
+  await audit(user.id, user.name, admissionId, "FORM_UNFROZEN", { key, title: titleOf(key, admission.forms) });
+  refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/** The treatment chart's Stop shows up in the doctor's notes. */
+export async function noteDrugStopped(admissionId: string, label: string): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (!logsOpen(admission.status)) return { error: "Notes can't be added now." };
+  const t = label.trim().slice(0, 500);
+  if (!t) return {};
+  await prisma.ipdDoctorNote.create({ data: { admissionId, text: `Medications stopped: ${t}`, byName: user.name } });
+  refresh(admissionId);
   return {};
 }
 
@@ -315,6 +344,23 @@ export async function addFormLog(
     create: { admissionId, key, title: titleOf(key, admission.forms), data: JSON.stringify(data) },
     update: { data: JSON.stringify(data) },
   });
+  refresh(admissionId);
+  return {};
+}
+
+/** Undo a dose tick on the treatment chart (taps toggle), identified by drug, slot and date. */
+export async function removeDoseLog(admissionId: string, drugId: string, slot: string, date: string): Promise<Result> {
+  const { admission } = await loadAdmission(admissionId, "ipd.edit");
+  if (!logsOpen(admission.status)) return { error: "Entries can't be changed now." };
+  const row = admission.forms.find((f) => f.key === "treatment");
+  if (!row) return {};
+  let data: Record<string, unknown> = {};
+  try { data = JSON.parse(row.data); } catch { data = {}; }
+  const log = Array.isArray(data.log) ? (data.log as LogEntry[]) : [];
+  const at = log.map((e) => e.kind === "dose" && e.meta?.drugId === drugId && e.meta?.slot === slot && e.meta?.date === date).lastIndexOf(true);
+  if (at < 0) return {};
+  data.log = log.filter((_, i) => i !== at);
+  await prisma.ipdForm.update({ where: { admissionId_key: { admissionId, key: "treatment" } }, data: { data: JSON.stringify(data) } });
   refresh(admissionId);
   return {};
 }
@@ -400,14 +446,122 @@ export async function removeFileTab(admissionId: string, key: string): Promise<R
   return {};
 }
 
-/* ── Doctor's notes ────────────────────────────────────────────────────── */
+/* ── Doctor's notes: each signed note keeps its own copy of the EMR (the real EMR is never written) ── */
 
-export async function addDoctorNote(admissionId: string, text: string): Promise<Result> {
+export interface NoteMedChanges {
+  add: { name: string; dose: string; route: string; eye: string; frequency: string; instructions: string }[];
+  stopIds: string[];
+}
+
+/**
+ * A new note starts completely fresh: the Ophthalmic and Plan tabs are empty. Only the
+ * General tab is pre-filled: the chief complaint is the surgery (as in the file banner,
+ * with the operated eye) and the day after surgery; the history of present illness
+ * names the surgery, its date and the surgeon.
+ */
+export async function getNoteSeed(admissionId: string, postOpMeds: string[]): Promise<{ copy?: EmrCopy; error?: string }> {
+  const { admission } = await loadAdmission(admissionId, "ipd.admit", "ipd.discharge");
+  if (!logsOpen(admission.status)) return { error: "Notes can't be added now." };
+  const visit = await prisma.visit.findUnique({ where: { id: admission.visitId }, select: { doctor: { select: { name: true } } } });
+  const istDay = (d: Date) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  const surgeryDate = admission.surgeryDate ? istDay(admission.surgeryDate) : "";
+  const pod = surgeryDate ? Math.round((new Date(`${istDay(new Date())}T00:00:00Z`).getTime() - new Date(`${surgeryDate}T00:00:00Z`).getTime()) / 86400000) : -1;
+  const eye = admission.laterality ?? "";
+  const surgery = admission.surgery ?? "";
+  const label = [eye, surgery].filter(Boolean).join(" ");
+  // The EMR keeps the operated eye as a [RE] / [LE] / [OU] tag in front of the complaint
+  const tagged = ["RE", "LE", "OU"].includes(eye);
+  const chiefComplaint = [
+    tagged ? `[${eye}]` : "",
+    [tagged ? surgery : label, admission.anaesthesia].filter(Boolean).join(" · "),
+    pod >= 0 ? `Post Op Day ${pod}` : "",
+  ].filter(Boolean).join(" ");
+  const surgeon = (visit?.doctor.name ?? "").replace(/^Dr\.?\s*/i, "");
+
+  // Systemic and family history come from the earlier details: the admitting visit, else the patient's latest earlier visit that has them
+  const earlier = await prisma.visit.findMany({
+    where: { patientId: admission.visit.patientId, date: { lte: (await prisma.visit.findUnique({ where: { id: admission.visitId }, select: { date: true } }))?.date ?? new Date() } },
+    orderBy: { date: "desc" }, take: 8,
+    select: { generalExam: { select: { pmhOtherText: true, familyHistory: true } } },
+  });
+  const firstWith = (pick: (g: { pmhOtherText: string | null; familyHistory: string | null }) => string | null) =>
+    earlier.map((v) => (v.generalExam ? pick(v.generalExam) : null)).find((x) => x && x.trim()) ?? "";
+
+  // Post-op medications: the Patient Education sheet's, else the Treatment Chart's active drugs
+  let postOp = postOpMeds.slice(0, 40).map((m) => String(m).slice(0, 200));
+  if (!postOp.some((m) => m.trim())) {
+    const row = admission.forms.find((f) => f.key === "treatment");
+    let td: Record<string, unknown> = {};
+    try { td = row ? JSON.parse(row.data) : {}; } catch { td = {}; }
+    const chart: DrugOrder[] = Array.isArray(td.drugs)
+      ? (td.drugs as DrugOrder[])
+      : emrMedsToOrders(await prisma.medication.findMany({ where: { visitId: admission.visitId }, orderBy: { createdAt: "asc" } }), admission.admittedOn);
+    const list = chart.filter((d) => !d.stopped && d.name?.trim()).map((d) => ({ route: d.route ?? "", eye: d.eye ?? "", name: d.name, dose: d.dose ?? "", frequency: d.frequency ?? "", duration: "", instructions: d.instructions ?? "" }));
+    if (list.length) postOp = [JSON.stringify(list)];
+  }
+
+  const copy = buildEmrCopy({ generalExam: { chiefComplaint, pmhOtherText: firstWith((g) => g.pmhOtherText), familyHistory: firstWith((g) => g.familyHistory) } }, {
+    postOpMeds: postOp,
+    surgeryName: label,
+    surgeryDate,
+    surgeon,
+  });
+  return { copy };
+}
+
+/** Finalize and sign: saves the whole draft as one note (or overwrites `noteId`) and applies its medicine changes to the Treatment Chart. */
+export async function finalizeDoctorNote(admissionId: string, noteId: string | null, copy: EmrCopy, meds: NoteMedChanges): Promise<Result> {
   const { user, admission } = await loadAdmission(admissionId, "ipd.admit", "ipd.discharge");
   if (!logsOpen(admission.status)) return { error: "Notes can't be added now." };
-  const t = text.trim();
-  if (!t) return { error: "Enter the note." };
-  await prisma.ipdDoctorNote.create({ data: { admissionId, text: t.slice(0, 5000), byName: user.name } });
+  if (!isEmrCopy(copy)) return { error: "Invalid note." };
+
+  // Medicines added or stopped in the note go onto the treatment chart
+  const row = admission.forms.find((f) => f.key === "treatment");
+  let data: Record<string, unknown> = {};
+  try { data = row ? JSON.parse(row.data) : {}; } catch { data = {}; }
+  let drugs: DrugOrder[] = Array.isArray(data.drugs)
+    ? (data.drugs as DrugOrder[])
+    : emrMedsToOrders(await prisma.medication.findMany({ where: { visitId: admission.visitId }, orderBy: { createdAt: "asc" } }), admission.admittedOn);
+  const now = new Date();
+  const stop = new Set(meds.stopIds);
+  const stopped: string[] = [];
+  drugs = drugs.map((d, i) => {
+    const id = d.id ?? `d${i}`;
+    if (!stop.has(id) || d.stopped) return d;
+    stopped.push([d.name, d.dose, d.eye, d.frequency].filter(Boolean).join(" "));
+    return { ...d, id, stopped: true, stoppedBy: user.name, stoppedAt: now.toISOString() };
+  });
+  const today = new Date(now.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  const added: string[] = [];
+  for (const m of meds.add.slice(0, 20)) {
+    const name = m.name.trim().slice(0, 200);
+    if (!name || drugs.some((d) => !d.stopped && d.name.trim().toLowerCase() === name.toLowerCase())) continue;
+    added.push([name, m.dose, m.eye, m.frequency].filter(Boolean).join(" "));
+    drugs.push({ id: `n${now.getTime().toString(36)}${Math.random().toString(36).slice(2, 7)}`, name, dose: m.dose.slice(0, 100), route: m.route.slice(0, 50), eye: m.eye.slice(0, 5), frequency: m.frequency.slice(0, 100), instructions: m.instructions.slice(0, 500), start: today, orderedBy: user.name, stopped: false });
+  }
+  if (added.length || stopped.length) {
+    const next = { ...data, v: 2, log: Array.isArray(data.log) ? data.log : [], drugs };
+    await prisma.ipdForm.upsert({
+      where: { admissionId_key: { admissionId, key: "treatment" } },
+      create: { admissionId, key: "treatment", title: titleOf("treatment", admission.forms), data: JSON.stringify(next) },
+      update: { data: JSON.stringify(next) },
+    });
+  }
+
+  // The note keeps the medicines active on the chart as it was signed
+  const snapshot = drugs.filter((d) => !d.stopped).map((d) => ({ id: d.id, name: d.name, dose: d.dose ?? "", route: d.route ?? "", eye: d.eye ?? "", frequency: d.frequency ?? "", instructions: d.instructions ?? "" }));
+  const full = withMeds(copy, snapshot);
+  const json = JSON.stringify(full);
+  if (json.length > 500_000) return { error: "The note is too large." };
+  const text = noteText(copy, { added, stopped }).slice(0, 5000);
+
+  if (noteId) {
+    const note = await prisma.ipdDoctorNote.findFirst({ where: { id: noteId, admissionId } });
+    if (!note || !note.data) return { error: "Note not found." };
+    await prisma.ipdDoctorNote.update({ where: { id: noteId }, data: { data: json, text, byName: user.name, editedAt: now } });
+  } else {
+    await prisma.ipdDoctorNote.create({ data: { admissionId, data: json, text, byName: user.name } });
+  }
   refresh(admissionId);
   return {};
 }

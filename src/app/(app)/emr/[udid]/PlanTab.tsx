@@ -9,7 +9,8 @@ import { useEmrOverview } from "./EmrOverviewContext";
 import { useEMRSaveContext } from "./EmrSaveContext";
 import { parseJSON } from "@/lib/json";
 import { useAutoSave, SaveIndicator } from "@/lib/useAutoSave";
-import { addMedication, removeMedication, updateMedication, clearAllMedications, saveRefraction, saveFollowUp, saveAdviseNotes, saveAnesthesiaType, saveProcedureLaterality, saveProcedureName, saveProcedureNotes, addInvestigationOrder, deleteInvestigationOrder } from "./actions";
+import { useEmrActions, useIpdNote } from "./EmrActionsContext";
+import { IpdDispositionCard } from "./IpdNoteCards";
 import { AdmitPanel, DispositionToggle, FollowUpdatesPanel, ReferralPanel, SurgicalCounsellingPanel, type AdmitInfo } from "./DispositionPanel";
 import { Plus, X, Stethoscope, ChevronDown, Pencil, Trash2, RefreshCw, Share2, Scissors, BedDouble, Search, Pill, Sparkles, CheckCircle2, Check, AlertTriangle } from "lucide-react";
 import {
@@ -1566,6 +1567,8 @@ export function ProtocolPromptCard({
 /* ── PlanTab ─────────────────────────────────────────────────────────────── */
 
 export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = false, admit, canViewMedications = true, medicationsReadOnly = readOnly }: { visit: any; udid: string; patientSex: string; priorVisits?: any[]; readOnly?: boolean; admit?: AdmitInfo; canViewMedications?: boolean; medicationsReadOnly?: boolean }) {
+  const { saveAdviseNotes, addMedication, saveFollowUp, removeMedication } = useEmrActions();
+  const ipd = useIpdNote();
   const [presetMatches, setPresetMatches]   = useState<PresetMatch[]>([]);
   const [appliedPresets, setAppliedPresets] = useState<AppliedPreset[]>([]);
   const [dismissedIds, setDismissedIds]     = useState<string[]>([]);
@@ -1797,8 +1800,14 @@ export function PlanTab({ visit, udid, patientSex, priorVisits = [], readOnly = 
         readOnly={medicationsReadOnly}
       />}
       <AdviseNotesCard visit={visit} priorVisits={priorVisits} adviseNotes={adviseNotes} onAdviseChange={setAdviseNotes} readOnly={readOnly} />
-      <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
-      <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} admit={admit} />
+      {ipd ? (
+        <IpdDispositionCard visit={visit} udid={udid} readOnly={readOnly} />
+      ) : (
+        <>
+          <MinorProcedureCard visit={visit} udid={udid} priorVisits={priorVisits} readOnly={readOnly} />
+          <DispositionCard visit={visit} udid={udid} patientSex={patientSex} priorVisits={priorVisits} readOnly={readOnly} admit={admit} />
+        </>
+      )}
 
     </div>
   );
@@ -1977,6 +1986,7 @@ function AdviseNotesCard({ visit, priorVisits, adviseNotes, onAdviseChange, read
 }
 
 function MinorProcedureCard({ visit, udid, priorVisits, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; readOnly?: boolean }) {
+  const { saveProcedureLaterality, saveAnesthesiaType, saveProcedureName, saveProcedureNotes } = useEmrActions();
   const overview = useEmrOverview();
   // Starts closed unless a procedure, its notes or the anesthesia are already saved.
   const [open,           setOpen]           = useState(() => !!(visit.procedureName?.trim() || visit.procedureNotes?.trim() || visit.anesthesiaType?.trim()));
@@ -2306,6 +2316,7 @@ function splitTaper(instructions: string | null | undefined, duration: string | 
 type EditDraft = { drugName: string; dosage: string; frequency: string; duration: string; instructions: string; route?: string; laterality?: string; taperLevels: TaperLevel[] };
 
 function PrescriptionCard({ visit, udid, priorVisits, defaultLaterality = "OU", toastNames, onCloseToast, pendingDiagPrompts, onConfirmPrompt, onDismissPrompt, appliedByDiag, presetMatches, onRemoveApplied, onChangeProtocol, activeDialogDiag, setActiveDialogDiag, applying, onApplyProtocol, readOnly = false }: { visit: any; udid: string; priorVisits: any[]; defaultLaterality?: string; toastNames: string[]; onCloseToast: () => void; pendingDiagPrompts: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }[]; onConfirmPrompt: (diag: { diagnosisDesc: string; laterality?: string; matches: PresetMatch[] }) => void; onDismissPrompt: (desc: string, matches: PresetMatch[]) => void; appliedByDiag: Record<string, any[]>; presetMatches: PresetMatch[]; onRemoveApplied: (desc: string) => void; onChangeProtocol: (desc: string, matches: PresetMatch[]) => void; activeDialogDiag: any; setActiveDialogDiag: (v: any) => void; applying: boolean; onApplyProtocol: (selected: TreatmentPreset[], diagnosisDesc: string, isChanging: boolean) => void; readOnly?: boolean }) {
+  const { updateMedication, clearAllMedications, addMedication, removeMedication, deleteInvestigationOrder, addInvestigationOrder } = useEmrActions();
   const [pending, startTransition] = useTransition();
   const [showPresets, setShowPresets] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
