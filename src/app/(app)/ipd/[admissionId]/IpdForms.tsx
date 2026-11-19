@@ -3,6 +3,7 @@
 import { fileHref } from "@/lib/file-href";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
+import { useImplantAutoFill } from "@/components/ui/ImplantAutoFill";
 import { paymentLabel } from "@/lib/counselling";
 import { format } from "date-fns";
 import {
@@ -332,6 +333,11 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
   const x = v as ImplantData & Partial<CounsellingImplant>;
   const str = (k: keyof CounsellingImplant) => (typeof x[k] === "string" ? (x[k] as string) : "");
   const docs: ImplantDoc[] = Array.isArray(x.docs) ? x.docs : [];
+  const implantFill = useImplantAutoFill({
+    group: kind,
+    current: Object.fromEntries(Object.entries(x).filter(([, val]) => typeof val === "string")) as Record<string, string>,
+    apply: (p) => change({ ...x, ...p } as ImplantData),
+  });
   return (
     <div className="space-y-3">
       <Card title="Planned implant (from counselling)">
@@ -347,7 +353,8 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
       </Card>
       {/* Same fields as Counselling for this surgery; changes here go back to Counselling */}
       <Card title="Implant used" sub={kind === "CORNEA" ? "As on the eye bank tissue label" : "As printed on the implant pack / sticker"}
-        right={kind !== "NONE" && <PaymentDocs docs={docs} onChange={(d) => change({ ...x, docs: d } as ImplantData)} editable={editable} typeLabel="Implant" hint="Upload implant document (pack sticker, invoice, tissue label)" button />}>
+        right={kind !== "NONE" && <PaymentDocs docs={docs} onChange={(d) => change({ ...x, docs: d } as ImplantData)} editable={editable} typeLabel="Implant" hint="Upload implant document (pack sticker, invoice, tissue label). The fields fill from it." button onFile={implantFill.onFile} />}>
+        {implantFill.banner}
         {kind === "IOL" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <IolFields value={v} onChange={(p) => change({ ...v, ...p })} disabled={!editable} inputClass={`${inp} flex-1`}

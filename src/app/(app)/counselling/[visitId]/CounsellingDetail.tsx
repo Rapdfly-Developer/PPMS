@@ -44,6 +44,7 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { STATUS_META } from "../CounsellingClient";
 import { PatientPhoto } from "../../emr/[udid]/PatientPhoto";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
+import { useImplantAutoFill } from "@/components/ui/ImplantAutoFill";
 import { CounsellingOverview, CounsellingPrintModal } from "./CounsellingPrintOverview";
 import { KeywordTextarea } from "@/components/emr/KeywordField";
 import { SurgeryInline } from "@/components/ui/SurgeryInline";
@@ -893,6 +894,11 @@ export function CounsellingDetail({
 
   const cashless = CASHLESS_TYPES.find((t) => t.value === paymentType);
   const implantKind = implantGroup(data.surgery);
+  const implantFill = useImplantAutoFill({
+    group: implantKind,
+    current: implantInfo,
+    apply: (p) => setImplantInfo((v) => ({ ...v, ...p })),
+  });
   const estimateNum = estimate === "" ? null : Number(estimate);
   const advanceDone = rec.advanceReceived || (rec.advancePaid ?? 0) > 0;
 
@@ -1170,7 +1176,8 @@ export function CounsellingDetail({
 
       {/* ── Implant details (as in the IPD Implant form) ──────────── */}
       <SectionCard step={2} defaultOpen={implantInfo.docs.length > 0 || Object.entries(implantInfo).some(([k, v]) => k !== "docs" && typeof v === "string" && v.trim() !== "")} icon={<Package size={15} />} title="Implant Details"
-        right={implantKind !== "NONE" && <PaymentDocs docs={implantInfo.docs} onChange={(d) => setImplantInfo((v) => ({ ...v, docs: d }))} editable={editable} typeLabel="Implant" hint="Upload implant document (pack sticker, invoice, tissue label)" button />}>
+        right={implantKind !== "NONE" && <PaymentDocs docs={implantInfo.docs} onChange={(d) => setImplantInfo((v) => ({ ...v, docs: d }))} editable={editable} typeLabel="Implant" hint="Upload implant document (pack sticker, invoice, tissue label). The fields fill from it." button onFile={implantFill.onFile} />}>
+        {implantFill.banner}
         {/* Same fields as the IPD Implant form ("Implant used"); the IPD file starts from them */}
         {implantKind === "IOL" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

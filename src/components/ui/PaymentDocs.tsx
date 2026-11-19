@@ -11,7 +11,7 @@ import { fileHref } from "@/lib/file-href";
 import type { PaymentDoc } from "@/lib/counselling";
 
 /** Insurance card, pre-authorisation, scheme card or letter: upload, view, remove. Saved with the common Save. */
-export function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean; /** Button tooltip. */ hint?: string }) {
+export function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint, onFile }: { docs: PaymentDoc[]; onChange: (d: PaymentDoc[]) => void; editable: boolean; typeLabel: string; /** Only the small upload button. */ button?: boolean; /** Button tooltip. */ hint?: string; /** Called with each file once it has uploaded (used to auto-fill from it). */ onFile?: (file: File) => void }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -30,6 +30,9 @@ export function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint 
         added.push({ ref: json.url, name: file.name, at: new Date().toISOString() });
       }
       onChange([...docs, ...added]);
+      // One read at a time: the first PNG, JPEG, WebP or PDF in the batch
+      const readable = onFile ? Array.from(files).find((f) => /^(image\/(png|jpeg|webp)|application\/pdf)$/.test(f.type)) : undefined;
+      if (readable) onFile!(readable);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {

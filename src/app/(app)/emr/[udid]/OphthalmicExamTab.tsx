@@ -35,6 +35,8 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Toast } from "@/components/ui/Toast";
 import { FieldWithHistory, type HistoryEntry } from "@/components/ui/HistoryToggle";
 import { fileHref } from "@/lib/file-href";
+import { extractAr } from "@/lib/extract/client";
+import type { ArExtraction, ArKey } from "@/lib/extract/ar";
 import { OculoplastyTab, hasOculoplastyData } from "./OculoplastyTab";
 
 
@@ -464,21 +466,28 @@ function ArSlipUpload({
   editable,
   label,
   onChange,
+  onExtract,
 }: {
   url?: string;
   editable: boolean;
   label: string;
   onChange: (url: string) => void;
+  /** Fills the refraction fields from the slip; returns a function that puts the old values back. */
+  onExtract?: (r: ArExtraction) => () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [filled, setFilled] = useState<{ r: ArExtraction; undo: () => void } | null>(null);
 
   const upload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setError("");
+    setFilled(null);
+    // Read the slip while it uploads; a failed read never blocks the upload
+    const reading = onExtract ? extractAr(file) : null;
     try {
       const body = new FormData();
       body.append("file", file);
@@ -488,6 +497,9 @@ function ArSlipUpload({
         throw new Error(result.error ?? "AR slip upload failed.");
       }
       onChange(result.url);
+      const read = reading ? await reading : null;
+      if (read?.result && onExtract) setFilled({ r: read.result, undo: onExtract(read.result) });
+      else if (read?.error) setError(read.error);
     } catch (err) {
       setError(err instanceof Error ? err.message : "AR slip upload failed.");
     } finally {
@@ -495,6 +507,14 @@ function ArSlipUpload({
       event.target.value = "";
     }
   };
+
+  const KEY_NAME: Record<ArKey, string> = { sph: "Sph", cyl: "Cyl", axis: "Axis", k1: "K1", k2: "K2" };
+  const toCheck = filled
+    ? [
+        ...filled.r.re.verify.map((k) => `Right ${KEY_NAME[k]}`),
+        ...filled.r.le.verify.map((k) => `Left ${KEY_NAME[k]}`),
+      ]
+    : [];
 
   if (!editable && !url) return null;
 
@@ -528,7 +548,7 @@ function ArSlipUpload({
             className="inline-flex items-center gap-1 rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-2 py-1 text-caption sm:text-caption font-medium text-[var(--color-primary-700)] hover:bg-[var(--color-primary-100)] disabled:opacity-50 transition-colors"
           >
             {uploading ? <Loader2 size={11} className="animate-spin" /> : <ImagePlus size={11} />}
-            {uploading ? "Uploading…" : url ? "Replace" : "Upload AR slip"}
+            {uploading ? (onExtract ? "Reading slip…" : "Uploading…") : url ? "Replace" : "Upload AR slip"}
           </button>
         )}
         {editable && url && (
@@ -545,6 +565,17 @@ function ArSlipUpload({
         )}
       </div>
       {error && <p className="text-caption text-red-600" role="alert">{error}</p>}
+      {filled && (
+        <div data-overview-hide className="max-w-[340px] rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-caption text-amber-900 text-left" role="status">
+          <p className="font-medium">Filled from the AR slip. Please check it against the slip.</p>
+          {toCheck.length > 0 && <p className="mt-0.5">Double check: {toCheck.join(", ")}.</p>}
+          {filled.r.notes.map((n) => <p key={n} className="mt-0.5">{n}</p>)}
+          <div className="mt-1 flex gap-3">
+            <button type="button" className="font-semibold underline" onClick={() => { filled.undo(); setFilled(null); }}>Undo</button>
+            <button type="button" className="font-semibold underline" onClick={() => setFilled(null)}>OK</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -692,6 +723,32 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
 
   const setExtra = (idx: number, fn: (prev: CorrV2) => CorrV2) =>
     setExtras((prev) => prev.map((item, i) => i === idx ? fn(item) : item));
+
+  // Fills the active method's eyes from an AR slip. Only the fields the slip gave are
+  // touched; the returned function puts those fields back as they were.
+  const applyAr = (setCorr: (fn: (prev: CorrV2) => CorrV2) => void) => (r: ArExtraction) => {
+    const saved: { re: Partial<RxEye>; le: Partial<RxEye> } = { re: {}, le: {} };
+    let method = "";
+    const fill = (eye: RxEye, vals: Partial<Record<ArKey, string>>, into: Partial<RxEye>, isAr: boolean): RxEye => {
+      const next: RxEye = { ...eye };
+      for (const k of Object.keys(vals) as ArKey[]) {
+        if ((k === "k1" || k === "k2") && !isAr) continue; // keratometry only shows for Auto-Refraction
+        into[k] = eye[k] ?? "";
+        next[k] = vals[k]!;
+      }
+      return next;
+    };
+    setCorr((prev) => {
+      method = prev.activeMethod;
+      const isAr = method === "Auto-Refraction";
+      return patchEntry(prev, (ent) => ({ ...ent, re: fill(ent.re, r.re.values, saved.re, isAr), le: fill(ent.le, r.le.values, saved.le, isAr) }));
+    });
+    return () => setCorr((prev) => {
+      const ent = prev.methods[method];
+      if (!ent) return prev;
+      return { ...prev, methods: { ...prev.methods, [method]: { ...ent, re: { ...ent.re, ...saved.re }, le: { ...ent.le, ...saved.le } } } };
+    });
+  };
 
   const addCorrection = () =>
     setExtras((prev) => [...prev, { label: `Refraction ${prev.length + 2}`, activeMethod: DEFAULT_REFRACTION_METHOD, methods: {} }]);
@@ -891,6 +948,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
             editable={editable}
             label="Refraction 1"
             onChange={(url) => setC1((prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
+            onExtract={applyAr(setC1)}
           />}
           {priorRefractions.length > 0 && (
             <button
@@ -948,6 +1006,7 @@ function RefractionCard({ visit, udid, editable, priorVisits = [] }: { visit: an
                 editable={editable}
                 label={(ex.label || "Refraction").replace(/^Correction/i, "Refraction")}
                 onChange={(url) => setExtra(idx, (prev) => patchEntry(prev, (ent) => ({ ...ent, arSlipUrl: url })))}
+                onExtract={applyAr((fn) => setExtra(idx, fn))}
               />}
               {editable && (
                 <button
