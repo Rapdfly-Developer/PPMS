@@ -130,10 +130,10 @@ function CounsellingView({ r, onClose }: { r: UpcomingRow; onClose: () => void }
             {line("Date of surgery", day(r.dateOfSurgery))}
           </>)}
           {section("Fitness", <>
-            {line("Eligible for surgery", [r.fitByName, day(r.fitAt)].filter(Boolean).join(" · ") || "Yes")}
+            {line("Proceed for surgery", [r.fitByName, day(r.fitAt)].filter(Boolean).join(" · ") || "Yes")}
             {line("Investigations", r.investigationDetails)}
             {line("Reports valid until", day(r.reportsValidUntil))}
-            {line("Eligible for surgery", "Pending")}
+            {line("Proceed for surgery", "Pending")}
           </>)}
         </div>
       </div>

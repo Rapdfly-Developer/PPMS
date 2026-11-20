@@ -60,7 +60,10 @@ export function ConsentPrintBody({ c, doctor, qualifications }: { c: ConsentItem
       <div className="mt-5 grid grid-cols-2 gap-x-10">
         <WriteLine label="Explained in (language):" value={c.language} tall />
         <WriteLine label="Explained by:" value={c.explainedBy} tall />
+        <WriteLine label="Explained to:" value={c.explainedTo} tall />
+        <WriteLine label="Understood (teach-back):" value={c.teachBack ? "Yes" : undefined} tall />
       </div>
+      {c.notes?.trim() && <p className="mt-3 text-[12.5px] leading-relaxed"><b>Notes: </b>{c.notes}</p>}
 
       {/* Pushed to the bottom of the page; the space above is left for writing */}
       <div className="mt-auto pt-10 grid grid-cols-3 gap-10 break-inside-avoid">

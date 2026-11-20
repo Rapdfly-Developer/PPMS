@@ -75,6 +75,10 @@ export interface ConsentItem {
   witness?: string;
   language?: string;
   explainedBy?: string;
+  /** Who the consent was explained to, whether they understood (teach-back), and notes. */
+  explainedTo?: string;
+  teachBack?: boolean;
+  notes?: string;
   signedAt?: string;
   recordedBy?: string;
   /** Older entries only. */
@@ -574,6 +578,8 @@ export interface EduSet { id: string; title: string; points: EduPoint[] }
 /** A medicine in the EMR prescription format. */
 export interface EduMed {
   id: string; route: string; eye: string; name: string; dose: string; frequency: string; duration: string; instructions: string;
+  /** Explained to the patient (ticked like the points). */
+  done?: boolean;
 }
 /** Education and diet for one stage (pre-op or post-op). */
 export interface EducationStage {
@@ -590,6 +596,10 @@ export interface EducationStage {
   meals: Meal[];
   /** How many days the diet is followed: before surgery (pre-op) or from the day of surgery (post-op). */
   dietDays?: string;
+  /** A note under the diet (keywords or typed). */
+  dietNote?: string;
+  /** A different meal plan for particular days of the diet window, keyed by IST date (YYYY-MM-DD); other days use `meals`. */
+  dietByDate?: Record<string, Meal[]>;
 }
 /**
  * The top-level fields are the post-op stage (what older sheets held and what
@@ -603,7 +613,7 @@ export interface EducationData extends EducationStage {
 
 /** One-line medicine, as printed. */
 export const eduMedText = (m: EduMed) =>
-  [m.name, m.eye && m.route !== "Oral" ? m.eye : "", m.dose, m.frequency, m.duration && `for ${m.duration}`, m.instructions].filter(Boolean).join(" · ");
+  [m.eye && m.route !== "Oral" ? m.eye : "", m.name, m.dose, m.frequency, m.duration && `for ${m.duration}`, m.instructions].filter(Boolean).join(" · ");
 
 export const DEFAULT_MEALS: Meal[] = [
   { meal: "Early morning", time: "06:00", diet: "Tea / coffee / milk" },
@@ -708,7 +718,7 @@ function foldSets(s: EducationStage): EducationStage {
 export const postStage = (e: EducationStage): EducationStage => ({
   preset: e.preset, points: e.points, sets: e.sets, meds: e.meds,
   explainedTo: e.explainedTo, language: e.language, teachBack: e.teachBack, notes: e.notes,
-  dietTypes: e.dietTypes, nbmFrom: e.nbmFrom, meals: e.meals, dietDays: e.dietDays,
+  dietTypes: e.dietTypes, nbmFrom: e.nbmFrom, meals: e.meals, dietDays: e.dietDays, dietNote: e.dietNote, dietByDate: e.dietByDate,
 });
 
 const DAY_MS = 24 * 3600 * 1000;
@@ -719,8 +729,8 @@ export function dayDate(d: Date | string, year = true): string {
 }
 
 /**
- * When a stage's diet is followed: pre-op, the N days before the surgery day;
- * post-op, N days from the surgery day. Null without a surgery date or days.
+ * When a stage's diet is followed: pre-op, the N days before the surgery day up to and including it;
+ * post-op, N days starting on the surgery day. Null without a surgery date or days.
  */
 export function dietWindow(stage: EduStageKey, days: string | undefined, surgeryDate: string | null): { from: Date; to: Date; surgery: Date } | null {
   const n = Number(days);
@@ -728,8 +738,54 @@ export function dietWindow(stage: EduStageKey, days: string | undefined, surgery
   const surgery = new Date(surgeryDate.length === 10 ? `${surgeryDate}T00:00:00+05:30` : surgeryDate);
   if (isNaN(surgery.getTime())) return null;
   return stage === "pre"
-    ? { from: new Date(surgery.getTime() - n * DAY_MS), to: new Date(surgery.getTime() - DAY_MS), surgery }
+    ? { from: new Date(surgery.getTime() - n * DAY_MS), to: surgery, surgery }
     : { from: surgery, to: new Date(surgery.getTime() + (n - 1) * DAY_MS), surgery };
+}
+
+/** The IST calendar day (YYYY-MM-DD) of an instant. */
+export const istKey = (d: Date): string => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+
+/** Every day of the diet window, as IST dates (empty without a surgery date or days). */
+export function dietDateKeys(stage: EduStageKey, days: string | undefined, surgeryDate: string | null): string[] {
+  const w = dietWindow(stage, days, surgeryDate);
+  if (!w) return [];
+  const keys: string[] = [];
+  for (let t = w.from.getTime(); t <= w.to.getTime() + 1000 && keys.length < 120; t += DAY_MS) keys.push(istKey(new Date(t)));
+  return keys;
+}
+
+/** The meal plan of one day: its own plan when set, else the stage's standard one. */
+export const mealsOn = (s: EducationStage, key: string | null | undefined): Meal[] => (key && s.dietByDate?.[key]) || s.meals;
+
+export interface DietMatrix {
+  cols: { key: string; label: string; surgery: boolean }[];
+  rows: { meal: string; cells: ({ time: string; diet: string } | null)[] }[];
+}
+/** Meals (rows) by dates (columns): the whole diet at a glance. One plain column without dates. */
+export function dietMatrix(s: EducationStage, stage: EduStageKey, surgeryDate: string | null, merge = true): DietMatrix {
+  const keys = dietDateKeys(stage, s.dietDays, surgeryDate);
+  const surgeryKey = keys.length && surgeryDate ? istKey(new Date(surgeryDate.length === 10 ? `${surgeryDate}T00:00:00+05:30` : surgeryDate)) : "";
+  // Days with the same plan run together as one column ("14 Nov, Sat to 22 Nov, Sun"); the surgery day stays its own
+  const sig = (k: string) => JSON.stringify(mealsOn(s, k).filter((m) => m.meal.trim() && m.diet.trim()).map((m) => [m.meal.trim(), m.time, m.diet.trim()]));
+  const groups: string[][] = [];
+  for (const k of keys) {
+    const last = groups[groups.length - 1];
+    if (merge && last && k !== surgeryKey && last[0] !== surgeryKey && sig(last[0]) === sig(k)) last.push(k);
+    else groups.push([k]);
+  }
+  const cols = groups.length
+    ? groups.map((g) => ({ key: g[0], label: g.length > 1 ? `${dayDate(g[0], false)} to ${dayDate(g[g.length - 1], false)}` : dayDate(g[0], false), surgery: g.includes(surgeryKey) }))
+    : [{ key: "", label: "Plan", surgery: false }];
+  const plans = cols.map((col) => mealsOn(s, col.key));
+  const names: string[] = [];
+  for (const p of plans) for (const m of p) { const n = m.meal.trim(); if (n && m.diet.trim() && !names.includes(n)) names.push(n); }
+  return {
+    cols,
+    rows: names.map((meal) => ({
+      meal,
+      cells: plans.map((p) => { const m = p.find((x) => x.meal.trim() === meal); return m && m.diet.trim() ? { time: m.time, diet: m.diet } : null; }),
+    })),
+  };
 }
 
 /** "5 days", "2 weeks", "1 month" → days; null when it can't be read (e.g. "Long-term"). */
@@ -751,6 +807,25 @@ export function medDates(stage: EduStageKey, duration: string | undefined, surge
   return w ? `${dayDate(w.from, false)} → ${dayDate(w.to)}` : "";
 }
 
+/**
+ * The dates for a duration written inside a point ("Use the drops for 2 weeks"):
+ * pre-op, the days up to the surgery day; post-op, from the surgery day.
+ * "" when the point names no duration or there is no surgery date.
+ */
+export function pointDates(stage: EduStageKey, text: string, surgeryDate: string | null): string {
+  const m = text.match(/\b(\d+)\s*(day|week|month|year)s?\b/i);
+  return m ? medDates(stage, `${m[1]} ${m[2].toLowerCase()}s`, surgeryDate) : "";
+}
+
+/** The point with its dates in brackets right after the duration: "Do not apply oil for 2 weeks (29 Oct, Thu to 12 Nov 2026, Thu)". */
+export function pointWithDates(stage: EduStageKey, text: string, surgeryDate: string | null): string {
+  const m = text.match(/(d+)s*(day|week|month|year)s?/i);
+  const d = pointDates(stage, text, surgeryDate);
+  if (!m || m.index === undefined || !d) return text;
+  const at = m.index + m[0].length;
+  return `${text.slice(0, at)} (${d})${text.slice(at)}`;
+}
+
 /** The diet window as one sentence, for prints and summaries. */
 export function dietStory(stage: EduStageKey, days: string | undefined, surgeryDate: string | null): string {
   const n = Number(days);
@@ -759,7 +834,7 @@ export function dietStory(stage: EduStageKey, days: string | undefined, surgeryD
   const dd = `${n} day${n > 1 ? "s" : ""}`;
   if (!w) return stage === "pre" ? `Follow this diet for ${dd} before the surgery.` : `Follow this diet for ${dd} from the day of surgery.`;
   return stage === "pre"
-    ? `From ${dayDate(w.from, false)} to ${dayDate(w.to)} (${dd}), the days before surgery on ${dayDate(w.surgery)}.`
+    ? `From ${dayDate(w.from, false)} to ${dayDate(w.to)}, the surgery day (${dd} before surgery).`
     : `From the surgery day, ${dayDate(w.from, false)}, to ${dayDate(w.to)} (${dd}).`;
 }
 

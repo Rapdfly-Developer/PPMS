@@ -16,7 +16,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { useSidebar } from "@/components/ui/SidebarContext";
 import { CONSENT_DECLARATION, educationStage, prebuiltConsents, stagePoints, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
-import { EducationForm, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
+import { CONSENT_NOTE_CHIPS, EducationForm, ExplainPanel, type FileInfo } from "../../ipd/[admissionId]/IpdForms";
 import type { SavedTemplate } from "../../ipd/[admissionId]/templatesUi";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
 import { MatchHighlight } from "@/components/ui/MatchHighlight";
@@ -92,6 +92,8 @@ export interface CounsellingDetailData {
     coveredAmount: number | null;
     advancePaid: number | null;
     advanceReceived: boolean;
+    plannedAdmitDate: string;
+    plannedAdmitTime: string;
     preOpTime: string;
     fitForSurgery: boolean;
     eligibleForSurgery: boolean;
@@ -315,11 +317,11 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
       {order.laterality ?? ""}
     </span>
   );
-  const nameBox = <InfoBox className="font-semibold text-[var(--color-ink-900)]">{order.testName}</InfoBox>;
+  const nameBox = <p className="min-w-0 text-label font-semibold leading-snug text-[var(--color-ink-900)]">{order.testName}</p>;
   const inViewOfBox = (
-    <InfoBox className="border-dashed italic text-[var(--color-ink-600)]">
+    <p className="min-w-0 text-label italic leading-snug text-[var(--color-ink-600)]">
       <span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}
-    </InfoBox>
+    </p>
   );
 
   // Report not uploaded: one bar
@@ -328,7 +330,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
       <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]">
         <div className="flex flex-wrap items-center gap-2">
           {lateralityBadge}
-          <div className="min-w-[8rem] flex-1">{nameBox}</div>
+          <div className="min-w-[8rem] max-w-[14rem] flex-none">{nameBox}</div>
           <div className="min-w-[8rem] flex-1">{inViewOfBox}</div>
           <PriorityPill priority={order.priority} />
           <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
@@ -350,7 +352,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
     <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]">
       <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
         {lateralityBadge}
-        <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5">
+        <div className="flex min-w-[8rem] max-w-[14rem] flex-none flex-col items-start gap-1.5">
           <div className="w-full">{nameBox}</div>
           <PriorityPill priority={order.priority} />
         </div>
@@ -804,6 +806,9 @@ export function CounsellingDetail({
   const [advance, setAdvance]           = useState(rec.advancePaid != null ? String(rec.advancePaid) : "");
   const [tickOnly, setTickOnly]         = useState(rec.advanceReceived && rec.advancePaid == null);
   const [advanceReceived, setAdvanceReceived] = useState(rec.advanceReceived);
+  // Noted once the advance is paid; information only
+  const [admitDate, setAdmitDate] = useState(rec.plannedAdmitDate ?? "");
+  const [admitTime, setAdmitTime] = useState(rec.plannedAdmitTime ?? "");
   const [preOpTime, setPreOpTime] = useState(rec.preOpTime || (data.preOp ? format(new Date(data.preOp.dateTime), "HH:mm") : ""));
 
   const [sheet, setSheet] = useState<SheetId>("sheet");
@@ -837,7 +842,8 @@ export function CounsellingDetail({
   const advanceNum = advance === "" ? null : Number(advance);
   const advancePayload = tickOnly ? { advancePaid: null, advanceReceived } : { advancePaid: advanceNum, advanceReceived: (advanceNum ?? 0) > 0 };
   const advanceEditable = canEdit && rec.fitForSurgery && !expired;
-  const advanceDirty = advanceEditable && JSON.stringify(advancePayload) !== JSON.stringify({ advancePaid: rec.advancePaid, advanceReceived: rec.advanceReceived });
+  const admitPayload = { plannedAdmitDate: admitDate || null, plannedAdmitTime: admitTime || null };
+  const advanceDirty = advanceEditable && JSON.stringify({ ...advancePayload, ...admitPayload }) !== JSON.stringify({ advancePaid: rec.advancePaid, advanceReceived: rec.advanceReceived, plannedAdmitDate: rec.plannedAdmitDate || null, plannedAdmitTime: rec.plannedAdmitTime || null });
   const sheetDirty = sheetsEditable && snapshot !== savedSnapshot;
   const preOpDirty = canEdit && preOpTime !== (rec.preOpTime || (data.preOp ? format(new Date(data.preOp.dateTime), "HH:mm") : ""));
   const dirty = sheetDirty || advanceDirty || preOpDirty;
@@ -858,7 +864,7 @@ export function CounsellingDetail({
       setSavedSnapshot(snapshot);
     }
     if (advanceDirty) {
-      const r = await saveAdvance(data.visitId, advancePayload);
+      const r = await saveAdvance(data.visitId, { ...advancePayload, ...admitPayload });
       if (r.error) return r.error;
     }
     // Books, moves or cancels the pre-op appointment to match what was just saved (not when printing)
@@ -905,7 +911,6 @@ export function CounsellingDetail({
         ]
       : implantFieldsFor(implantKind).filter((f) => f.required).map((f) => !implantInfo[f.key].trim() && f.label)),
     !paymentType && "Payment type",
-    !!cashless && !paymentMode && "Out of Pocket or Covered",
     !!cashless && !schemeName.trim() && cashless.nameLabel,
     !!cashless && !policyNumber.trim() && cashless.idLabel,
     rec.fitForSurgery && !advanceDone && "Advance payment",
@@ -965,7 +970,7 @@ export function CounsellingDetail({
       className="inline-flex items-center gap-1.5 h-7 pl-2 pr-3 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 shadow-[0_1px_2px_rgba(180,83,9,0.12)] hover:bg-amber-100 hover:border-amber-400 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 transition-[background-color,border-color,transform]"
     >
       <span className="grid place-items-center w-4 h-4 rounded-full bg-amber-500 text-white"><Check size={10} strokeWidth={3} /></span>
-      Proceed for Eligibility
+      Proceed for Surgery
     </button>
   );
 
@@ -1079,6 +1084,7 @@ export function CounsellingDetail({
           </div>
         )}
         {!c.signedFile && <p className="rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>}
+        <ExplainPanel value={c} onChange={(p) => setConsentItem(c.id, p)} editable={sheetsEditable && !isConsentLocked(c)} noteChips={CONSENT_NOTE_CHIPS} noteKey="consent_notes" className="" />
       </div>
     </section>
   );
@@ -1099,7 +1105,7 @@ export function CounsellingDetail({
         {data.surgeryNotes && (
           <div className="mb-3">
             <InlineField label="Surgery Notes" tight>
-              <p className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60 px-3 py-2 text-sm text-[var(--color-ink-800)] whitespace-pre-line break-words">
+              <p className="py-1 text-sm italic text-[var(--color-ink-800)] whitespace-pre-line break-words">
                 {data.surgeryNotes.replace(/•\s*/g, "").split("\n").map((x) => x.trim()).filter(Boolean).join("\n")}
               </p>
             </InlineField>
@@ -1225,7 +1231,7 @@ export function CounsellingDetail({
       </SectionCard>
 
       {/* ── C & D ─────────────────────────────────────────────────── */}
-      <SectionCard step={3} defaultOpen={!!paymentType || !!estimate.trim()} icon={<Wallet size={15} />} title="Payment">
+      <SectionCard step={3} defaultOpen={!!paymentType || !!estimate.trim()} icon={<Wallet size={15} />} title="Payment Plan">
         {/* 1. Type of payment */}
         <InlineField label="Payment type">
           <div className="flex flex-wrap gap-1.5">
@@ -1250,28 +1256,6 @@ export function CounsellingDetail({
             })}
           </div>
         </InlineField>
-
-        {/* 2. Out of Pocket or Covered (Self is always Out of Pocket) */}
-        {cashless && (
-          <div className="mt-3">
-            <InlineField label="Paid as">
-              <div className="inline-flex rounded-full border border-[var(--color-border)] bg-[var(--color-surface-sunken)] p-0.5">
-                {PAYMENT_MODES.map((m) => {
-                  const active = paymentMode === m.value;
-                  return (
-                    <button key={m.value} type="button" disabled={!editable} onClick={() => setPaymentMode(m.value)}
-                      className={`h-7 inline-flex items-center gap-1.5 px-3.5 rounded-full text-xs font-semibold transition-colors disabled:cursor-default ${
-                        active ? "bg-white text-[var(--color-primary-700)] shadow-sm" : "text-[var(--color-ink-500)] hover:text-[var(--color-ink-700)]"
-                      }`}>
-                      {m.value === "CASH" ? <Banknote size={13} /> : <CreditCard size={13} />}
-                      {m.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </InlineField>
-          </div>
-        )}
 
         <div className="mt-3">
           <InlineField label="Estimate (optional)">
@@ -1340,7 +1324,7 @@ export function CounsellingDetail({
       {/* ── G ─────────────────────────────────────────────────────── */}
       <SectionCard
         step={4} defaultOpen={advance.trim() !== "" || advanceReceived} icon={<IndianRupee size={15} />} title="Advance Payment"
-        locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Eligibility for Surgery"}
+        locked={!rec.fitForSurgery || expired} lockedText={expired ? "Locked: reports expired. Reopen counselling first" : "Unlocks after Proceed for Surgery"}
         right={advanceDone ? <DoneTag tone="primary">Recorded</DoneTag> : null}
       >
         {(
@@ -1425,6 +1409,32 @@ export function CounsellingDetail({
         )}
       </SectionCard>
 
+      {/* Once the advance is paid: note when the patient is to be admitted (information only) */}
+      {(advanceDone || advancePayload.advanceReceived || (advanceNum ?? 0) > 0) && (
+        <section className="overflow-hidden rounded-2xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)]/50 px-5 py-4 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[var(--color-primary-600)] text-white"><CalendarClock size={14} /></span>
+            <p className="text-sm font-semibold text-[var(--color-ink-900)]">
+              {advancePayload.advancePaid != null && advancePayload.advancePaid > 0 ? `Advance of ${rupees(advancePayload.advancePaid)} is paid` : "Advance is received"}
+              <span className="font-normal text-[var(--color-ink-600)]">. Note the date and time of admission.</span>
+            </p>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label className="flex items-center gap-2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-500)]">Admission date</span>
+              <input type="date" value={admitDate} disabled={!canEdit} onChange={(e) => setAdmitDate(e.target.value)}
+                className="h-9 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-sm text-[var(--color-ink-900)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+            </label>
+            <label className="flex items-center gap-2">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-500)]">Admission time</span>
+              <input type="time" value={admitTime} disabled={!canEdit} onChange={(e) => setAdmitTime(e.target.value)}
+                className="h-9 w-32 rounded-lg border border-[var(--color-border)] bg-white px-2.5 text-sm tabular-nums text-[var(--color-ink-900)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+            </label>
+          </div>
+          {canEdit && <p className="mt-2 text-caption text-[var(--color-ink-400)]">Only a note. Saved with the Save button below; it does not change the IPD admission.</p>}
+        </section>
+      )}
+
     </div>
   );
 
@@ -1436,15 +1446,15 @@ export function CounsellingDetail({
         {rec.fitForSurgery ? (
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="flex flex-wrap items-center gap-2 text-sm text-[var(--color-ink-700)]">
-              <DoneTag tone="amber">Eligible for surgery</DoneTag>
+              <DoneTag tone="amber">Proceed for surgery</DoneTag>
               <span>
-              Marked eligible by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
+              Marked to proceed by <b>{rec.fitByName ?? "-"}</b>{rec.fitAt ? <> on {fmtDateTime(rec.fitAt)}</> : ""}
               {validUntil && <span className="text-[var(--color-ink-500)]"> · Reports valid till {fmtDate(validUntil)}</span>}
               </span>
             </p>
             {canFit && (
               <button className={`${btnOutline} !h-8 !py-0 text-xs`} disabled={pending} onClick={() => { setError(""); setModal("revertFit"); }}>
-                <RotateCcw size={13} /> Revert Eligibility
+                <RotateCcw size={13} /> Revert Proceed
               </button>
             )}
           </div>
@@ -1740,6 +1750,7 @@ export function CounsellingDetail({
               docs={cashless ? paymentDocs : []}
               estimate={estimateNum != null ? rupees(estimateNum) : ""}
               advance={advancePayload.advancePaid != null ? rupees(advancePayload.advancePaid) : advancePayload.advanceReceived ? "Received" : ""}
+              admitAt={admitDate ? `${format(new Date(`${admitDate}T00:00:00`), "d MMM yyyy, EEE")}${admitTime ? `, ${format(new Date(`2000-01-01T${admitTime}:00`), "h:mm a")}` : ""}` : ""}
               fit={rec.fitForSurgery} fitBy={rec.fitByName} fitAt={rec.fitAt}
               orders={currentOrders} consents={consents.items} education={education}
             />
@@ -1755,7 +1766,7 @@ export function CounsellingDetail({
               advanceDone ? "bg-emerald-50 border-emerald-200 text-emerald-700" : rec.fitForSurgery ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-[var(--color-surface-sunken)] border-[var(--color-border)] text-[var(--color-ink-500)]"
             }`}>
               <IndianRupee size={12} />
-              {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Eligibility for Surgery"}
+              {advanceDone ? "Advance recorded" : rec.fitForSurgery ? "Advance pending" : "Payment after Proceed for Surgery"}
             </span>
           {canEdit && (
             <span className={`text-xs font-medium ${dirty ? "text-amber-700" : savedFlash ? "text-emerald-700" : "text-[var(--color-ink-400)]"}`}>
@@ -1787,20 +1798,20 @@ export function CounsellingDetail({
         />
       )}
       {modal === "revertFit" && (
-        <Modal title="Revert Eligibility for Surgery?" onClose={() => setModal(null)}>
+        <Modal title="Revert Proceed for Surgery?" onClose={() => setModal(null)}>
           <p className="text-sm text-[var(--color-ink-700)]">The patient goes back to Pending and the reports validity is cleared. An upcoming pre-op appointment is cancelled and the patient leaves IPD Upcoming. The advance stays recorded.</p>
           {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
           <div className="mt-4 flex justify-end gap-2">
             <button className={btnOutline} disabled={pending} onClick={() => setModal(null)}>Cancel</button>
             <button className={`${btnOutline} !border-red-300 !text-red-700 hover:!bg-red-50`} disabled={pending}
               onClick={() => run(() => revertFitForSurgery(data.visitId), () => setModal(null))}>
-              <RotateCcw size={14} /> Revert Eligibility
+              <RotateCcw size={14} /> Revert Proceed
             </button>
           </div>
         </Modal>
       )}
       {modal === "fit" && (
-        <Modal title="Confirm Eligibility for Surgery" onClose={() => setModal(null)} wide>
+        <Modal title="Confirm Proceed for Surgery" onClose={() => setModal(null)} wide>
           <div className="grid grid-cols-1 gap-3">
             {/* Surgery */}
             <ConfirmCard icon={<Scissors size={13} />} title="Surgery">
@@ -1818,7 +1829,7 @@ export function CounsellingDetail({
             </ConfirmCard>
 
             {/* Payment */}
-            <ConfirmCard icon={<Wallet size={13} />} title="Payment">
+            <ConfirmCard icon={<Wallet size={13} />} title="Payment Plan">
               <ConfirmLine inline label="Option">{paymentLabel(paymentMode, paymentType) || "-"}</ConfirmLine>
               {cashless && schemeName && <ConfirmLine inline label={cashless.nameLabel}>{schemeName}</ConfirmLine>}
               {cashless && policyNumber && <ConfirmLine inline label={cashless.idLabel}>{policyNumber}</ConfirmLine>}
@@ -1871,7 +1882,7 @@ export function CounsellingDetail({
                 if (err) return { error: err };
                 return markFitForSurgery(data.visitId);
               }, () => setModal(null))}>
-              <ShieldCheck size={15} /> Confirm Eligibility for Surgery
+              <ShieldCheck size={15} /> Confirm Proceed for Surgery
             </button>
           </div>
         </Modal>

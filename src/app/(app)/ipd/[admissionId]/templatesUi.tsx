@@ -587,7 +587,7 @@ export function EducationEditDialog({ stage, surgery, current, others, templates
   return (
     <>
       <button type="button" onClick={() => setOpen(true)} title="Edit education" aria-label="Edit education"
-        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-200)] bg-white hover:bg-[var(--color-primary-50)] transition-colors focus:outline-none focus-visible:ring-2"><Pencil size={14} /></button>
+      className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-200)] bg-white hover:bg-[var(--color-primary-50)] transition-colors focus:outline-none focus-visible:ring-2"><Pencil size={14} /></button>
       {open && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
           <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
@@ -695,6 +695,134 @@ export function EducationEditDialog({ stage, surgery, current, others, templates
             </div>
           </div>
         </div>, document.body
+      )}
+    </>
+  );
+}
+
+/* ── Education sets dialog: every set for every surgery, with search ────── */
+
+/**
+ * The pencil on the education card, like the EMR protocol list: this surgery's
+ * sets first, then every other surgery's, then the doctor's own. Search narrows
+ * the list, a row opens to show its points, "Use" puts the set on the sheet,
+ * and "New set" saves a custom one.
+ */
+export function EducationSetsDialog({ stage, surgery, standard, others, templates, active, onUse }: {
+  stage: "pre" | "post";
+  surgery: string | null;
+  standard: { id: string; label: string; points: string[] }[];
+  others: { id: string; label: string; points: string[] }[];
+  templates: SavedTemplate[];
+  active?: string;
+  onUse: (label: string, points: string[]) => void;
+}) {
+  const router = useRouter();
+  const kind = stage === "pre" ? "EDUCATION_PRE" : "EDUCATION";
+  const stageText = stage === "pre" ? "Pre-op" : "Post-op";
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const [pending, start] = useTransition();
+
+  const groups = useMemo(() => {
+    const mine = templates.filter((t) => t.kind === kind).map((t) => ({ id: t.id, label: t.name, sub: t.surgery ? `My set · ${t.surgery}` : "My set", points: t.items }));
+    const all = [
+      { title: surgery ? `For ${surgery}` : "For this surgery", sets: standard.map((x) => ({ id: x.id, label: x.label, sub: "Prebuilt", points: x.points })) },
+      { title: "Other surgeries", sets: others.map((x) => ({ id: x.id, label: x.label, sub: "Prebuilt", points: x.points })) },
+      { title: "My sets", sets: mine },
+    ];
+    const t = q.trim().toLowerCase();
+    return all.map((g) => ({ ...g, sets: t ? g.sets.filter((s) => `${s.label} ${s.sub} ${s.points.join(" ")}`.toLowerCase().includes(t)) : g.sets })).filter((g) => g.sets.length > 0);
+  }, [q, standard, others, templates, kind, surgery]);
+
+  const close = () => { setOpen(false); setQ(""); setOpenId(null); setCreating(false); setName(""); setText(""); setError(""); };
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const saveNew = () => start(async () => {
+    const r = await saveIpdTemplate(kind, name, surgery, lines);
+    if (r.error) { setError(r.error); return; }
+    onUse(name.trim(), lines);
+    router.refresh();
+    close();
+  });
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} title="Education sets" aria-label="Education sets"
+        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-200)] bg-white hover:bg-[var(--color-primary-50)] transition-colors focus:outline-none focus-visible:ring-2"><Pencil size={14} /></button>
+      {open && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+          <div className="flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--color-ink-900)]">{stageText} education sets</p>
+              <button type="button" onClick={close} aria-label="Close" className="p-1.5 rounded-full text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+            </div>
+
+            {creating ? (
+              <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-4">
+                <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Name this set" className={inp} />
+                <textarea value={text} onChange={(e) => setText(e.target.value)} rows={7} placeholder="One point per line" className={`${inp} resize-none`} />
+                {error && <p className="text-xs text-red-600">{error}</p>}
+                <div className="flex justify-end gap-1.5">
+                  <button type="button" onClick={() => { setCreating(false); setError(""); }} className={btnG}>Cancel</button>
+                  <button type="button" disabled={pending || !name.trim() || lines.length === 0} onClick={saveNew}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                    {pending && <Loader2 size={12} className="animate-spin" />} Save and use
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
+                  <div className="relative min-w-0 flex-1">
+                    <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)]" />
+                    <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search sets or surgeries" className={`${inp} pl-8`} />
+                  </div>
+                  <button type="button" onClick={() => setCreating(true)} className={btnG}><Plus size={12} /> New set</button>
+                </div>
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3">
+                  {groups.length === 0 && <p className="py-6 text-center text-sm text-[var(--color-ink-400)]">No sets match.</p>}
+                  {groups.map((g) => (
+                    <Fragment key={g.title}>
+                      <p className="px-1 pt-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{g.title}</p>
+                      {g.sets.map((x) => {
+                        const expanded = openId === x.id;
+                        const inUse = x.label === active;
+                        return (
+                          <div key={x.id} className={`rounded-xl border ${inUse ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/40" : "border-[var(--color-border)] bg-white"}`}>
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <button type="button" onClick={() => setOpenId(expanded ? null : x.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                                <ChevronDown size={14} className={`shrink-0 text-[var(--color-ink-400)] transition-transform ${expanded ? "" : "-rotate-90"}`} />
+                                <span className="min-w-0">
+                                  <span className="block truncate text-[13px] font-semibold text-[var(--color-ink-900)]"><MatchHighlight text={x.label} term={q} /></span>
+                                  <span className="block text-[11px] text-[var(--color-ink-400)]">{x.sub} · {x.points.length} points</span>
+                                </span>
+                              </button>
+                              {inUse
+                                ? <span className="rounded-full bg-[var(--color-primary-100)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-primary-700)]">In use</span>
+                                : <button type="button" onClick={() => { onUse(x.label, x.points); close(); }}
+                                    className="inline-flex h-8 items-center rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)]">Use</button>}
+                            </div>
+                            {expanded && (
+                              <ol className="list-decimal space-y-1 border-t border-[var(--color-border)]/70 px-3 py-2 pl-8 text-[12.5px] text-[var(--color-ink-700)]">
+                                {x.points.map((p, i) => <li key={i}>{p}</li>)}
+                              </ol>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body,
       )}
     </>
   );

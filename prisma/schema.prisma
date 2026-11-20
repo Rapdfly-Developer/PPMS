@@ -1529,6 +1529,9 @@ model CounsellingRecord {
 
   // 5. Advance
   advancePaid    Decimal? @db.Decimal(10, 2)
+  // Noted once the advance is paid: when the patient is to be admitted (date YYYY-MM-DD, time HH:MM). Information only; the IPD workflow does not use it.
+  plannedAdmitDate String?
+  plannedAdmitTime String?
 
   // 6. Date of Surgery
   dateOfSurgery  DateTime?

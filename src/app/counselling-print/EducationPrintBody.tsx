@@ -1,4 +1,4 @@
-import { dietStory, eduMedText, medDates, postStage, type EducationData, type EducationStage, type EduStageKey } from "@/lib/ipd-forms";
+import { dietMatrix, dietStory, eduMedText, medDates, pointWithDates, postStage, type EducationData, type EducationStage, type EduStageKey } from "@/lib/ipd-forms";
 
 const hm = (t: string) => {
   if (!/^\d{2}:\d{2}$/.test(t)) return t;
@@ -13,19 +13,20 @@ const h3 = "mt-3 mb-1.5 text-[12.5px] font-bold break-after-avoid";
 function StagePrint({ title, s, stage, surgeryDate, part }: { title: string; s: EducationStage; stage: EduStageKey; surgeryDate: string | null; part?: PrintPart }) {
   const story = dietStory(stage, s.dietDays, surgeryDate);
   const nbm = s.dietTypes.includes("Nil by mouth");
+  const matrix = dietMatrix(s, stage, surgeryDate, false);
   const meds = s.meds ?? [];
   return (
     <section>
       <h2 className={h2}>{title}</h2>
       {part !== "diet" && <>
       <ol className="list-decimal pl-5 space-y-1.5 text-[12.5px] leading-[1.6]">
-        {s.points.map((p, i) => <li key={i}>{p.text}</li>)}
+        {s.points.map((p, i) => <li key={i}>{pointWithDates(stage, p.text, surgeryDate)}</li>)}
       </ol>
       {(s.sets ?? []).filter((x) => x.points.length > 0).map((x) => (
         <div key={x.id} className="break-inside-avoid">
           <p className={h3}>{x.title}</p>
           <ol className="list-decimal pl-5 space-y-1.5 text-[12.5px] leading-[1.6]">
-            {x.points.map((p, i) => <li key={i}>{p.text}</li>)}
+            {x.points.map((p, i) => <li key={i}>{pointWithDates(stage, p.text, surgeryDate)}</li>)}
           </ol>
         </div>
       ))}
@@ -50,24 +51,36 @@ function StagePrint({ title, s, stage, surgeryDate, part }: { title: string; s: 
         {s.dietTypes.join(", ") || "-"}
         {nbm && s.nbmFrom && <> · <b>Nil by mouth from </b>{hm(s.nbmFrom)}</>}
       </p>
-      {!nbm && s.meals.length > 0 && (
-        <table className="w-full border-collapse text-[12px] break-inside-avoid">
+      {!nbm && matrix.rows.length > 0 && (
+        // Days run down the page and meals across, so a long diet still fits the width
+        <table className="w-full table-fixed border-collapse text-[11.5px]">
           <thead>
             <tr className="bg-gray-100">
-              {["Meal Plan", "Time", "Diet"].map((h) => <th key={h} className="border border-gray-400 px-2 py-1.5 text-left font-bold">{h}</th>)}
+              <th className="w-[19%] border border-gray-400 px-2 py-1.5 text-left font-bold">Date</th>
+              {matrix.rows.map((r) => <th key={r.meal} className="border border-gray-400 px-2 py-1.5 text-left font-bold">{r.meal}</th>)}
             </tr>
           </thead>
           <tbody>
-            {s.meals.map((m, i) => (
-              <tr key={i}>
-                <td className="border border-gray-400 px-2 py-1.5 font-semibold whitespace-nowrap">{m.meal}</td>
-                <td className="border border-gray-400 px-2 py-1.5 whitespace-nowrap">{hm(m.time)}</td>
-                <td className="border border-gray-400 px-2 py-1.5">{m.diet || "-"}</td>
+            {matrix.cols.map((col, ci) => (
+              <tr key={col.key || "plan"} className={`break-inside-avoid ${col.surgery ? "bg-gray-50" : ""}`}>
+                <td className="border border-gray-400 px-2 py-1.5 align-top font-semibold">
+                  {col.label}{col.surgery && <span className="ml-1 text-[9.5px] font-bold">(DOS)</span>}
+                </td>
+                {matrix.rows.map((r) => {
+                  const cell = r.cells[ci];
+                  return (
+                    <td key={r.meal} className="border border-gray-400 px-2 py-1.5 align-top leading-snug">
+                      {cell ? <>{cell.diet}{cell.time && <span className="block text-[10px] text-gray-500">{hm(cell.time)}</span>}</> : "-"}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       )}
+
+      {(s.dietNote ?? "").trim() && <p className="mt-2 text-[12.5px] leading-[1.6]"><b>Note: </b>{s.dietNote}</p>}
       </>}
     </section>
   );

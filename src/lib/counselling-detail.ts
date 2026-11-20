@@ -135,6 +135,8 @@ export async function loadCounsellingDetail(
       coveredAmount: rec?.coveredAmount != null ? Number(rec.coveredAmount) : null,
       advancePaid: rec?.advancePaid != null ? Number(rec.advancePaid) : null,
       advanceReceived: rec?.advanceReceived ?? false,
+      plannedAdmitDate: rec?.plannedAdmitDate ?? "",
+      plannedAdmitTime: rec?.plannedAdmitTime ?? "",
       preOpTime: rec?.preOpTime ?? "",
       fitForSurgery: rec?.fitForSurgery ?? false,
       eligibleForSurgery: rec?.eligibleForSurgery ?? false,

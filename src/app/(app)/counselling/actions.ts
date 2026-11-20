@@ -118,7 +118,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (nextDate && dateChanged && isPastDay(nextDate)) return { error: "The surgery date can't be in the past." };
   // After Fit the date must stay set and within the reports' 1-month validity.
   if (rec?.fitForSurgery && dateChanged) {
-    if (!nextDate) return { error: "The surgery date is required after Eligibility for surgery." };
+    if (!nextDate) return { error: "The surgery date is required after Proceed for surgery." };
     if (rec.reportsValidUntil && nextDate > rec.reportsValidUntil) {
       return { error: `The reports are valid only till ${toDateDay(rec.reportsValidUntil, "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
     }
@@ -207,7 +207,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
 
 export async function markFitForSurgery(visitId: string): Promise<Result & { validUntil?: string | null }> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.fit");
-  if (rec?.fitForSurgery) return { error: "Already marked eligible for surgery." };
+  if (rec?.fitForSurgery) return { error: "Already marked to proceed for surgery." };
   const dateOfSurgery = rec?.dateOfSurgery ?? visit.advisedSurgeryDate;
   if (!rec || !dateOfSurgery) return { error: "Set the tentative date of surgery first." };
   if (isPastDay(dateOfSurgery)) return { error: "The surgery date is in the past. Set a new tentative date first." };
@@ -262,9 +262,9 @@ export async function reopenCounselling(visitId: string): Promise<Result> {
  */
 export async function revertFitForSurgery(visitId: string): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
-  if (!rec?.fitForSurgery && !rec?.eligibleForSurgery) return { error: "Not marked eligible for surgery." };
+  if (!rec?.fitForSurgery && !rec?.eligibleForSurgery) return { error: "Not marked to proceed for surgery." };
   const admitted = await prisma.ipdAdmission.findFirst({ where: { counsellingVisitId: visitId }, select: { id: true } });
-  if (admitted) return { error: "The patient is already admitted to IPD from this counselling, so eligibility can't be reverted." };
+  if (admitted) return { error: "The patient is already admitted to IPD from this counselling, so Proceed for surgery can't be reverted." };
 
   await prisma.counsellingRecord.update({
     where: { visitId },
@@ -291,7 +291,7 @@ function emrCategory(testName: string): string {
 
 export async function addCounsellingInvestigations(visitId: string, tests: string[], inViewOf: string): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.addInvestigations");
-  if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked eligible for surgery." };
+  if (rec?.fitForSurgery || rec?.eligibleForSurgery) return { error: "Already marked to proceed for surgery." };
 
   const norm = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
   const existing = new Set(visit.investigationOrders.map((o) => norm(o.testName)));
@@ -318,7 +318,7 @@ export async function postponeSurgery(visitId: string, data: { until: string | n
   const { user, rec } = await loadVisit(visitId, "counselling.fit");
   if (rec?.eligibleForSurgery) return { error: "Counselling is already complete." };
   // Per the requirements this is the doctor's option at review, before Fit for surgery.
-  if (rec?.fitForSurgery) return { error: "Date not confirmed is chosen at the doctor's review, before Eligibility for surgery." };
+  if (rec?.fitForSurgery) return { error: "Date not confirmed is chosen at the doctor's review, before Proceed for surgery." };
   if (!data.indefinitely && !data.until) return { error: "Pick an expected date or choose Not decided yet." };
   if (!data.indefinitely && data.until && isPastDay(dayFromStr(data.until)!)) return { error: "The expected date can't be in the past." };
   if (!data.reason.trim()) return { error: "Enter the reason the date is not confirmed." };
@@ -352,13 +352,18 @@ export async function resumeCounselling(visitId: string): Promise<Result> {
 
 // ── G. Advance payment (after Fit for surgery) ──────────────────────────────
 
-export async function saveAdvance(visitId: string, data: { advancePaid: number | null; advanceReceived: boolean }): Promise<Result> {
+export async function saveAdvance(visitId: string, data: { advancePaid: number | null; advanceReceived: boolean; plannedAdmitDate?: string | null; plannedAdmitTime?: string | null }): Promise<Result> {
   const { user, rec } = await loadVisit(visitId, "counselling.edit");
-  if (!rec?.fitForSurgery) return { error: "Advance is recorded after Eligibility for surgery." };
+  if (!rec?.fitForSurgery) return { error: "Advance is recorded after Proceed for surgery." };
   if (rec.reportsValidUntil && rec.reportsValidUntil < new Date()) return { error: "Reports have expired. Reopen counselling first." };
   if (data.advancePaid !== null && !(data.advancePaid >= 0)) return { error: "Invalid advance amount." };
 
-  const patch = { advancePaid: data.advancePaid, advanceReceived: data.advanceReceived };
+  // The admission date and time are only noted here (the IPD workflow never reads them)
+  const date = data.plannedAdmitDate ?? null;
+  const time = data.plannedAdmitTime ?? null;
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Invalid admission date." };
+  if (time && !/^\d{2}:\d{2}$/.test(time)) return { error: "Invalid admission time." };
+  const patch = { advancePaid: data.advancePaid, advanceReceived: data.advanceReceived, plannedAdmitDate: date || null, plannedAdmitTime: time || null };
   await prisma.counsellingRecord.update({ where: { visitId }, data: patch });
   await writeAudit(user.id, "CounsellingRecord", visitId, "ADVANCE", patch);
   refresh(visitId);
@@ -522,7 +527,7 @@ export async function removeCounsellingExtraReport(visitId: string, orderId: str
 export async function rescheduleNoShow(visitId: string, date: string, retake: boolean): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.edit");
   if (!rec) return { error: "Counselling record not found." };
-  if (rec.eligibleForSurgery) return { error: "Counselling is finalized (eligible for surgery)." };
+  if (rec.eligibleForSurgery) return { error: "Counselling is finalized (proceed for surgery)." };
   const next = dayFromStr(date);
   if (!next) return { error: "Pick the new tentative date." };
   if (isPastDay(next)) return { error: "The surgery date can't be in the past." };
@@ -557,12 +562,12 @@ export async function rescheduleNoShow(visitId: string, date: string, retake: bo
   return {};
 }
 
-// ── H. Eligible for surgery → auto-book Pre-op appointment ──────────────────
+// ── H. Proceed for surgery → auto-book Pre-op appointment ──────────────────
 
 export async function markEligibleForSurgery(visitId: string, time: string, notes: string): Promise<Result> {
   const { user, visit, rec } = await loadVisit(visitId, "counselling.eligible");
-  if (!rec?.fitForSurgery) return { error: "Mark Eligibility for surgery first." };
-  if (rec.eligibleForSurgery) return { error: "Already eligible for surgery." };
+  if (!rec?.fitForSurgery) return { error: "Mark Proceed for surgery first." };
+  if (rec.eligibleForSurgery) return { error: "Already proceed for surgery." };
   if (rec.surgeryDeferred) return { error: "Surgery date is not confirmed. Resume counselling first." };
   if (!rec.advanceReceived && !(Number(rec.advancePaid ?? 0) > 0)) return { error: "Record the advance payment first." };
   if (!rec.dateOfSurgery) return { error: "Date of surgery is missing." };

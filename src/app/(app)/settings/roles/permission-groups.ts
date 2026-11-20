@@ -195,9 +195,9 @@ export const PERMISSION_GROUPS: {
       { key: "counselling.view",     label: "View Counselling",          description: "See patients scheduled for surgery and their counselling status" },
       { key: "counselling.edit",     label: "Fill Counselling",          description: "Fill implant, tentative date, payment type, estimate and advance" },
       { key: "counselling.reports",  label: "Upload Reports",            description: "Upload investigation reports from the counselling screen" },
-      { key: "counselling.fit",      label: "Mark Eligible for Surgery", description: "Mark the patient eligible once the doctor has seen and approved the reports (moves them to Partial), or mark date not confirmed" },
+      { key: "counselling.fit",      label: "Mark Proceed for Surgery", description: "Mark the patient eligible once the doctor has seen and approved the reports (moves them to Partial), or mark date not confirmed" },
       { key: "counselling.addInvestigations", label: "Add Investigations", description: "Order more investigations from the counselling screen (in view of)" },
-      { key: "counselling.eligible", label: "Mark Eligible for Surgery", description: "Complete counselling and book the pre-op appointment" },
+      { key: "counselling.eligible", label: "Mark Proceed for Surgery", description: "Complete counselling and book the pre-op appointment" },
     ],
   },
 

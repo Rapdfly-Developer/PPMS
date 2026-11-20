@@ -107,7 +107,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
           <H2>Fitness</H2>
           <table className="w-full border-collapse text-[12px]">
             <tbody>
-              <Row label="Eligible for surgery" value={rec?.fitForSurgery ? `Yes${rec.fitByName ? `, marked by ${rec.fitByName}` : ""}${rec.doctorReviewedAt ? ` on ${day(rec.doctorReviewedAt)}` : ""}` : "Not yet"} />
+              <Row label="Proceed for surgery" value={rec?.fitForSurgery ? `Yes${rec.fitByName ? `, marked by ${rec.fitByName}` : ""}${rec.doctorReviewedAt ? ` on ${day(rec.doctorReviewedAt)}` : ""}` : "Not yet"} />
             </tbody>
           </table>
           <div className="mt-12 grid grid-cols-2 gap-10 text-[11.5px] break-inside-avoid">

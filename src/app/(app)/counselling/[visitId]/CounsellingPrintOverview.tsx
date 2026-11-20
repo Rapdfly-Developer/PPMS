@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { Printer, X, Check, Scissors, Package, Wallet, FlaskConical, FileSignature, BookOpen, Utensils, ShieldCheck } from "lucide-react";
+import { Printer, CalendarClock, X, Check, Scissors, Package, Wallet, FlaskConical, FileSignature, BookOpen, Utensils, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/Card";
 import { Block, Cols, DataTable, TD, TD_MUTED, TH } from "@/app/(app)/patients/[udid]/VisitSummaryTabs";
-import { dietStory, eduMedText, postStage, type ConsentItem, type EducationData, type EducationStage } from "@/lib/ipd-forms";
+import { dietMatrix, dietStory, eduMedText, pointWithDates, postStage, type ConsentItem, type EducationData, type EducationStage } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
 import { implantGroup } from "@/lib/counselling";
 import type { PaymentDoc } from "@/lib/counselling";
@@ -111,13 +111,14 @@ export function CounsellingPrintModal({ visitId, consents, hasOrders, onPrint, o
 const day = (d: string | null | undefined) => (d ? format(new Date(d), "d MMM yyyy, EEE") : "");
 
 /** A label / value row, laid out like the EMR summary's two-column rows (30% / 70%). */
+/** "Label: value" in the long summary's reading style; neighbours sit on one line and wrap when it is full. */
 function KV({ label, value }: { label: string; value: React.ReactNode }) {
   if (value == null || value === "" || value === false) return null;
   return (
-    <div className="grid grid-cols-[30%_70%] border-b border-[var(--color-border)]/60 last:border-b-0">
-      <span className={TD_MUTED}>{label}</span>
-      <span className={`${TD} min-w-0 break-words`}>{value}</span>
-    </div>
+    <span className="mr-6 inline-block min-w-0 max-w-full py-1 align-top text-caption leading-relaxed text-[var(--color-ink-700)] break-words">
+      <span className="text-[var(--color-ink-400)]">{label}: </span>
+      <span className="font-medium text-[var(--color-ink-900)]">{value}</span>
+    </span>
   );
 }
 
@@ -132,7 +133,7 @@ export function CounsellingOverview(p: {
   surgery: string; laterality: string | null; anaesthesia: string | null; surgeryNotes: string | null;
   implant: string; dateOfSurgery: string; implantInfo: CounsellingImplant;
   payment: string; payerLabel: string; payer: string; idLabel: string; payerId: string; docs: PaymentDoc[];
-  estimate: string; advance: string;
+  estimate: string; advance: string; admitAt?: string;
   fit: boolean; fitBy: string | null; fitAt: string | null;
   orders: OverviewOrder[]; consents: ConsentItem[]; education: EducationData;
 }) {
@@ -145,30 +146,31 @@ export function CounsellingOverview(p: {
     body = (
       <div className="space-y-4">
         <Block label="Surgery" icon={<Scissors size={12} className={iconCls} />}>
-          <KV label="Surgery" value={<SurgeryInline eye={p.laterality} surgery={p.surgery} anaesthesia={p.anaesthesia} />} />
+          <KV label="Surgery" value={
+            // As in the patient banner: eye badge, bold name, anaesthesia in italics
+            <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+              {p.laterality && <span className="rounded-full bg-[var(--color-primary-600)] px-2 py-0.5 text-micro font-bold text-white">{p.laterality}</span>}
+              <span className="font-semibold text-[var(--color-ink-900)]">{p.surgery}</span>
+              {p.anaesthesia && <><span aria-hidden className="text-[var(--color-ink-300)]">·</span><span className="italic text-[var(--color-ink-500)]">{p.anaesthesia}</span></>}
+            </span>} />
           <KV label="Surgery notes" value={p.surgeryNotes} />
           <KV label="Type of implant" value={p.implant} />
           <KV label="Tentative date" value={p.dateOfSurgery ? day(p.dateOfSurgery) : ""} />
         </Block>
         <Block label="Implant details" icon={<Package size={12} className={iconCls} />}>
-          {implantGroup(p.surgery) === "NONE" ? <Empty>No implant for this surgery.</Empty> : hasImplant ? (implantGroup(p.surgery) !== "IOL" ? (
-            // This surgery's implant fields (glaucoma device, retina agent, buckle, donor cornea, graft, other)
-            <>
-              {implantFieldsFor(implantGroup(p.surgery)).map((f) => <KV key={f.key} label={f.label} value={i[f.key]} />)}
-              <KV label="Documents" value={i.docs.map((d) => d.name).join(", ")} />
-            </>
-          ) : (
-            <>
-              <KV label="Manufacturer" value={i.manufacturer} />
-              <KV label="Model" value={i.model} />
-              <KV label="IOL power" value={i.power ? `${i.power} D` : ""} />
-              <KV label="A-constant" value={i.aConstant} />
-              <KV label="Lot / batch no." value={i.lot} />
-              <KV label="Serial no." value={i.serial} />
-              <KV label="Expiry" value={i.expiry} />
-              <KV label="Documents" value={i.docs.map((d) => d.name).join(", ")} />
-            </>
-          )) : <Empty>Nothing recorded yet.</Empty>}
+          {implantGroup(p.surgery) === "NONE" ? <Empty>No implant for this surgery.</Empty> : hasImplant ? (() => {
+            // Mostly one line: each detail is "Label value", wrapping only when the row is full
+            const items: [string, string][] = implantGroup(p.surgery) !== "IOL"
+              ? [...implantFieldsFor(implantGroup(p.surgery)).map((f): [string, string] => [f.label, String(i[f.key] ?? "")]), ["Documents", i.docs.map((d) => d.name).join(", ")]]
+              : [["Manufacturer", i.manufacturer], ["Model", i.model], ["IOL power", i.power ? `${i.power} D` : ""], ["A-constant", i.aConstant], ["Lot / batch no.", i.lot], ["Serial no.", i.serial], ["Expiry", i.expiry], ["Documents", i.docs.map((d) => d.name).join(", ")]];
+            return (
+              <p className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 py-1.5 text-caption">
+                {items.filter(([, v]) => v && v.trim()).map(([label, v]) => (
+                  <span key={label} className="whitespace-nowrap"><span className="text-[var(--color-ink-400)]">{label} </span><span className="font-semibold text-[var(--color-ink-900)]">{v}</span></span>
+                ))}
+              </p>
+            );
+          })() : <Empty>Nothing recorded yet.</Empty>}
         </Block>
         <Block label="Payment" icon={<Wallet size={12} className={iconCls} />}>
           {p.payment || p.estimate || p.advance ? (
@@ -181,6 +183,13 @@ export function CounsellingOverview(p: {
               <KV label="Advance" value={p.advance} />
             </>
           ) : <Empty>Nothing recorded yet.</Empty>}
+          {p.admitAt && (
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-2">
+              <CalendarClock size={14} className="shrink-0 text-[var(--color-primary-700)]" />
+              <span className="text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-primary-700)]">Admission</span>
+              <span className="text-sm font-bold text-[var(--color-ink-900)]">{p.admitAt}</span>
+            </div>
+          )}
         </Block>
       </div>
     );
@@ -188,7 +197,7 @@ export function CounsellingOverview(p: {
     body = (
       <div className="space-y-4">
         <Block label="Doctor review" icon={<ShieldCheck size={12} className={iconCls} />}>
-          <KV label="Eligible for surgery" value={p.fit ? `Yes${p.fitBy ? `, marked by ${p.fitBy}` : ""}${p.fitAt ? ` on ${day(p.fitAt)}` : ""}` : "Not yet"} />
+          <KV label="Proceed for surgery" value={p.fit ? `Yes${p.fitBy ? `, marked by ${p.fitBy}` : ""}${p.fitAt ? ` on ${day(p.fitAt)}` : ""}` : "Not yet"} />
         </Block>
         <Block label="Investigations" icon={<FlaskConical size={12} className={iconCls} />}>
           {p.orders.length === 0 ? <Empty>No investigations ordered.</Empty> : (
@@ -225,11 +234,12 @@ export function CounsellingOverview(p: {
         {p.consents.length === 0 ? <Empty>No consents added.</Empty> : (
           <div className="rounded-lg border border-[var(--color-border)] overflow-hidden overflow-x-auto">
             <table className="w-full min-w-[520px] table-fixed border-collapse">
-              <colgroup><col style={{ width: "24%" }} /><col style={{ width: "56%" }} /><col style={{ width: "20%" }} /></colgroup>
+              <colgroup><col style={{ width: "18%" }} /><col style={{ width: "38%" }} /><col style={{ width: "26%" }} /><col style={{ width: "18%" }} /></colgroup>
               <thead>
                 <tr className="bg-[var(--color-primary-50)]">
                   <th className={TH_CELL}>Consent</th>
                   <th className={TH_CELL}>Wording</th>
+                  <th className={TH_CELL}>Explained</th>
                   <th className={`${TH_CELL} bg-[var(--color-surface-sunken)]`}>Status</th>
                 </tr>
               </thead>
@@ -240,6 +250,11 @@ export function CounsellingOverview(p: {
                     <td className={TD_TEXT}>
                       {c.signedFile ? <span className="text-[var(--color-ink-500)]">Signed copy uploaded: {c.signedFile.name}</span>
                         : c.text.trim() ? c.text : <span className="text-[var(--color-ink-300)]">No wording yet</span>}
+                    </td>
+                    <td className={TD_TEXT}>
+                      {[c.explainedTo && `To: ${c.explainedTo}`, c.language && `In: ${c.language}`, c.teachBack && "Understood (teach-back)"].filter(Boolean).join(" · ")
+                        || <span className="text-[var(--color-ink-300)]">-</span>}
+                      {c.notes?.trim() && <span className="mt-1 block text-[var(--color-ink-500)]">{c.notes}</span>}
                     </td>
                     <td className={TD_STAT}>
                       {c.signedFile
@@ -265,21 +280,41 @@ export function CounsellingOverview(p: {
         {stages.map(({ label, k, st }) => {
           if (p.sheet === "diet") {
             const nbm = st.dietTypes.includes("Nil by mouth");
+            const matrix = dietMatrix(st, k, p.dateOfSurgery || null, false);
             return (
               <Block key={label} label={`${label} diet`} icon={<Utensils size={12} className={iconCls} />}>
                 <KV label="Follow" value={dietStory(k, st.dietDays, p.dateOfSurgery || null)} />
                 <KV label="Diet" value={st.dietTypes.join(", ")} />
                 <KV label="Nil by mouth from" value={nbm ? st.nbmFrom : ""} />
-                {!nbm && st.meals.some((m) => m.diet.trim()) && (
-                  <ul className="mt-1 divide-y divide-[var(--color-border)]/70">
-                    {st.meals.filter((m) => m.diet.trim()).map((m) => (
-                      <li key={m.meal} className="grid grid-cols-[30%_15%_55%] py-1.5 text-caption leading-snug">
-                        <span className="text-[var(--color-ink-400)]">{m.meal}</span>
-                        <span className="tabular-nums text-[var(--color-ink-500)]">{m.time}</span>
-                        <span className="font-medium text-[var(--color-ink-900)]">{m.diet}</span>
-                      </li>
-                    ))}
-                  </ul>
+                {!nbm && matrix.rows.length > 0 && (
+                  <div className="mt-2 overflow-x-auto rounded-xl border border-[var(--color-border)]">
+                    <table className="w-full border-collapse text-caption">
+                      <thead>
+                        <tr className="bg-[var(--color-surface-sunken)]">
+                          <th className="sticky left-0 bg-[var(--color-surface-sunken)] px-3 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">Meal plan</th>
+                          {matrix.cols.map((col) => (
+                            <th key={col.key} className={`whitespace-nowrap px-3 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-wider ${col.surgery ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
+                              {col.label}{col.surgery && <span className="ml-1 text-[9px]">DOS</span>}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matrix.rows.map((r) => (
+                          <tr key={r.meal} className="border-t border-[var(--color-border)]/70">
+                            <td className="sticky left-0 whitespace-nowrap bg-white px-3 py-1.5 font-semibold text-[var(--color-ink-700)]">{r.meal}</td>
+                            {r.cells.map((cell, i) => (
+                              <td key={i} className={`min-w-[110px] px-3 py-1.5 align-top leading-snug ${matrix.cols[i].surgery ? "bg-[var(--color-primary-50)]/50" : ""}`}>
+                                {cell
+                                  ? <><span className="block font-medium text-[var(--color-ink-900)]">{cell.diet}</span>{cell.time && <span className="block text-[11px] tabular-nums text-[var(--color-ink-400)]">{cell.time}</span>}</>
+                                  : <span className="text-[var(--color-ink-300)]">-</span>}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </Block>
             );
@@ -296,7 +331,7 @@ export function CounsellingOverview(p: {
                         <span className={`mt-0.5 grid place-items-center w-4 h-4 rounded-full shrink-0 ${pt.done ? "bg-emerald-500 text-white" : "border border-[var(--color-ink-300)]"}`}>
                           {pt.done && <Check size={10} strokeWidth={3} />}
                         </span>
-                        <span className="text-[var(--color-ink-700)]">{pt.text}</span>
+                        <span className="text-[var(--color-ink-700)]">{pointWithDates(k, pt.text, p.dateOfSurgery || null)}</span>
                       </li>
                     ))}
                   </ol>

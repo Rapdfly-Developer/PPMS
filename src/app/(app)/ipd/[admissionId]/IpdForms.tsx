@@ -6,9 +6,10 @@ import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { useImplantAutoFill } from "@/components/ui/ImplantAutoFill";
 import { paymentLabel } from "@/lib/counselling";
 import { format } from "date-fns";
+import { MedicationEntry, type MedicationDraft } from "@/components/emr/MedicationEntry";
 import {
-  BookOpen, Check, CheckCircle2, ChevronRight, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw,
-  CalendarDays, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
+  BookOpen, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw,
+  CalendarDays, Clock, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
 } from "lucide-react";
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
@@ -23,13 +24,13 @@ import { implantGroup } from "@/lib/counselling";
 import { implantFieldsFor, type CounsellingImplant, type ImplantDoc } from "@/lib/counselling-sheets";
 import { addIpdExtraReport, attachIpdReport, removeIpdExtraReport, removeIpdReport } from "../actions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
-import { EducationEditDialog, LoadOtTemplate, ManageMine, SaveAsMine, type SavedTemplate } from "./templatesUi";
+import { EducationSetsDialog, LoadOtTemplate, ManageMine, SaveAsMine, type SavedTemplate } from "./templatesUi";
 import {
   CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, EYES,
   IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, SHIFTS,
   scheduleFor,
   type ChecklistData, type CheckAnswer, type NurseEntry, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
-  builtinEducationSets, prebuiltConsents, dayDate, dietWindow, educationSetFor, educationSetsFor, educationStage, medDates,
+  builtinEducationSets, prebuiltConsents, dayDate, eduMedText, pointWithDates, dietWindow, dietDateKeys, istKey, mealsOn, educationSetFor, educationSetsFor, educationStage, medDates,
   type EduPoint, type EducationStage, type EduStageKey, type Meal,
   type FormContext, type ImplantData, type LogEntry, type NurseData, type OtNotesData, type PostOpData,
   type PostOpReview, type TreatmentData,
@@ -46,7 +47,7 @@ export interface FileInfo {
   surgeryDate: string | null;
   shiftedToOtAt: string | null;
   ctx: FormContext;
-  orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string; extraResultRefs: string | null }[];
+  orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string; extraResultRefs: string | null; priority?: string; doctorNotes?: string | null }[];
   emrMeds: { name: string; dose: string; frequency: string; route: string; eye: string; instructions: string }[];
   payment: { type: string | null; mode: string | null; scheme: string | null; policy: string | null; eligibleBy: string | null; eligibleAt: string | null } | null;
   templates: SavedTemplate[];
@@ -231,61 +232,99 @@ function useLogger(addLog: FormProps<unknown>["addLog"]) {
 /* ── 1. Investigation reports ──────────────────────────────────────────── */
 
 export function InvestigationsForm({ f }: { f: FileInfo }) {
+  // Every order for the patient by date, laid out like Investigations in Counselling
   const groups = useMemo(() => {
     const map = new Map<string, FileInfo["orders"]>();
     for (const o of f.orders) {
-      const k = istDate(new Date(o.createdAt));
+      const k = format(new Date(o.createdAt), "dd MMM yyyy, EEE");
       map.set(k, [...(map.get(k) ?? []), o]);
     }
-    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    return [...map.entries()];
   }, [f.orders]);
-  const done = f.orders.filter((o) => o.resultRef).length;
-  if (f.orders.length === 0) return <p className="text-sm italic text-[var(--color-ink-400)]">No investigations ordered for this patient.</p>;
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700"><CheckCircle2 size={12} /> {done} report{done === 1 ? "" : "s"} available</span>
-        {f.orders.length - done > 0 && <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-700">{f.orders.length - done} pending</span>}
+  const locked = f.status === "DISCHARGED";
+  const box = "min-w-0 rounded-xl border border-[var(--color-border)]/80 bg-[var(--color-surface-sunken)]/70 px-2.5 py-1.5 text-sm leading-snug";
+  const priorityTone: Record<string, string> = {
+    ROUTINE: "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]",
+    URGENT: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
+    STAT: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
+  };
+  if (f.orders.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-12 text-center">
+        <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
+        <p className="text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
       </div>
-      {groups.map(([day, list]) => (
-        <Card key={day} title={`Ordered ${format(new Date(`${day}T00:00:00`), "d MMMM yyyy, EEEE")}`}>
-          <div className="-m-3.5 overflow-x-auto">
-            <table className="w-full min-w-[520px]">
-              <thead><tr>{["Investigation", "Eye", "Notes", "Status", "Report"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
-              <tbody>
-                {list.map((o) => {
-                  return (
-                    <tr key={o.id} className={o.resultRef ? "" : "bg-amber-50/40"}>
-                      <td className={`${td} font-semibold`}>{o.testName}</td>
-                      <td className={td}>{o.laterality ?? "-"}</td>
-                      <td className={`${td} text-[var(--color-ink-500)]`}>{o.notes || "-"}</td>
-                      <td className={td}>
-                        {o.resultRef
-                          ? <span className="text-xs font-semibold text-emerald-700">Received {o.resultAt ? format(new Date(o.resultAt), "d MMM, EEE") : ""}</span>
-                          : <span className="text-xs font-semibold text-amber-700">Pending</span>}
-                      </td>
-                      <td className={td}>
-                        {o.resultRef ? (
-                          // Same Report button as the EMR and Counselling: View, Re-upload, Delete, Add more
-                          <ReportFilesMenu
-                            files={[{ ref: o.resultRef, at: o.resultAt, main: true }, ...parseExtraResults(o.extraResultRefs).map((x) => ({ ref: x.ref, at: x.at, main: false }))]}
-                            locked={f.status === "DISCHARGED"}
-                            onView={(url) => window.open(url, "_blank", "noopener")}
-                            onReplace={(url) => attachIpdReport(f.id, o.id, url)}
-                            onAddMore={(url) => addIpdExtraReport(f.id, o.id, url)}
-                            onDelete={(x) => (x.main ? removeIpdReport(f.id, o.id) : removeIpdExtraReport(f.id, o.id, x.ref))}
-                          />
-                        ) : f.status !== "DISCHARGED" ? (
-                          <ReportUpload onUpload={(url) => attachIpdReport(f.id, o.id, url)} />
-                        ) : "-"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-6">
+      {groups.map(([dateLabel, list]) => (
+        <div key={dateLabel}>
+          <div className="mb-3 flex items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-0.5 text-[11px] font-semibold text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-100)]"><CalendarDays size={11} />{dateLabel}</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-[var(--color-primary-100)] to-transparent" />
           </div>
-        </Card>
+          <div className="flex flex-col gap-3">
+            {list.map((o) => {
+              const inViewOf = o.notes ? o.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
+              const orderedAt = format(new Date(o.createdAt), "dd MMM yyyy, EEE, h:mm a");
+              const badge = (
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-xs font-bold text-[var(--color-primary-700)]">{o.laterality ?? ""}</span>
+              );
+              const pr = o.priority ?? "ROUTINE";
+              const prPill = <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${priorityTone[pr] ?? priorityTone.ROUTINE}`}>{pr}</span>;
+              const nameBox = <p className="min-w-0 text-sm font-semibold leading-snug text-[var(--color-ink-900)]">{o.testName}</p>;
+              const viewOfBox = <p className="min-w-0 text-sm italic leading-snug text-[var(--color-ink-600)]"><span className="text-[var(--color-ink-400)]">In view of: </span>{inViewOf}</p>;
+              const card = "rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)] transition-colors hover:border-[var(--color-primary-200)]";
+              if (!o.resultRef) {
+                // Report not uploaded: one bar
+                return (
+                  <div key={o.id} className={card}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {badge}
+                      <div className="min-w-[8rem] max-w-[14rem] flex-none">{nameBox}</div>
+                      <div className="min-w-[8rem] flex-1">{viewOfBox}</div>
+                      {prPill}
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-[var(--color-ink-500)]"><Clock size={10} />Ordered {orderedAt}</span>
+                      <div className="ml-auto flex shrink-0 items-center gap-1">
+                        {!locked ? <ReportUpload onUpload={(url) => attachIpdReport(f.id, o.id, url)} /> : <span className="text-xs text-[var(--color-ink-400)]">Pending</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={o.id} className={card}>
+                  <div className="flex flex-wrap items-start gap-2 lg:flex-nowrap">
+                    {badge}
+                    <div className="flex min-w-[8rem] max-w-[14rem] flex-none flex-col items-start gap-1.5">
+                      <div className="w-full">{nameBox}</div>
+                      {prPill}
+                    </div>
+                    <div className="flex min-w-[8rem] flex-1 flex-col items-start gap-1.5 overflow-hidden">
+                      <div className="w-full">{viewOfBox}</div>
+                      <span className="inline-flex items-start gap-1 text-xs text-[var(--color-ink-500)]"><Clock size={10} className="mt-0.5 shrink-0" />Ordered {orderedAt}</span>
+                    </div>
+                    <div className="flex min-w-[12rem] flex-[2] flex-col items-start gap-1.5">
+                      <div className="w-full"><div className={`${box} whitespace-pre-wrap text-[var(--color-ink-700)]`}><span className="text-[var(--color-ink-400)]">Doctor&apos;s notes: </span>{o.doctorNotes ?? ""}</div></div>
+                      {o.resultAt && <span className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-[var(--color-ink-500)]"><Clock size={10} />Uploaded {format(new Date(o.resultAt), "dd MMM yyyy, EEE, h:mm a")}</span>}
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <ReportFilesMenu
+                        files={[{ ref: o.resultRef, at: o.resultAt, main: true }, ...parseExtraResults(o.extraResultRefs).map((x) => ({ ref: x.ref, at: x.at, main: false }))]}
+                        locked={locked}
+                        onView={(url) => window.open(url, "_blank", "noopener")}
+                        onReplace={(url) => attachIpdReport(f.id, o.id, url)}
+                        onAddMore={(url) => addIpdExtraReport(f.id, o.id, url)}
+                        onDelete={(x) => (x.main ? removeIpdReport(f.id, o.id) : removeIpdExtraReport(f.id, o.id, x.ref))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -345,7 +384,7 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
           {[
             ["Implant", f.ctx.implant],
             ["Payment", pay ? [paymentLabel(pay.mode, pay.type), pay.scheme, pay.policy].filter(Boolean).join(" · ") : ""],
-            ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy, EEE")}` : ""}` : ""],
+            ["Proceed for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy, EEE")}` : ""}` : ""],
           ].map(([k, x]) => (
             <div key={k} className={rowIn}><p className={lblIn}>{k}</p><p className="font-semibold text-[var(--color-ink-800)] min-w-0">{x || "-"}</p></div>
           ))}
@@ -457,6 +496,7 @@ export function ConsentsForm({ value: v, change, saveNow, editable, f }: FormPro
               ? <GrowArea value={current.text} onChange={(x) => setItem({ ...current, text: x })} placeholder="Consent wording…" />
               : <div className="space-y-2 text-sm leading-relaxed text-[var(--color-ink-800)]">{current.text.split("\n").filter(Boolean).map((p, i) => <p key={i}>{p}</p>)}</div>}
             {!current.signedFile && <p className="mt-3 rounded-xl border-l-[3px] border-[var(--color-primary-400)] bg-[var(--color-primary-50)]/60 px-3 py-2 text-xs italic leading-relaxed text-[var(--color-primary-800)]">{CONSENT_DECLARATION}</p>}
+            <ExplainPanel value={current} onChange={(p) => setItem({ ...current, ...p })} editable={editable && !isConsentLocked(current)} noteChips={CONSENT_NOTE_CHIPS} noteKey="consent_notes" className="mt-4" />
           </div>
         </section>
       ) : (
@@ -653,7 +693,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
     change(stage === "pre" ? { ...v, pre: { ...cur, ...patch, sets: [] } } : { ...v, ...cur, ...patch, sets: [] });
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         {!part && <PillTabs tabs={[{ id: "education", label: "Patient Education" }, { id: "diet", label: "Diet" }]} value={tab} onChange={setTab} />}
         <StageTabs value={stage} onChange={setStage} icon={shown === "education" ? <BookOpen size={11} /> : <Utensils size={11} />}
@@ -667,7 +707,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
 }
 
 /** A list of education points: tick when explained, remove, and add a point. */
-function PointList({ points, onChange, editable }: { points: EduPoint[]; onChange: (p: EduPoint[]) => void; editable: boolean }) {
+function PointList({ points, onChange, editable, datesOf }: { points: EduPoint[]; onChange: (p: EduPoint[]) => void; editable: boolean; datesOf?: (text: string) => string }) {
   // One point at a time can be edited in place (pencil, then Enter or click away)
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
@@ -678,27 +718,30 @@ function PointList({ points, onChange, editable }: { points: EduPoint[]; onChang
     setEditing(null);
   };
   return (
-    <ul className="space-y-1.5">
+    <ul className="space-y-2.5">
       {points.map((p, i) => (
         <li key={i} className="group flex items-center gap-1">
           {editing === i ? (
             <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commit(); } if (e.key === "Escape") setEditing(null); }}
-              className="flex-1 min-w-0 rounded-xl border border-[var(--color-primary-300)] bg-white px-3 py-1.5 text-[13px] leading-snug text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+              className="flex-1 min-w-0 rounded-xl border border-[var(--color-primary-300)] bg-white px-3.5 py-2 text-[13px] leading-snug text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
           ) : (
-            <label className={`flex-1 min-w-0 flex items-center gap-2.5 rounded-xl border px-3 py-1.5 text-[13px] leading-snug transition-colors ${p.done ? "border-emerald-200 bg-emerald-50/60 text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-200)]"} ${editable ? "cursor-pointer" : ""}`}>
-              <input type="checkbox" checked={p.done} disabled={!editable} onChange={() => onChange(points.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} className="sr-only" />
-              <span className={`w-[18px] h-[18px] shrink-0 rounded-full flex items-center justify-center transition-colors ${p.done ? "bg-emerald-500 text-white" : "border-2 border-[var(--color-ink-200)] bg-white"}`}>
-                {p.done && <Check size={11} strokeWidth={3} />}
-              </span>
-              {p.text}
-            </label>
+            <div className={`flex-1 min-w-0 flex items-center gap-2.5 rounded-xl border px-3.5 py-2 text-[13px] leading-snug transition-colors ${p.done ? "border-emerald-200 bg-emerald-50/60 text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-200)]"}`}>
+              {/* Only the circle ticks the point */}
+              <button type="button" role="checkbox" aria-checked={p.done} aria-label={`Point ${i + 1} explained`} disabled={!editable}
+                onClick={() => onChange(points.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))}
+                className={`-m-1 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${editable ? "cursor-pointer" : "cursor-default"}`}>
+                <span className={`w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors ${p.done ? "bg-emerald-500 text-white" : "border-2 border-[var(--color-ink-200)] bg-white"}`}>
+                  {p.done && <Check size={11} strokeWidth={3} />}
+                </span>
+              </button>
+              <span className="w-5 shrink-0 text-right text-[12px] font-semibold tabular-nums text-[var(--color-ink-400)]">{i + 1}.</span>
+              {/* The text opens for editing */}
+              <span className={`min-w-0 flex-1 ${editable ? "cursor-text" : ""}`} onClick={editable ? () => { setEditing(i); setDraft(p.text); } : undefined}>{datesOf ? datesOf(p.text) : p.text}</span>
+            </div>
           )}
           {editable && editing !== i && (
             <>
-              {/* Edit this point */}
-              <button type="button" title="Edit this point" aria-label="Edit point" onClick={() => { setEditing(i); setDraft(p.text); }}
-                className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[var(--color-ink-300)] opacity-0 transition group-hover:opacity-100 focus:opacity-100 hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"><Pencil size={11} /></button>
               {/* Delete this point */}
               <button type="button" title="Delete this point" aria-label="Delete point" onClick={() => onChange(points.filter((_, j) => j !== i))}
                 className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[var(--color-ink-300)] transition-colors hover:bg-red-50 hover:text-red-600"><X size={12} strokeWidth={2.5} /></button>
@@ -711,6 +754,8 @@ function PointList({ points, onChange, editable }: { points: EduPoint[]; onChang
 }
 
 const miniLbl = "shrink-0 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--color-ink-400)]";
+const DIET_NOTE_CHIPS = ["Avoid oily and spicy food", "Drink plenty of water", "Small frequent meals", "Avoid tea / coffee", "No outside food"];
+export const CONSENT_NOTE_CHIPS = ["Procedure, risks and alternatives explained", "Questions answered", "Relative present", "Needs a repeat explanation"];
 const EDU_NOTE_CHIPS = ["Explained with the leaflet", "Understood well", "Relative will help with drops", "Needs a repeat explanation", "Questions answered"];
 
 /** A one-line note box that grows with the text. */
@@ -724,7 +769,7 @@ function NoteBox({ value, onChange, disabled }: { value: string; onChange: (v: s
   }, [value]);
   return (
     <textarea ref={ref} rows={1} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : "Add a note"}
-      className="block w-full resize-none overflow-hidden rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
+      className="block min-h-[34px] w-full resize-none overflow-hidden rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
   );
 }
 
@@ -733,11 +778,99 @@ function NoteBox({ value, onChange, disabled }: { value: string; onChange: (v: s
  * follow the surgery, and custom points or medicines are added with the slider.
  * The Library changes the set or keeps the doctor's own sets.
  */
+/** "+ Add a point or a medication": pick one, then a single line for a point or the medication form. */
+function AddPointOrMed({ eye, onPoint, onMed }: { eye: string; onPoint: (text: string) => void; onMed: (m: MedicationDraft) => void }) {
+  const [mode, setMode] = useState<"" | "choose" | "point" | "medication">("");
+  const [text, setText] = useState("");
+  const close = () => { setMode(""); setText(""); };
+  const addPoint = () => { const t = text.trim(); if (t) onPoint(t); setText(""); };
+  if (mode === "") {
+    return (
+      <button type="button" onClick={() => setMode("choose")}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/40 py-2 text-[12.5px] font-semibold text-[var(--color-primary-700)] transition-colors hover:bg-[var(--color-primary-50)]">
+        <Plus size={14} strokeWidth={2.5} /> Add a point or a medication
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-2.5">
+      <div className="flex items-center gap-2">
+        {([["point", "Point"], ["medication", "Medication"]] as const).map(([m, label]) => (
+          <button key={m} type="button" onClick={() => setMode(m)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 transition-colors ${mode === m ? "bg-[var(--color-primary-600)] text-white ring-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-700)] ring-[var(--color-border)] hover:bg-[var(--color-primary-50)]"}`}>{label}</button>
+        ))}
+        <button type="button" onClick={close} aria-label="Close" className="ml-auto grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-white"><X size={13} /></button>
+      </div>
+      {mode === "point" && (
+        <div className="mt-2 flex items-center gap-2">
+          <input autoFocus value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPoint(); } if (e.key === "Escape") close(); }}
+            placeholder="Type a point, then Enter" className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-white px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)]" />
+          <button type="button" disabled={!text.trim()} onClick={addPoint} className="h-9 rounded-xl bg-[var(--color-primary-600)] px-4 text-xs font-semibold text-white disabled:opacity-40">Add</button>
+        </div>
+      )}
+      {mode === "medication" && (
+        <div className="mt-2">
+          <MedicationEntry addLabel="Add medication" defaultEye={eye} onAdd={(m) => onMed(m)} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Explained to, language, teach-back and notes: one compact panel (Patient Education and each consent). */
+export function ExplainPanel({ value, onChange, editable, noteChips = EDU_NOTE_CHIPS, noteKey = "edu_notes", className = "mt-3" }: {
+  value: { explainedTo?: string; language?: string; teachBack?: boolean; notes?: string };
+  onChange: (patch: { explainedTo?: string; language?: string; teachBack?: boolean; notes?: string }) => void;
+  editable: boolean; noteChips?: readonly string[]; noteKey?: string; className?: string;
+}) {
+  const v = { explainedTo: value.explainedTo ?? "", language: value.language ?? "", teachBack: !!value.teachBack, notes: value.notes ?? "" };
+  return (
+      <div className={`${className} rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-surface-sunken)]/40 px-3 py-2.5 space-y-2.5`}>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div className="flex items-center gap-2">
+            <span className={miniLbl}>Explained to</span>
+            <div className="inline-flex rounded-full bg-white p-0.5 ring-1 ring-[var(--color-border)]">
+              {(["Patient", "Relative", "Both"] as const).map((o) => (
+                <button key={o} type="button" disabled={!editable} onClick={() => onChange({ explainedTo: o })}
+                  className={`h-6 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors disabled:cursor-default ${v.explainedTo === o ? "bg-[var(--color-primary-600)] text-white shadow-sm" : "text-[var(--color-ink-500)] enabled:hover:text-[var(--color-ink-800)]"}`}>{o}</button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={miniLbl}>Language</span>
+            <div className="w-40">
+              <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={v.language} onChange={(x) => onChange({ language: x })} disabled={!editable}
+                className="h-7 w-full rounded-full border border-[var(--color-border)] bg-white px-2.5 text-[12px] text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
+            </div>
+          </div>
+          <button type="button" disabled={!editable} onClick={() => onChange({ teachBack: !v.teachBack })}
+            className={`ml-auto inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[11.5px] font-semibold ring-1 transition-colors disabled:cursor-default ${v.teachBack ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-[var(--color-ink-500)] ring-[var(--color-border)] enabled:hover:text-[var(--color-ink-800)]"}`}>
+            <span className={`grid h-4 w-4 place-items-center rounded-full ${v.teachBack ? "bg-emerald-500 text-white" : "ring-1 ring-[var(--color-ink-300)]"}`}>{v.teachBack && <Check size={10} strokeWidth={3} />}</span>
+            Understood (teach-back)
+          </button>
+        </div>
+        <div className="flex items-start gap-2 border-t border-[var(--color-border)]/60 pt-2.5">
+          <span className={`${miniLbl} pt-1.5`}>Notes</span>
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <NoteBox value={v.notes} onChange={(x) => onChange({ notes: x })} disabled={!editable} />
+            {editable && (
+              <div className="[&_button]:!px-2 [&_button]:!py-0.5 [&_span]:!text-[11px] [&_button]:!text-[11px]">
+                <ChipRow storeKey={noteKey} builtIns={noteChips} prefix="+ " isOn={(x) => v.notes.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange({ notes: addLine(v.notes, x) })} />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+  );
+}
+
 function EducationStageEditor({ stage, s, set, editable, f, onPrint }: {
   stage: EduStageKey; s: EducationStage; set: (p: Partial<EducationStage>) => void; editable: boolean; f: FileInfo; onPrint?: () => void;
 }) {
   const meds = s.meds ?? [];
-  const explained = s.points.filter((p) => p.done).length;
+  // Medicines are ticked as explained like the points
+  const totalItems = s.points.length + meds.length;
+  const explained = s.points.filter((p) => p.done).length + meds.filter((m) => m.done).length;
   // The patient's surgery decides the set; only its own customised sets can replace it
   const surgerySet = educationSetFor(f.ctx.surgery, f.ctx.type, stage);
   // Prebuilt sets for this surgery: standard, brief, diabetic, elderly, child
@@ -770,97 +903,69 @@ function EducationStageEditor({ stage, s, set, editable, f, onPrint }: {
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-2">
             <span className="h-1.5 w-20 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-              <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-primary-400)] to-emerald-400 transition-[width] duration-300" style={{ width: `${s.points.length ? (explained / s.points.length) * 100 : 0}%` }} />
+              <span className="block h-full rounded-full bg-gradient-to-r from-[var(--color-primary-400)] to-emerald-400 transition-[width] duration-300" style={{ width: `${totalItems ? (explained / totalItems) * 100 : 0}%` }} />
             </span>
-            <span className="text-[11.5px] font-medium text-[var(--color-ink-500)] tabular-nums whitespace-nowrap">{explained} of {s.points.length} explained</span>
+            <span className="text-[11.5px] font-medium text-[var(--color-ink-500)] tabular-nums whitespace-nowrap">{explained} of {totalItems} explained</span>
           </span>
           {editable && (
-            <EducationEditDialog stage={stage} surgery={f.ctx.surgery} current={s.points.map((p) => p.text)} others={otherSurgerySets}
-              templates={f.templates} standard={standard} active={s.preset} medCount={meds.length}
-              defaultEye={f.ctx.eye && ["RE", "LE", "OU"].includes(f.ctx.eye) ? f.ctx.eye : "OU"}
-              onAddPoints={(pts) => {
-                const have = new Set(s.points.map((p) => p.text));
-                set({ points: [...s.points, ...pts.filter((t) => !have.has(t)).map((text) => ({ text, done: false }))] });
-              }}
-              onUseSet={(label, points) => applyMain(label, points)}
-              onAddMed={(m) => set({ meds: [...meds, { id: uid(), ...m }] })} />
+            <EducationSetsDialog stage={stage} surgery={f.ctx.surgery} standard={standard} others={otherSurgerySets} templates={f.templates} active={s.preset}
+              onUse={(label, points) => applyMain(label, points)} />
           )}
           {onPrint && <button type="button" onClick={onPrint} className={btnG}><Printer size={12} /> Print</button>}
         </div>
       </div>
 
-      <div className="px-4 py-3">
-        <PointList points={s.points} onChange={(points) => set({ points })} editable={editable} />
+      <div className="px-4 py-4">
+        <PointList points={s.points} onChange={(points) => set({ points })} editable={editable} datesOf={(t) => pointWithDates(stage, t, f.ctx.surgeryDate)} />
 
-        {/* Medicines (EMR prescription format) */}
+        {/* Medicines sit in the list after the points, numbered on and set apart in violet */}
         {meds.length > 0 && (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-[var(--color-border)]">
-            <table className="w-full min-w-[560px]">
-              <thead><tr>{["Medicine", "Eye", "Dose", "Frequency", "Duration", "Instructions", ""].map((h, i) => <th key={i} className={th}>{h}</th>)}</tr></thead>
-              <tbody>
-                {meds.map((m) => (
-                  <tr key={m.id}>
-                    <td className={`${td} font-semibold`}>{m.name}<span className="block text-[11px] font-normal text-[var(--color-ink-400)]">{m.route}</span></td>
-                    <td className={td}>{m.eye || "-"}</td>
-                    <td className={td}>{m.dose || "-"}</td>
-                    <td className={td}>{m.frequency || "-"}</td>
-                    <td className={td}>
-                      {m.duration || "-"}
-                      {medDates(stage, m.duration, f.ctx.surgeryDate) && <span className="block whitespace-nowrap text-[11px] text-[var(--color-primary-700)]">{medDates(stage, m.duration, f.ctx.surgeryDate)}</span>}
-                    </td>
-                    <td className={`${td} text-[var(--color-ink-600)]`}>{m.instructions || "-"}</td>
-                    <td className={`${td} w-10 text-center`}>{editable && <button type="button" title="Delete this medicine" onClick={() => set({ meds: meds.filter((x) => x.id !== m.id) })} aria-label={`Delete ${m.name}`} className="grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-300)] transition-colors hover:bg-red-50 hover:text-red-600"><X size={12} strokeWidth={2.5} /></button>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {editable && s.points.some((p) => !p.done) && (
-          <div className="mt-2 flex justify-end">
-            <button type="button" onClick={() => set({ points: s.points.map((x) => ({ ...x, done: true })) })}
-              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-semibold text-emerald-700 hover:bg-emerald-50 transition-colors"><CheckCircle2 size={12} /> Mark all explained</button>
-          </div>
-        )}
-
-        {/* Who it was explained to, language, teach-back and notes: one compact panel */}
-        <div className="mt-3 rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-surface-sunken)]/40 px-3 py-2.5 space-y-2.5">
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <div className="flex items-center gap-2">
-              <span className={miniLbl}>Explained to</span>
-              <div className="inline-flex rounded-full bg-white p-0.5 ring-1 ring-[var(--color-border)]">
-                {(["Patient", "Relative", "Both"] as const).map((o) => (
-                  <button key={o} type="button" disabled={!editable} onClick={() => set({ explainedTo: o })}
-                    className={`h-6 rounded-full px-2.5 text-[11.5px] font-semibold transition-colors disabled:cursor-default ${s.explainedTo === o ? "bg-[var(--color-primary-600)] text-white shadow-sm" : "text-[var(--color-ink-500)] enabled:hover:text-[var(--color-ink-800)]"}`}>{o}</button>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={miniLbl}>Language</span>
-              <div className="w-40">
-                <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={s.language} onChange={(x) => set({ language: x })} disabled={!editable}
-                  className="h-7 w-full rounded-full border border-[var(--color-border)] bg-white px-2.5 text-[12px] text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
-              </div>
-            </div>
-            <button type="button" disabled={!editable} onClick={() => set({ teachBack: !s.teachBack })}
-              className={`ml-auto inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-[11.5px] font-semibold ring-1 transition-colors disabled:cursor-default ${s.teachBack ? "bg-emerald-50 text-emerald-700 ring-emerald-200" : "bg-white text-[var(--color-ink-500)] ring-[var(--color-border)] enabled:hover:text-[var(--color-ink-800)]"}`}>
-              <span className={`grid h-4 w-4 place-items-center rounded-full ${s.teachBack ? "bg-emerald-500 text-white" : "ring-1 ring-[var(--color-ink-300)]"}`}>{s.teachBack && <Check size={10} strokeWidth={3} />}</span>
-              Understood (teach-back)
-            </button>
-          </div>
-          <div className="flex items-start gap-2 border-t border-[var(--color-border)]/60 pt-2.5">
-            <span className={`${miniLbl} pt-1.5`}>Notes</span>
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <NoteBox value={s.notes} onChange={(x) => set({ notes: x })} disabled={!editable} />
-              {editable && (
-                <div className="[&_button]:!px-2 [&_button]:!py-0.5 [&_span]:!text-[11px] [&_button]:!text-[11px]">
-                  <ChipRow storeKey="edu_notes" builtIns={EDU_NOTE_CHIPS} prefix="+ " isOn={(x) => s.notes.split("\n").some((l) => l.trim() === x)} onPick={(x) => set({ notes: addLine(s.notes, x) })} />
+          <ul className="mt-2.5 space-y-2.5">
+            {meds.map((m, mi) => (
+              <li key={m.id} className="group flex items-center gap-1">
+                <div className={`flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border px-3.5 py-2 text-[13px] leading-snug text-[var(--color-ink-800)] transition-colors ${m.done ? "border-violet-300 bg-violet-100/70" : "border-violet-200 bg-violet-50/70"}`}>
+                  <button type="button" role="checkbox" aria-checked={!!m.done} aria-label={`Medicine ${s.points.length + mi + 1} explained`} disabled={!editable}
+                    onClick={() => set({ meds: meds.map((x) => (x.id === m.id ? { ...x, done: !x.done } : x)) })}
+                    className={`-m-1 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${editable ? "cursor-pointer" : "cursor-default"}`}>
+                    <span className={`grid h-[18px] w-[18px] place-items-center rounded-full transition-colors ${m.done ? "bg-violet-500 text-white" : "border-2 border-violet-300 bg-white"}`}>
+                      {m.done && <Check size={11} strokeWidth={3} />}
+                    </span>
+                  </button>
+                  <span className="w-5 shrink-0 text-right text-[12px] font-semibold tabular-nums text-violet-400">{s.points.length + mi + 1}.</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="mr-2 rounded-full bg-violet-100 px-1.5 py-0.5 align-middle text-[9px] font-bold uppercase tracking-wider text-violet-700">Medication</span>
+                    <span className="font-semibold text-[var(--color-ink-900)]">{eduMedText(m)}</span>
+                    {medDates(stage, m.duration, f.ctx.surgeryDate) && <span className="block text-[11px] text-violet-700">{medDates(stage, m.duration, f.ctx.surgeryDate)}</span>}
+                  </span>
                 </div>
-              )}
+                {editable && <button type="button" title="Delete this medicine" aria-label="Delete medicine" onClick={() => set({ meds: meds.filter((x) => x.id !== m.id) })}
+                  className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-[var(--color-ink-300)] transition-colors hover:bg-red-50 hover:text-red-600"><X size={12} strokeWidth={2.5} /></button>}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Add a point (one line) or a medication */}
+        {editable && (
+          <AddPointOrMed eye={f.ctx.eye && ["RE", "LE", "OU"].includes(f.ctx.eye) ? f.ctx.eye : "OU"}
+            onPoint={(text) => { if (text && !s.points.some((p) => p.text === text)) set({ points: [...s.points, { text, done: false }] }); }}
+            onMed={(m) => set({ meds: [...meds, { id: uid(), ...m }] })} />
+        )}
+
+        {editable && totalItems > 0 && (() => {
+          // One button: marks every point explained, or, once all are, unmarks them
+          const all = s.points.every((p) => p.done) && meds.every((m) => m.done);
+          return (
+            <div className="mt-3 flex justify-end">
+              <button type="button" onClick={() => set({ points: s.points.map((x) => ({ ...x, done: !all })), meds: meds.map((x) => ({ ...x, done: !all })) })}
+                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11.5px] font-semibold transition-colors ${all ? "text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]" : "text-emerald-700 hover:bg-emerald-50"}`}>
+                {all ? <><RotateCcw size={12} /> Unmark all explained</> : <><CheckCircle2 size={12} /> Mark all explained</>}
+              </button>
             </div>
-          </div>
-        </div>
+          );
+        })()}
+
+        <ExplainPanel value={s} onChange={set} editable={editable} />
       </div>
     </section>
   );
@@ -881,7 +986,7 @@ function DietDaysLine({ stage, days, onChange, surgeryDate, editable }: {
     </span>
   );
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-[var(--color-primary-50)]/60 px-3.5 py-2 ring-1 ring-[var(--color-primary-100)]/70">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl bg-[var(--color-primary-50)]/60 px-3.5 py-2 ring-1 ring-[var(--color-primary-100)]/70">
       {/* How many days */}
       <span className="flex items-center gap-2">
         <CalendarDays size={15} className="shrink-0 text-[var(--color-primary-600)]" />
@@ -899,17 +1004,40 @@ function DietDaysLine({ stage, days, onChange, surgeryDate, editable }: {
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 border-l border-[var(--color-primary-200)] pl-4">
           {stop(stage === "pre" ? "Starts" : "Starts · surgery day", w.from, stage === "pre" ? "start" : "surgery")}
           <span aria-hidden className="h-px w-8 bg-[var(--color-primary-300)]" />
-          {stop("Ends", w.to, "end")}
-          {stage === "pre" && (
-            <>
-              <span aria-hidden className="h-px w-4 border-t border-dashed border-[var(--color-primary-300)]" />
-              {stop("Surgery", w.surgery, "surgery")}
-            </>
-          )}
+          {stop(stage === "pre" ? "Ends · surgery day" : "Ends", w.to, stage === "pre" ? "surgery" : "end")}
         </span>
       ) : n > 0 ? (
         <span className="text-xs italic text-[var(--color-ink-400)]">Set the surgery date to see the dates</span>
       ) : null}
+    </div>
+  );
+}
+
+/** A label and the diet's days on one line: chips scroll sideways, arrows nudge them, the chosen day stays in view. */
+function DayChips({ label, dates, cur, surgeryKey, onPick }: { label: string; dates: string[]; cur: string | null; surgeryKey: string; onPick: (k: string) => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = box.current?.querySelector<HTMLElement>("[aria-pressed=true]");
+    if (el && box.current) box.current.scrollTo({ left: el.offsetLeft - box.current.offsetLeft - 8, behavior: "smooth" });
+  }, [cur]);
+  const nudge = (d: number) => box.current?.scrollBy({ left: d * 160, behavior: "smooth" });
+  const arrow = "grid h-6 w-6 shrink-0 place-items-center rounded-full bg-white text-[var(--color-ink-500)] ring-1 ring-[var(--color-border)] normal-case hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]";
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="shrink-0 whitespace-nowrap">{label}</span>
+      <button type="button" onClick={() => nudge(-1)} aria-label="Earlier days" className={arrow}><ChevronLeft size={13} /></button>
+      <div ref={box} className="relative flex min-w-0 flex-1 gap-1.5 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {dates.map((k) => {
+          const on = k === cur;
+          return (
+            <button key={k} type="button" onClick={() => onPick(k)} aria-pressed={on}
+              className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11.5px] font-semibold normal-case tracking-normal ring-1 transition-colors ${on ? "bg-[var(--color-primary-600)] text-white ring-[var(--color-primary-600)] shadow-sm" : "bg-white text-[var(--color-ink-600)] ring-[var(--color-border)] hover:bg-[var(--color-primary-50)]"}`}>
+              {dayDate(k, false)}{k === surgeryKey && <span className={`ml-1.5 text-[9px] font-bold uppercase tracking-wider ${on ? "text-white/80" : "text-[var(--color-primary-600)]"}`}>DOS</span>}
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" onClick={() => nudge(1)} aria-label="Later days" className={arrow}><ChevronRight size={13} /></button>
     </div>
   );
 }
@@ -922,27 +1050,36 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
   const today = istDate();
   // Older food entries have no stage: they belong to the post-op chart
   const stageLog = log.filter((e) => (e.meta?.stage ?? "post") === stage);
-  const todayFood = stageLog.filter((e) => e.kind === "food" && e.meta?.date === today);
   // Rows move by dragging their handle; a new row is added at the end and its name focused
   const [grab, setGrab] = useState<number | null>(null);
   const [from, setFrom] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [focusRow, setFocusRow] = useState<number | null>(null);
-  const setMeal = (i: number, patch: Partial<Meal>) => set({ meals: s.meals.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
+  // One meal plan per day of the diet window; the chosen day's plan is what the table shows and edits
+  const dates = dietDateKeys(stage, s.dietDays, surgeryDate);
+  const [pick, setPick] = useState<string | null>(null);
+  const [planOpen, setPlanOpen] = useState(false); // the meal plan table starts closed
+  const cur = pick && dates.includes(pick) ? pick : dates.includes(today) ? today : (dates[0] ?? null);
+  const meals = mealsOn(s, cur);
+  // What was taken is recorded against the chosen day (today when the diet has no dates)
+  const onDay = cur ?? today;
+  const dayFood = stageLog.filter((e) => e.kind === "food" && e.meta?.date === onDay);
+  const setMeals = (next: Meal[]) => set(cur ? { dietByDate: { ...(s.dietByDate ?? {}), [cur]: next } } : { meals: next });
+  const sw = dietWindow(stage, s.dietDays, surgeryDate);
+  const surgeryKey = sw ? istKey(sw.surgery) : "";
+  const setMeal = (i: number, patch: Partial<Meal>) => setMeals(meals.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const move = (a: number, b: number) => {
     if (a === b) return;
-    const next = [...s.meals];
+    const next = [...meals];
     const [m] = next.splice(a, 1);
     next.splice(b, 0, m);
-    set({ meals: next });
+    setMeals(next);
   };
   const endDrag = () => { setFrom(null); setOver(null); setGrab(null); };
   return (
-    <div className="space-y-3">
-      <SoftCard icon={<Utensils size={14} />} title={stage === "pre" ? "Pre-op diet" : "Post-op diet"}
-        right={onPrint && <button type="button" onClick={onPrint} className={btnG}><Printer size={12} /> Print</button>}>
+    <div className="space-y-5">
         <DietDaysLine stage={stage} days={s.dietDays ?? ""} onChange={(d) => set({ dietDays: d })} surgeryDate={surgeryDate} editable={editable} />
-        <div className="flex flex-wrap items-end gap-4 mb-3">
+        <div className="flex flex-wrap items-end gap-4">
           <div className={rowIn}>
             <label className={lblIn}>Diet</label>
             <ChipRow storeKey="diet_types" builtIns={DIET_TYPES} editable={editable}
@@ -955,12 +1092,48 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
           </div>
           {s.dietTypes.includes("Nil by mouth") && <Field label="Nil by mouth from" type="time" value={s.nbmFrom} onChange={(x) => set({ nbmFrom: x })} disabled={!editable} className="w-40" />}
         </div>
-        <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+        {/* Note under the diet, with keywords and custom keywords */}
+        {(editable || (s.dietNote ?? "").trim()) && (
+          <div className="flex items-start gap-2">
+            <span className={`${miniLbl} pt-1.5`}>Note</span>
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <NoteBox value={s.dietNote ?? ""} onChange={(x) => set({ dietNote: x })} disabled={!editable} />
+              {editable && (
+                <div className="[&_button]:!px-2 [&_button]:!py-0.5 [&_span]:!text-[11px] [&_button]:!text-[11px]">
+                  <ChipRow storeKey="diet_notes" builtIns={DIET_NOTE_CHIPS} prefix="+ " isOn={(x) => (s.dietNote ?? "").split("\n").some((l) => l.trim() === x)} onPick={(x) => set({ dietNote: addLine(s.dietNote ?? "", x) })} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      {/* The meal plan is a card that starts closed; its header opens it */}
+      <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+      <div role="button" tabIndex={0} aria-expanded={planOpen} onClick={() => setPlanOpen((o) => !o)}
+        onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setPlanOpen((o) => !o); } }}
+        className="flex cursor-pointer select-none items-center gap-2.5 px-4 py-2.5 hover:bg-[var(--color-primary-50)]/30">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"><Utensils size={14} /></span>
+        <h3 className="text-[13px] font-semibold tracking-tight text-[var(--color-ink-900)]">Meal plan</h3>
+        <span className="ml-auto flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          {onPrint && <button type="button" onClick={onPrint} className={btnG}><Printer size={12} /> Print</button>}
+        </span>
+        <ChevronDown size={15} className={`shrink-0 text-[var(--color-ink-400)] transition-transform ${planOpen ? "rotate-180" : ""}`} />
+      </div>
+      {planOpen && (
+        <div className="overflow-x-auto border-t border-[var(--color-border)]">
           <table className="w-full min-w-[560px]">
-            <thead><tr>{["Meal Plan", "Time", "Diet", ...(planOnly ? [] : [`Taken today (${format(new Date(), "d MMM, EEE")})`]), ...(editable ? [""] : [])].map((h, k) => <th key={k} className={th}>{h}</th>)}</tr></thead>
+            <thead><tr>
+              {["Meal Plan", "Time", "Diet"].map((h) => <th key={h} className={th}>{h}</th>)}
+              {/* Last column: the days of the diet; picking one switches the other columns to that day's plan */}
+              {dates.length > 0 ? (
+                <th className={`${th} w-[440px] max-w-[440px] align-middle`}>
+                  <DayChips label={planOnly ? "Plan for day" : "Taken on"} dates={dates} cur={cur} surgeryKey={surgeryKey} onPick={setPick} />
+                </th>
+              ) : !planOnly ? <th className={th}>{`Taken today (${dayDate(today, false)})`}</th> : null}
+              {editable && <th className={th}></th>}
+            </tr></thead>
             <tbody>
-              {s.meals.map((m, i) => {
-                const rec = [...todayFood].reverse().find((e) => e.meta?.meal === m.meal);
+              {meals.map((m, i) => {
+                const rec = [...dayFood].reverse().find((e) => e.meta?.meal === m.meal);
                 return (
                   <tr key={i}
                     draggable={editable && grab === i}
@@ -987,17 +1160,17 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
                       <input type="time" value={m.time} disabled={!editable} onChange={(e) => setMeal(i, { time: e.target.value })} className={inp} />
                     </td>
                     <td className={td}>
-                      <SuggestField storeKey={FO.dietMeal.storeKey} builtIns={FO.dietMeal.builtIns} value={m.diet} onChange={(d) => set({ meals: s.meals.map((x, j) => (j === i ? { ...x, diet: d } : x)) })} disabled={!editable}>
-                        {(sp) => <input {...sp} value={m.diet} disabled={!editable} onChange={(e) => set({ meals: s.meals.map((x, j) => (j === i ? { ...x, diet: e.target.value } : x)) })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />}
+                      <SuggestField storeKey={FO.dietMeal.storeKey} builtIns={FO.dietMeal.builtIns} value={m.diet} onChange={(d) => setMeal(i, { diet: d })} disabled={!editable}>
+                        {(sp) => <input {...sp} value={m.diet} disabled={!editable} onChange={(e) => setMeal(i, { diet: e.target.value })} placeholder={editable ? "e.g. Idli, sambar" : "-"} className={inp} />}
                       </SuggestField>
                     </td>
-                    {!planOnly && <td className={`${td} whitespace-nowrap`}>
+                    {(!planOnly || dates.length > 0) && <td className={`${td} whitespace-nowrap`}>
                       {rec && <p className={`text-xs font-semibold ${rec.meta?.amount === "Refused" ? "text-red-600" : "text-emerald-700"}`}>{rec.meta?.amount} · {time(rec.at)} · {rec.by}</p>}
                       {canLog && !s.dietTypes.includes("Nil by mouth") && (
                         m.diet.trim() ? (
                           <div className="flex gap-1 mt-0.5">
                             {MEAL_AMOUNTS.map((a) => (
-                              <button key={a} type="button" disabled={pending} onClick={() => run({ text: `${stage === "pre" ? "Pre-op" : "Post-op"} ${m.meal} (${m.diet.trim()}): ${a}`, kind: "food", meta: { meal: m.meal, diet: m.diet.trim(), amount: a, date: today, stage } })}
+                              <button key={a} type="button" disabled={pending} onClick={() => run({ text: `${stage === "pre" ? "Pre-op" : "Post-op"} ${m.meal} (${m.diet.trim()}): ${a}`, kind: "food", meta: { meal: m.meal, diet: m.diet.trim(), amount: a, date: onDay, stage } })}
                                 className="px-2 py-0.5 rounded-md border border-[var(--color-border)] text-[11px] font-semibold text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]">{a}</button>
                             ))}
                           </div>
@@ -1009,7 +1182,7 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
                     {editable && (
                       <td className={`${td} w-10 text-center`}>
                         {/* Delete this row */}
-                        <button type="button" title="Delete this meal" aria-label={`Delete ${m.meal || "meal"}`} onClick={() => set({ meals: s.meals.filter((_, j) => j !== i) })}
+                        <button type="button" title="Delete this meal" aria-label={`Delete ${m.meal || "meal"}`} onClick={() => setMeals(meals.filter((_, j) => j !== i))}
                           className="grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-300)] transition-colors hover:bg-red-50 hover:text-red-600">
                           <X size={12} strokeWidth={2.5} />
                         </button>
@@ -1023,7 +1196,7 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
           {editable && (
             // A new row at the end; drag it into place
             <div className="border-t border-[var(--color-border)]/70 px-3 py-1.5">
-              <button type="button" onClick={() => { setFocusRow(s.meals.length); set({ meals: [...s.meals, { meal: "", time: "", diet: "" }] }); }}
+              <button type="button" onClick={() => { setFocusRow(meals.length); setMeals([...meals, { meal: "", time: "", diet: "" }]); }}
                 className="group/add inline-flex h-7 items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] pl-1 pr-3 text-[11.5px] font-semibold text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-100)] transition-all hover:bg-[var(--color-primary-100)] hover:shadow-sm active:scale-[0.97]">
                 <span className="grid h-5 w-5 place-items-center rounded-full bg-[var(--color-primary-600)] text-white transition-transform group-hover/add:rotate-90"><Plus size={11} strokeWidth={3} /></span>
                 Add meal
@@ -1031,8 +1204,9 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
             </div>
           )}
         </div>
+      )}
+      </div>
         <ErrorText text={error} />
-      </SoftCard>
 
       {!planOnly && log.filter((e) => e.kind === "food" || !e.kind).length > 0 && (
         <Card title="Food intake record">

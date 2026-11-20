@@ -10,18 +10,18 @@ export interface CounsellingSheet {
   anaesthesia: string | null;
   /** Latest surgery date: Counselling's date, else the date the doctor signed. */
   date: string | null;
-  /** Counselling stage, e.g. "Eligible for surgery". */
+  /** Counselling stage, e.g. "Proceed for surgery". */
   stage: string;
   /** Last day the counselling reports are valid (null when not known). */
   reportsValidUntil?: string | null;
 }
 
 const STAGE = (r: { eligibleForSurgery: boolean; fitForSurgery: boolean; surgeryDeferred: boolean } | null) =>
-  !r ? "Not started" : r.eligibleForSurgery ? "Eligible for surgery" : r.fitForSurgery ? "Eligible for surgery" : r.surgeryDeferred ? "Date not confirmed" : "Pending";
+  !r ? "Not started" : r.eligibleForSurgery ? "Proceed for surgery" : r.fitForSurgery ? "Proceed for surgery" : r.surgeryDeferred ? "Date not confirmed" : "Pending";
 
 /**
  * The patient's counselling sheet to import into an admission: the most recent
- * one marked Eligible for surgery, else the most recent one of any stage.
+ * one marked Proceed for surgery, else the most recent one of any stage.
  */
 export async function counsellingSheetFor(patientId: string, scope: Prisma.VisitWhereInput): Promise<CounsellingSheet | null> {
   const select = {

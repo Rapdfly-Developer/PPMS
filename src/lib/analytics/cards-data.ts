@@ -807,7 +807,7 @@ export function getSurgeryCard(scope: AnalyticsScope, f: AnalyticsFilters, drill
       };
     });
     const STEP_KEYS = ["advised", "counselled", "fit", "eligible", "admitted", "operated", "discharged"] as const;
-    const STEP_LABELS = ["Surgery advised", "Counselled", "Fit for surgery", "Eligible", "Admitted", "Operated", "Discharged"];
+    const STEP_LABELS = ["Surgery advised", "Counselled", "Fit for surgery", "Proceed", "Admitted", "Operated", "Discharged"];
     const journey = STEP_KEYS.map((k, i) => {
       const reached = paths.filter((p) => p[k]);
       const waits = i === 0 ? [] : reached.map((p) => dayGap(p[STEP_KEYS[i - 1]], p[k])).filter((x): x is number => x !== null);

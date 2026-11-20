@@ -826,7 +826,7 @@ export function AdmitPanel({ visit, udid, patientSex, eligible: sheet, canAdmit,
         />
       </div>
 
-      {/* Type of admission (Pre-op no longer needs Eligible for surgery) */}
+      {/* Type of admission (Pre-op no longer needs Proceed for surgery) */}
       <div>
         <label className={labelCls}>Type of Admission</label>
         <div className="flex flex-wrap gap-2">

@@ -91,7 +91,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     // Reports replaced by a No Show retake are history (as in Counselling)
     where: { visit: { patientId: v.patient.id, ...scope }, status: { not: SUPERSEDED } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true },
+    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true, priority: true, doctorNotes: true },
   });
 
   // EMR details for the discharge draft: the admitting visit first, then the
@@ -309,7 +309,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     orders: orders.map((o) => ({
       id: o.id, testName: o.testName, laterality: o.laterality, notes: o.notes, resultRef: o.resultRef,
       resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null, createdAt: o.createdAt.toISOString(),
-      extraResultRefs: o.extraResultRefs,
+      extraResultRefs: o.extraResultRefs, priority: o.priority, doctorNotes: o.doctorNotes,
     })),
     doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString(), editedAt: n.editedAt?.toISOString() ?? null, data: n.data ? parse(n.data) : null })),
     activity,
