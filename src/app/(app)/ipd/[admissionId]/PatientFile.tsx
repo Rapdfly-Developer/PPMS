@@ -130,8 +130,8 @@ export interface CounsellingSheet {
 export interface Can { edit: boolean; admit: boolean; shiftOt: boolean; discharge: boolean; doctorNotes: boolean; profile: boolean; ot?: boolean }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : "-");
-const fmtTime = (iso: string) => format(new Date(iso), "EEE, d MMM yyyy, h:mm a");
+const fmtDay = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE") : "-");
+const fmtTime = (iso: string) => format(new Date(iso), "d MMM yyyy, EEE, h:mm a");
 const istInput = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "");
 
 const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-75 disabled:cursor-not-allowed";
@@ -498,7 +498,7 @@ function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: 
                   <button type="button" onClick={() => setOpen(isOpen ? null : n.id)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left" aria-expanded={isOpen}>
                     <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[var(--color-surface-sunken)] text-[10px] font-bold uppercase text-[var(--color-ink-600)]">{who.split(" ").map((w) => w[0]).slice(0, 2).join("")}</span>
                     <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-semibold leading-tight text-[var(--color-ink-900)]">{format(new Date(n.at), "EEEE, d MMMM yyyy")} <span className="font-normal text-[var(--color-ink-400)]">· {format(new Date(n.at), "h:mm a")}</span></span>
+                      <span className="block truncate text-[13px] font-semibold leading-tight text-[var(--color-ink-900)]">{format(new Date(n.at), "d MMMM yyyy, EEEE")} <span className="font-normal text-[var(--color-ink-400)]">· {format(new Date(n.at), "h:mm a")}</span></span>
                       <span className="block truncate text-[11px] leading-tight text-[var(--color-ink-400)]">Dr. {who}{n.editedAt ? ` · edited ${format(new Date(n.editedAt), "h:mm a")}` : ""}</span>
                     </span>
                     <ChevronRight size={14} className={`ml-auto shrink-0 text-[var(--color-ink-300)] transition-transform ${isOpen ? "rotate-90" : ""}`} />

@@ -744,7 +744,7 @@ export function FollowUpsClient({
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Follow-up Management</h1>
             <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">
-              {visits.length} total · {format(new Date(), "EEEE, d MMMM yyyy")}
+              {visits.length} total · {format(new Date(), "d MMMM yyyy, EEEE")}
             </p>
           </div>
         </div>

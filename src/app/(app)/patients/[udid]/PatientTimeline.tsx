@@ -444,7 +444,7 @@ function DayEventsPanel({ selectedKey, dayEvents }: { selectedKey: string; dayEv
       {/* Date label */}
       <div className="sticky top-0 z-10 px-5 py-2.5 bg-white/90 backdrop-blur-sm border-b border-[var(--color-border)]">
         <p className="text-xs font-semibold text-[var(--color-ink-600)]">
-          {selectedKey ? format(new Date(selectedKey), "EEEE, d MMMM yyyy") : ""}
+          {selectedKey ? format(new Date(selectedKey), "d MMMM yyyy, EEEE") : ""}
         </p>
       </div>
 

@@ -34,7 +34,7 @@ function dayHeading(dk: string) {
   const d = new Date(dk + "T00:00:00");
   if (isToday(d))    return `Today, ${format(d, "d MMM yyyy")}`;
   if (isTomorrow(d)) return `Tomorrow, ${format(d, "d MMM yyyy")}`;
-  return format(d, "EEEE, d MMM yyyy");
+  return format(d, "d MMM yyyy, EEEE");
 }
 
 function hourLabel(h: number) {
@@ -244,8 +244,8 @@ export function AppointmentsClient({
   const hasFilters = search || statusParam !== "ALL" || doctorIdParam || visitTypeParam || deptParam || hospitalParam || dateParam;
 
   const displayDate = dateParam
-    ? format(new Date(dateParam + "T00:00:00"), "EEEE, d MMM yyyy")
-    : format(new Date(), "EEEE, d MMM yyyy");
+    ? format(new Date(dateParam + "T00:00:00"), "d MMM yyyy, EEEE")
+    : format(new Date(), "d MMM yyyy, EEEE");
 
   // unique departments from doctors
   const departments = [...new Set(doctors.map((d) => d.specialty).filter(Boolean))].sort() as string[];

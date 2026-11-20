@@ -1,5 +1,6 @@
 "use server";
 
+import { toDateDay } from "@/lib/ist";
 import { prisma } from "@/lib/prisma";
 import { requireAnyPermission } from "@/lib/rbac";
 import { visitRecordScope } from "@/lib/patient-access";
@@ -119,7 +120,7 @@ export async function saveCounsellingDetails(visitId: string, data: {
   if (rec?.fitForSurgery && dateChanged) {
     if (!nextDate) return { error: "The surgery date is required after Eligibility for surgery." };
     if (rec.reportsValidUntil && nextDate > rec.reportsValidUntil) {
-      return { error: `The reports are valid only till ${rec.reportsValidUntil.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
+      return { error: `The reports are valid only till ${toDateDay(rec.reportsValidUntil, "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" })}. Pick a date on or before it, or reopen counselling to redo the reports.` };
     }
   }
 

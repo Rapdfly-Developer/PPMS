@@ -32,7 +32,7 @@ export interface UpcomingRow {
 }
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE") : null);
 const rupees = (n: number | null) => (n != null ? `₹ ${n.toLocaleString("en-IN")}` : null);
 
 function paymentText(r: UpcomingRow) {

@@ -19,7 +19,7 @@ export function LiveClock() {
         {format(now, "hh:mm:ss aa").toLowerCase()}
       </div>
       <div className="text-sm text-slate-400 mt-1">
-        {format(now, "EEEE, d MMMM yyyy")}
+        {format(now, "d MMMM yyyy, EEEE")}
       </div>
     </div>
   );

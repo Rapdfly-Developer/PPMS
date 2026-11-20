@@ -1,5 +1,6 @@
 // Full counselling timeline for one visit, built from the audit log (every
 // counselling action is audited) plus the timestamps stored on the records.
+import { toDateDay } from "@/lib/ist";
 import { prisma } from "@/lib/prisma";
 
 export type ActivityTone = "primary" | "amber" | "emerald" | "orange" | "slate" | "red";
@@ -15,7 +16,7 @@ const rupees = (n: unknown) => (typeof n === "number" ? `₹${n.toLocaleString("
 const day = (v: unknown) => {
   if (!v) return null;
   const d = new Date(String(v));
-  return isNaN(d.getTime()) ? null : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  return isNaN(d.getTime()) ? null : toDateDay(d, "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 };
 
 export async function getCounsellingActivity(input: {

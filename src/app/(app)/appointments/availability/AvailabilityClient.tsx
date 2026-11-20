@@ -1,5 +1,6 @@
 "use client";
 
+import { toDateDay } from "@/lib/ist";
 import { useState, useTransition, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
@@ -69,7 +70,7 @@ function istTodayKey() {
 }
 function fmtFullDate(dateStr: string) {
   const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return toDateDay(d, "en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
 /* ── Types ──────────────────────────────────────────────────────────────────── */

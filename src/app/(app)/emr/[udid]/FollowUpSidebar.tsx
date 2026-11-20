@@ -1,5 +1,6 @@
 "use client";
 
+import { toDateDay } from "@/lib/ist";
 import { useState, useTransition } from "react";
 import { CalendarClock, Check } from "lucide-react";
 import { saveFollowUp } from "./actions";
@@ -11,7 +12,7 @@ function toInputDate(d: any) {
 
 function formatDisplay(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" });
+  return toDateDay(new Date(iso), "en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" });
 }
 
 export function FollowUpSidebar({ visit, udid }: { visit: any; udid: string }) {

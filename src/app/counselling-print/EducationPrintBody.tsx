@@ -54,7 +54,7 @@ function StagePrint({ title, s, stage, surgeryDate, part }: { title: string; s: 
         <table className="w-full border-collapse text-[12px] break-inside-avoid">
           <thead>
             <tr className="bg-gray-100">
-              {["Meal", "Time", "Diet"].map((h) => <th key={h} className="border border-gray-400 px-2 py-1.5 text-left font-bold">{h}</th>)}
+              {["Meal Plan", "Time", "Diet"].map((h) => <th key={h} className="border border-gray-400 px-2 py-1.5 text-left font-bold">{h}</th>)}
             </tr>
           </thead>
           <tbody>

@@ -1,5 +1,6 @@
 "use client";
 
+import { toDateDay } from "@/lib/ist";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { WARDS } from "@/lib/constants";
@@ -113,7 +114,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
 
   const formatDate = (iso: string) => {
     if (!iso) return "";
-    return new Date(iso).toLocaleDateString("en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" });
+    return toDateDay(new Date(iso), "en-GB", { weekday: "long", day: "2-digit", month: "short", year: "numeric" });
   };
 
   const appendKeyword = (kw: string) => {
@@ -221,7 +222,7 @@ export function FollowUpdatesPanel({ visit, udid, priorVisits = [] }: { visit: a
                 pastWithViewOf.map((v) => (
                   <div key={v.id} className="px-3 py-2.5">
                     <p className="text-caption font-semibold text-[var(--color-ink-400)] mb-0.5">
-                      {new Date(v.date).toLocaleDateString("en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
+                      {toDateDay(new Date(v.date), "en-IN", { weekday: "long", day: "2-digit", month: "short", year: "numeric" })}
                     </p>
                     <p className="text-xs text-[var(--color-ink-700)]">{v.inViewOf}</p>
                     <button

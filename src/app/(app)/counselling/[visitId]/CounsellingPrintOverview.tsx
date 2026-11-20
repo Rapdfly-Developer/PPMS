@@ -108,7 +108,7 @@ export function CounsellingPrintModal({ visitId, consents, hasOrders, onPrint, o
 
 /* ── Overview (same idea as the EMR Overview: the open sheet as a read-only summary) ── */
 
-const day = (d: string | null | undefined) => (d ? format(new Date(d), "EEE, d MMM yyyy") : "");
+const day = (d: string | null | undefined) => (d ? format(new Date(d), "d MMM yyyy, EEE") : "");
 
 /** A label / value row, laid out like the EMR summary's two-column rows (30% / 70%). */
 function KV({ label, value }: { label: string; value: React.ReactNode }) {

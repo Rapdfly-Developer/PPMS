@@ -63,7 +63,7 @@ export function PaymentDocs({ docs, onChange, editable, typeLabel, button, hint,
         <li key={d.ref} className="inline-flex items-center gap-1.5 max-w-full rounded-full border border-[var(--color-border)] bg-white pl-2.5 pr-1 py-0.5 text-xs">
           <FileText size={12} className="shrink-0 text-[var(--color-primary-600)]" />
           <a href={fileHref(d.ref)!} target="_blank" rel="noreferrer" className="truncate max-w-[220px] font-medium text-[var(--color-ink-700)] hover:text-[var(--color-primary-700)] hover:underline" title={d.name}>{d.name}</a>
-          <span className="text-[10px] text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(d.at), "EEE, d MMM")}</span>
+          <span className="text-[10px] text-[var(--color-ink-400)] whitespace-nowrap">{format(new Date(d.at), "d MMM, EEE")}</span>
           {editable && (
             <button type="button" onClick={() => onChange(docs.filter((x) => x.ref !== d.ref))} aria-label={`Remove ${d.name}`}
               className="w-5 h-5 rounded-full flex items-center justify-center text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-600 transition-colors"><X size={11} /></button>

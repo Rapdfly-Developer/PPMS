@@ -202,7 +202,7 @@ function InvOrderRow({ o, udid, onView, perms }: {
 
   const inViewOf = o.notes ? o.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
   const fileInput = <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png,.docx" className="hidden" onChange={handleFileChange} />;
-  const when = (d: string) => format(new Date(d), "EEE, d MMM yyyy, h:mm a");
+  const when = (d: string) => format(new Date(d), "d MMM yyyy, EEE, h:mm a");
   const cell = "flex min-h-8 min-w-0 items-center py-1 leading-snug rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-2.5 text-label";
 
   return (
@@ -510,7 +510,7 @@ function InvOrderPanel({ patientId, udid, onOrdered }: { patientId: string; udid
           ))}
         </div>
         <span className="text-caption text-[var(--color-ink-400)]">
-          {target ? `On visit of ${format(new Date(target.date), "EEE, d MMM yyyy")}` : ""}
+          {target ? `On visit of ${format(new Date(target.date), "d MMM yyyy, EEE")}` : ""}
         </span>
         <button type="button" disabled={pending || !target || selected.length === 0} onClick={placeOrders}
           className="ml-auto rounded-full bg-[var(--color-primary-600)] px-4 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[var(--color-primary-700)] disabled:opacity-40">
@@ -553,7 +553,7 @@ function InvestigationsDrawer({
             {/* Visit date header */}
             <div className="flex items-center gap-2 mb-2">
               <span className="text-caption font-semibold text-[var(--color-ink-700)]">
-                {format(new Date(v.date), "EEE, dd MMM yyyy")}
+                {format(new Date(v.date), "dd MMM yyyy, EEE")}
               </span>
               {v.hospitalName && (
                 <span className="text-caption text-[var(--color-ink-400)]">· {v.hospitalName}</span>
@@ -842,7 +842,7 @@ function SpectacleDrawer({
             <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border)]">
               <div className="flex items-center gap-2 min-w-0 flex-nowrap whitespace-nowrap">
                 <span className="shrink-0 text-caption font-bold text-[var(--color-ink-800)]">
-                  {format(new Date(v.date), "EEE, dd MMM yyyy")}
+                  {format(new Date(v.date), "dd MMM yyyy, EEE")}
                 </span>
                 {v.finalizedAt && (
                   <span className="shrink-0 text-micro text-[var(--color-ink-400)] font-medium">

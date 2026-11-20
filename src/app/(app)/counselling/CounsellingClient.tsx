@@ -256,10 +256,10 @@ function SurgeryChip({ r }: { r: CounsellingRow }) {
 function TentativeDate({ r }: { r: CounsellingRow }) {
   return (
     <span className="text-label sm:text-sm font-semibold text-[var(--color-ink-800)]">
-      {r.tentativeDate ? format(new Date(r.tentativeDate), "EEE, d MMM yyyy") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
+      {r.tentativeDate ? format(new Date(r.tentativeDate), "d MMM yyyy, EEE") : <span className="italic font-normal text-[var(--color-ink-300)]">Not set</span>}
       {r.tentativeDate && <span className="block mt-1"><DaysTag r={r} /></span>}
       {r.status === "POSTPONED" && !r.postponedIndefinitely && r.postponedUntil && (
-        <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "EEE, d MMM yyyy")}</span>
+        <span className="block text-caption font-medium text-orange-700">Expected {format(new Date(r.postponedUntil), "d MMM yyyy, EEE")}</span>
       )}
     </span>
   );
@@ -362,7 +362,7 @@ export function CounsellingClient({ rows }: { rows: CounsellingRow[] }) {
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">Counselling</h1>
             <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">
-              {rows.length} scheduled for surgery · {format(new Date(), "EEEE, d MMMM yyyy")}
+              {rows.length} scheduled for surgery · {format(new Date(), "d MMMM yyyy, EEEE")}
             </p>
           </div>
         </div>

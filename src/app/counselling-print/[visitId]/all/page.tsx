@@ -11,7 +11,7 @@ import { surgeryText } from "@/components/ui/SurgeryInline";
 export const metadata = { title: "Counselling" };
 
 const rupees = (n: unknown) => (n == null ? "" : `Rs. ${Number(n).toLocaleString("en-IN")}`);
-const day = (d: Date | string | null | undefined) => (d ? format(new Date(d), "EEE, d MMM yyyy") : "");
+const day = (d: Date | string | null | undefined) => (d ? format(new Date(d), "d MMM yyyy, EEE") : "");
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -64,7 +64,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Surgical Counselling" title="Counselling Sheet" dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
+            kicker="Surgical Counselling" title="Counselling Sheet" dateText={`Date: ${format(new Date(), "d MMM yyyy, EEE")}`} boxes={baseBoxes} />
           <H2>Surgery</H2>
           <table className="w-full border-collapse text-[12px]">
             <tbody>
@@ -125,7 +125,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Surgical Counselling" title="Investigations" dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
+            kicker="Surgical Counselling" title="Investigations" dateText={`Date: ${format(new Date(), "d MMM yyyy, EEE")}`} boxes={baseBoxes} />
           {orders.length === 0 ? (
             <p className="mt-4 text-[12.5px]">No investigations ordered.</p>
           ) : (
@@ -187,7 +187,7 @@ export default async function CounsellingAllPrintPage({ params, searchParams }: 
       node: (
         <>
           <IpdPrintHeader hospital={hospital} doctor={ctx.doctor} specialty={v.doctor.specialty || null}
-            kicker="Before your operation" title={part === "education" ? "Patient Education" : part === "diet" ? "Diet" : "Patient Education & Diet"} dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`} boxes={baseBoxes} />
+            kicker="Before your operation" title={part === "education" ? "Patient Education" : part === "diet" ? "Diet" : "Patient Education & Diet"} dateText={`Date: ${format(new Date(), "d MMM yyyy, EEE")}`} boxes={baseBoxes} />
           <EducationPrintBody e={education} surgeryDate={ctx.surgeryDate} part={part} />
         </>
       ),

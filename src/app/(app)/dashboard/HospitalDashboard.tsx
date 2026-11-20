@@ -105,7 +105,7 @@ export async function HospitalDashboard({
         displayName={hospitalName}
         bannerTitle={isSharedHospitalAccount ? hospitalName : `Welcome, ${user.name}`}
         bannerSubtitle={isSharedHospitalAccount ? undefined : `${roleLabel} · ${hospitalName}`}
-        todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
+        todayLabel={format(toISTWall(now), "d MMM yyyy, EEEE")}
         appts={appts}
         filterOptions={doctors}
         hospitalLogoUrl={hospital?.logoUrl ?? null}

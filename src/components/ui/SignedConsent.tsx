@@ -17,7 +17,7 @@ export function SignedConsentView({ file, title }: { file: { ref: string; name: 
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-800 ring-1 ring-emerald-200">
         <span className="inline-flex items-center gap-1.5 font-semibold"><CheckCircle2 size={14} /> Signed consent uploaded</span>
-        <span className="text-emerald-700/80">{file.name} · {format(new Date(file.at), "EEE, d MMM yyyy, h:mm a")}</span>
+        <span className="text-emerald-700/80">{file.name} · {format(new Date(file.at), "d MMM yyyy, EEE, h:mm a")}</span>
       </div>
       <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50">
         {isImg ? (
@@ -67,7 +67,7 @@ export function ConsentLockBar({ locked, unfrozen, onUnlock, onLock }: {
         <LockOpen size={14} className="shrink-0 text-amber-600" />
         <p className="flex-1 min-w-0 text-[13px] text-amber-900">
           {unfrozen
-            ? <>Unlocked by <b>{unfrozen.by}</b> on {format(new Date(unfrozen.at), "EEE, d MMM yyyy, h:mm a")}. The signed copy can be replaced or removed.</>
+            ? <>Unlocked by <b>{unfrozen.by}</b> on {format(new Date(unfrozen.at), "d MMM yyyy, EEE, h:mm a")}. The signed copy can be replaced or removed.</>
             : <>Signed copy uploaded. Click <b>Freeze</b> to lock this consent.</>}
         </p>
         {error && <span className="text-xs text-red-600">{error}</span>}

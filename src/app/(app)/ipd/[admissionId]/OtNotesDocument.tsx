@@ -2,6 +2,7 @@
 // hospital letterhead, a patient band, an "at a glance" result panel, the
 // operation times, the procedure steps and a signature line.
 // Pure markup (no <header>/<nav>: the app's print styles hide those).
+import { toDateDay } from "@/lib/ist";
 import { wardTypeText } from "@/lib/ipd";
 import type { OtNotesCopy } from "@/lib/ot";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
@@ -19,7 +20,7 @@ const ACCENT = "#0f5f5c";
 const TEXT = "#111111", RULE = "#404040", SHADE = "#D4D4D4", TINT = "#E6EFEE", ALERT = "#991B1B", WARN = "#92400E";
 const exact = "[print-color-adjust:exact] [-webkit-print-color-adjust:exact]";
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
-const day = (s?: string | null) => (s ? new Date(s).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "");
+const day = (s?: string | null) => (s ? toDateDay(new Date(s), "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "");
 const time = (s?: string | null) => (s ? new Date(s).toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) : "-");
 const dateTime = (s: string) => new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 const dr = (n: string) => `Dr. ${n.replace(/^Dr\.?\s*/i, "")}`;

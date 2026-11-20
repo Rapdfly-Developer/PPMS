@@ -40,7 +40,7 @@ export interface OtRow {
 
 type Card = "TODAY" | "UPCOMING" | "OVERALL";
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE") : null);
 const time = (iso: string | null) => (iso ? format(new Date(iso), "h:mm a") : null);
 /** The day of the operation: begun, else shifted to OT. */
 const otDate = (r: OtRow) => r.begunAt ?? r.shiftedToOtAt;
@@ -282,7 +282,7 @@ export function OtClient({ rows, canArrange }: { rows: OtRow[]; canArrange: bool
           </div>
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">OT Schedule</h1>
-            <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">{inOtNow} in OT · {format(new Date(), "EEEE, d MMMM yyyy")}</p>
+            <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">{inOtNow} in OT · {format(new Date(), "d MMMM yyyy, EEEE")}</p>
           </div>
         </div>
         <button onClick={() => setShowFilters((v) => !v)}
@@ -348,7 +348,7 @@ export function OtClient({ rows, canArrange }: { rows: OtRow[]; canArrange: bool
         <>
           <Calendar rows={reached} month={month} onMonth={(d) => { setMonth(d); setCalDay(null); }} selected={calDay} onSelect={setCalDay} />
           <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mb-3">
-            {calDay ? `Operations on ${format(calDay, "EEE, d MMM yyyy")}` : `Operations in ${format(month, "MMMM yyyy")}`} · showing {overallList.length}
+            {calDay ? `Operations on ${format(calDay, "d MMM yyyy, EEE")}` : `Operations in ${format(month, "MMMM yyyy")}`} · showing {overallList.length}
           </p>
           {overallList.length === 0
             ? empty("No operations on these dates", "Pick another day or month.")

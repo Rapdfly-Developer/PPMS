@@ -1,5 +1,6 @@
 "use client";
 
+import { toDateDay } from "@/lib/ist";
 import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
@@ -25,7 +26,7 @@ export interface DischargeContext {
 }
 
 const rows = (s: string, min = 2) => Math.max(min, Math.min(12, s.split("\n").length + 1));
-const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+const fmtDay = (iso: string) => toDateDay(new Date(iso), "en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 const istToday = () => new Date(Date.now() + 5.5 * 3600 * 1000);
 const plusDays = (n: number) => { const d = istToday(); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const plusMonths = (n: number) => { const d = istToday(); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
@@ -175,7 +176,7 @@ function CourseList({ value, onChange, editable, opts }: { value: string; onChan
   const lines = value.split("\n");
   const items = (editable ? lines : lines.filter((l) => l.trim())).map((l) => { const m = l.match(COURSE_RE); return m ? { date: m[1], text: m[2] } : { date: "", text: l }; });
   const save = (next: { date: string; text: string }[]) => onChange(next.map((i) => (i.date ? `${i.date}: ${i.text}` : i.text)).join("\n"));
-  const today = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  const today = toDateDay(new Date(), "en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
   if (!editable && items.length === 0) return <p className="text-sm text-[var(--color-ink-400)]">-</p>;
   return (
     <div className="space-y-1.5">

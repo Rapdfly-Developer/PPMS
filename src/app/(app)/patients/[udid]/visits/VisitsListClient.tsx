@@ -411,7 +411,7 @@ export function VisitsListClient({
                 )}
               </div>
               <p className="text-sm font-bold text-[var(--color-ink-900)] mb-1">
-                {format(new Date(v.date), "EEEE, dd MMM yyyy")}
+                {format(new Date(v.date), "dd MMM yyyy, EEEE")}
               </p>
               {v.hospital && (
                 <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-500)]">

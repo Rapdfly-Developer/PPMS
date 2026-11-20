@@ -42,7 +42,7 @@ export function ReportFilesMenu({ files, locked, onView, onReplace, onAddMore, o
   }, [open]);
 
   const done = () => { setOpen(false); setPick(null); setConfirm(null); };
-  const fileLabel = (f: ReportFile, i: number) => `File ${i + 1}${f.at ? ` · ${format(new Date(f.at), "EEE, d MMM, h:mm a")}` : ""}`;
+  const fileLabel = (f: ReportFile, i: number) => `File ${i + 1}${f.at ? ` · ${format(new Date(f.at), "d MMM, EEE, h:mm a")}` : ""}`;
 
   const run = async (fn: () => Promise<{ error?: string } | void>) => {
     setBusy(true);

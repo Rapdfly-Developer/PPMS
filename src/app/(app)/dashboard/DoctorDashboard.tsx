@@ -125,7 +125,7 @@ export async function DoctorDashboard({
       permissions={user.permissions ?? []}
       displayName={doctorProfile?.name ?? user.name}
       bannerTitle={`Dr. ${doctorProfile?.name ?? user.name}`}
-      todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
+      todayLabel={format(toISTWall(now), "d MMM yyyy, EEEE")}
       appts={appts}
       filterOptions={hospitals}
       newEncounterHref="/appointments/new"

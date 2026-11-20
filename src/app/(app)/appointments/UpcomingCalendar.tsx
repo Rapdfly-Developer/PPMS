@@ -280,7 +280,7 @@ export function UpcomingCalendar({
               <>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-[var(--color-ink-900)] leading-tight truncate">
-                    {format(new Date(selectedDk + "T00:00:00"), "EEEE, d MMMM yyyy")}
+                    {format(new Date(selectedDk + "T00:00:00"), "d MMMM yyyy, EEEE")}
                   </p>
                   <p className="text-xs text-[var(--color-ink-500)] leading-tight">
                     {selectedAppts.length} appointment{selectedAppts.length !== 1 ? "s" : ""}

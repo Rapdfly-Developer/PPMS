@@ -9,7 +9,7 @@ import { format, isToday } from "date-fns";
 
 /** The long summary's tab title: today's, or the day and date of the admitting visit. */
 export const summaryTitle = (visitDate: string) =>
-  isToday(new Date(visitDate)) ? "Today's Long Summary" : `Long Summary · ${format(new Date(visitDate), "EEE, d MMM yyyy")}`;
+  isToday(new Date(visitDate)) ? "Today's Long Summary" : `Long Summary · ${format(new Date(visitDate), "d MMM yyyy, EEE")}`;
 
 export interface TabChoice { key: string; title: string; preOp?: boolean }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { toDateDay } from "@/lib/ist";
 import { useState, useEffect, useRef, Component, Fragment, type ReactNode } from "react";
 import { Sparkles, Loader2, Activity, AlertCircle, FileText, Pill, FlaskConical, ClipboardList, CalendarClock, Microscope, Stethoscope, BookOpen, CalendarCheck, RefreshCw } from "lucide-react";
 import { getVisitEmrData } from "./emr-viewer-action";
@@ -542,7 +543,7 @@ function ShortContent({ complaint, diagnoses, emrData }: {
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <span className="text-caption text-[var(--color-ink-700)] font-semibold">
-            {new Date(emrData.followUpDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+            {toDateDay(new Date(emrData.followUpDate), "en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
           </span>
           {emrData.inViewOf && (
             <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {emrData.inViewOf}</span>
@@ -1505,7 +1506,7 @@ function LongContent({
             <span className="text-micro font-bold text-[var(--color-ink-300)]">·</span>
           </span>
           <span className="text-caption text-[var(--color-ink-700)] font-semibold">
-            {new Date(data.followUpDate).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
+            {toDateDay(new Date(data.followUpDate), "en-GB", { weekday: "long", day: "numeric", month: "short", year: "numeric" })}
           </span>
           {data.inViewOf && (
             <span className="font-normal italic text-[var(--color-ink-500)] ml-1.5">· In view of: {data.inViewOf}</span>

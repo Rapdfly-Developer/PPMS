@@ -29,13 +29,13 @@ export default async function CounsellingEducationPrintPage({ params, searchPara
             specialty={v.doctor.specialty || null}
             kicker="Before your operation"
             title={title}
-            dateText={`Date: ${format(new Date(), "EEE, d MMM yyyy")}`}
+            dateText={`Date: ${format(new Date(), "d MMM yyyy, EEE")}`}
             boxes={[
               ["Patient", ctx.patientName],
               ["Age / Gender", `${ctx.age} yrs / ${SEX[ctx.sex] ?? ctx.sex}`],
               ["Hospital No.", pid],
               ["Procedure", surgeryText(ctx.eye, ctx.surgery, ctx.anaesthesia)],
-              ["Surgery date", ctx.surgeryDate ? format(new Date(ctx.surgeryDate), "EEE, d MMM yyyy") : ""],
+              ["Surgery date", ctx.surgeryDate ? format(new Date(ctx.surgeryDate), "d MMM yyyy, EEE") : ""],
               ["Surgeon", `Dr. ${ctx.doctor}`],
             ]}
           />

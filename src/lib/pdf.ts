@@ -1207,7 +1207,7 @@ const COLS_EYE_PDF = ["38%", "31%", "31%"];
 
 /** Follow-up line value: date, then "· In view of: …". */
 function suiFollowUp(date: Date, inViewOf?: string | null): string {
-  return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_700};">${format(date, "EEEE, d MMM yyyy")}</span>` +
+  return `<span style="font-size:9.5px;font-weight:600;color:${SUI.INK_700};">${format(date, "d MMM yyyy, EEEE")}</span>` +
     (inViewOf && inViewOf.trim() ? `<span style="font-size:9.5px;font-style:italic;color:${SUI.INK_500};margin-left:6px;">· In view of: ${escapeHtml(inViewOf.trim())}</span>` : "");
 }
 

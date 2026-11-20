@@ -1,5 +1,6 @@
 // IPD patient-file forms: data shapes, hospital-standard defaults and presets.
 // Shared by the server (defaults) and the form screens. No server imports.
+import { toDateDay } from "@/lib/ist";
 import { SURGERY_OPTIONS } from "@/lib/counselling";
 
 /* ── Running logs (charts) ─────────────────────────────────────────────── */
@@ -711,10 +712,10 @@ export const postStage = (e: EducationStage): EducationStage => ({
 });
 
 const DAY_MS = 24 * 3600 * 1000;
-/** Day and date in IST, e.g. "Mon, 14 Nov 2026" (no year: "Mon, 14 Nov"). */
+/** Date and day in IST, e.g. "14 Nov 2026, Mon" (no year: "14 Nov, Mon"). */
 export function dayDate(d: Date | string, year = true): string {
   const x = typeof d === "string" ? new Date(d.length === 10 ? `${d}T00:00:00+05:30` : d) : d;
-  return x.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kolkata" }).replace(/^(\w{3}) /, "$1, ");
+  return toDateDay(x, "en-GB", { weekday: "short", day: "numeric", month: "short", ...(year ? { year: "numeric" } : {}), timeZone: "Asia/Kolkata" });
 }
 
 /**

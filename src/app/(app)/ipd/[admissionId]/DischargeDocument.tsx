@@ -2,6 +2,7 @@
 // an "at a glance" panel; each section has a full-width ruled heading; empty
 // sections are left out. Dark inks and solid rules so it prints clearly.
 // Pure markup (no <header>/<nav>: the app's print styles hide those).
+import { toDateDay } from "@/lib/ist";
 import { admissionTypeText, dischargeTypeLabel, durationEnd, wardTypeText, type DischargeData } from "@/lib/ipd";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 
@@ -19,7 +20,7 @@ const ACCENT = "#0f5f5c";
 const TEXT = "#111111", RULE = "#404040", SHADE = "#D4D4D4", TINT = "#E6EFEE", ALERT = "#991B1B";
 const exact = "[print-color-adjust:exact] [-webkit-print-color-adjust:exact]";
 const day = (s?: string | null) =>
-  s ? new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
+  s ? toDateDay(new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s), "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
 const dateTime = (s: string) =>
   new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
@@ -46,7 +47,7 @@ function Lines({ v }: { v: string }) {
   return <>{lines(v).map((l, i) => <p key={i}>{l}</p>)}</>;
 }
 
-/** "Thu, 19 Nov 2026: text" lines as a dated list (date on the left, entry beside it). */
+/** "19 Nov 2026, Thu: text" lines as a dated list (date on the left, entry beside it). */
 function Course({ v }: { v: string }) {
   return (
     <div className="space-y-[3px]">

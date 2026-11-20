@@ -1,6 +1,8 @@
 // IPD (Phase 2) - shared rules and templates. No server-only imports, so the
 // file screens and the server actions read the same definitions.
 
+import { toDateDay } from "./ist";
+
 export type AdmissionType = "CONSERVATIVE" | "PRE_OP" | "OTHERS";
 export type IpdStatus = "ADMITTED" | "IN_OT" | "POST_OP" | "DISCHARGED";
 
@@ -327,7 +329,7 @@ export const DISCHARGE_WARNING_SIGNS =
 const istDay = (d?: Date | string | null) =>
   d ? new Date(new Date(d).getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10) : "";
 const dayLabel = (d: Date | string) =>
-  new Date(d).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+  toDateDay(new Date(d), "en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
 
 const parseJson = <T,>(s: string | null | undefined, fallback: T): T => {
   if (!s) return fallback;
@@ -383,7 +385,7 @@ export function courseFromNotes(notes: { text: string; at: string | Date }[]): s
     .join("\n");
 }
 
-/** "till Thu, 3 Dec 2026" for a duration like "2 weeks" counted from `from` (a YYYY-MM-DD day; today when empty). */
+/** "till 3 Dec 2026, Thu" for a duration like "2 weeks" counted from `from` (a YYYY-MM-DD day; today when empty). */
 export function durationEnd(duration: string, from?: string | null): string {
   const m = (duration ?? "").match(/(\d+)\s*(day|week|wk|month|mo|year|yr)/i);
   if (!m) return "";
@@ -394,7 +396,7 @@ export function durationEnd(duration: string, from?: string | null): string {
   else if (u.startsWith("w")) d.setUTCDate(d.getUTCDate() + n * 7);
   else if (u.startsWith("m")) d.setUTCMonth(d.getUTCMonth() + n);
   else d.setUTCFullYear(d.getUTCFullYear() + n);
-  return `till ${d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`;
+  return `till ${toDateDay(d, "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`;
 }
 
 export function medsFromDrugs(drugs: { name: string; dose: string; eye: string; frequency: string }[]): DischargeMed[] {

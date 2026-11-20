@@ -119,7 +119,7 @@ export default async function DashboardPage() {
         scope="DOCTOR"
         permissions={user.permissions ?? []}
         bannerTitle={`Dr. ${doctorProfile?.name ?? user.name}`}
-        todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
+        todayLabel={format(toISTWall(now), "d MMM yyyy, EEEE")}
         appts={appts}
         filterOptions={hospitals}
         newEncounterHref="/appointments/new"
@@ -236,7 +236,7 @@ export default async function DashboardPage() {
       permissions={user.permissions ?? []}
       bannerTitle={isSharedAccount ? hospitalName : `Welcome, ${user.name}`}
       bannerSubtitle={isSharedAccount ? undefined : `${roleLabel} · ${hospitalName}`}
-      todayLabel={format(toISTWall(now), "EEEE, d MMM yyyy")}
+      todayLabel={format(toISTWall(now), "d MMM yyyy, EEEE")}
       appts={hAppts}
       filterOptions={doctors}
       newEncounterHref="/appointments/book"

@@ -20,6 +20,17 @@ export function istParts(d: Date): { weekday: number; hours: number; minutes: nu
   };
 }
 
+/**
+ * Date first, then the weekday: "6 Nov 2026, Fri". Pass the usual Intl options
+ * (including `weekday`); the weekday is moved after the date.
+ */
+export function toDateDay(d: Date, locale: string, opts: Intl.DateTimeFormatOptions): string {
+  const { weekday, ...rest } = opts;
+  const date = d.toLocaleDateString(locale, rest);
+  if (!weekday) return date;
+  return `${date}, ${d.toLocaleDateString(locale, { weekday, timeZone: opts.timeZone })}`;
+}
+
 /** "HH:MM" (24h) in IST for an instant. */
 export function istHHMM(d: Date): string {
   const p = istParts(d);

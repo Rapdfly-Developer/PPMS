@@ -51,7 +51,7 @@ const TAB_META: Record<Tab, { glyph: React.ReactNode; hint: string; icon: string
 };
 
 const SEX_SHORT: Record<string, string> = { MALE: "M", FEMALE: "F", OTHER: "O" };
-const day = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : null);
+const day = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE") : null);
 
 /** Which tab a patient belongs to (Overall holds everyone). */
 function tabOf(r: IpdRow): Tab {
@@ -330,7 +330,7 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
           <div>
             <h1 className="text-lg sm:text-xl font-bold text-[var(--color-ink-900)]">IPD</h1>
             <p className="text-caption sm:text-xs text-[var(--color-ink-400)] mt-0.5">
-              {rows.filter((r) => r.status !== "DISCHARGED").length} in the hospital · {format(new Date(), "EEEE, d MMMM yyyy")}
+              {rows.filter((r) => r.status !== "DISCHARGED").length} in the hospital · {format(new Date(), "d MMMM yyyy, EEEE")}
             </p>
           </div>
         </div>
@@ -409,7 +409,7 @@ export function IpdClient({ rows, upcoming, canViewCounselling }: { rows: IpdRow
           ? "Counselling partially completed, not yet admitted"
           : card === "TODAY"
           ? `${inHouse.length} in the hospital`
-          : calDay ? `Admitted or discharging on ${format(calDay, "EEE, d MMM yyyy")}` : `Admitted or discharging in ${format(month, "MMMM yyyy")}`}
+          : calDay ? `Admitted or discharging on ${format(calDay, "d MMM yyyy, EEE")}` : `Admitted or discharging in ${format(month, "MMMM yyyy")}`}
         {" · "}showing {tabCount(tab)}
       </p>
 

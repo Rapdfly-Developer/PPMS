@@ -138,8 +138,8 @@ const IN_VIEW_OF_SUGGESTIONS = [
   "Bleeding risk",
 ];
 
-const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy") : "-");
-const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "EEE, d MMM yyyy, h:mm a") : null);
+const fmtDate = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE") : "-");
+const fmtDateTime = (iso: string | null) => (iso ? format(new Date(iso), "d MMM yyyy, EEE, h:mm a") : null);
 const rupees = (n: number | null) => (n == null ? "—" : `₹${n.toLocaleString("en-IN")}`);
 
 /** Custom implants are remembered per surgery, so they only come back for that surgery. */
@@ -308,7 +308,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
   const locked = !canUpload;
 
   const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
-  const orderedAt = format(new Date(order.createdAt), "EEE, dd MMM yyyy, h:mm a");
+  const orderedAt = format(new Date(order.createdAt), "dd MMM yyyy, EEE, h:mm a");
 
   const lateralityBadge = (
     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-caption font-bold text-[var(--color-primary-700)]">
@@ -368,7 +368,7 @@ function InvestigationCard({ order, visitId, canUpload, onView, onChanged }: {
           </div>
           {order.resultAt && (
             <span className="inline-flex items-center gap-1 text-caption text-[var(--color-ink-500)] whitespace-nowrap">
-              <Clock size={10} />Uploaded {format(new Date(order.resultAt), "EEE, dd MMM yyyy, h:mm a")}
+              <Clock size={10} />Uploaded {format(new Date(order.resultAt), "dd MMM yyyy, EEE, h:mm a")}
             </span>
           )}
         </div>
@@ -394,7 +394,7 @@ function InvestigationsPanel({ data, canUpload, onChanged, action }: { data: Cou
   const grouped = useMemo(() => {
     const map = new Map<string, CounsellingOrder[]>();
     for (const o of data.orders) {
-      const key = format(new Date(o.createdAt), "EEE, dd MMM yyyy");
+      const key = format(new Date(o.createdAt), "dd MMM yyyy, EEE");
       map.set(key, [...(map.get(key) ?? []), o]);
     }
     return [...map.entries()];
@@ -472,7 +472,7 @@ function NoShowModal({ pending, error, onClose, newDate, fit, oldestReport, vali
       <div className="space-y-3">
         <div className={`rounded-xl border px-3.5 py-3 ${expiredNow || !validForNew ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"}`}>
           <p className="text-sm font-semibold text-[var(--color-ink-900)]">
-            The investigations were taken {ago} ago{taken ? ` (${format(taken, "EEE, d MMM yyyy")})` : ""}.
+            The investigations were taken {ago} ago{taken ? ` (${format(taken, "d MMM yyyy, EEE")})` : ""}.
           </p>
           {validUntil && (
             <p className={`mt-1 text-caption font-medium ${expiredNow || !validForNew ? "text-red-700" : "text-amber-800"}`}>
@@ -661,17 +661,6 @@ function DoneTag({ tone, children }: { tone: "amber" | "emerald" | "primary"; ch
       ? "bg-emerald-50 border-emerald-200 text-emerald-700"
       : "bg-[var(--color-primary-50)] border-[var(--color-primary-200)] text-[var(--color-primary-700)]";
   return <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-semibold ${cls}`}><CheckCircle2 size={10} /> {children}</span>;
-}
-
-function ReadyItem({ ok, children }: { ok: boolean; children: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs">
-      {ok
-        ? <CheckCircle2 size={14} className="text-emerald-600 shrink-0" />
-        : <Circle size={14} className="text-[var(--color-ink-300)] shrink-0" />}
-      <span className={ok ? "text-[var(--color-ink-700)] font-medium" : "text-[var(--color-ink-500)]"}>{children}</span>
-    </span>
-  );
 }
 
 /** Full report preview: image or PDF inline, anything else via "Open". */
@@ -976,7 +965,7 @@ export function CounsellingDetail({
       className="inline-flex items-center gap-1.5 h-7 pl-2 pr-3 rounded-full border border-amber-300 bg-amber-50 text-xs font-semibold text-amber-800 shadow-[0_1px_2px_rgba(180,83,9,0.12)] hover:bg-amber-100 hover:border-amber-400 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 transition-[background-color,border-color,transform]"
     >
       <span className="grid place-items-center w-4 h-4 rounded-full bg-amber-500 text-white"><Check size={10} strokeWidth={3} /></span>
-      Eligibility Check
+      Proceed for Eligibility
     </button>
   );
 
@@ -1119,16 +1108,21 @@ export function CounsellingDetail({
         {/* Drug allergy from the EMR (read-only), label in red */}
         <div className="mb-3">
           <InlineField label="Drug Allergy" tight labelClass="text-red-600">
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <label className="inline-flex items-center gap-2 text-xs text-[var(--color-ink-600)]">
-                <input type="checkbox" disabled={!editable} checked={nkda} onChange={(e) => setNkda(e.target.checked)} className="accent-[var(--color-primary-600)]" />
-                NKDA (No Known Drug Allergies)
-              </label>
-              {/* Same keyword box as the EMR Allergies: autocomplete, keyword chips and + Add */}
-              {!nkda && (
-                <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={!editable} rows={1} placeholder="Search or type drug allergies..." />
-              )}
-            </div>
+            {(() => {
+              const nkdaBox = (
+                <label className="inline-flex items-center gap-2 text-xs text-[var(--color-ink-600)]">
+                  <input type="checkbox" disabled={!editable} checked={nkda} onChange={(e) => setNkda(e.target.checked)} className="accent-[var(--color-primary-600)]" />
+                  NKDA (No Known Drug Allergies)
+                </label>
+              );
+              /* Same keyword box as the EMR Allergies; NKDA sits beside + Keyword */
+              return (
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  {!nkda && <KeywordTextarea fieldKey="ge_allergies" value={allergies} onChange={setAllergies} disabled={!editable} rows={1} placeholder="Search or type drug allergies..." afterButtons={nkdaBox} />}
+                  {(nkda || !editable) && nkdaBox}
+                </div>
+              );
+            })()}
           </InlineField>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-3">
@@ -1456,16 +1450,6 @@ export function CounsellingDetail({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
-              <ReadyItem ok={invPending.length === 0}>
-                {currentOrders.length === 0
-                  ? "No investigations ordered"
-                  : invPending.length === 0
-                    ? `All ${currentOrders.length} reports uploaded`
-                    : `${invPending.length} report${invPending.length > 1 ? "s" : ""} pending`}
-              </ReadyItem>
-              <ReadyItem ok={!!dateOfSurgery}>{dateOfSurgery ? "Tentative date set" : "Tentative date not set"}</ReadyItem>
-            </div>
             {invPending.length > 0 && <p className="text-caption text-[var(--color-ink-500)]">Waiting for: {invPending.map((o) => o.testName).join(", ")}</p>}
             {rec.investigationDetails && <p className="text-caption text-[var(--color-ink-500)]">Additional investigations in view of: <i>{rec.investigationDetails}</i></p>}
 

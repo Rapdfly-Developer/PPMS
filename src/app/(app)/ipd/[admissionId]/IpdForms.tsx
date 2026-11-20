@@ -80,7 +80,7 @@ const th = "px-2.5 py-1.5 text-left text-[10.5px] font-bold uppercase tracking-w
 const td = "px-2.5 py-1.5 align-top border-b border-[var(--color-border)] text-sm text-[var(--color-ink-800)]";
 
 const time = (iso: string) => format(new Date(iso), "h:mm a");
-const dateTime = (iso: string) => format(new Date(iso), "EEE, d MMM, h:mm a");
+const dateTime = (iso: string) => format(new Date(iso), "d MMM, EEE, h:mm a");
 const istDate = (d: Date = new Date()) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -248,7 +248,7 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
         {f.orders.length - done > 0 && <span className="rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-semibold text-amber-700">{f.orders.length - done} pending</span>}
       </div>
       {groups.map(([day, list]) => (
-        <Card key={day} title={`Ordered ${format(new Date(`${day}T00:00:00`), "EEEE, d MMMM yyyy")}`}>
+        <Card key={day} title={`Ordered ${format(new Date(`${day}T00:00:00`), "d MMMM yyyy, EEEE")}`}>
           <div className="-m-3.5 overflow-x-auto">
             <table className="w-full min-w-[520px]">
               <thead><tr>{["Investigation", "Eye", "Notes", "Status", "Report"].map((h) => <th key={h} className={th}>{h}</th>)}</tr></thead>
@@ -261,7 +261,7 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
                       <td className={`${td} text-[var(--color-ink-500)]`}>{o.notes || "-"}</td>
                       <td className={td}>
                         {o.resultRef
-                          ? <span className="text-xs font-semibold text-emerald-700">Received {o.resultAt ? format(new Date(o.resultAt), "EEE, d MMM") : ""}</span>
+                          ? <span className="text-xs font-semibold text-emerald-700">Received {o.resultAt ? format(new Date(o.resultAt), "d MMM, EEE") : ""}</span>
                           : <span className="text-xs font-semibold text-amber-700">Pending</span>}
                       </td>
                       <td className={td}>
@@ -345,7 +345,7 @@ export function ImplantForm({ value: v, change, editable, f }: FormProps<Implant
           {[
             ["Implant", f.ctx.implant],
             ["Payment", pay ? [paymentLabel(pay.mode, pay.type), pay.scheme, pay.policy].filter(Boolean).join(" · ") : ""],
-            ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "EEE, d MMM yyyy")}` : ""}` : ""],
+            ["Eligible for surgery", pay?.eligibleBy ? `${pay.eligibleBy}${pay.eligibleAt ? `, ${format(new Date(pay.eligibleAt), "d MMM yyyy, EEE")}` : ""}` : ""],
           ].map(([k, x]) => (
             <div key={k} className={rowIn}><p className={lblIn}>{k}</p><p className="font-semibold text-[var(--color-ink-800)] min-w-0">{x || "-"}</p></div>
           ))}
@@ -957,7 +957,7 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
         </div>
         <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
           <table className="w-full min-w-[560px]">
-            <thead><tr>{["Meal", "Time", "Diet", ...(planOnly ? [] : [`Taken today (${format(new Date(), "EEE, d MMM")})`]), ...(editable ? [""] : [])].map((h, k) => <th key={k} className={th}>{h}</th>)}</tr></thead>
+            <thead><tr>{["Meal Plan", "Time", "Diet", ...(planOnly ? [] : [`Taken today (${format(new Date(), "d MMM, EEE")})`]), ...(editable ? [""] : [])].map((h, k) => <th key={k} className={th}>{h}</th>)}</tr></thead>
             <tbody>
               {s.meals.map((m, i) => {
                 const rec = [...todayFood].reverse().find((e) => e.meta?.meal === m.meal);
@@ -1072,7 +1072,7 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
     const t = format(new Date(), "yyyy-MM-dd");
     const yd = new Date(); yd.setDate(yd.getDate() - 1);
     const y = format(yd, "yyyy-MM-dd");
-    return d === t ? "Today" : d === y ? "Yesterday" : format(new Date(iso), "EEE, d MMM");
+    return d === t ? "Today" : d === y ? "Yesterday" : format(new Date(iso), "d MMM, EEE");
   };
   const groups: { label: string; items: LogEntry[] }[] = [];
   [...log].reverse().forEach((e) => {
@@ -1101,7 +1101,7 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-white text-[var(--color-ink-600)] ring-1 ring-[var(--color-border)]"><Pill size={16} /></span>
             <div>
               <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-700)]">Medication chart</h3>
-              <p className="text-[11px] text-[var(--color-ink-500)]">{format(new Date(), "EEEE, d MMMM yyyy")}{canLog ? " · tap a dose time when given" : ""}</p>
+              <p className="text-[11px] text-[var(--color-ink-500)]">{format(new Date(), "d MMMM yyyy, EEEE")}{canLog ? " · tap a dose time when given" : ""}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] font-bold">
@@ -1237,7 +1237,7 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormPro
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const toggleChip = (c: string) => setNote((n) => (n.includes(c) ? n.replace(new RegExp(`(^|; )${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "").replace(/^; /, "") : n ? `${n}; ${c}` : c));
-  const dayTime = (iso: string) => `${format(new Date(iso), "EEE, d MMM yyyy")} · ${format(new Date(iso), "h:mm a")}`;
+  const dayTime = (iso: string) => `${format(new Date(iso), "d MMM yyyy, EEE")} · ${format(new Date(iso), "h:mm a")}`;
   const hasData = Object.values(vit).some((x) => x.trim()) || note.trim();
 
   const begin = (e?: NurseEntry) => {
@@ -1511,7 +1511,7 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
     setDraft(null);
   };
   const set = (k: keyof PostOpReview, x: string) => setDraft((d) => (d ? { ...d, [k]: x } : d));
-  const when = (r: PostOpReview) => `${format(new Date(r.at ?? `${r.date}T00:00:00`), "EEE, d MMM yyyy")}${r.at ? ` · ${format(new Date(r.at), "h:mm a")}` : ""}`;
+  const when = (r: PostOpReview) => `${format(new Date(r.at ?? `${r.date}T00:00:00`), "d MMM yyyy, EEE")}${r.at ? ` · ${format(new Date(r.at), "h:mm a")}` : ""}`;
   const hasData = !!draft && [draft.vaRe, draft.vaLe, draft.iopRe, draft.iopLe, draft.lids, draft.conjunctiva, draft.cornea, draft.ac, draft.pupil, draft.lens, draft.fundus, draft.complaints, draft.plan].some((x) => x.trim());
 
   return (
@@ -1521,7 +1521,7 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
       {draft && (
         <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/70 px-4 py-2">
-            <span className="text-xs font-bold text-[var(--color-ink-800)]">{format(new Date(`${draft.date}T00:00:00`), "EEE, d MMM yyyy")}{draft.pod ? ` · ${draft.pod}` : ""}</span>
+            <span className="text-xs font-bold text-[var(--color-ink-800)]">{format(new Date(`${draft.date}T00:00:00`), "d MMM yyyy, EEE")}{draft.pod ? ` · ${draft.pod}` : ""}</span>
             <button type="button" onClick={() => setDraft((d) => (d ? { ...d, ...POSTOP_NORMAL } : d))} className={btnG}><CheckCircle2 size={12} /> Normal findings</button>
           </div>
           <div className="space-y-3 px-4 py-3">
