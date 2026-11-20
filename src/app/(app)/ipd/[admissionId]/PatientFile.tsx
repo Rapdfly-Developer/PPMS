@@ -366,7 +366,7 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
       {body}
 
       <ErrorLine text={error} />
-      {keyName !== "otFinal" && <Photos d={d} keyName={keyName} list={row?.attachments ?? []} canAdd={can.edit && attachOpen(d.status)} onRefresh={onRefresh} />}
+      {keyName !== "otFinal" && keyName !== "investigations" && <Photos d={d} keyName={keyName} list={row?.attachments ?? []} canAdd={can.edit && attachOpen(d.status)} onRefresh={onRefresh} />}
 
       {confirmFreeze && (
         <ConfirmDialog
