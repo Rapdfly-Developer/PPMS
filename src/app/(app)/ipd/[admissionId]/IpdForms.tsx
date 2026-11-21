@@ -1,7 +1,7 @@
 "use client";
 
 import { fileHref } from "@/lib/file-href";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from "react";
 import { IolFields, IolPowerInput } from "@/components/ui/IolFields";
 import { useImplantAutoFill } from "@/components/ui/ImplantAutoFill";
 import { paymentLabel } from "@/lib/counselling";
@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { MedicationEntry, type MedicationDraft } from "@/components/emr/MedicationEntry";
 import {
   BookOpen, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw,
-  CalendarDays, Clock, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
+  CalendarDays, Clock, Eye, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
 } from "lucide-react";
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
@@ -22,15 +22,16 @@ import { ReportFilesMenu } from "@/components/emr/ReportFilesMenu";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { implantGroup } from "@/lib/counselling";
 import { implantFieldsFor, type CounsellingImplant, type ImplantDoc } from "@/lib/counselling-sheets";
-import { addIpdExtraReport, attachIpdReport, removeIpdExtraReport, removeIpdReport } from "../actions";
+import { NewInvestigations } from "../../emr/[udid]/InvestigationsTab";
+import { addIpdExtraReport, addIpdInvestigationOrder, attachIpdReport, removeIpdExtraReport, removeIpdReport } from "../actions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { EducationSetsDialog, LoadOtTemplate, ManageMine, SaveAsMine, type SavedTemplate } from "./templatesUi";
 import {
   CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, EYES,
-  IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST, SHIFTS,
+  IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST,
   scheduleFor,
   type ChecklistData, type CheckAnswer, type NurseEntry, type ConsentItem, type ConsentsData, type DrugOrder, type EducationData,
-  builtinEducationSets, prebuiltConsents, dayDate, eduMedText, pointWithDates, dietWindow, dietDateKeys, istKey, mealsOn, educationSetFor, educationSetsFor, educationStage, medDates,
+  builtinEducationSets, prebuiltConsents, dayDate, eduMedText, pointWithDates, dietWindow, dietDateKeys, istKey, mealsOn, educationSetFor, educationSetsFor, educationStage, medDates, durationDays,
   type EduPoint, type EducationStage, type EduStageKey, type Meal,
   type FormContext, type ImplantData, type LogEntry, type NurseData, type OtNotesData, type PostOpData,
   type PostOpReview, type TreatmentData,
@@ -85,17 +86,27 @@ const dateTime = (iso: string) => format(new Date(iso), "d MMM, EEE, h:mm a");
 const istDate = (d: Date = new Date()) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-export function Card({ title, sub, right, children, tone }: { title: string; sub?: string; right?: React.ReactNode; children: React.ReactNode; tone?: "warn" | "ok" }) {
+export function Card({ title, sub, right, children, tone, collapsed, onToggle }: { title: string; sub?: string; right?: React.ReactNode; children: React.ReactNode; tone?: "warn" | "ok"; /** With onToggle the card can be opened and closed. */ collapsed?: boolean; onToggle?: () => void }) {
   return (
     <section className={`rounded-lg border bg-white overflow-hidden ${tone === "warn" ? "border-amber-300" : tone === "ok" ? "border-emerald-300" : "border-[var(--color-border)]"}`}>
-      <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 border-b ${tone === "ok" ? "bg-emerald-50 border-emerald-200" : tone === "warn" ? "bg-amber-50 border-amber-200" : "bg-[var(--color-surface-sunken)]/70 border-[var(--color-border)]"}`}>
-        <div className="min-w-0">
-          <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-800)]">{title}</h3>
-          {sub && <p className="text-caption text-[var(--color-ink-500)]">{sub}</p>}
-        </div>
+      <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 ${collapsed ? "" : "border-b"} ${tone === "ok" ? "bg-emerald-50 border-emerald-200" : tone === "warn" ? "bg-amber-50 border-amber-200" : "bg-[var(--color-surface-sunken)]/70 border-[var(--color-border)]"}`}>
+        {onToggle ? (
+          <button type="button" onClick={onToggle} aria-expanded={!collapsed} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+            <ChevronRight size={14} className={`shrink-0 text-[var(--color-ink-500)] transition-transform ${collapsed ? "" : "rotate-90"}`} />
+            <span className="min-w-0">
+              <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-800)]">{title}</h3>
+              {sub && <p className="text-caption text-[var(--color-ink-500)]">{sub}</p>}
+            </span>
+          </button>
+        ) : (
+          <div className="min-w-0">
+            <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-800)]">{title}</h3>
+            {sub && <p className="text-caption text-[var(--color-ink-500)]">{sub}</p>}
+          </div>
+        )}
         {right}
       </div>
-      <div className="p-3">{children}</div>
+      {!collapsed && <div className="p-3">{children}</div>}
     </section>
   );
 }
@@ -248,16 +259,41 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
     URGENT: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
     STAT: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
   };
+  const [ordering, setOrdering] = useState(false);
+  const orderBar = locked ? null : (
+    <div className="flex flex-col gap-3">
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={() => setOrdering((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap"
+        >
+          {ordering ? <X size={13} /> : <Plus size={13} />}
+          {ordering ? "Close" : "Order Investigations"}
+        </button>
+      </div>
+      {ordering && (
+        <NewInvestigations
+          visit={{}} udid="" todayOrders={[]} onOrdered={() => {}}
+          place={async (d) => { const r = await addIpdInvestigationOrder(f.id, d); if (r.error) throw new Error(r.error); }}
+        />
+      )}
+    </div>
+  );
   if (f.orders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-12 text-center">
-        <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
-        <p className="text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+      <div className="flex flex-col gap-4">
+        {orderBar}
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-12 text-center">
+          <FlaskConical size={36} className="text-[var(--color-ink-300)]" />
+          <p className="text-sm font-medium text-[var(--color-ink-500)]">No previous investigations</p>
+        </div>
       </div>
     );
   }
   return (
     <div className="flex flex-col gap-6">
+      {orderBar}
       {groups.map(([dateLabel, list]) => (
         <div key={dateLabel}>
           <div className="mb-3 flex items-center gap-3">
@@ -541,25 +577,119 @@ const CONSENT_TAB_IDS = ["General", "GVP", "Anaesthesia", "Negative"];
 
 const ANSWER_TONE: Record<CheckAnswer, string> = { YES: "bg-emerald-600 text-white", NO: "bg-red-600 text-white", NA: "bg-slate-500 text-white" };
 
+/** What each vital accepts: characters while typing, and the range checked when leaving the box. */
+const VITAL_RULES = {
+  bp: { typing: /^\d{0,3}(\/\d{0,3})?$/, hint: "120/80", range: "Systolic 50-260 / diastolic 30-160", ok: (x: string) => {
+    const m = /^(\d{2,3})\/(\d{2,3})$/.exec(x);
+    return !!m && +m[1] >= 50 && +m[1] <= 260 && +m[2] >= 30 && +m[2] <= 160 && +m[1] > +m[2];
+  } },
+  pulse: { typing: /^\d{0,3}$/, hint: "72", range: "30-250 per min", ok: (x: string) => +x >= 30 && +x <= 250 },
+  temp: { typing: /^\d{0,3}(\.\d?)?$/, hint: "98.6", range: "90-110 °F", ok: (x: string) => +x >= 90 && +x <= 110 },
+  spo2: { typing: /^\d{0,3}$/, hint: "98", range: "50-100 %", ok: (x: string) => +x >= 50 && +x <= 100 },
+  rbs: { typing: /^\d{0,3}$/, hint: "120", range: "20-700 mg/dL", ok: (x: string) => +x >= 20 && +x <= 700 },
+  weight: { typing: /^\d{0,3}(\.\d?)?$/, hint: "60", range: "1-300 kg", ok: (x: string) => +x >= 1 && +x <= 300 },
+} as const;
+
+/** Filled in by the Normal tick (weight is the patient's own, so it is left alone). */
+const NORMAL_VITALS = { bp: "120/80", pulse: "72", temp: "98.6", spo2: "98", rbs: "110" };
+
+/** A vital sign box: label above, only sensible characters, and a value outside the human range is refused. */
+function VitalField({ label, kind, value, onChange, disabled }: { label: string; kind: keyof typeof VITAL_RULES; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const r = VITAL_RULES[kind];
+  const [bad, setBad] = useState(false);
+  return (
+    <div className="min-w-0">
+      <label className={`${lblIn} block mb-1`}>{label}</label>
+      <input
+        value={value}
+        disabled={disabled}
+        inputMode={kind === "bp" ? "text" : "decimal"}
+        placeholder={r.hint}
+        onChange={(e) => { if (r.typing.test(e.target.value)) { setBad(false); onChange(e.target.value); } }}
+        onBlur={() => { if (value && !r.ok(value)) { setBad(true); onChange(""); } }}
+        className={`${inp} ${bad ? "border-red-400" : ""}`}
+      />
+      {bad && <p className="mt-0.5 text-[10.5px] text-red-600">Enter {r.range}</p>}
+    </div>
+  );
+}
+
+type CheckGroup ={ key: string; title: string; items: string[]; std: boolean };
+
 export function ChecklistForm({ value: v, change, editable, f }: FormProps<ChecklistData>) {
-  const all = [...PREOP_CHECKLIST.flatMap((s) => s.items), ...v.custom];
+  // Standard groups (minus removed groups/points) plus points added to them, other checks, and groups added on this file
+  const groups: CheckGroup[] = [
+    ...PREOP_CHECKLIST.filter((s) => !(v.removedGroups ?? []).includes(s.section)).map((s) => ({
+      key: `std:${s.section}`, title: s.section, std: true,
+      items: [...s.items.filter((i) => !(v.removedItems ?? []).includes(i)), ...(v.extra?.[s.section] ?? [])],
+    })),
+    ...(v.custom.length > 0 ? [{ key: "custom", title: "Other checks", items: v.custom, std: false }] : []),
+    ...(v.groups ?? []).map((g) => ({ key: `grp:${g.id}`, title: g.title, items: g.items, std: false })),
+  ];
+  const all = groups.flatMap((g) => g.items);
   const answered = all.filter((i) => v.answers[i]).length;
   const flagged = all.filter((i) => v.answers[i]?.value === "NO").length;
-  const [custom, setCustom] = useState("");
+  const [adding, setAdding] = useState<Record<string, string>>({});
+  const [newGroup, setNewGroup] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<string | null>(null);
+  // Cards start closed; this holds the ones the user opened
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const toggle = (k: string) => setOpened((p) => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; });
   const answer = (item: string, value: CheckAnswer) =>
     change({ ...v, answers: { ...v.answers, [item]: { ...v.answers[item], value, by: f.me, at: new Date().toISOString() } } });
   const remark = (item: string, r: string) => change({ ...v, answers: { ...v.answers, [item]: { ...v.answers[item], remark: r } } });
+  const vitalsNormal = (Object.keys(NORMAL_VITALS) as (keyof typeof NORMAL_VITALS)[]).every((k) => v.vitals[k] === NORMAL_VITALS[k]);
   const vit = (k: keyof ChecklistData["vitals"], x: string) => change({ ...v, vitals: { ...v.vitals, [k]: x } });
 
-  const row = (item: string) => {
+  const dropAnswers = (items: string[]) => {
+    const answers = { ...v.answers };
+    for (const i of items) delete answers[i];
+    return answers;
+  };
+  const addPoint = (g: CheckGroup) => {
+    const t = (adding[g.key] ?? "").trim();
+    if (!t || all.some((x) => x.toLowerCase() === t.toLowerCase())) return;
+    if (g.std) change({ ...v, extra: { ...v.extra, [g.title]: [...(v.extra?.[g.title] ?? []), t] } });
+    else if (g.key === "custom") change({ ...v, custom: [...v.custom, t] });
+    else change({ ...v, groups: (v.groups ?? []).map((x) => (`grp:${x.id}` === g.key ? { ...x, items: [...x.items, t] } : x)) });
+    setAdding((p) => ({ ...p, [g.key]: "" }));
+  };
+  const removePoint = (g: CheckGroup, item: string) => {
+    const answers = dropAnswers([item]);
+    if (g.std) {
+      if (v.extra?.[g.title]?.includes(item)) change({ ...v, answers, extra: { ...v.extra, [g.title]: v.extra[g.title].filter((x) => x !== item) } });
+      else change({ ...v, answers, removedItems: [...(v.removedItems ?? []), item] });
+    } else if (g.key === "custom") change({ ...v, answers, custom: v.custom.filter((x) => x !== item) });
+    else change({ ...v, answers, groups: (v.groups ?? []).map((x) => (`grp:${x.id}` === g.key ? { ...x, items: x.items.filter((i) => i !== item) } : x)) });
+  };
+  const removeGroup = (g: CheckGroup) => {
+    const answers = dropAnswers(g.items);
+    if (g.std) change({ ...v, answers, removedGroups: [...(v.removedGroups ?? []), g.title] });
+    else if (g.key === "custom") change({ ...v, answers, custom: [] });
+    else change({ ...v, answers, groups: (v.groups ?? []).filter((x) => `grp:${x.id}` !== g.key) });
+    setConfirm(null);
+  };
+  const createGroup = () => {
+    const t = (newGroup ?? "").trim();
+    if (!t || groups.some((g) => g.title.toLowerCase() === t.toLowerCase())) return;
+    const id = `g${Date.now().toString(36)}`;
+    change({ ...v, groups: [...(v.groups ?? []), { id, title: t, items: [] }] });
+    setOpened((p) => new Set(p).add(`grp:${id}`));
+    setNewGroup(null);
+  };
+
+  const row = (g: CheckGroup) => (item: string, idx: number) => {
     const a = v.answers[item];
     return (
       <li key={item} className="py-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-sm text-[var(--color-ink-800)] flex-1 min-w-[220px]">{item}</span>
+          <span className="text-sm text-[var(--color-ink-800)] flex-1 min-w-[220px]"><span className="inline-block w-6 tabular-nums text-[var(--color-ink-400)]">{idx + 1}.</span>{item}</span>
           <span className="flex items-center gap-2">
             <TickNote by={a?.by} at={a?.at} />
             <Seg options={["YES", "NO", "NA"] as const} value={a?.value ?? ""} onChange={(x) => answer(item, x)} disabled={!editable} tone={(x) => ANSWER_TONE[x]} />
+            {editable && (
+              <button type="button" title="Remove this point" onClick={() => removePoint(g, item)} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"><X size={13} /></button>
+            )}
           </span>
         </div>
         {a?.value === "NO" && (
@@ -579,44 +709,106 @@ export function ChecklistForm({ value: v, change, editable, f }: FormProps<Check
           {flagged > 0 && <span className="text-red-600">{flagged} marked NO</span>}
         </div>
         <div className="h-2 rounded-full bg-[var(--color-surface-sunken)] overflow-hidden">
-          <div className={`h-full ${answered === all.length ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${all.length ? (answered / all.length) * 100 : 0}%` }} />
+          <div className={`h-full ${all.length > 0 && answered === all.length ? "bg-emerald-500" : "bg-[var(--color-primary-500)]"}`} style={{ width: `${all.length ? (answered / all.length) * 100 : 0}%` }} />
         </div>
       </div>
-      {PREOP_CHECKLIST.map((s) => (
-        <Card key={s.section} title={s.section} sub={`${s.items.filter((i) => v.answers[i]).length}/${s.items.length}`}>
-          <ul className="divide-y divide-[var(--color-border)] -my-2">{s.items.map(row)}</ul>
-        </Card>
-      ))}
-      {(v.custom.length > 0 || editable) && (
-        <Card title="Other checks">
-          {v.custom.length > 0 && <ul className="divide-y divide-[var(--color-border)] -mt-2 mb-2">{v.custom.map(row)}</ul>}
+      {groups.map((g, gi) => (
+        <Card
+          key={g.key}
+          collapsed={!opened.has(g.key)} onToggle={() => toggle(g.key)}
+          title={`${gi + 1}. ${g.title}`}
+          sub={`${g.items.filter((i) => v.answers[i]).length}/${g.items.length}`}
+          right={editable && (
+            confirm === g.key ? (
+              <span className="flex items-center gap-1.5 text-xs">
+                <span className="text-red-600 font-medium">Remove this group?</span>
+                <button type="button" onClick={() => removeGroup(g)} className="rounded-lg bg-red-600 px-2 py-0.5 font-semibold text-white">Remove</button>
+                <button type="button" onClick={() => setConfirm(null)} className="rounded-lg border border-[var(--color-border)] px-2 py-0.5 font-medium text-[var(--color-ink-600)]">Cancel</button>
+              </span>
+            ) : (
+              <button type="button" title="Remove this group" onClick={() => setConfirm(g.key)} className="p-1 rounded-lg text-[var(--color-ink-400)] hover:text-red-500 hover:bg-red-50 transition-colors"><X size={13} /></button>
+            )
+          )}
+        >
+          {g.items.length > 0
+            ? <ul className="divide-y divide-[var(--color-border)] -my-2">{g.items.map(row(g))}</ul>
+            : <p className="text-xs italic text-[var(--color-ink-400)]">No points in this group.</p>}
           {editable && (
-            <div className="flex gap-2">
-              <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Add a check" className={inp} />
-              <button type="button" disabled={!custom.trim() || all.includes(custom.trim())} onClick={() => { change({ ...v, custom: [...v.custom, custom.trim()] }); setCustom(""); }} className={btnG}><Plus size={13} /> Add</button>
+            <div className="mt-3 flex gap-2">
+              <input
+                value={adding[g.key] ?? ""}
+                onChange={(e) => setAdding((p) => ({ ...p, [g.key]: e.target.value }))}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPoint(g); } }}
+                placeholder="Add a point to this group"
+                className={inp}
+              />
+              <button type="button" disabled={!(adding[g.key] ?? "").trim()} onClick={() => addPoint(g)} className={btnG}><Plus size={13} /> Add</button>
             </div>
           )}
         </Card>
-      )}
-      <Card title="Pre-operative vitals & handover">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          <Field label="BP (mmHg)" value={v.vitals.bp} onChange={(x) => vit("bp", x)} disabled={!editable} placeholder="120/80" />
-          <Field label="Pulse (/min)" value={v.vitals.pulse} onChange={(x) => vit("pulse", x)} disabled={!editable} />
-          <Field label="Temp (°F)" value={v.vitals.temp} onChange={(x) => vit("temp", x)} disabled={!editable} />
-          <Field label="SpO₂ (%)" value={v.vitals.spo2} onChange={(x) => vit("spo2", x)} disabled={!editable} />
-          <Field label="RBS (mg/dL)" value={v.vitals.rbs} onChange={(x) => vit("rbs", x)} disabled={!editable} />
-          <Field label="Weight (kg)" value={v.vitals.weight} onChange={(x) => vit("weight", x)} disabled={!editable} />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-          <Field label="Last oral intake" type="time" value={v.lastOral} onChange={(x) => change({ ...v, lastOral: x })} disabled={!editable} />
-          <Field label="Dilating drops started" type="time" value={v.dilationAt} onChange={(x) => change({ ...v, dilationAt: x })} disabled={!editable} />
-          <div className={rowIn}>
-            <label className={lblIn}>Handed over to OT by</label>
-            <div className="flex gap-1.5 flex-1 min-w-0">
-              <input value={v.handedOverBy} disabled={!editable} onChange={(e) => change({ ...v, handedOverBy: e.target.value })} className={inp} placeholder={editable ? "Nurse name" : "-"} />
-              {editable && !v.handedOverBy && <button type="button" onClick={() => change({ ...v, handedOverBy: f.me })} className={btnG}>Me</button>}
-            </div>
+      ))}
+      {editable && (
+        newGroup === null ? (
+          <button type="button" onClick={() => setNewGroup("")} className={btnG}><Plus size={13} /> Add group</button>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              autoFocus value={newGroup} onChange={(e) => setNewGroup(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); createGroup(); } }}
+              placeholder="New group name" className={inp}
+            />
+            <button type="button" disabled={!newGroup.trim()} onClick={createGroup} className={btnG}><Plus size={13} /> Add</button>
+            <button type="button" onClick={() => setNewGroup(null)} className={btnG}><X size={13} /></button>
           </div>
+        )
+      )}
+      <Card collapsed={!opened.has("vitals")} onToggle={() => toggle("vitals")} title={`${groups.length + 1}. Pre-operative vitals & handover`}
+        right={editable && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-700)]">
+            <input type="checkbox" checked={vitalsNormal} className="accent-[var(--color-primary-600)]"
+              onChange={(e) => change({ ...v, vitals: e.target.checked ? { ...v.vitals, ...NORMAL_VITALS } : { ...v.vitals, bp: "", pulse: "", temp: "", spo2: "", rbs: "" } })} />
+            Normal
+          </label>
+        )}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <VitalField label="BP (mmHg)" kind="bp" value={v.vitals.bp} onChange={(x) => vit("bp", x)} disabled={!editable} />
+          <VitalField label="Pulse (/min)" kind="pulse" value={v.vitals.pulse} onChange={(x) => vit("pulse", x)} disabled={!editable} />
+          <VitalField label="Temp (°F)" kind="temp" value={v.vitals.temp} onChange={(x) => vit("temp", x)} disabled={!editable} />
+          <VitalField label="SpO₂ (%)" kind="spo2" value={v.vitals.spo2} onChange={(x) => vit("spo2", x)} disabled={!editable} />
+          <VitalField label="RBS (mg/dL)" kind="rbs" value={v.vitals.rbs} onChange={(x) => vit("rbs", x)} disabled={!editable} />
+          <VitalField label="Weight (kg)" kind="weight" value={v.vitals.weight} onChange={(x) => vit("weight", x)} disabled={!editable} />
+        </div>
+        {/* Last oral intake: one row like the meal plan in the diet chart */}
+        <div className="mt-3 overflow-x-auto rounded-lg border border-[var(--color-border)]">
+          <table className="w-full min-w-[560px]">
+            <tbody>
+              <tr className="transition-colors hover:bg-[var(--color-primary-50)]/30">
+                <td className={`${td} border-b-0 align-middle whitespace-nowrap`}>
+                  <div className="flex items-center gap-2">
+                    <span className={lblIn}>Last oral intake</span>
+                    <input value={v.lastOralMeal ?? ""} disabled={!editable} onChange={(e) => change({ ...v, lastOralMeal: e.target.value })} placeholder="Meal, e.g. Early morning"
+                      className="min-w-0 w-48 rounded-md bg-transparent px-1 py-0.5 text-sm font-semibold text-[var(--color-ink-800)] placeholder:font-normal placeholder:text-[var(--color-ink-300)] hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:hover:bg-transparent" />
+                  </div>
+                </td>
+                <td className={`${td} border-b-0 align-middle w-28`}>
+                  <input type="time" value={v.lastOral} disabled={!editable} onChange={(e) => change({ ...v, lastOral: e.target.value })} className={inp} />
+                </td>
+                <td className={`${td} border-b-0 align-middle`}>
+                  <SuggestField storeKey={FO.dietMeal.storeKey} builtIns={FO.dietMeal.builtIns} value={v.lastOralDiet ?? ""} onChange={(d) => change({ ...v, lastOralDiet: d })} disabled={!editable}>
+                    {(sp) => <input {...sp} value={v.lastOralDiet ?? ""} disabled={!editable} onChange={(e) => change({ ...v, lastOralDiet: e.target.value })} placeholder={editable ? "e.g. Tea / milk (small cup)" : "-"} className={inp} />}
+                  </SuggestField>
+                </td>
+                <td className={`${td} border-b-0 align-middle whitespace-nowrap`}>
+                  <div className="flex gap-1">
+                    {MEAL_AMOUNTS.map((a) => (
+                      <button key={a} type="button" disabled={!editable} onClick={() => change({ ...v, lastOralAmount: v.lastOralAmount === a ? "" : a })}
+                        className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${v.lastOralAmount === a ? (a === "Refused" ? "border-red-600 bg-red-600 text-white" : "border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white") : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}>{a}</button>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </Card>
     </div>
@@ -1223,21 +1415,86 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
 
 /* ── 6. Treatment chart ────────────────────────────────────────────────── */
 
+/**
+ * A row that scrolls sideways. It opens on the column marked data-today and has
+ * arrow buttons, a Today button (when today is out of view), snapping, and the
+ * mouse wheel scrolls it sideways.
+ */
+function ScrollStrip({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ left: false, right: false, today: false });
+  const measure = () => {
+    const box = ref.current;
+    if (!box) return;
+    const t = box.querySelector<HTMLElement>("[data-today]");
+    const outside = !!t && (t.offsetLeft - box.offsetLeft < box.scrollLeft || t.offsetLeft - box.offsetLeft + t.offsetWidth > box.scrollLeft + box.clientWidth);
+    setEdge({ left: box.scrollLeft > 2, right: box.scrollLeft + box.clientWidth < box.scrollWidth - 2, today: outside });
+  };
+  const goToday = (smooth: boolean) => {
+    const box = ref.current;
+    const t = box?.querySelector<HTMLElement>("[data-today]");
+    if (box && t) box.scrollTo({ left: Math.max(0, t.offsetLeft - box.offsetLeft - 8), behavior: smooth ? "smooth" : "auto" });
+  };
+  useLayoutEffect(() => {
+    goToday(false);
+    measure();
+    const box = ref.current;
+    if (!box) return;
+    // The wheel moves the row sideways while it can; at either end the page scrolls as usual
+    const wheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = box.scrollWidth - box.clientWidth;
+      if ((e.deltaY < 0 && box.scrollLeft <= 0) || (e.deltaY > 0 && box.scrollLeft >= max - 1)) return;
+      e.preventDefault();
+      box.scrollLeft += e.deltaY;
+    };
+    box.addEventListener("wheel", wheel, { passive: false });
+    window.addEventListener("resize", measure);
+    return () => { box.removeEventListener("wheel", wheel); window.removeEventListener("resize", measure); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const step = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * Math.max(160, (ref.current?.clientWidth ?? 0) * 0.75), behavior: "smooth" });
+  const arrow = "grid h-7 w-7 shrink-0 place-items-center rounded-full border border-[var(--color-border)] bg-white text-[var(--color-ink-600)] shadow-sm transition enabled:hover:bg-[var(--color-surface-sunken)] disabled:opacity-30";
+  return (
+    <div className="flex items-center gap-1.5">
+      <button type="button" aria-label="Earlier days" disabled={!edge.left} onClick={() => step(-1)} className={arrow}><ChevronLeft size={14} /></button>
+      <div ref={ref} onScroll={measure} className="flex min-w-0 flex-1 snap-x snap-mandatory gap-1.5 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </div>
+      {edge.today && <button type="button" onClick={() => goToday(true)} className="shrink-0 rounded-full bg-[var(--color-primary-600)] px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm hover:bg-[var(--color-primary-700)]">Today</button>}
+      <button type="button" aria-label="Later days" disabled={!edge.right} onClick={() => step(1)} className={arrow}><ChevronRight size={14} /></button>
+    </div>
+  );
+}
+
+
 export function TreatmentForm({ value: v, change, editable, canLog, addLog, removeDose, noteStop, log, f }: FormProps<TreatmentData>) {
   const { run, pending, error } = useLogger(addLog);
   const drugs = (v.drugs ?? []).map((d, i) => ({ ...d, id: d.id ?? `d${i}` }));
   const active = drugs.filter((d) => !d.stopped);
   const today = istDate();
   const doses = log.filter((e) => e.kind === "dose");
-  const givenToday = (id: string, slot: string) => doses.find((e) => e.meta?.drugId === id && e.meta?.slot === slot && e.meta?.date === today);
+  const givenOn = (id: string, slot: string, date: string) => doses.find((e) => e.meta?.drugId === id && e.meta?.slot === slot && e.meta?.date === date);
+  const givenToday = (id: string, slot: string) => givenOn(id, slot, today);
 
+  // Stop asks why first: keywords (plus ones added here) and a custom reason
+  const [stopping, setStopping] = useState<DrugOrder | null>(null);
+  const [reasons, setReasons] = useState<string[]>([]);
+  const confirmStop = () => {
+    if (!stopping || reasons.length === 0) return;
+    const reason = reasons.join(", ");
+    patch(stopping.id, { stopped: true, stoppedBy: f.me, stoppedAt: new Date().toISOString(), stoppedReason: reason });
+    void noteStop?.(`${[stopping.name, stopping.dose, eyeOf(stopping), stopping.frequency].filter(Boolean).join(" ")} (reason: ${reason})`);
+    setStopping(null);
+  };
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [undoErr, setUndoErr] = useState("");
   const [undoing, startUndo] = useTransition();
-  const unGive = (d: DrugOrder, slot: string) => startUndo(async () => {
-    setUndoErr((await removeDose?.(d.id, slot, today)) ?? "");
+  const unGive = (d: DrugOrder, slot: string, date: string = today) => startUndo(async () => {
+    setUndoErr((await removeDose?.(d.id, slot, date)) ?? "");
   });
-  const give = (d: DrugOrder, slot: string) =>
-    run({ text: `${d.name} ${d.dose}${d.eye ? ` ${d.eye}` : ""} given${slot ? ` (${slot} dose)` : ""}`, kind: "dose", meta: { drugId: d.id, slot: slot || "SOS", date: today } });
+  const give = (d: DrugOrder, slot: string, date: string = today) =>
+    run({ text: `${d.name} ${d.dose}${eyeOf(d) ? ` ${eyeOf(d)}` : ""} given${slot ? ` (${slot} dose${date !== today ? `, ${date}` : ""})` : ""}`, kind: "dose", meta: { drugId: d.id, slot: slot || "SOS", date } });
 
   const slotIcon = (s: string) => { const h = parseInt(s, 10); return h < 11 ? <Sunrise size={11} /> : h < 17 ? <Sun size={11} /> : h < 20 ? <Sunset size={11} /> : <Moon size={11} />; };
   const patch = (id: string, p: Partial<DrugOrder>) => change({ ...v, drugs: drugs.map((x) => (x.id === id ? { ...x, ...p } : x)) });
@@ -1248,14 +1505,51 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
     const y = format(yd, "yyyy-MM-dd");
     return d === t ? "Today" : d === y ? "Yesterday" : format(new Date(iso), "d MMM, EEE");
   };
-  const groups: { label: string; items: LogEntry[] }[] = [];
-  [...log].reverse().forEach((e) => {
+  // Start and end date of a drug (the end comes from its "For N days" duration); and whether it was stopped before that end
+  const drugRange = (d: DrugOrder) => {
+    const n = durationDays(/(?:^|\.\s*)For\s+([^.]+)/i.exec(d.instructions ?? "")?.[1]?.trim());
+    const start = d.start || "";
+    const end = start && n ? new Date(new Date(`${start}T00:00:00Z`).getTime() + (n - 1) * 86400000).toISOString().slice(0, 10) : "";
+    const stopDay = d.stopped && d.stoppedAt ? new Date(d.stoppedAt).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) : "";
+    const daysEarly = stopDay && end ? Math.round((new Date(`${end}T00:00:00Z`).getTime() - new Date(`${stopDay}T00:00:00Z`).getTime()) / 86400000) : 0;
+    return { start, end, stopDay, early: !!stopDay && !!end && stopDay < end, daysEarly };
+  };
+  // A drug with no eye of its own follows the eye being operated on (oral medicines have none)
+  const eyeOf = (d: DrugOrder) => d.eye || (d.route !== "Oral" && f.ctx.eye && EYES.includes(f.ctx.eye) ? f.ctx.eye : "");
+  // Each drug runs from its start to its end date; after that its course is completed
+  const courseDone = (d: DrugOrder) => { const e = drugRange(d).end; return !d.stopped && !!e && today > e; };
+  const daysOf = (d: DrugOrder): string[] => {
+    const { start, end } = drugRange(d);
+    if (!start || !end) return [today];
+    const out: string[] = [];
+    for (let t = new Date(`${start}T00:00:00Z`).getTime(), e = new Date(`${end}T00:00:00Z`).getTime(); t <= e && out.length < 400; t += 86400000) out.push(new Date(t).toISOString().slice(0, 10));
+    return out;
+  };
+  // A dose tick can be added or undone for 24 hours after its slot time; then it is frozen
+  const slotOpen = (date: string, slot: string) => {
+    if (date > today) return false;
+    const at = Date.parse(`${date}T${slot}:00+05:30`);
+    return Number.isNaN(at) || Date.now() <= at + 24 * 3600 * 1000;
+  };
+  const running = active.filter((d) => !courseDone(d) && (!d.start || d.start <= today));
+  const totalSlots = running.reduce((n, d) => n + scheduleFor(d.frequency).length, 0);
+  const totalGiven = running.reduce((n, d) => n + scheduleFor(d.frequency).filter((s) => givenToday(d.id, s)).length, 0);
+
+  // History: what was recorded, plus every dose whose time passed without being given (skipped)
+  type HistoryItem = { at: string; by: string; text: string; kind?: string; missed?: boolean };
+  const missedDoses: HistoryItem[] = drugs.flatMap((d) => scheduleFor(d.frequency).flatMap((slot) => daysOf(d).flatMap((date) => {
+    const at = Date.parse(`${date}T${slot}:00+05:30`);
+    if (Number.isNaN(at) || at >= Date.now() || givenOn(d.id, slot, date)) return [];
+    if (d.stopped && d.stoppedAt && at >= Date.parse(d.stoppedAt)) return [];
+    return [{ at: new Date(at).toISOString(), by: "Skipped", kind: "dose", missed: true, text: `${d.name} ${d.dose}${eyeOf(d) ? ` ${eyeOf(d)}` : ""} not given (${slot} dose)` }];
+  })));
+  const history: HistoryItem[] = [...log, ...missedDoses].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  const groups: { label: string; items: HistoryItem[] }[] = [];
+  [...history].reverse().forEach((e) => {
     const label = dayLabel(e.at);
     const g = groups[groups.length - 1];
     if (g && g.label === label) g.items.push(e); else groups.push({ label, items: [e] });
   });
-  const totalSlots = active.reduce((n, d) => n + scheduleFor(d.frequency).length, 0);
-  const totalGiven = active.reduce((n, d) => n + scheduleFor(d.frequency).filter((s) => givenToday(d.id, s)).length, 0);
 
   const TINTS = [
     { bg: "bg-rose-50/70", ring: "ring-rose-100", chip: "bg-rose-100 text-rose-700", avatar: "bg-rose-100 text-rose-600" },
@@ -1269,6 +1563,126 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
 
   return (
     <div className="space-y-4">
+      {previewOpen && (() => {
+        // Every day of every course: rows are dose times, columns are dates, each cell is one symbol
+        const dates = [...new Set(drugs.flatMap((d) => daysOf(d)))].sort();
+        const now = Date.now();
+        const cellOf = (d: DrugOrder, date: string, slot: string) => {
+          const rg = drugRange(d);
+          if ((rg.start && date < rg.start) || (rg.end && date > rg.end)) return { kind: "na" as const };
+          const at = Date.parse(`${date}T${slot}:00+05:30`);
+          const g = givenOn(d.id, slot, date);
+          if (g) return { kind: "given" as const, at: g.at };
+          if (d.stopped && d.stoppedAt && at >= Date.parse(d.stoppedAt)) return { kind: "stopped" as const };
+          return { kind: at < now ? "missed" as const : "due" as const };
+        };
+        const symbol = (c: ReturnType<typeof cellOf>, slot: string) => {
+          if (c.kind === "given") return <span title={`Given at ${time(c.at)}`} className="flex flex-col items-center leading-none text-emerald-600"><Check size={15} strokeWidth={2.5} /><span className="mt-0.5 text-[9.5px] font-medium tabular-nums">{time(c.at)}</span></span>;
+          if (c.kind === "missed") return <span title={`${slot} dose missed`} className="flex flex-col items-center leading-none text-red-400"><X size={14} strokeWidth={2} /><span className="mt-0.5 text-[9.5px] font-medium text-[var(--color-ink-400)]">Missed</span></span>;
+          if (c.kind === "stopped") return <span title="Stopped" className="text-[var(--color-ink-300)]"><Minus size={14} /></span>;
+          if (c.kind === "due") return <span title="Not yet due" className="text-[var(--color-ink-300)]">·</span>;
+          return null;
+        };
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPreviewOpen(false)}>
+            <div className="flex max-h-[85vh] w-auto max-w-[95vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-8 border-b border-[var(--color-border)] px-5 py-3">
+                <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
+                  <p className="text-base font-bold text-[var(--color-ink-900)]">All doses</p>
+                  <p className="flex items-center gap-4 text-[11.5px] text-[var(--color-ink-500)]">
+                    <span className="inline-flex items-center gap-1"><Check size={13} strokeWidth={2.5} className="text-emerald-600" />Given</span>
+                    <span className="inline-flex items-center gap-1"><X size={13} strokeWidth={2} className="text-red-400" />Missed</span>
+                    <span className="inline-flex items-center gap-1"><span className="text-[var(--color-ink-300)]">·</span>Not yet due</span>
+                    <span className="inline-flex items-center gap-1"><Minus size={12} className="text-[var(--color-ink-300)]" />Stopped</span>
+                  </p>
+                </div>
+                <button type="button" onClick={() => setPreviewOpen(false)} aria-label="Close" className="rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-auto">
+                <table className="border-separate border-spacing-0 text-xs">
+                  <thead className="sticky top-0 z-20">
+                    <tr>
+                      <th className="sticky left-0 z-30 min-w-[5rem] border-b border-[var(--color-border)] bg-white" />
+                      {dates.map((k) => {
+                        const [wd, rest = ""] = dayDate(k, false).split(", ");
+                        return (
+                          <th key={k} className={`min-w-[4.5rem] border-b border-[var(--color-border)] bg-white px-2 py-2 text-center font-semibold ${k === today ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
+                            <span className="block text-[10px] uppercase tracking-wide opacity-75">{wd}</span>
+                            <span className="block text-[12px]">{rest}</span>
+                            {k === today && <span className="mx-auto mt-0.5 block h-0.5 w-5 rounded-full bg-[var(--color-primary-600)]" />}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {drugs.map((d) => {
+                      const sl = scheduleFor(d.frequency);
+                      const cells = sl.flatMap((x) => daysOf(d).map((k) => cellOf(d, k, x)));
+                      const given = cells.filter((c) => c.kind === "given").length;
+                      const missed = cells.filter((c) => c.kind === "missed").length;
+                      return (
+                        <Fragment key={d.id}>
+                          <tr>
+                            <td colSpan={dates.length + 1} className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-0">
+                              <div className="sticky left-0 flex w-max max-w-[88vw] flex-wrap items-baseline gap-x-2 px-4 py-1.5">
+                                {eyeOf(d) && <span className="text-sm font-extrabold text-[var(--color-primary-700)]">{eyeOf(d)}</span>}
+                                <span className={`text-sm font-bold text-[var(--color-ink-900)] ${d.stopped ? "line-through opacity-60" : ""}`}>{d.name}</span>
+                                <span className="text-[11px] text-[var(--color-ink-500)]">{[d.dose, d.route, d.frequency].filter(Boolean).join(" · ")}</span>
+                                {drugRange(d).start && <span className="text-[11px] text-[var(--color-ink-500)]">· {dayDate(drugRange(d).start, false)}{drugRange(d).end ? ` to ${dayDate(drugRange(d).end, false)}` : ""}</span>}
+                                {sl.length > 0 && <span className="text-[11px] text-[var(--color-ink-500)]">· {given} given{missed > 0 && <span className="text-red-500">, {missed} missed</span>}</span>}
+                                {d.stopped && <span className="text-[11px] text-[var(--color-ink-500)]">Stopped{d.stoppedReason ? `: ${d.stoppedReason}` : ""}</span>}
+                              </div>
+                            </td>
+                          </tr>
+                          {sl.length === 0 ? (
+                            <tr>
+                              <td className="sticky left-0 z-10 border-b border-[var(--color-border)]/60 bg-white px-4 py-1.5 text-[11.5px] font-semibold text-[var(--color-ink-600)]">As needed</td>
+                              {dates.map((k) => {
+                                const n = doses.filter((e) => e.meta?.drugId === d.id && e.meta?.slot === "SOS" && e.meta?.date === k).length;
+                                return <td key={k} className="border-b border-[var(--color-border)]/60 py-1.5 text-center text-[12px] font-bold text-emerald-600">{n > 0 ? n : ""}</td>;
+                              })}
+                            </tr>
+                          ) : sl.map((x) => (
+                            <tr key={x}>
+                              <td className="sticky left-0 z-10 border-b border-[var(--color-border)]/60 bg-white px-4 py-1.5 text-[11.5px] font-semibold text-[var(--color-ink-600)]"><span className="inline-flex items-center gap-1.5">{slotIcon(x)}{x}</span></td>
+                              {dates.map((k) => (
+                                <td key={k} className={`border-b border-[var(--color-border)]/60 py-1.5 ${k === today ? "bg-[var(--color-primary-50)]/60" : ""}`}><div className="grid place-items-center">{symbol(cellOf(d, k, x), x)}</div></td>
+                              ))}
+                            </tr>
+                          ))}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {stopping && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setStopping(null)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-base font-bold text-[var(--color-ink-900)]">Stop this medicine?</p>
+                <p className="mt-0.5 truncate text-sm text-[var(--color-ink-500)]">{[eyeOf(stopping), stopping.name].filter(Boolean).join(" ")}</p>
+              </div>
+              <button type="button" onClick={() => setStopping(null)} aria-label="Close" className="rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+            </div>
+            <p className={`${lblIn} mt-4 mb-2`}>Reason for stopping</p>
+            <ChipRow storeKey={FO.treatStopReason.storeKey} builtIns={FO.treatStopReason.builtIns} limit={9}
+              isOn={(x) => reasons.includes(x)}
+              onPick={(x) => setReasons((p) => (p.includes(x) ? p.filter((y) => y !== x) : [...p, x]))} />
+            {reasons.length > 0 && <p className="mt-3 rounded-lg bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-700)]">{reasons.join(", ")}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setStopping(null)} className={btnG}>Cancel</button>
+              <button type="button" disabled={reasons.length === 0} onClick={confirmStop} className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50">Stop medicine</button>
+            </div>
+          </div>
+        </div>
+      )}
       <section className={shell}>
         <div className={head}>
           <div className="flex items-center gap-2.5">
@@ -1279,6 +1693,7 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
             </div>
           </div>
           <div className="flex items-center gap-2 text-[11px] font-bold">
+            {drugs.length > 0 && <button type="button" onClick={() => setPreviewOpen(true)} className={`${btnG} !rounded-full !py-1`}><Eye size={12} /> Preview</button>}
             <span className="rounded-full bg-[var(--color-primary-100)] px-2.5 py-1 text-[var(--color-primary-700)]">{active.length} active</span>
             {totalSlots > 0 && <span className={`rounded-full px-2.5 py-1 ${totalGiven === totalSlots ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{totalGiven === totalSlots ? "All doses given" : `${totalGiven}/${totalSlots} given`}</span>}
           </div>
@@ -1286,67 +1701,105 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
 
         <div className="p-3">
           {drugs.length === 0 ? <p className="py-3 text-center text-sm italic text-[var(--color-ink-400)]">No medication orders yet.</p> : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {drugs.map((d, idx) => {
                 const tint = TINTS[idx % TINTS.length];
                 const slots = scheduleFor(d.frequency);
-                const given = slots.filter((s) => givenToday(d.id, s)).length;
                 const sos = doses.filter((e) => e.meta?.drugId === d.id && e.meta?.slot === "SOS" && e.meta?.date === today);
-                const done = slots.length > 0 && given === slots.length;
                 return (
-                  <li key={d.id} className={`rounded-2xl px-3 py-2 ring-1 transition ${d.stopped ? "bg-[var(--color-surface-sunken)]/70 ring-[var(--color-border)]" : `${tint.bg} ${tint.ring}`}`}>
+                  <li key={d.id} className={`grid items-center gap-x-4 gap-y-1 rounded-2xl px-3 py-1.5 ring-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] ring-[var(--color-border)] transition ${d.stopped ? "bg-[var(--color-surface-sunken)]/70" : "bg-white"}`}>
+                    <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <span className={`relative grid h-8 w-8 shrink-0 place-items-center rounded-xl ${d.stopped ? "bg-[var(--color-ink-100)] text-[var(--color-ink-400)]" : tint.avatar}`}>
                         <Pill size={15} />
-                        {d.eye && <span className="absolute -bottom-1 -right-1.5 rounded-full bg-white px-1 text-[8px] font-extrabold leading-3 text-[var(--color-ink-700)] shadow ring-1 ring-black/5">{d.eye}</span>}
                       </span>
 
                       <div className={`flex min-w-[12rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 ${d.stopped ? "opacity-60" : ""}`}>
+                        {eyeOf(d) && <span className="text-sm font-extrabold leading-tight tracking-tight text-[var(--color-primary-700)]">{eyeOf(d)}</span>}
                         <p className={`text-sm font-extrabold leading-tight tracking-tight text-[var(--color-ink-900)] ${d.stopped ? "line-through" : ""}`}>{d.name}</p>
                         {[d.dose, d.route, d.frequency].filter(Boolean).map((t, i) => (
-                          <span key={i} className={`rounded-full px-2 py-px text-[10.5px] font-semibold ${d.stopped ? "bg-white text-[var(--color-ink-500)]" : tint.chip}`}>{t}</span>
+                          <span key={i} className={`rounded-full px-2 py-px text-[10.5px] font-semibold bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)]`}>{t}</span>
                         ))}
                       </div>
 
-                      {!d.stopped && (
-                        <div className="flex flex-wrap items-center gap-1">
-                          {slots.map((s) => {
-                            const g = givenToday(d.id, s);
-                            return g ? (
-                              <button key={s} type="button" disabled={!canLog || pending || undoing} onClick={() => unGive(d, s)} title={canLog ? `${g.by}, ${time(g.at)} · tap to undo` : `${g.by}, ${time(g.at)}`}
-                                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-500 px-2.5 py-1 text-[11px] font-bold leading-none text-white shadow-[0_1px_4px_rgba(16,185,129,0.35)] transition enabled:hover:scale-105 disabled:cursor-default">
-                                {slotIcon(s)}{s}<span className="font-medium opacity-95">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>
-                              </button>
-                            ) : (
-                              <button key={s} type="button" disabled={!canLog || pending} onClick={() => give(d, s)} title={canLog ? "Tap when given" : "Due"}
-                                className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-white bg-white/80 px-2.5 py-1 text-[11px] font-bold leading-none text-[var(--color-ink-800)] shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:bg-emerald-50 enabled:active:scale-95 disabled:cursor-default">
-                                {slotIcon(s)}{s}
-                              </button>
-                            );
-                          })}
-                          {slots.length === 0 && (
-                            <>
-                              {sos.map((g, i) => <span key={i} className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">✓ {time(g.at)} · {g.by.split(" ")[0]}</span>)}
-                              {canLog && <button type="button" disabled={pending} onClick={() => give(d, "")} className={`${btnG} !rounded-full !py-1`}>Give now (SOS)</button>}
-                            </>
-                          )}
-                          {slots.length > 0 && <span className={`ml-0.5 text-[10px] font-bold tabular-nums ${done ? "text-emerald-600" : "text-[var(--color-ink-500)]"}`}>{done ? "Done" : `${given}/${slots.length}`}</span>}
+                    </div>
+                    {(d.instructions || d.stopped || d.start || d.orderedBy) && (() => {
+                      const r = drugRange(d);
+                      return (
+                        <div className="mt-0.5 pl-11">
+                          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[10.5px] font-semibold">
+                            {d.instructions && <span className={`italic font-normal text-[var(--color-ink-500)] ${d.stopped ? "opacity-70" : ""}`}>{d.instructions}</span>}
+                            {r.start && <span className="rounded-full bg-[var(--color-surface-sunken)] px-2 py-px text-[var(--color-ink-700)]">Start <b>{dayDate(r.start)}</b></span>}
+                            {r.end && <span className="rounded-full bg-[var(--color-surface-sunken)] px-2 py-px text-[var(--color-ink-700)]">End <b>{dayDate(r.end)}</b></span>}
+                            {d.stopped && (
+                              <span className="rounded-full bg-red-50 px-2 py-px font-bold text-red-600 ring-1 ring-red-200">
+                                {r.early ? "Stopped early" : "Stopped"}{r.stopDay ? ` on ${dayDate(r.stopDay)}` : ""}
+                                {r.early && r.daysEarly > 0 ? ` · ${r.daysEarly} day${r.daysEarly > 1 ? "s" : ""} before the end date` : ""}
+                                {d.stoppedAt ? `, ${format(new Date(d.stoppedAt), "h:mm a")}` : ""}
+                              </span>
+                            )}
+                            {d.stopped && d.stoppedReason && <span className="rounded-full bg-red-50 px-2 py-px font-semibold text-red-600">Reason: {d.stoppedReason}</span>}
+                          </div>
                         </div>
-                      )}
-
+                      );
+                    })()}
+                    </div>
+                    {!d.stopped && (
+                      <div className="min-w-0">
+                        {courseDone(d) ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11.5px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                            <CheckCircle2 size={13} /> Course completed{drugRange(d).end ? ` on ${dayDate(drugRange(d).end)}` : ""}
+                          </span>
+                        ) : slots.length === 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {sos.map((g, i) => <span key={i} className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">✓ {time(g.at)}</span>)}
+                            {canLog && <button type="button" disabled={pending} onClick={() => give(d, "")} className={`${btnG} !rounded-full !py-1`}>Give now (SOS)</button>}
+                          </div>
+                        ) : (
+                          <ScrollStrip>
+                            {daysOf(d).map((k) => {
+                              const isToday = k === today;
+                              const isFuture = k > today;
+                              const n = slots.filter((x) => givenOn(d.id, x, k)).length;
+                              return (
+                                <div key={k} data-today={isToday ? "1" : undefined}
+                                  className={`flex shrink-0 snap-start flex-col gap-1 rounded-lg border px-2 py-1 ${isToday ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/50" : "border-[var(--color-border)] bg-white"}`}>
+                                  <p className={`flex items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold ${isToday ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
+                                    {dayDate(k, false)}
+                                    {isToday && <span className="rounded-full bg-[var(--color-primary-600)] px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-white">Today</span>}
+                                    <span className={`ml-auto tabular-nums ${n === slots.length ? "text-emerald-600" : "text-[var(--color-ink-400)]"}`}>{n === slots.length ? "Done" : `${n}/${slots.length}`}</span>
+                                  </p>
+                                  <div className="flex items-center gap-1">
+                                    {slots.map((x) => {
+                                      const g = givenOn(d.id, x, k);
+                                      return g ? (
+                                        <button key={x} type="button" disabled={!slotOpen(k, x) || !canLog || pending || undoing} onClick={() => unGive(d, x, k)} title={slotOpen(k, x) && canLog ? `${g.by}, ${time(g.at)} · tap to undo (editable for 24 hours)` : `${g.by}, ${time(g.at)} · locked after 24 hours`}
+                                          className="inline-flex flex-col items-center gap-px rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 px-2.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-[0_1px_4px_rgba(16,185,129,0.35)] transition enabled:hover:scale-105 disabled:cursor-default">
+                                          <span className="inline-flex items-center gap-1">{slotIcon(x)}{x}</span><span className="font-medium opacity-95">✓ {time(g.at)}</span>
+                                        </button>
+                                      ) : (
+                                        <button key={x} type="button" disabled={!slotOpen(k, x) || !canLog || pending} onClick={() => give(d, x, k)} title={slotOpen(k, x) ? (canLog ? "Tap when given" : "Due") : isFuture ? "Not due yet" : "Locked after 24 hours"}
+                                          className={`inline-flex items-center gap-1 rounded-full border-2 border-dashed px-2.5 py-1 text-[11px] font-bold leading-none shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:bg-emerald-50 enabled:active:scale-95 disabled:cursor-default ${slotOpen(k, x) ? "border-[var(--color-ink-200)] bg-white text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white/60 text-[var(--color-ink-400)]"}`}>
+                                          {slotIcon(x)}{x}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </ScrollStrip>
+                        )}
+                      </div>
+                    )}
+                    {d.stopped && <div />}
+                    <div className="flex items-start justify-end">
                       {editable && (
                         d.stopped
-                          ? <button type="button" onClick={() => patch(d.id, { stopped: false, stoppedBy: undefined, stoppedAt: undefined })} className={`${btnG} ml-auto !rounded-full !py-1`}><RotateCcw size={12} /> Resume</button>
-                          : <button type="button" onClick={() => { patch(d.id, { stopped: true, stoppedBy: f.me, stoppedAt: new Date().toISOString() }); void noteStop?.([d.name, d.dose, d.eye, d.frequency].filter(Boolean).join(" ")); }} className={`${btnG} ml-auto !rounded-full !py-1 hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600`}>Stop</button>
+                          ? <button type="button" onClick={() => patch(d.id, { stopped: false, stoppedBy: undefined, stoppedAt: undefined, stoppedReason: undefined })} className={`${btnG} !rounded-full !py-1`}><RotateCcw size={12} /> Resume</button>
+                          : <button type="button" onClick={() => { setReasons([]); setStopping(d); }} className={`${btnG} !rounded-full !py-1 hover:!border-red-200 hover:!bg-red-50 hover:!text-red-600`}>Stop</button>
                       )}
                     </div>
-                    {(d.instructions || d.stopped || d.start || d.orderedBy) && (
-                      <p className={`mt-1 pl-11 text-[10.5px] leading-snug text-[var(--color-ink-400)] ${d.stopped ? "opacity-70" : ""}`}>
-                        {d.instructions && <span className="italic text-[var(--color-ink-500)]">{d.instructions} · </span>}
-                        {d.start ? format(new Date(`${d.start}T00:00:00`), "d MMM") : ""}{d.orderedBy ? ` · ${d.orderedBy}` : ""}
-                        {d.stopped && <span className="font-semibold text-red-500"> · Stopped{d.stoppedBy ? ` by ${d.stoppedBy}` : ""}{d.stoppedAt ? `, ${dateTime(d.stoppedAt)}` : ""}</span>}
-                      </p>
-                    )}
                   </li>
                 );
               })}
@@ -1356,14 +1809,14 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
         </div>
       </section>
 
-      {log.length > 0 && (
+      {history.length > 0 && (
         <section className={shell}>
           <div className={head}>
             <div className="flex items-center gap-2.5">
               <span className="grid h-8 w-8 place-items-center rounded-xl bg-white text-[var(--color-ink-600)] ring-1 ring-[var(--color-border)]"><History size={16} /></span>
               <div>
                 <h3 className="text-[11.5px] font-bold uppercase tracking-wider text-[var(--color-ink-700)]">Administration history</h3>
-                <p className="text-[11px] text-[var(--color-ink-500)]">{log.length} entr{log.length === 1 ? "y" : "ies"}</p>
+                <p className="text-[11px] text-[var(--color-ink-500)]">{history.length} entr{history.length === 1 ? "y" : "ies"}{missedDoses.length > 0 && <span className="text-red-500"> · {missedDoses.length} skipped</span>}</p>
               </div>
             </div>
           </div>
@@ -1374,10 +1827,10 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
                 <ul className="relative ml-2 space-y-2 border-l-2 border-dotted border-[var(--color-primary-200)] pl-5">
                   {g.items.map((e, i) => (
                     <li key={i} className="relative flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                      <span className={`absolute -left-[29px] grid h-5 w-5 place-items-center rounded-full ring-2 ring-white ${e.kind === "dose" ? "bg-emerald-400 text-white" : "bg-[var(--color-ink-200)] text-white"}`}><Check size={11} strokeWidth={3} /></span>
+                      <span className={`absolute -left-[29px] grid h-5 w-5 place-items-center rounded-full ring-2 ring-white ${e.missed ? "bg-[var(--color-ink-100)] text-red-400" : e.kind === "dose" ? "bg-emerald-400 text-white" : "bg-[var(--color-ink-200)] text-white"}`}>{e.missed ? <X size={11} strokeWidth={3} /> : <Check size={11} strokeWidth={3} />}</span>
                       <span className="w-16 shrink-0 text-xs font-semibold tabular-nums text-[var(--color-ink-400)]">{time(e.at)}</span>
-                      <span className="text-[var(--color-ink-800)]">{e.text}</span>
-                      <span className="rounded-full bg-rose-50 px-2 py-px text-[10.5px] font-medium text-rose-600">{e.by}</span>
+                      <span className={e.missed ? "text-[var(--color-ink-500)]" : "text-[var(--color-ink-800)]"}>{e.text}</span>
+                      <span className={`rounded-full px-2 py-px text-[10.5px] ${e.missed ? "bg-[var(--color-surface-sunken)] font-medium text-red-500" : "bg-rose-50 font-medium text-rose-600"}`}>{e.by}</span>
                     </li>
                   ))}
                 </ul>
@@ -1397,17 +1850,64 @@ const VITAL_KEYS = [
   { key: "spo2", label: "SpO₂", ph: "%" }, { key: "rbs", label: "RBS", ph: "mg/dL" }, { key: "pain", label: "Pain (0-10)", ph: "0-10" },
 ] as const;
 
-export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormProps<NurseData>) {
+/** What the "Doctor's orders followed" tick checks: the treatment chart and the diet chart at the time of the note. */
+type OrdersCheck = {
+  choice: "Yes" | "No";
+  treatment: { ok: boolean; lines: { text: string; state: "given" | "missed" | "later" }[] };
+  diet: { ok: boolean; lines: string[] };
+};
+
+function checkOrders(
+  treatment: TreatmentData | undefined, education: EducationData | undefined, ctx: FormContext, shiftedToOt: boolean, whenMs: number,
+  choice: "Yes" | "No",
+): OrdersCheck {
+  const date = new Date(whenMs + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+  const doses = (treatment?.log ?? []).filter((e) => e.kind === "dose");
+  const lines: OrdersCheck["treatment"]["lines"] = [];
+  for (const d of treatment?.drugs ?? []) {
+    const slots = scheduleFor(d.frequency);
+    if (slots.length === 0 || !d.start) continue;
+    const n = durationDays(/(?:^|\.\s*)For\s+([^.]+)/i.exec(d.instructions ?? "")?.[1]?.trim());
+    const end = n ? new Date(new Date(`${d.start}T00:00:00Z`).getTime() + (n - 1) * 86400000).toISOString().slice(0, 10) : "";
+    if (date < d.start || (end && date > end)) continue;
+    if (d.stopped && d.stoppedAt && Date.parse(d.stoppedAt) <= whenMs) continue;
+    // The dose time closest to the note
+    const slot = slots.reduce((best, x) => (Math.abs(Date.parse(`${date}T${x}:00+05:30`) - whenMs) < Math.abs(Date.parse(`${date}T${best}:00+05:30`) - whenMs) ? x : best), slots[0]);
+    const given = doses.find((e) => e.meta?.drugId === d.id && e.meta?.slot === slot && e.meta?.date === date);
+    const slotMs = Date.parse(`${date}T${slot}:00+05:30`);
+    const label = `${[d.eye, d.name].filter(Boolean).join(" ")} · ${slot} dose`;
+    lines.push(given
+      ? { text: `${label}: given at ${format(new Date(given.at), "h:mm a")}`, state: "given" }
+      : slotMs > whenMs ? { text: `${label}: not due yet`, state: "later" } : { text: `${label}: not given`, state: "missed" });
+  }
+  const treatmentOk = lines.every((l) => l.state !== "missed");
+
+  const stage = ctx.type === "PRE_OP" && !shiftedToOt ? "pre" : "post";
+  const cur = education ? educationStage(education, stage, ctx) : null;
+  const meals = cur ? mealsOn(cur, date).filter((m) => m.meal.trim() && m.diet.trim()) : [];
+  const nbm = !!cur?.dietTypes.includes("Nil by mouth");
+  const dietLines = !cur ? ["No diet chart found"]
+    : nbm ? ["Nil by mouth"]
+    : meals.length === 0 ? ["No meal plan entered for this day"]
+    : [`${meals.length} meal${meals.length > 1 ? "s" : ""} planned${cur.dietTypes.length ? ` (${cur.dietTypes.join(", ")})` : ""}`];
+  return { choice, treatment: { ok: treatmentOk, lines }, diet: { ok: !!cur && (nbm || meals.length > 0), lines: dietLines } };
+}
+
+/** Filled in by the Normal tick on the vitals. */
+const NORMAL_NURSE_VITALS: Record<string, string> = { bp: "120/80", pulse: "72", temp: "98.6", spo2: "98", rbs: "110", pain: "0" };
+
+export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment, education }: FormProps<NurseData> & { treatment?: TreatmentData; education?: EducationData }) {
   const entries = v.entries ?? [];
-  // Shift by the hospital's (IST) clock: 8 am-2 pm morning, 2-8 pm evening, else night
-  const nowShift = () => { const h = new Date(Date.now() + 5.5 * 3600 * 1000).getUTCHours(); return h >= 8 && h < 14 ? "Morning" : h >= 14 && h < 20 ? "Evening" : "Night"; };
+  const stampNow = () => format(new Date(), "yyyy-MM-dd'T'HH:mm");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [vit, setVit] = useState<Record<string, string>>({});
-  const [shift, setShift] = useState(nowShift);
-  const [orders, setOrders] = useState<"Yes" | "No" | "">("Yes");
+  const [stamp, setStamp] = useState(stampNow);
+  const [orders, setOrders] = useState<"Yes" | "No" | "NA" | "">("NA");
+  const [check, setCheck] = useState<OrdersCheck | null>(null);
   const [note, setNote] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState("");
   const [busy, start] = useTransition();
   const toggleChip = (c: string) => setNote((n) => (n.includes(c) ? n.replace(new RegExp(`(^|; )${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "").replace(/^; /, "") : n ? `${n}; ${c}` : c));
@@ -1417,18 +1917,20 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormPro
   const begin = (e?: NurseEntry) => {
     setEditId(e?.id ?? null);
     setVit(e?.vitals ?? {});
-    setShift(e?.shift ?? nowShift());
-    setOrders((e?.ordersFollowed as "Yes" | "No" | "") ?? "Yes");
+    setStamp(e ? format(new Date(e.at), "yyyy-MM-dd'T'HH:mm") : stampNow());
+    setOrders((e?.ordersFollowed as "Yes" | "No" | "NA" | "") ?? "NA");
     setNote(e?.note ?? "");
     setError("");
     setOpen(true);
   };
   const save = () => start(async () => {
     const now = new Date().toISOString();
+    // The time the note is for (now unless changed); never in the future
+    const at = stamp && !Number.isNaN(Date.parse(stamp)) ? new Date(Math.min(Date.parse(stamp), Date.now())).toISOString() : now;
     const clean = Object.fromEntries(Object.entries(vit).filter(([, x]) => x.trim()).map(([k, x]) => [k, x.trim()]));
     const entry: NurseEntry = editId
-      ? { ...entries.find((x) => x.id === editId)!, vitals: clean, shift, ordersFollowed: orders, note: note.trim(), by: f.me, editedAt: now }
-      : { id: uid(), at: now, by: f.me, vitals: clean, shift, ordersFollowed: orders, note: note.trim() };
+      ? { ...entries.find((x) => x.id === editId)!, at, vitals: clean, ordersFollowed: orders, note: note.trim(), by: f.me, editedAt: now }
+      : { id: uid(), at, by: f.me, vitals: clean, ordersFollowed: orders, note: note.trim() };
     const next = { ...v, entries: editId ? entries.map((x) => (x.id === editId ? entry : x)) : [entry, ...entries] };
     change(next);
     const err = await saveNow(next);
@@ -1443,13 +1945,124 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormPro
         {canLog && !open && (
           <button type="button" onClick={() => begin()} className={btnP}><Plus size={13} /> Add Note</button>
         )}
+        {entries.length > 0 && <button type="button" onClick={() => setPreviewOpen(true)} className={btnG}><Eye size={13} /> Preview</button>}
       </div>
+      {previewOpen && (() => {
+        // A summary document of every note, oldest first, like the long summary
+        const sorted = [...entries].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+        const withVitals = sorted.filter((e) => VITAL_KEYS.some((k) => e.vitals?.[k.key]));
+        const withNotes = sorted.filter((e) => e.note || e.ordersFollowed);
+        const section = "mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--color-ink-500)]";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPreviewOpen(false)}>
+            <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-3">
+                <div>
+                  <p className="text-base font-bold text-[var(--color-ink-900)]">Nurse notes summary</p>
+                  <p className="text-xs text-[var(--color-ink-500)]">{sorted.length} note{sorted.length === 1 ? "" : "s"} · {dayTime(sorted[0].at)} to {dayTime(sorted[sorted.length - 1].at)}</p>
+                </div>
+                <button type="button" onClick={() => setPreviewOpen(false)} aria-label="Close" className="rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+              </div>
+              <div className="min-h-0 flex-1 space-y-6 overflow-auto px-5 py-4">
+                {withVitals.length > 0 && (
+                  <div>
+                    <p className={section}>Vitals</p>
+                    <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+                      <table className="w-full min-w-[520px] text-xs">
+                        <thead>
+                          <tr className="bg-[var(--color-surface-sunken)]/70 text-left text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">
+                            <th className="px-3 py-1.5">Date &amp; time</th>
+                            {VITAL_KEYS.map((k) => <th key={k.key} className="px-2 py-1.5 text-center">{k.label}</th>)}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {withVitals.map((e) => (
+                            <tr key={e.id} className="border-t border-[var(--color-border)]/70">
+                              <td className="whitespace-nowrap px-3 py-1.5 font-semibold text-[var(--color-ink-700)]">{dayTime(e.at)}</td>
+                              {VITAL_KEYS.map((k) => <td key={k.key} className="px-2 py-1.5 text-center tabular-nums text-[var(--color-ink-900)]">{e.vitals?.[k.key] || <span className="text-[var(--color-ink-300)]">-</span>}</td>)}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                {withNotes.length > 0 && (
+                  <div>
+                    <p className={section}>Nursing notes</p>
+                    <ul className="space-y-3">
+                      {withNotes.map((e) => (
+                        <li key={e.id} className="border-l-2 border-[var(--color-primary-200)] pl-3">
+                          <p className="flex flex-wrap items-baseline gap-x-2 text-xs">
+                            <span className="font-bold text-[var(--color-ink-800)]">{dayTime(e.at)}</span>
+                            <span className="text-[var(--color-ink-500)]">{e.by}</span>
+                            {e.ordersFollowed && <span className="text-[var(--color-ink-500)]">· Orders followed: <b className={e.ordersFollowed === "No" ? "text-red-600" : "text-[var(--color-ink-700)]"}>{e.ordersFollowed}</b></span>}
+                          </p>
+                          {e.note && <p className="mt-0.5 whitespace-pre-line text-sm text-[var(--color-ink-800)]">{e.note}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {withVitals.length === 0 && withNotes.length === 0 && <p className="text-sm italic text-[var(--color-ink-400)]">Nothing recorded.</p>}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {check && (() => {
+        const ok = check.treatment.ok && check.diet.ok;
+        const suggested: "Yes" | "No" = ok ? "Yes" : "No";
+        const pill = (good: boolean) => <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${good ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{good ? "Yes" : "No"}</span>;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCheck(null)}>
+            <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-base font-bold text-[var(--color-ink-900)]">Doctor&apos;s orders check</p>
+                  <p className="text-xs text-[var(--color-ink-500)]">As of {stamp ? dayTime(new Date(stamp).toISOString()) : "now"}</p>
+                </div>
+                <button type="button" onClick={() => setCheck(null)} aria-label="Close" className="rounded-lg p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+              </div>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-xl border border-[var(--color-border)] p-3">
+                  <div className="flex items-center justify-between"><p className="text-sm font-bold text-[var(--color-ink-800)]">Treatment chart</p>{pill(check.treatment.ok)}</div>
+                  <p className="text-[11px] text-[var(--color-ink-400)]">Is the closest dose given?</p>
+                  <ul className="mt-1.5 space-y-0.5 text-xs">
+                    {check.treatment.lines.length === 0 && <li className="text-[var(--color-ink-500)]">No timed medicines due on this day</li>}
+                    {check.treatment.lines.map((l, i) => <li key={i} className={l.state === "missed" ? "font-semibold text-red-600" : "text-[var(--color-ink-600)]"}>{l.state === "missed" ? "✗" : l.state === "given" ? "✓" : "·"} {l.text}</li>)}
+                  </ul>
+                </div>
+                <div className="rounded-xl border border-[var(--color-border)] p-3">
+                  <div className="flex items-center justify-between"><p className="text-sm font-bold text-[var(--color-ink-800)]">Diet chart</p>{pill(check.diet.ok)}</div>
+                  <p className="text-[11px] text-[var(--color-ink-400)]">Is the diet plan entered?</p>
+                  <ul className="mt-1.5 space-y-0.5 text-xs">{check.diet.lines.map((l, i) => <li key={i} className={check.diet.ok ? "text-[var(--color-ink-600)]" : "font-semibold text-red-600"}>{check.diet.ok ? "✓" : "✗"} {l}</li>)}</ul>
+                </div>
+              </div>
+              <p className="mt-3 text-xs text-[var(--color-ink-500)]">{ok ? "Both charts are in order." : "Something on the charts is outstanding."}{check.choice !== suggested ? ` You selected ${check.choice}.` : ""}</p>
+              <div className="mt-4 flex flex-wrap justify-end gap-2">
+                <button type="button" onClick={() => setCheck(null)} className={btnG}>Cancel</button>
+                {check.choice !== suggested && <button type="button" onClick={() => { setOrders(check.choice); setCheck(null); }} className={btnG}>Keep {check.choice}</button>}
+                <button type="button" onClick={() => { setOrders(suggested); setCheck(null); }} className={btnP}>Set {suggested}</button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       <ErrorText text={error} />
 
       {open && (
         <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
           <div className="px-4 py-3">
-            <p className={`${lblIn} mb-2`}>Vitals</p>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <p className={lblIn}>Vitals</p>
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-[var(--color-ink-700)]">
+                <input type="checkbox" className="accent-[var(--color-primary-600)]"
+                  checked={Object.entries(NORMAL_NURSE_VITALS).every(([k, x]) => vit[k] === x)}
+                  onChange={(e) => setVit(e.target.checked ? { ...vit, ...NORMAL_NURSE_VITALS } : Object.fromEntries(Object.entries(vit).filter(([k]) => !(k in NORMAL_NURSE_VITALS))))} />
+                Normal
+              </label>
+            </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
               {VITAL_KEYS.map((k) => (
                 <div key={k.key} className="min-w-0">
@@ -1463,9 +2076,16 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormPro
           <div className="space-y-2 border-t border-[var(--color-border)] px-4 py-3">
             <p className={lblIn}>Nursing note</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-              <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Shift</label><Seg options={SHIFTS} value={shift} onChange={setShift} /></div>
+              <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Date &amp; time</label>
+                <input type="datetime-local" value={stamp} max={stampNow()} onChange={(e) => setStamp(e.target.value)} className={`${inp} !w-auto !py-1`} /></div>
               <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Doctor&apos;s orders followed</label>
-                <Seg options={["Yes", "No"] as const} value={orders} onChange={setOrders} tone={(x) => (x === "Yes" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")} />
+                <Seg options={["Yes", "No", "NA"] as const} value={orders}
+                  onChange={(x) => {
+                    // Yes / No look at the treatment chart and the diet chart first
+                    if (x === "NA") { setOrders("NA"); return; }
+                    const t = Date.parse(stamp);
+                    setCheck(checkOrders(treatment, education, f.ctx, !!f.shiftedToOtAt, Number.isNaN(t) ? Date.now() : t, x));
+                  }} tone={(x) => (x === "Yes" ? "bg-emerald-600 text-white" : x === "No" ? "bg-red-600 text-white" : "bg-slate-500 text-white")} />
               </div>
             </div>
             <SuggestField storeKey="nurse_notes" builtIns={NURSE_QUICK_NOTES} value={note} onChange={setNote}>
@@ -1506,8 +2126,7 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f }: FormPro
                 {isOpen && (
                   <div className="space-y-2.5 border-t border-[var(--color-border)] px-3.5 py-3 text-sm">
                     <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                      {e.shift && <span className="rounded-full bg-[var(--color-surface-sunken)] px-2.5 py-0.5 font-semibold text-[var(--color-ink-700)]">{e.shift} shift</span>}
-                      {e.ordersFollowed && <span className={`rounded-full px-2.5 py-0.5 font-semibold ${e.ordersFollowed === "Yes" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>Orders followed: {e.ordersFollowed}</span>}
+                      {e.ordersFollowed && <span className={`rounded-full px-2.5 py-0.5 font-semibold ${e.ordersFollowed === "Yes" ? "bg-emerald-50 text-emerald-700" : e.ordersFollowed === "No" ? "bg-red-50 text-red-700" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)]"}`}>Orders followed: {e.ordersFollowed}</span>}
                     </div>
                     {vitals.length > 0 && (
                       <div>

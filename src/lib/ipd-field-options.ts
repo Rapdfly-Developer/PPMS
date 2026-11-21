@@ -14,6 +14,7 @@ export const FIELD_OPTIONS = {
   formNotes: f("form_notes", ["Patient prepared as per checklist", "Patient anxious, reassured", "Relatives informed", "Doctor informed"]),
   dietMeal: f("diet_meal", ["Idli, sambar", "Soft diet", "Rice, dal", "Chapati, vegetables", "Fruits", "Milk", "Tea, biscuits", "Light liquid diet"]),
   treatDose: f("treat_dose", DOSE_OPTIONS),
+  treatStopReason: f("treat_stop_reason", ["Course completed early", "Condition improved", "Adverse reaction / allergy", "Side effects", "Not tolerated", "Doctor's advice", "Replaced by another medicine", "Patient refused", "Entered by mistake"]),
   treatInstructions: f("treat_instructions", ["Shake well before use", "5 min gap between drops", "Do not touch the bottle tip to the eye", "After food", "Before food"]),
   otProcedure: f("ot_procedure", SURGERY_OPTIONS),
   otAnaesthesia: f("ot_anaesthesia", ANAESTHESIA_OPTIONS),

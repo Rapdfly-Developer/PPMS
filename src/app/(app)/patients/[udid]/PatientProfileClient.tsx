@@ -916,7 +916,7 @@ export function PatientProfileClient({
           <button
             type="button"
             onClick={() => setCreatingFile(true)}
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-primary-800)] text-white hover:bg-[var(--color-primary-900)] transition-colors shadow-sm"
           >
             <FolderOpen size={16} />
             Create Patient File
@@ -924,7 +924,7 @@ export function PatientProfileClient({
         ) : ipdFileHref ? (
           <Link
             href={ipdFileHref}
-            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl font-semibold text-label sm:text-sm bg-[var(--color-primary-800)] text-white hover:bg-[var(--color-primary-900)] transition-colors shadow-sm"
           >
             <FolderOpen size={16} />
             Open Patient File

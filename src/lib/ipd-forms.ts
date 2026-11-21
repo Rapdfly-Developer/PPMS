@@ -211,8 +211,19 @@ export interface ChecklistData {
   v: 2;
   answers: Record<string, ChecklistAnswer>;
   custom: string[];
+  /** Groups added on this file. */
+  groups?: { id: string; title: string; items: string[] }[];
+  /** Points added to the standard groups, by group title. */
+  extra?: Record<string, string[]>;
+  /** Standard groups / points removed from this file. */
+  removedGroups?: string[];
+  removedItems?: string[];
   vitals: { bp: string; pulse: string; temp: string; spo2: string; rbs: string; weight: string };
   lastOral: string;
+  /** The rest of the last oral intake row: which meal, what was taken, how much. */
+  lastOralMeal?: string;
+  lastOralDiet?: string;
+  lastOralAmount?: string;
   dilationAt: string;
   handedOverBy: string;
 }
@@ -887,6 +898,8 @@ export interface DrugOrder {
   stopped: boolean;
   stoppedBy?: string;
   stoppedAt?: string;
+  /** Why it was stopped (keywords and typed reasons, joined with commas). */
+  stoppedReason?: string;
 }
 export interface TreatmentData { v: 2; drugs: DrugOrder[]; log: LogEntry[] }
 
@@ -934,7 +947,7 @@ export interface NurseCheck { label: string; done: boolean; preOp?: boolean; by?
 /** A saved nurse note: vitals and nursing note taken together, with who and when. */
 export interface NurseEntry {
   id: string; at: string; by: string; editedAt?: string;
-  vitals: Record<string, string>; shift: string; ordersFollowed: string; note: string;
+  vitals: Record<string, string>; shift?: string; ordersFollowed: string; note: string;
 }
 export interface NurseData { v: 2; checks: NurseCheck[]; log: LogEntry[]; entries?: NurseEntry[] }
 

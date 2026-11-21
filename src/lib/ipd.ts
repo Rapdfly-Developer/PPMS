@@ -60,7 +60,8 @@ export const IPD_FORMS: FormDef[] = [
 ];
 
 /** Only these tabs have a Freeze / Unfreeze toggle (Counselling, Patient Education, Surgery Checklist). */
-export const FREEZABLE_KEYS: string[] = ["counselling", "education", "checklist"];
+/** "diet" is the Diet Chart tab: it is frozen on its own, apart from Patient Education (both are stored in the education form). */
+export const FREEZABLE_KEYS: string[] = ["counselling", "education", "diet", "checklist"];
 
 export const isCustomKey = (key: string) => key.startsWith("custom-");
 
@@ -84,7 +85,7 @@ export function tabsFor(type: string, fileTabs: string[]): FormDef[] {
 
 /** Keys that count towards completion: the file's fixed tabs + custom forms (the long summary is the EMR, not frozen). */
 export function requiredKeys(type: string, formKeys: string[], fileTabs: string[]): string[] {
-  return tabsFor(type, fileTabs).map((f) => f.key).filter((k) => FREEZABLE_KEYS.includes(k));
+  return tabsFor(type, fileTabs).flatMap((f) => (f.key === "education" ? ["education", "diet"] : [f.key])).filter((k) => FREEZABLE_KEYS.includes(k));
 }
 
 /** Can the form's main content be changed? (Running logs follow logsOpen.) */

@@ -629,10 +629,12 @@ export function AddCustomTestModal({
 
 // ── New Investigations (order form + today's orders) ─────────────────────
 
-function NewInvestigations({
-  visit, udid, todayOrders, onOrdered, canOrder = true,
+export function NewInvestigations({
+  visit, udid, todayOrders, onOrdered, canOrder = true, place,
 }: {
   visit: any; udid: string; todayOrders: any[]; onOrdered: () => void; canOrder?: boolean;
+  /** Custom order call (IPD); defaults to ordering on the visit. */
+  place?: (d: { category: string; testName: string; priority: string; laterality: string; notes: string }) => Promise<unknown>;
 }) {
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
@@ -700,7 +702,8 @@ function NewInvestigations({
         const catFromCatalog = Object.entries(INV_CATALOG).find(([, items]) => items.some((i) => i.name === testName))?.[0];
         const catFromCustom = customTests.find((t) => t.name === testName)?.category;
         const cat = catFromCatalog ?? catFromCustom ?? "Other";
-        await addInvestigationOrder(visit.id, udid, { category: cat, testName, priority, laterality, notes: testNotes[testName] ?? "" });
+        const d = { category: cat, testName, priority, laterality, notes: testNotes[testName] ?? "" };
+        if (place) await place(d); else await addInvestigationOrder(visit.id, udid, d);
       }
       setSelected([]);
       setTestNotes({});

@@ -46,7 +46,7 @@ function audit(userId: string, userName: string, admissionId: string, action: st
 }
 
 const titleOf = (key: string, forms: { key: string; title: string }[]) =>
-  IPD_FORMS.find((f) => f.key === key)?.title ?? forms.find((f) => f.key === key)?.title ?? key;
+  key === "diet" ? "Diet Chart" : IPD_FORMS.find((f) => f.key === key)?.title ?? forms.find((f) => f.key === key)?.title ?? key;
 
 function knownKey(key: string, forms: { key: string }[]) {
   return IPD_FORMS.some((f) => f.key === key) || (isCustomKey(key) && forms.some((f) => f.key === key));
@@ -108,6 +108,10 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
   // The discharge summary is reviewed and edited during discharge, even if frozen earlier
   const discharging = key === "discharge" && canDischargeNow(admission.admissionType, admission.status);
   if (!formEditable(key, !!row?.frozen, admission.status) && !discharging) {
+    return { error: "This form is frozen and can't be changed." };
+  }
+  // In the ward, once both Patient Education and the Diet Chart are frozen the form can't change
+  if (key === "education" && admission.status === "ADMITTED" && row?.frozen && admission.forms.find((f) => f.key === "diet")?.frozen) {
     return { error: "This form is frozen and can't be changed." };
   }
   // Signed (locked) consents stay as stored until unlocked with a password
@@ -227,6 +231,22 @@ function refreshReports(admissionId: string) {
   revalidatePath("/ot", "layout");
 }
 
+/** Order a new investigation from the IPD file: same record as the EMR order (on the admitting visit). */
+export async function addIpdInvestigationOrder(
+  admissionId: string,
+  data: { category: string; testName: string; priority: string; laterality?: string; notes?: string },
+): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit", "emr.edit", "investigations.create");
+  if (admission.status === "DISCHARGED") return { error: "The patient is discharged; the file is frozen." };
+  const norm = (s: string) => s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").trim();
+  const existing = await prisma.investigationOrder.findMany({ where: { visitId: admission.visitId }, select: { testName: true } });
+  if (existing.some((o) => norm(o.testName) === norm(data.testName))) return {};
+  await prisma.investigationOrder.create({ data: { visitId: admission.visitId, ...data } });
+  await writeAudit(user.id, "InvestigationOrder", admission.visitId, "ADD", { ...data, from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
 /** Upload or re-upload the report (replaces the current file). */
 export async function attachIpdReport(admissionId: string, orderId: string, resultRef: string): Promise<Result> {
   const { user, order } = await reportOrder(admissionId, orderId);
@@ -281,7 +301,8 @@ export async function freezeForm(admissionId: string, key: string, data?: unknow
   if (row?.frozen) return {};
   if (!FREEZABLE_KEYS.includes(key)) return { error: "This form is not frozen." };
   if (data !== undefined) {
-    const r = await saveForm(admissionId, key, data);
+    // The Diet Chart is part of the education form: its entries are saved there
+    const r = await saveForm(admissionId, key === "diet" ? "education" : key, data);
     if (r.error) return r;
   }
   const now = new Date();
@@ -332,6 +353,7 @@ export async function addFormLog(
   const e = typeof entry === "string" ? { text: entry } : entry;
   const t = (e.text ?? "").trim();
   if (!t) return { error: "Enter the note." };
+  if (e.kind === "dose" && doseFrozen(e.meta?.date, e.meta?.slot)) return { error: "This dose is locked: it can be changed for 24 hours only." };
   const kind = ["dose", "food", "vitals", "note"].includes(e.kind ?? "") ? e.kind : undefined;
   const meta = e.meta && typeof e.meta === "object" && JSON.stringify(e.meta).length < 2000 ? e.meta : undefined;
   const row = admission.forms.find((f) => f.key === key);
@@ -348,10 +370,18 @@ export async function addFormLog(
   return {};
 }
 
+/** A dose tick (or its undo) is allowed for 24 hours after its slot time. */
+function doseFrozen(date: unknown, slot: unknown): boolean {
+  if (typeof date !== "string" || typeof slot !== "string") return false;
+  const at = Date.parse(`${date}T${slot}:00+05:30`);
+  return !Number.isNaN(at) && Date.now() > at + 24 * 3600 * 1000;
+}
+
 /** Undo a dose tick on the treatment chart (taps toggle), identified by drug, slot and date. */
 export async function removeDoseLog(admissionId: string, drugId: string, slot: string, date: string): Promise<Result> {
   const { admission } = await loadAdmission(admissionId, "ipd.edit");
   if (!logsOpen(admission.status)) return { error: "Entries can't be changed now." };
+  if (doseFrozen(date, slot)) return { error: "This dose is locked: it can be changed for 24 hours only." };
   const row = admission.forms.find((f) => f.key === "treatment");
   if (!row) return {};
   let data: Record<string, unknown> = {};
@@ -432,7 +462,7 @@ export async function removeFileTab(admissionId: string, key: string): Promise<R
   if (admission.status !== "ADMITTED" && admission.status !== "POST_OP") return { error: "Tabs can't be changed now." };
   if (ALWAYS_TABS.includes(key)) return { error: "This tab is always part of the file." };
   const row = admission.forms.find((f) => f.key === key);
-  if (row?.frozen) return { error: "A frozen tab can't be removed." };
+  if (row?.frozen || (key === "education" && admission.forms.find((f) => f.key === "diet")?.frozen)) return { error: "A frozen tab can't be removed." };
   if (isCustomKey(key)) {
     if (!row) return {};
     await prisma.ipdForm.delete({ where: { id: row.id } });

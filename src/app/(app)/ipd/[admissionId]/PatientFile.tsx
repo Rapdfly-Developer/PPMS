@@ -185,8 +185,10 @@ function TextForm({ value, editable, onChange, rows = 18, mono }: { value: strin
 
 const STRUCTURED = new Set(["implant", "consents", "checklist", "education", "treatment", "nurse", "otNotes", "postOpNotes"]);
 
-export function FormPanel({ d, keyName, title, display, row, can, onRefresh, part }: {
+export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onRefresh, part }: {
   d: FileData; keyName: string; title: string; display?: boolean; row: FormRow | undefined; can: Can; onRefresh: () => void;
+  /** The row that holds the freeze state when it is not the form's own (Diet Chart). */
+  freezeRow?: FormRow;
   /** Education form: which of its two tabs (Patient Education or Diet Chart) is shown. */
   part?: EducationPart;
 }) {
@@ -209,9 +211,14 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
     return `/emr/${d.udid}?visit=${d.visitId}${edit ? "" : "&source=view-only"}&returnTo=${back}`;
   };
   const [pending, start] = useTransition();
-  const frozen = !!row?.frozen;
-  const editable = can.edit && formEditable(keyName, frozen, d.status) && !display;
-  const freezable = FREEZABLE_KEYS.includes(keyName);
+  // The Diet Chart is frozen on its own, apart from Patient Education
+  const freezeKey = part === "diet" ? "diet" : keyName;
+  const fr = part === "diet" ? freezeRow : row;
+  const frozen = !!fr?.frozen;
+  // Education and the Diet Chart stay editable after OT, but while in the ward a frozen one is locked
+  const lockedByFreeze = keyName === "education" && frozen && d.status === "ADMITTED";
+  const editable = can.edit && formEditable(keyName, frozen, d.status) && !display && !lockedByFreeze;
+  const freezable = FREEZABLE_KEYS.includes(freezeKey);
   const canFreeze = freezable && can.edit && !frozen && d.status === "ADMITTED";
   const canUnfreeze = freezable && can.edit && frozen && d.status === "ADMITTED";
   const canLog = can.edit && logsOpen(d.status);
@@ -237,11 +244,11 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
   });
   const freeze = () => start(async () => {
     setConfirmFreeze(false);
-    const r = await freezeForm(d.id, keyName, display ? undefined : value);
+    const r = await freezeForm(d.id, freezeKey, display ? undefined : value);
     if (r.error) setError(r.error); else onRefresh();
   });
   const unfreeze = () => start(async () => {
-    const r = await unfreezeForm(d.id, keyName);
+    const r = await unfreezeForm(d.id, freezeKey);
     if (r.error) setError(r.error); else onRefresh();
   });
   const noteStop = async (label: string) => {
@@ -277,7 +284,16 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
     case "checklist": body = <ChecklistForm {...props} value={value as ChecklistData} change={change} saveNow={saveNow} />; break;
     case "education": body = <EducationForm {...props} value={value as EducationData} change={change} saveNow={saveNow} part={part} />; break;
     case "treatment": body = <TreatmentForm {...props} value={value as TreatmentData} change={change} saveNow={saveNow} />; break;
-    case "nurse": body = <NurseForm {...props} value={value as NurseData} change={change} saveNow={saveNow} />; break;
+    case "nurse": {
+      // The treatment and diet charts as they stand (saved data over the defaults), for the doctor's-orders check
+      const chart = (key: string) => {
+        const data = d.forms.find((x) => x.key === key)?.data;
+        const base = (d.defaults[key] ?? {}) as FormJson;
+        return data && Object.keys(data).length ? (isV2(data) ? { ...base, ...data } : { ...base, log: data.log ?? [] }) : base;
+      };
+      body = <NurseForm {...props} value={value as NurseData} change={change} saveNow={saveNow} treatment={chart("treatment") as unknown as TreatmentData} education={chart("education") as unknown as EducationData} />;
+      break;
+    }
     case "otNotes": body = <OtNotesForm {...props} value={value as OtNotesData} change={change} saveNow={saveNow} template={(d.defaults.otNotes as OtNotesData).steps} />; break;
     case "postOpNotes": body = <PostOpForm {...props} value={value as PostOpData} change={change} saveNow={saveNow} />; break;
     case "discharge":
@@ -306,6 +322,14 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{title}</h2>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
+          {keyName === "checklist" && (
+            <div className="flex items-center gap-2">
+              <label className="shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">Handed over to OT by</label>
+              <input value={value.handedOverBy ?? ""} disabled={!editable} onChange={(e) => change({ ...value, handedOverBy: e.target.value })} placeholder={editable ? "Nurse name" : "-"}
+                className="w-44 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)]/50 disabled:cursor-default" />
+              {editable && !value.handedOverBy && <button type="button" onClick={() => change({ ...value, handedOverBy: d.me })} className={btnGhost}>Me</button>}
+            </div>
+          )}
           {editable && touched && <SaveIndicator state={saveState} />}
           {keyName === "otFinal" && (
             <button type="button" onClick={() => printInPlace(`/ipd-print/${d.id}/ot-notes`)} className={btnGhost}><Printer size={14} /> Print</button>
@@ -328,11 +352,11 @@ export function FormPanel({ d, keyName, title, display, row, can, onRefresh, par
           ) : !freezable ? null : canUnfreeze ? (
             <button type="button" disabled={pending} onClick={unfreeze} title="Click to unfreeze"
               className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 disabled:opacity-60">
-              <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""} · Unfreeze
+              <Lock size={12} /> Frozen by {fr?.frozenBy} · {fr?.frozenAt ? fmtTime(fr.frozenAt) : ""} · Unfreeze
             </button>
           ) : frozen ? (
             <span className="inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-              <Lock size={12} /> Frozen by {row?.frozenBy} · {row?.frozenAt ? fmtTime(row.frozenAt) : ""}
+              <Lock size={12} /> Frozen by {fr?.frozenBy} · {fr?.frozenAt ? fmtTime(fr.frozenAt) : ""}
             </span>
           ) : canFreeze ? (
             <button disabled={pending} onClick={() => setConfirmFreeze(true)} className={btnPrimary}>
@@ -777,7 +801,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
       : [{ key: f.key, form: f.key, title: f.key === "summary" ? summaryTitle(d.visitDate) : f.title, display: !!f.display, preOp: !!f.preOpOnly }]),
     ...custom.map((f) => ({ key: f.key, form: f.key, title: f.title, display: false, preOp: false })),
   ], [fixed, custom, d.visitDate]);
-  const required = [...new Set(items.map((i) => i.form))].filter((k) => FREEZABLE_KEYS.includes(k));
+  const freezeKeyOf = (i: { form: string; part?: EducationPart }) => (i.part === "diet" ? "diet" : i.form);
+  const required = [...new Set(items.map(freezeKeyOf))].filter((k) => FREEZABLE_KEYS.includes(k));
   const frozenCount = required.filter((k) => rowOf(k)?.frozen).length;
   const allFrozen = frozenCount === required.length;
 
@@ -1014,15 +1039,16 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
         <div role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex flex-wrap items-end gap-x-1 gap-y-0.5 px-1 pt-1 -mb-px bg-[var(--color-bg)]">
           {items.map((i) => {
             const r = rowOf(i.form);
+            const fz = rowOf(freezeKeyOf(i));
             const formTitle = i.part ? "Patient Education & Diet Chart" : i.title;
             return tabBtn(
               i.key,
               <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
-              i.key === "summary" || !FREEZABLE_KEYS.includes(i.form) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
-                : r?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
+              i.key === "summary" || !FREEZABLE_KEYS.includes(freezeKeyOf(i)) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
+                : fz?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
               <>
                 {(r?.attachments?.length ?? 0) > 0 && <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" />}
-                {tabsOpen && sel === i.key && !ALWAYS_TABS.includes(i.key) && !r?.frozen && (
+                {tabsOpen && sel === i.key && !ALWAYS_TABS.includes(i.key) && !fz?.frozen && (
                   <span role="button" tabIndex={0} aria-label={`Remove ${i.title}`} title="Remove this tab"
                     onClick={(e) => { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); }}
                     onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); } }}
@@ -1059,7 +1085,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
             : sel === "otFinal" && otFinal ? (
               <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
             ) : selItem ? (
-              <FormPanel key={`${selItem.form}-${rowOf(selItem.form)?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.form} title={selItem.title} display={selItem.display} row={rowOf(selItem.form)} can={can} onRefresh={refresh} part={selItem.part} />
+              <FormPanel key={`${selItem.key}-${rowOf(freezeKeyOf(selItem))?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.form} title={selItem.title} display={selItem.display} row={rowOf(selItem.form)} freezeRow={rowOf(freezeKeyOf(selItem))} can={can} onRefresh={refresh} part={selItem.part} />
             ) : null}
         </section>
       </div>
