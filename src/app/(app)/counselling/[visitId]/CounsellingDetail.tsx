@@ -9,10 +9,11 @@ import {
   UserRound, Scissors, CalendarDays, FlaskConical, ShieldCheck, CheckCircle2, PauseCircle, PlusCircle, Lock,
   Upload, X, AlertTriangle, Info, CalendarClock, IndianRupee, RotateCcw, Search,
   Package, Wallet, Banknote, CreditCard, Landmark, Building2, HeartHandshake,
-  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, 
+  MoreHorizontal, Circle, Check, Plus, History, FileText, ChevronDown, ClipboardList, Eye,
   Printer, Save, FileSignature, BookOpen, Hash, Phone, Clock, Download, UserX, Utensils,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/Tabs";
+import { ChromeTabBar, applyOrder, useSavedList, type ChromeTab } from "@/components/ui/ChromeTabBar";
 import { useSidebar } from "@/components/ui/SidebarContext";
 import { CONSENT_DECLARATION, educationStage, prebuiltConsents, stagePoints, type ConsentItem, type ConsentsData, type EducationData, type FormContext } from "@/lib/ipd-forms";
 import { hasCounsellingImplant, implantFieldsFor, type CounsellingImplant } from "@/lib/counselling-sheets";
@@ -1557,6 +1558,18 @@ export function CounsellingDetail({
     { id: "diet", label: "Diet", icon: <Utensils size={14} />, badge: badge(dietMissing.length), content: educationPart("diet") },
   ];
 
+  // Chrome-style tabs: close (hides, nothing is deleted), reopen with +, drag to reorder; kept in this browser
+  const [tabPrefsRaw, saveTabPrefsRaw] = useSavedList(`ppms:counselling-tabs:${data.visitId}`);
+  const tabPrefs = { order: tabPrefsRaw.filter((x) => !x.startsWith("!")), closed: tabPrefsRaw.filter((x) => x.startsWith("!")).map((x) => x.slice(1)) };
+  const saveTabPrefs = (p: { order: string[]; closed: string[] }) => saveTabPrefsRaw([...p.order, ...p.closed.map((x) => `!${x}`)]);
+  const shownTabs = applyOrder(sheetTabs.filter((t) => !tabPrefs.closed.includes(t.id) || t.id === sheet), tabPrefs.order);
+  const closedTabs = sheetTabs.filter((t) => tabPrefs.closed.includes(t.id) && t.id !== sheet);
+  const barTabs: ChromeTab[] = shownTabs.map((t) => ({
+    id: t.id, title: t.label, label: t.label, icon: t.icon,
+    extra: t.badge ? <span className="rounded-full bg-[var(--color-accent-600)] text-white text-micro font-semibold px-1.5 py-0.5">{t.badge}</span> : undefined,
+    closable: t.id !== "sheet",
+  }));
+
   // IPD file: the same sheet, saved to the same counselling record
   if (embed) return (
     <div className="flex flex-col gap-3">
@@ -1733,12 +1746,30 @@ export function CounsellingDetail({
 
       {/* ── Sheets (tabs like the EMR) ────────────────────────────────── */}
       <div className="mt-3">
+        <ChromeTabBar
+          label="Counselling sheets"
+          variant="underline"
+          activeId={sheet}
+          onSelect={(id) => setSheet(id as SheetId)}
+          tabs={barTabs}
+          onReorder={(ids) => saveTabPrefs({ ...tabPrefs, order: ids })}
+          onClose={(id) => { saveTabPrefs({ ...tabPrefs, closed: [...tabPrefs.closed, id] }); if (sheet === id) setSheet("sheet"); }}
+          reopen={closedTabs.map((t) => ({ id: t.id, label: t.label, icon: t.icon }))}
+          onReopen={(id) => { saveTabPrefs({ ...tabPrefs, closed: tabPrefs.closed.filter((x) => x !== id) }); setSheet(id as SheetId); }}
+          trailing={
+            <button type="button" aria-pressed={overviewMode} onClick={() => setOverviewMode((v) => !v)}
+              title={overviewMode ? "Back to editing" : "Overview: this tab as a summary"}
+              className={`ml-auto mb-1 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${overviewMode ? "border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)] hover:text-[var(--color-primary-700)]"}`}>
+              <Eye size={13} /> Overview
+            </button>
+          }
+        />
         <Tabs
+          hideBar
           tabs={sheetTabs}
           activeTab={sheet}
           onTabChange={(id) => setSheet(id as SheetId)}
           overviewMode={overviewMode}
-          onOverviewToggle={() => setOverviewMode((v) => !v)}
           overviewContent={overviewMode ? (
             <CounsellingOverview
               sheet={sheet}

@@ -456,11 +456,11 @@ export function OtFile({ d, oc, items: given, draft, can }: { d: FileData; oc: O
           onConfirm={(r) => run(() => shiftToWard(d.id, r))} onClose={() => setDialog(null)} />
       )}
       {dialog === "dischargeAsk" && (
-        <ConfirmDialog title="Discharge the patient now?"
-          message="Confirm once again. The discharge summary opens for a final review and is signed with an OTP; the patient is discharged and the file goes to the Patient Library."
-          confirmLabel="Yes, discharge" onConfirm={() => setDialog("discharge")} onCancel={() => setDialog(null)} />
+        <ConfirmDialog title="Create the discharge summary?"
+          message="Discharging creates the full discharge summary from this file and opens it for a final review. It is signed with an OTP; the patient is then discharged and the file goes to the Patient Library."
+          confirmLabel="Yes, create summary" onConfirm={() => setDialog("discharge")} onCancel={() => setDialog(null)} />
       )}
-      {dialog === "discharge" && <DischargeFromOt d={d} onClose={() => setDialog(null)} onDone={(udid) => router.push(`/patients/${udid}`)} />}
+      {dialog === "discharge" && <DischargeFromOt d={d} oc={oc} outcome={outcome} onClose={() => setDialog(null)} onDone={(udid) => router.push(`/patients/${udid}`)} />}
     </div>
   );
 }
@@ -528,7 +528,7 @@ function Decisions({ d, oc, draft, can, steps, outcome, onRefresh, onDischarge }
   });
 
   const notesDone = oc.otNotesChoice === "NOW" && !!oc.otNotes;
-  const wardDone = oc.wardNotesChoice === "NOW" && oc.dischargeSavedInOt;
+  const wardDone = oc.wardNotesChoice === "NOW" && d.forms.some((f) => f.key === "postOpNotes");
   const allNow = notesDone && wardDone;
   const s1 = statusSaved && !changed;
 
@@ -536,7 +536,7 @@ function Decisions({ d, oc, draft, can, steps, outcome, onRefresh, onDischarge }
   const STEPS = [
     { n: 1, label: "Status", open: true, done: s1 },
     { n: 2, label: "OT notes", open: s1, done: notesDone || oc.otNotesChoice === "LATER" },
-    { n: 3, label: "Post-op & discharge", open: s1, done: wardDone || oc.wardNotesChoice === "LATER" },
+    { n: 3, label: "Post-op notes", open: s1, done: wardDone || oc.wardNotesChoice === "LATER" },
     { n: 4, label: "Discharge?", open: allNow, done: false },
   ];
   const current = STEPS.find((x) => x.open && !x.done)?.n ?? [...STEPS].reverse().find((x) => x.open)?.n ?? 1;
@@ -544,7 +544,7 @@ function Decisions({ d, oc, draft, can, steps, outcome, onRefresh, onDischarge }
   const step = pickedStep && STEPS[pickedStep - 1].open ? pickedStep : current;
   const advance = () => { setPickedStep(null); onRefresh(); };
 
-  const title = ["Status of the operation", "Complete OT notes now or later?", "Complete post-op notes and / or discharge summary now or later?", "Can the patient be discharged now?"][step - 1];
+  const title = ["Status of the operation", "Complete OT notes now or later?", "Complete post-op notes now or later?", "Can the patient be discharged now?"][step - 1];
 
   return (
     <section className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] min-w-0">
@@ -602,7 +602,7 @@ function Decisions({ d, oc, draft, can, steps, outcome, onRefresh, onDischarge }
         {step === 3 && (
           <>
             <NowLater value={oc.wardNotesChoice} onPick={(v) => choose("wardNotesChoice", v)} disabled={pending || !can.notes} />
-            {oc.wardNotesChoice === "LATER" && <LaterNote what="the post-op notes and discharge summary from the IPD file" />}
+            {oc.wardNotesChoice === "LATER" && <LaterNote what="the post-op notes from the IPD file" />}
             {oc.wardNotesChoice === "NOW" && <div className="mt-3"><WardNotes d={d} oc={oc} outcome={outcome} canEdit={can.notes} onSaved={advance} /></div>}
           </>
         )}
@@ -676,10 +676,7 @@ function OtNotesPanel({ d, oc, draft, canEdit, onSaved, embedded }: { d: FileDat
 /* ── Post-op notes / discharge summary, completed from OT ──────────────── */
 
 function WardNotes({ d, oc, outcome, canEdit, onSaved }: { d: FileData; oc: OtCaseData; outcome: OtOutcome; canEdit: boolean; onSaved: () => void }) {
-  const [tab, setTab] = useState<"postOp" | "discharge">("postOp");
   const savedPostOp = d.forms.find((f) => f.key === "postOpNotes")?.data;
-  const savedDischarge = d.forms.find((f) => f.key === "discharge")?.data;
-  const events = eventText(outcome);
 
   // Import the eventful details and the surgery day into the drafts
   const [postOp, setPostOp] = useState<PostOpData>(() => {
@@ -696,9 +693,42 @@ function WardNotes({ d, oc, outcome, canEdit, onSaved }: { d: FileData; oc: OtCa
       }],
     };
   });
-  const [discharge, setDischarge] = useState<DischargeData>(() => {
-    const base = isDischargeData(savedDischarge) ? normalizeDischarge(savedDischarge, d.orders) : (d.defaults.discharge as DischargeData);
-    if (oc.dischargeSavedInOt) return base;
+  const [dirty, setDirty] = useState({ postOp: !isV2(savedPostOp) });
+  const [error, setError] = useState("");
+  const [pending, start] = useTransition();
+
+  const save = () => start(async () => {
+    const r = await saveOtWardForm(d.id, "postOpNotes", postOp);
+    if (r.error) { setError(r.error); return; }
+    setError("");
+    setDirty({ postOp: false });
+    onSaved();
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {canEdit && (
+          <button disabled={pending || !dirty.postOp} onClick={save} className={`${btnPrimary} ml-auto`}>
+            {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save post-op notes
+          </button>
+        )}
+      </div>
+      <p className="text-caption text-[var(--color-ink-400)]">Saved into the patient file. They stay editable in IPD until discharge.</p>
+      <PostOpForm value={postOp} change={(v) => { setPostOp(v); setDirty({ postOp: true }); }} saveNow={async () => undefined}
+        editable={canEdit} canLog={false} addLog={async () => undefined} log={[]} f={d} />
+      <ErrorLine text={error} />
+    </div>
+  );
+}
+
+/* ── Discharge now (summary signed with OTP) ───────────────────────────── */
+
+function DischargeFromOt({ d, oc, outcome, onClose, onDone }: { d: FileData; oc: OtCaseData; outcome: OtOutcome; onClose: () => void; onDone: (udid: string) => void }) {
+  const saved = d.forms.find((f) => f.key === "discharge")?.data;
+  // The summary is created now, from the file and the operation just done
+  const [text, setText] = useState<DischargeData>(() => {
+    const base = isDischargeData(saved) ? normalizeDischarge(saved, d.orders) : (d.defaults.discharge as DischargeData);
     return {
       ...base,
       procedure: {
@@ -707,60 +737,11 @@ function WardNotes({ d, oc, outcome, canEdit, onSaved }: { d: FileData; oc: OtCa
         eye: base.procedure.eye || d.laterality || "",
         implant: base.procedure.implant || d.implant || "",
         anaesthesia: base.procedure.anaesthesia || d.anaesthesia || "",
-        date: oc.endedAt ? istDay(oc.endedAt) : base.procedure.date,
-        events,
+        date: base.procedure.date || (oc.endedAt ? istDay(oc.endedAt) : ""),
+        events: base.procedure.events || eventText(outcome),
       },
     };
   });
-  const [dirty, setDirty] = useState({ postOp: !isV2(savedPostOp), discharge: !oc.dischargeSavedInOt });
-  const [error, setError] = useState("");
-  const [pending, start] = useTransition();
-
-  const save = (key: "postOpNotes" | "discharge") => start(async () => {
-    const r = await saveOtWardForm(d.id, key, key === "discharge" ? discharge : postOp);
-    if (r.error) { setError(r.error); return; }
-    setError("");
-    setDirty((x) => ({ ...x, [key === "discharge" ? "discharge" : "postOp"]: false }));
-    onSaved();
-  });
-
-  const tabBtn = (k: "postOp" | "discharge", label: string, saved: boolean) => (
-    <button key={k} onClick={() => setTab(k)}
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold border transition-colors ${tab === k ? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-primary-50)]"}`}>
-      {saved && <CheckCircle2 size={14} />}{label}
-    </button>
-  );
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {tabBtn("postOp", "Post-op notes", !dirty.postOp)}
-        {tabBtn("discharge", "Discharge summary", oc.dischargeSavedInOt && !dirty.discharge)}
-        {canEdit && (
-          <button disabled={pending || !(tab === "postOp" ? dirty.postOp : dirty.discharge)} onClick={() => save(tab === "postOp" ? "postOpNotes" : "discharge")} className={`${btnPrimary} ml-auto`}>
-            {pending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save {tab === "postOp" ? "post-op notes" : "discharge summary"}
-          </button>
-        )}
-      </div>
-      <p className="text-caption text-[var(--color-ink-400)]">Saved into the patient file. They stay editable in IPD until discharge.</p>
-      {tab === "postOp" ? (
-        <PostOpForm value={postOp} change={(v) => { setPostOp(v); setDirty((x) => ({ ...x, postOp: true })); }} saveNow={async () => undefined}
-          editable={canEdit} canLog={false} addLog={async () => undefined} log={[]} f={d} />
-      ) : (
-        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2">
-          <DischargeEditor value={discharge} onChange={(v) => { setDischarge(v); setDirty((x) => ({ ...x, discharge: true })); }} editable={canEdit} ctx={dischargeCtx(d)} />
-        </div>
-      )}
-      <ErrorLine text={error} />
-    </div>
-  );
-}
-
-/* ── Discharge now (summary signed with OTP) ───────────────────────────── */
-
-function DischargeFromOt({ d, onClose, onDone }: { d: FileData; onClose: () => void; onDone: (udid: string) => void }) {
-  const saved = d.forms.find((f) => f.key === "discharge")?.data;
-  const [text, setText] = useState<DischargeData>(() => (isDischargeData(saved) ? normalizeDischarge(saved, d.orders) : (d.defaults.discharge as DischargeData)));
   const [notes, setNotes] = useState("");
   const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");

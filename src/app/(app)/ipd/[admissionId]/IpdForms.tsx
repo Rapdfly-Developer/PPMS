@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { MedicationEntry, type MedicationDraft } from "@/components/emr/MedicationEntry";
 import {
   BookOpen, Check, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, FileText, GripVertical, Loader2, Plus, Printer, RotateCcw,
-  CalendarDays, Clock, Eye, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, History,
+  CalendarDays, Clock, Eye, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, Droplet, History,
 } from "lucide-react";
 import { printInPlace } from "@/lib/print-in-place";
 import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
@@ -150,7 +150,12 @@ export function Seg<T extends string>({ options, value, onChange, disabled, tone
   );
 }
 
-function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className, opts, lw }: {
+/** IOP (mmHg): digits with an optional decimal, nothing else. */
+const IOP_TYPING = /^\d{0,2}(\.\d?)?$/;
+
+function Field({ label, value, onChange, disabled, type = "text", placeholder, list, className, opts, lw, numeric }: {
+  /** Only text matching this can be typed (numbers-only fields). */
+  numeric?: RegExp;
   /** Fixed label width class, so stacked fields line up. */
   lw?: string;
   label: string; value: string; onChange: (v: string) => void; disabled?: boolean; type?: string; placeholder?: string; list?: string; className?: string;
@@ -173,7 +178,7 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
   return (
     <div className={`${rowIn} ${className ?? ""}`}>
       <label className={`${lblIn} ${lw ?? ""}`}>{label}</label>
-      <input type={type} value={value} disabled={disabled} list={list} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} flex-1`} />
+      <input type={type} value={value} disabled={disabled} list={list} inputMode={numeric ? "decimal" : undefined} onChange={(e) => { if (!numeric || numeric.test(e.target.value)) onChange(e.target.value); }} placeholder={disabled ? "-" : placeholder} className={`${inp} flex-1`} />
     </div>
   );
 }
@@ -242,7 +247,7 @@ function useLogger(addLog: FormProps<unknown>["addLog"]) {
 
 /* ── 1. Investigation reports ──────────────────────────────────────────── */
 
-export function InvestigationsForm({ f }: { f: FileInfo }) {
+export function InvestigationsForm({ f, ordering }: { f: FileInfo; ordering: boolean }) {
   // Every order for the patient by date, laid out like Investigations in Counselling
   const groups = useMemo(() => {
     const map = new Map<string, FileInfo["orders"]>();
@@ -259,26 +264,12 @@ export function InvestigationsForm({ f }: { f: FileInfo }) {
     URGENT: "bg-[var(--color-accent-100)] text-[var(--color-accent-600)]",
     STAT: "bg-[var(--color-danger-100)] text-[var(--color-danger-600)]",
   };
-  const [ordering, setOrdering] = useState(false);
-  const orderBar = locked ? null : (
-    <div className="flex flex-col gap-3">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setOrdering((v) => !v)}
-          className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap"
-        >
-          {ordering ? <X size={13} /> : <Plus size={13} />}
-          {ordering ? "Close" : "Order Investigations"}
-        </button>
-      </div>
-      {ordering && (
-        <NewInvestigations
-          visit={{}} udid="" todayOrders={[]} onOrdered={() => {}}
-          place={async (d) => { const r = await addIpdInvestigationOrder(f.id, d); if (r.error) throw new Error(r.error); }}
-        />
-      )}
-    </div>
+  // The Order Investigations button sits beside the heading (PatientFile); this opens the form
+  const orderBar = locked || !ordering ? null : (
+    <NewInvestigations
+      visit={{}} udid="" todayOrders={[]} onOrdered={() => {}}
+      place={async (d) => { const r = await addIpdInvestigationOrder(f.id, d); if (r.error) throw new Error(r.error); }}
+    />
   );
   if (f.orders.length === 0) {
     return (
@@ -588,10 +579,14 @@ const VITAL_RULES = {
   spo2: { typing: /^\d{0,3}$/, hint: "98", range: "50-100 %", ok: (x: string) => +x >= 50 && +x <= 100 },
   rbs: { typing: /^\d{0,3}$/, hint: "120", range: "20-700 mg/dL", ok: (x: string) => +x >= 20 && +x <= 700 },
   weight: { typing: /^\d{0,3}(\.\d?)?$/, hint: "60", range: "1-300 kg", ok: (x: string) => +x >= 1 && +x <= 300 },
+  pain: { typing: /^\d{0,2}$/, hint: "0-10", range: "0-10", ok: (x: string) => +x >= 0 && +x <= 10 },
 } as const;
 
+/** What every Normal tick and Normal findings button writes. */
+const WNR = "Within normal range";
+
 /** Filled in by the Normal tick (weight is the patient's own, so it is left alone). */
-const NORMAL_VITALS = { bp: "120/80", pulse: "72", temp: "98.6", spo2: "98", rbs: "110" };
+const NORMAL_VITALS = { bp: WNR, pulse: WNR, temp: WNR, spo2: WNR, rbs: WNR };
 
 /** A vital sign box: label above, only sensible characters, and a value outside the human range is refused. */
 function VitalField({ label, kind, value, onChange, disabled }: { label: string; kind: keyof typeof VITAL_RULES; value: string; onChange: (v: string) => void; disabled?: boolean }) {
@@ -605,8 +600,12 @@ function VitalField({ label, kind, value, onChange, disabled }: { label: string;
         disabled={disabled}
         inputMode={kind === "bp" ? "text" : "decimal"}
         placeholder={r.hint}
-        onChange={(e) => { if (r.typing.test(e.target.value)) { setBad(false); onChange(e.target.value); } }}
-        onBlur={() => { if (value && !r.ok(value)) { setBad(true); onChange(""); } }}
+        onChange={(e) => {
+          // "Within normal range" (from the Normal tick) is cleared by any edit so a number can be typed
+          if (value === WNR) { setBad(false); onChange(""); return; }
+          if (r.typing.test(e.target.value)) { setBad(false); onChange(e.target.value); }
+        }}
+        onBlur={() => { if (value && value !== WNR && !r.ok(value)) { setBad(true); onChange(""); } }}
         className={`${inp} ${bad ? "border-red-400" : ""}`}
       />
       {bad && <p className="mt-0.5 text-[10.5px] text-red-600">Enter {r.range}</p>}
@@ -1420,7 +1419,9 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
  * arrow buttons, a Today button (when today is out of view), snapping, and the
  * mouse wheel scrolls it sideways.
  */
-function ScrollStrip({ children }: { children: React.ReactNode }) {
+type StripSync = { register: (el: HTMLDivElement) => () => void; onScroll: (el: HTMLDivElement) => void };
+
+function ScrollStrip({ children, sync }: { children: React.ReactNode; sync?: StripSync }) {
   const ref = useRef<HTMLDivElement>(null);
   const [edge, setEdge] = useState({ left: false, right: false, today: false });
   const measure = () => {
@@ -1450,7 +1451,8 @@ function ScrollStrip({ children }: { children: React.ReactNode }) {
     };
     box.addEventListener("wheel", wheel, { passive: false });
     window.addEventListener("resize", measure);
-    return () => { box.removeEventListener("wheel", wheel); window.removeEventListener("resize", measure); };
+    const unregister = sync?.register(box);
+    return () => { box.removeEventListener("wheel", wheel); window.removeEventListener("resize", measure); unregister?.(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const step = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * Math.max(160, (ref.current?.clientWidth ?? 0) * 0.75), behavior: "smooth" });
@@ -1458,7 +1460,7 @@ function ScrollStrip({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1.5">
       <button type="button" aria-label="Earlier days" disabled={!edge.left} onClick={() => step(-1)} className={arrow}><ChevronLeft size={14} /></button>
-      <div ref={ref} onScroll={measure} className="flex min-w-0 flex-1 snap-x snap-mandatory gap-1.5 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div ref={ref} onScroll={() => { measure(); if (ref.current) sync?.onScroll(ref.current); }} className="flex min-w-0 flex-1 snap-x snap-mandatory gap-1.5 overflow-x-auto scroll-smooth py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {children}
       </div>
       {edge.today && <button type="button" onClick={() => goToday(true)} className="shrink-0 rounded-full bg-[var(--color-primary-600)] px-2.5 py-1 text-[10.5px] font-bold text-white shadow-sm hover:bg-[var(--color-primary-700)]">Today</button>}
@@ -1468,7 +1470,7 @@ function ScrollStrip({ children }: { children: React.ReactNode }) {
 }
 
 
-export function TreatmentForm({ value: v, change, editable, canLog, addLog, removeDose, noteStop, log, f }: FormProps<TreatmentData>) {
+export function TreatmentForm({ value: v, change, editable, canLog, addLog, removeDose, noteStop, log, f, doseFirst = {} }: FormProps<TreatmentData> & { doseFirst?: Record<string, string> }) {
   const { run, pending, error } = useLogger(addLog);
   const drugs = (v.drugs ?? []).map((d, i) => ({ ...d, id: d.id ?? `d${i}` }));
   const active = drugs.filter((d) => !d.stopped);
@@ -1525,12 +1527,33 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
     for (let t = new Date(`${start}T00:00:00Z`).getTime(), e = new Date(`${end}T00:00:00Z`).getTime(); t <= e && out.length < 400; t += 86400000) out.push(new Date(t).toISOString().slice(0, 10));
     return out;
   };
-  // A dose tick can be added or undone for 24 hours after its slot time; then it is frozen
-  const slotOpen = (date: string, slot: string) => {
+  // A dose tick can be added or undone for 24 hours from the FIRST time it was edited; then it is frozen.
+  // Before its first edit it can be ticked until 24 hours after its slot time.
+  const slotOpen = (drugId: string, date: string, slot: string) => {
     if (date > today) return false;
+    const stored = doseFirst[`${drugId}|${slot}|${date}`];
+    const firstLog = doses.filter((e) => e.meta?.drugId === drugId && e.meta?.slot === slot && e.meta?.date === date).map((e) => Date.parse(e.at)).filter((n) => !Number.isNaN(n)).sort((a, b) => a - b)[0];
+    const first = stored ? Date.parse(stored) : firstLog;
+    if (first !== undefined && !Number.isNaN(first)) return Date.now() <= first + 24 * 3600 * 1000;
     const at = Date.parse(`${date}T${slot}:00+05:30`);
     return Number.isNaN(at) || Date.now() <= at + 24 * 3600 * 1000;
   };
+  // Every drug shows the same dates in the same columns, and scrolling any row scrolls them all: scrolling just means another date
+  const chartDates = [...new Set([today, ...active.flatMap((d) => (scheduleFor(d.frequency).length ? daysOf(d) : []))])].sort();
+  const cardW = Math.max(1, ...active.map((d) => scheduleFor(d.frequency).length)) * 72 + 18;
+  const strips = useRef(new Set<HTMLDivElement>());
+  const driver = useRef<HTMLDivElement | null>(null);
+  const idleTimer = useRef<number | undefined>(undefined);
+  const sync = useMemo<StripSync>(() => ({
+    register: (el) => { strips.current.add(el); return () => { strips.current.delete(el); }; },
+    onScroll: (el) => {
+      if (driver.current && driver.current !== el) return; // only the row being scrolled leads
+      driver.current = el;
+      strips.current.forEach((o) => { if (o !== el && Math.abs(o.scrollLeft - el.scrollLeft) > 1) o.scrollTo({ left: el.scrollLeft, behavior: "instant" as ScrollBehavior }); });
+      window.clearTimeout(idleTimer.current);
+      idleTimer.current = window.setTimeout(() => { driver.current = null; }, 150);
+    },
+  }), []);
   const running = active.filter((d) => !courseDone(d) && (!d.start || d.start <= today));
   const totalSlots = running.reduce((n, d) => n + scheduleFor(d.frequency).length, 0);
   const totalGiven = running.reduce((n, d) => n + scheduleFor(d.frequency).filter((s) => givenToday(d.id, s)).length, 0);
@@ -1558,6 +1581,18 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
     { bg: "bg-violet-50/70", ring: "ring-violet-100", chip: "bg-violet-100 text-violet-700", avatar: "bg-violet-100 text-violet-600" },
     { bg: "bg-teal-50/70", ring: "ring-teal-100", chip: "bg-teal-100 text-teal-700", avatar: "bg-teal-100 text-teal-600" },
   ];
+  const EYE_TINTS: Record<string, { avatar: string; text: string }> = {
+    RE: { avatar: "bg-rose-100 text-rose-600", text: "text-rose-600" },
+    LE: { avatar: "bg-sky-100 text-sky-600", text: "text-sky-600" },
+    OU: { avatar: "bg-violet-100 text-violet-600", text: "text-violet-600" },
+  };
+  // The icon colour follows the kind of medicine: eye drops, tablets (oral), injections, others
+  const TYPE_AVATAR: Record<string, string> = {
+    drops: "bg-sky-100 text-sky-600",
+    oral: "bg-amber-100 text-amber-600",
+    inj: "bg-rose-100 text-rose-600",
+    other: "bg-teal-100 text-teal-600",
+  };
   const shell = "overflow-hidden rounded-3xl border border-[var(--color-primary-100)] bg-white shadow-[0_2px_14px_rgba(20,120,110,0.07)]";
   const head = "flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-4 py-2.5";
 
@@ -1703,7 +1738,11 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
           {drugs.length === 0 ? <p className="py-3 text-center text-sm italic text-[var(--color-ink-400)]">No medication orders yet.</p> : (
             <ul className="space-y-1">
               {drugs.map((d, idx) => {
-                const tint = TINTS[idx % TINTS.length];
+                const eyeSide = eyeOf(d);
+                const eyeTint = EYE_TINTS[eyeSide] ?? TINTS[4];
+                const kind = /drop/i.test(d.name) ? "drops" : /^(iv|im|sc|subconj|intravitreal|injection)/i.test(d.route) || /inj/i.test(d.name) ? "inj" : /^oral$/i.test(d.route) ? "oral" : "other";
+                const tint = { ...eyeTint, avatar: TYPE_AVATAR[kind] };
+                const DrugIcon = kind === "drops" ? Droplet : Pill;
                 const slots = scheduleFor(d.frequency);
                 const sos = doses.filter((e) => e.meta?.drugId === d.id && e.meta?.slot === "SOS" && e.meta?.date === today);
                 return (
@@ -1711,11 +1750,11 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
                     <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <span className={`relative grid h-8 w-8 shrink-0 place-items-center rounded-xl ${d.stopped ? "bg-[var(--color-ink-100)] text-[var(--color-ink-400)]" : tint.avatar}`}>
-                        <Pill size={15} />
+                        <DrugIcon size={15} />
                       </span>
 
                       <div className={`flex min-w-[12rem] flex-1 flex-wrap items-center gap-x-2 gap-y-1 ${d.stopped ? "opacity-60" : ""}`}>
-                        {eyeOf(d) && <span className="text-sm font-extrabold leading-tight tracking-tight text-[var(--color-primary-700)]">{eyeOf(d)}</span>}
+                        {eyeSide && <span className={`text-sm font-extrabold leading-tight tracking-tight ${tint.text}`}>{eyeSide}</span>}
                         <p className={`text-sm font-extrabold leading-tight tracking-tight text-[var(--color-ink-900)] ${d.stopped ? "line-through" : ""}`}>{d.name}</p>
                         {[d.dose, d.route, d.frequency].filter(Boolean).map((t, i) => (
                           <span key={i} className={`rounded-full px-2 py-px text-[10.5px] font-semibold bg-[var(--color-surface-sunken)] text-[var(--color-ink-600)]`}>{t}</span>
@@ -1746,24 +1785,33 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
                     </div>
                     {!d.stopped && (
                       <div className="min-w-0">
-                        {courseDone(d) ? (
-                          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11.5px] font-bold text-emerald-700 ring-1 ring-emerald-200">
-                            <CheckCircle2 size={13} /> Course completed{drugRange(d).end ? ` on ${dayDate(drugRange(d).end)}` : ""}
-                          </span>
-                        ) : slots.length === 0 ? (
+                        {slots.length === 0 ? (
                           <div className="flex flex-wrap items-center gap-1">
                             {sos.map((g, i) => <span key={i} className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">✓ {time(g.at)}</span>)}
                             {canLog && <button type="button" disabled={pending} onClick={() => give(d, "")} className={`${btnG} !rounded-full !py-1`}>Give now (SOS)</button>}
                           </div>
                         ) : (
-                          <ScrollStrip>
-                            {daysOf(d).map((k) => {
+                          <ScrollStrip sync={sync}>
+                            {chartDates.map((k) => {
+                              const rg = drugRange(d);
                               const isToday = k === today;
                               const isFuture = k > today;
+                              const inCourse = daysOf(d).includes(k);
+                              const box = `flex shrink-0 snap-start flex-col gap-1 rounded-lg border px-2 py-1 ${isToday ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/50" : "border-[var(--color-border)] bg-white"}`;
+                              if (!inCourse) {
+                                return (
+                                  <div key={k} data-today={isToday ? "1" : undefined} style={{ width: cardW }} className={`${box} opacity-60`}>
+                                    <p className={`flex items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold ${isToday ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
+                                      {dayDate(k, false)}
+                                      {isToday && <span className="rounded-full bg-[var(--color-primary-600)] px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-white">Today</span>}
+                                    </p>
+                                    <p className="py-1 text-[11px] font-semibold text-[var(--color-ink-400)]">{rg.start && k < rg.start ? "Not started" : "Course completed"}</p>
+                                  </div>
+                                );
+                              }
                               const n = slots.filter((x) => givenOn(d.id, x, k)).length;
                               return (
-                                <div key={k} data-today={isToday ? "1" : undefined}
-                                  className={`flex shrink-0 snap-start flex-col gap-1 rounded-lg border px-2 py-1 ${isToday ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/50" : "border-[var(--color-border)] bg-white"}`}>
+                                <div key={k} data-today={isToday ? "1" : undefined} style={{ width: cardW }} className={box}>
                                   <p className={`flex items-center gap-1.5 whitespace-nowrap text-[10.5px] font-bold ${isToday ? "text-[var(--color-primary-700)]" : "text-[var(--color-ink-500)]"}`}>
                                     {dayDate(k, false)}
                                     {isToday && <span className="rounded-full bg-[var(--color-primary-600)] px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-white">Today</span>}
@@ -1772,14 +1820,15 @@ export function TreatmentForm({ value: v, change, editable, canLog, addLog, remo
                                   <div className="flex items-center gap-1">
                                     {slots.map((x) => {
                                       const g = givenOn(d.id, x, k);
+                                      const open = slotOpen(d.id, k, x);
                                       return g ? (
-                                        <button key={x} type="button" disabled={!slotOpen(k, x) || !canLog || pending || undoing} onClick={() => unGive(d, x, k)} title={slotOpen(k, x) && canLog ? `${g.by}, ${time(g.at)} · tap to undo (editable for 24 hours)` : `${g.by}, ${time(g.at)} · locked after 24 hours`}
+                                        <button key={x} type="button" disabled={!open || !canLog || pending || undoing} onClick={() => unGive(d, x, k)} title={open && canLog ? `${g.by}, ${time(g.at)} · tap to undo (editable for 24 hours from the first edit)` : `${g.by}, ${time(g.at)} · locked, 24 hours passed since the first edit`}
                                           className="inline-flex flex-col items-center gap-px rounded-2xl bg-gradient-to-b from-emerald-400 to-emerald-500 px-2.5 py-0.5 text-[11px] font-bold leading-none text-white shadow-[0_1px_4px_rgba(16,185,129,0.35)] transition enabled:hover:scale-105 disabled:cursor-default">
                                           <span className="inline-flex items-center gap-1">{slotIcon(x)}{x}</span><span className="font-medium opacity-95">✓ {time(g.at)}</span>
                                         </button>
                                       ) : (
-                                        <button key={x} type="button" disabled={!slotOpen(k, x) || !canLog || pending} onClick={() => give(d, x, k)} title={slotOpen(k, x) ? (canLog ? "Tap when given" : "Due") : isFuture ? "Not due yet" : "Locked after 24 hours"}
-                                          className={`inline-flex items-center gap-1 rounded-full border-2 border-dashed px-2.5 py-1 text-[11px] font-bold leading-none shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:bg-emerald-50 enabled:active:scale-95 disabled:cursor-default ${slotOpen(k, x) ? "border-[var(--color-ink-200)] bg-white text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white/60 text-[var(--color-ink-400)]"}`}>
+                                        <button key={x} type="button" disabled={!open || !canLog || pending} onClick={() => give(d, x, k)} title={open ? (canLog ? "Tap when given" : "Due") : isFuture ? "Not due yet" : "Locked after 24 hours"}
+                                          className={`inline-flex items-center gap-1 rounded-full border-2 border-dashed px-2.5 py-1 text-[11px] font-bold leading-none shadow-sm transition enabled:hover:-translate-y-0.5 enabled:hover:border-emerald-300 enabled:hover:bg-emerald-50 enabled:active:scale-95 disabled:cursor-default ${open ? "border-[var(--color-ink-200)] bg-white text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white/60 text-[var(--color-ink-400)]"}`}>
                                           {slotIcon(x)}{x}
                                         </button>
                                       );
@@ -1894,7 +1943,7 @@ function checkOrders(
 }
 
 /** Filled in by the Normal tick on the vitals. */
-const NORMAL_NURSE_VITALS: Record<string, string> = { bp: "120/80", pulse: "72", temp: "98.6", spo2: "98", rbs: "110", pain: "0" };
+const NORMAL_NURSE_VITALS: Record<string, string> = { bp: WNR, pulse: WNR, temp: WNR, spo2: WNR, rbs: WNR, pain: WNR };
 
 export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment, education }: FormProps<NurseData> & { treatment?: TreatmentData; education?: EducationData }) {
   const entries = v.entries ?? [];
@@ -1926,7 +1975,8 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment
   const save = () => start(async () => {
     const now = new Date().toISOString();
     // The time the note is for (now unless changed); never in the future
-    const at = stamp && !Number.isNaN(Date.parse(stamp)) ? new Date(Math.min(Date.parse(stamp), Date.now())).toISOString() : now;
+    // The time is a timestamp: a new note is stamped when it is saved, an edited note keeps its original time
+    const at = editId ? (entries.find((x) => x.id === editId)?.at ?? now) : now;
     const clean = Object.fromEntries(Object.entries(vit).filter(([, x]) => x.trim()).map(([k, x]) => [k, x.trim()]));
     const entry: NurseEntry = editId
       ? { ...entries.find((x) => x.id === editId)!, at, vitals: clean, ordersFollowed: orders, note: note.trim(), by: f.me, editedAt: now }
@@ -2065,10 +2115,7 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment
             </div>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3 lg:grid-cols-6">
               {VITAL_KEYS.map((k) => (
-                <div key={k.key} className="min-w-0">
-                  <label className="mb-0.5 block text-[10.5px] font-semibold text-[var(--color-ink-500)]">{k.label}</label>
-                  <input value={vit[k.key] ?? ""} onChange={(e) => setVit({ ...vit, [k.key]: e.target.value })} placeholder={k.ph} className={`${inp} !py-1`} />
-                </div>
+                <VitalField key={k.key} label={k.label} kind={k.key} value={vit[k.key] ?? ""} onChange={(x) => setVit({ ...vit, [k.key]: x })} />
               ))}
             </div>
           </div>
@@ -2077,7 +2124,7 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment
             <p className={lblIn}>Nursing note</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
               <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Date &amp; time</label>
-                <input type="datetime-local" value={stamp} max={stampNow()} onChange={(e) => setStamp(e.target.value)} className={`${inp} !w-auto !py-1`} /></div>
+                <span className={`${inp} !w-auto !py-1 inline-block cursor-default select-none bg-[var(--color-surface-sunken)]/60 tabular-nums`} title={editId ? "The time this note was recorded" : "Stamped when the note is saved"}>{editId ? dayTime(entries.find((x) => x.id === editId)?.at ?? new Date().toISOString()) : "Recorded automatically when saved"}</span></div>
               <div className={rowIn}><label className="text-[10.5px] font-semibold text-[var(--color-ink-500)]">Doctor&apos;s orders followed</label>
                 <Seg options={["Yes", "No", "NA"] as const} value={orders}
                   onChange={(x) => {
@@ -2107,7 +2154,7 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment
         <p className="text-sm italic text-[var(--color-ink-400)]">No nurse notes yet.</p>
       ) : (
         <ol className="space-y-2">
-          {entries.map((e) => {
+          {entries.filter((e) => e.id !== editId).map((e) => {
             const isOpen = expanded === e.id;
             const vitals = VITAL_KEYS.filter((k) => e.vitals?.[k.key]);
             return (
@@ -2315,14 +2362,14 @@ export function PostOpForm({ value: v, change, editable, f }: FormProps<PostOpDa
         <section className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/70 px-4 py-2">
             <span className="text-xs font-bold text-[var(--color-ink-800)]">{format(new Date(`${draft.date}T00:00:00`), "d MMM yyyy, EEE")}{draft.pod ? ` · ${draft.pod}` : ""}</span>
-            <button type="button" onClick={() => setDraft((d) => (d ? { ...d, ...POSTOP_NORMAL } : d))} className={btnG}><CheckCircle2 size={12} /> Normal findings</button>
+            <button type="button" onClick={() => setDraft((d) => (d ? { ...d, ...Object.fromEntries(POSTOP_EXAM.map((x) => [x.key, WNR])) } : d))} className={btnG}><CheckCircle2 size={12} /> Normal findings</button>
           </div>
           <div className="space-y-3 px-4 py-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field label="Vision RE" value={draft.vaRe} onChange={(x) => set("vaRe", x)} opts={FO.postopVision} />
               <Field label="Vision LE" value={draft.vaLe} onChange={(x) => set("vaLe", x)} opts={FO.postopVision} />
-              <Field label="IOP RE (mmHg)" value={draft.iopRe} onChange={(x) => set("iopRe", x)} />
-              <Field label="IOP LE (mmHg)" value={draft.iopLe} onChange={(x) => set("iopLe", x)} />
+              <Field label="IOP RE (mmHg)" value={draft.iopRe} onChange={(x) => set("iopRe", x)} numeric={IOP_TYPING} />
+              <Field label="IOP LE (mmHg)" value={draft.iopLe} onChange={(x) => set("iopLe", x)} numeric={IOP_TYPING} />
             </div>
             <div className="rounded-lg border border-[var(--color-border)] overflow-hidden">
               <table className="w-full">

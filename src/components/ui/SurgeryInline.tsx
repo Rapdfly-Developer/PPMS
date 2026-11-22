@@ -1,14 +1,19 @@
-// The surgery on one line: laterality badge, surgery name, then the
-// anaesthesia in a lighter italic ("LE Phacoemulsification · Peribulbar Block").
+// The surgery on one line, same format as the patient file banner: laterality badge,
+// surgery name, " + implant", then the anaesthesia in a lighter italic
+// ("LE Phacoemulsification + Foldable IOL · Peribulbar Block").
 
-export function SurgeryInline({ eye, surgery, anaesthesia, className = "" }: {
-  eye?: string | null; surgery?: string | null; anaesthesia?: string | null; className?: string;
+const NO_IMPLANT = /^(none|nil|na|-)$/i;
+
+export function SurgeryInline({ eye, surgery, anaesthesia, implant, className = "" }: {
+  eye?: string | null; surgery?: string | null; anaesthesia?: string | null; implant?: string | null; className?: string;
 }) {
   if (!surgery && !anaesthesia) return null;
+  const imp = implant && !NO_IMPLANT.test(implant.trim()) ? implant : null;
   return (
     <span className={className}>
       {eye && <span className="clinical-laterality mr-1">{eye}</span>}
       {surgery}
+      {imp && <span className="font-medium text-[var(--color-ink-600)]"> + {imp}</span>}
       {anaesthesia && (
         <>
           <span aria-hidden className="mx-1.5 text-[var(--color-ink-300)]">·</span>

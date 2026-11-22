@@ -43,6 +43,8 @@ export interface FormDef {
   display?: boolean;
   /** "Edit till discharge" (document): stays editable after freezing and in the post-op ward. */
   postOp?: boolean;
+  /** Created only when Discharge is clicked: never picked as a tab, and shown only once the patient is discharged. */
+  atDischarge?: boolean;
 }
 
 export const IPD_FORMS: FormDef[] = [
@@ -55,8 +57,8 @@ export const IPD_FORMS: FormDef[] = [
   { key: "treatment",      title: "Treatment Chart",               postOp: true },
   { key: "nurse",          title: "Nurse Notes",                   postOp: true },
   { key: "otNotes",        title: "Draft OT Notes",                preOpOnly: true },
-  { key: "discharge",      title: "Draft Discharge Summary",       postOp: true },
-  { key: "postOpNotes",    title: "Draft Post-op Notes",           postOp: true },
+  { key: "discharge",      title: "Discharge Summary",             postOp: true, atDischarge: true },
+  { key: "postOpNotes",    title: "Draft Post-op Notes",           preOpOnly: true, postOp: true },
 ];
 
 /** Only these tabs have a Freeze / Unfreeze toggle (Counselling, Patient Education, Surgery Checklist). */
@@ -75,12 +77,12 @@ export function formsFor(type: string): FormDef[] {
 
 /** Tabs that can be picked for the file (besides the two it always has). */
 export function tabChoices(type: string, hasCounselling: boolean): FormDef[] {
-  return formsFor(type).filter((f) => !ALWAYS_TABS.includes(f.key) && (f.key !== "counselling" || hasCounselling));
+  return formsFor(type).filter((f) => !f.atDischarge && !ALWAYS_TABS.includes(f.key) && (f.key !== "counselling" || hasCounselling));
 }
 
 /** The file's fixed tabs, in order: the two it always has + the ones chosen for it. */
 export function tabsFor(type: string, fileTabs: string[]): FormDef[] {
-  return formsFor(type).filter((f) => ALWAYS_TABS.includes(f.key) || fileTabs.includes(f.key));
+  return formsFor(type).filter((f) => !f.atDischarge && (ALWAYS_TABS.includes(f.key) || fileTabs.includes(f.key)));
 }
 
 /** Keys that count towards completion: the file's fixed tabs + custom forms (the long summary is the EMR, not frozen). */
@@ -294,7 +296,12 @@ export function normalizeDischarge(s: DischargeData, orders: OrderLike[]): Disch
   return { ...s, invList: invListFromOrders(orders), investigations: auto ? "" : s.investigations };
 }
 
-export interface DischargeMed { name: string; dose: string; eye: string; frequency: string; duration: string }
+export interface DischargeMed {
+  name: string; dose: string; eye: string; frequency: string; duration: string;
+  route?: string;
+  /** Instructions, with the tapering steps as "Tapering: a → b" (same as the EMR plan). */
+  instructions?: string;
+}
 
 export interface DischargeData {
   v: 2;
@@ -373,7 +380,7 @@ export interface DischargeInputs {
   posterior?: { re?: string | null; le?: string | null } | null;
   orders: OrderLike[];
   doctorNotes: { text: string; at: string | Date }[];
-  drugs: { name: string; dose: string; eye: string; frequency: string }[];
+  drugs: { name: string; dose: string; eye: string; frequency: string; route?: string; instructions?: string }[];
   education?: string | null;
   diet?: { time: string; item: string }[];
   followUpDate?: Date | string | null;
@@ -400,8 +407,8 @@ export function durationEnd(duration: string, from?: string | null): string {
   return `till ${toDateDay(d, "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" })}`;
 }
 
-export function medsFromDrugs(drugs: { name: string; dose: string; eye: string; frequency: string }[]): DischargeMed[] {
-  return drugs.filter((d) => d.name?.trim()).map((d) => ({ name: d.name, dose: d.dose, eye: d.eye, frequency: d.frequency, duration: "" }));
+export function medsFromDrugs(drugs: { name: string; dose: string; eye: string; frequency: string; route?: string; instructions?: string }[]): DischargeMed[] {
+  return drugs.filter((d) => d.name?.trim()).map((d) => ({ name: d.name, dose: d.dose, eye: d.eye, frequency: d.frequency, duration: "", route: d.route ?? "", instructions: d.instructions ?? "" }));
 }
 
 /** A first draft filled from everything the system already knows; every field stays editable. */

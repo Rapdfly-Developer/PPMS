@@ -2,6 +2,7 @@
 // hospital letterhead, a patient band, an "at a glance" result panel, the
 // operation times, the procedure steps and a signature line.
 // Pure markup (no <header>/<nav>: the app's print styles hide those).
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 import { toDateDay } from "@/lib/ist";
 import { wardTypeText } from "@/lib/ipd";
 import type { OtNotesCopy } from "@/lib/ot";
@@ -90,7 +91,7 @@ export function OtNotesDocument({ h, n }: { h: OtNotesHeader; n: OtNotesCopy }) 
           {/* At a glance: procedure + result */}
           <div className={`border-l-[3px] break-inside-avoid px-3 py-2 ${exact}`} style={{ borderColor: result.color, background: TINT }}>
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
-              <p className="text-[13px] font-bold">{procedure || "-"}{n.implant && !/^(none|nil|na|-)$/i.test(n.implant.trim()) ? <span className="font-semibold"> + {n.implant}</span> : null}</p>
+              <p className="text-[13px] font-bold">{procedure ? <SurgeryInline eye={n.eye} surgery={n.procedure} implant={n.implant} anaesthesia={n.anaesthesia} /> : "-"}</p>
               <p className="text-[11px] font-bold" style={{ color: result.color }}>{result.text}</p>
             </div>
             {n.result === "ABORTED" && n.abort && (

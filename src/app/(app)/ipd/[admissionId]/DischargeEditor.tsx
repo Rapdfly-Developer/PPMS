@@ -1,13 +1,15 @@
 "use client";
 
 import { toDateDay } from "@/lib/ist";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
 import { ChipRow, SuggestField } from "./customOptions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
 import { DISCHARGE_TYPES, courseFromNotes, durationEnd, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
 import { WeekdayHint } from "@/components/ui/WeekdayHint";
+import { MedicationEntry } from "@/components/emr/MedicationEntry";
+import { ROUTE_OPTIONS } from "@/app/(app)/emr/[udid]/PlanTab";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
 
@@ -21,7 +23,7 @@ export interface DischargeContext {
   admittedOn: string; typeText: string; surgical: boolean;
   orders: { id: string; testName: string; laterality: string | null; resultRef: string | null; resultAt: string | null; createdAt: string }[];
   doctorNotes: { text: string; at: string }[];
-  drugs: { name: string; dose: string; eye: string; frequency: string }[];
+  drugs: { name: string; dose: string; eye: string; frequency: string; route?: string; instructions?: string }[];
   signed: { by: string; at: string } | null;
 }
 
@@ -32,7 +34,6 @@ const plusDays = (n: number) => { const d = istToday(); d.setUTCDate(d.getUTCDat
 const plusMonths = (n: number) => { const d = istToday(); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
 
 const CONDITION_PICKS = ["Stable, ambulatory", "Stable", "Fair", "Shifted on request"];
-const EYE_PICKS = ["Quiet, wound healthy", "Mild congestion", "AC formed, IOL in the bag", "Corneal oedema"];
 const FOLLOW_PICKS = ["Post-operative review", "IOP check", "Suture removal", "Refraction / glasses"];
 
 /* ── Building blocks ───────────────────────────────────────────────────── */
@@ -200,17 +201,17 @@ function CourseList({ value, onChange, editable, opts }: { value: string; onChan
 }
 
 /** Vision and IOP for each eye on one line: Vision RE, Vision LE, IOP RE, IOP LE. */
-function EyeGrid({ editable, cells }: { editable: boolean; cells: { label: string; re: string; le: string; onRe: (v: string) => void; onLe: (v: string) => void; ph: [string, string] }[] }) {
+function EyeGrid({ editable, cells }: { editable: boolean; cells: { label: string; re: string; le: string; onRe: (v: string) => void; onLe: (v: string) => void; ph: [string, string]; numeric?: RegExp }[] }) {
   const fields = cells.flatMap((c) => [
-    { key: `${c.label}-re`, label: `${c.label} RE`, value: c.re, onChange: c.onRe, ph: c.ph[0] },
-    { key: `${c.label}-le`, label: `${c.label} LE`, value: c.le, onChange: c.onLe, ph: c.ph[1] },
+    { key: `${c.label}-re`, label: `${c.label} RE`, value: c.re, onChange: c.onRe, ph: c.ph[0], numeric: c.numeric },
+    { key: `${c.label}-le`, label: `${c.label} LE`, value: c.le, onChange: c.onLe, ph: c.ph[1], numeric: c.numeric },
   ]);
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
       {fields.map((f) => (
         <div key={f.key} className="min-w-0">
           <label className={cellLbl}>{f.label}</label>
-          <input value={f.value} disabled={!editable} onChange={(e) => f.onChange(e.target.value)} placeholder={editable ? f.ph : "-"} className={inputCls} />
+          <input value={f.value} disabled={!editable} inputMode={f.numeric ? "decimal" : undefined} onChange={(e) => { if (!f.numeric || f.numeric.test(e.target.value)) f.onChange(e.target.value); }} placeholder={editable ? f.ph : "-"} className={inputCls} />
         </div>
       ))}
     </div>
@@ -284,7 +285,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               <div className={span2}>
                 <EyeGrid editable={editable} cells={[
                   { label: "Vision", re: s.findings.vaRe, le: s.findings.vaLe, onRe: (v) => setIn("findings", "vaRe", v), onLe: (v) => setIn("findings", "vaLe", v), ph: ["6/9", "6/12"] },
-                  { label: "IOP", re: s.findings.iopRe, le: s.findings.iopLe, onRe: (v) => setIn("findings", "iopRe", v), onLe: (v) => setIn("findings", "iopLe", v), ph: ["mmHg", "mmHg"] },
+                  { label: "IOP", re: s.findings.iopRe, le: s.findings.iopLe, onRe: (v) => setIn("findings", "iopRe", v), onLe: (v) => setIn("findings", "iopLe", v), ph: ["mmHg", "mmHg"], numeric: /^\d{0,2}(\.\d?)?$/ },
                 ]} />
               </div>
               <Area label="Anterior segment" value={s.findings.anterior} onChange={(v) => setIn("findings", "anterior", v)} editable={editable} placeholder={"RE: …\nLE: …"} opts={FO.dcAnterior} wide={false} />
@@ -377,13 +378,6 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
             </Block>
             <Block title="Condition at discharge">
               <PickField label="General condition" storeKey="dc_condition" options={CONDITION_PICKS} value={s.condition.general} onChange={(v) => setIn("condition", "general", v)} editable={editable} />
-              <PickField label="Operated / affected eye" storeKey="dc_eye" options={EYE_PICKS} value={s.condition.eye} onChange={(v) => setIn("condition", "eye", v)} editable={editable} />
-              <div className={span2}>
-                <EyeGrid editable={editable} cells={[
-                  { label: "Vision", re: s.condition.vaRe, le: s.condition.vaLe, onRe: (v) => setIn("condition", "vaRe", v), onLe: (v) => setIn("condition", "vaLe", v), ph: ["6/9", "6/12"] },
-                  { label: "IOP", re: s.condition.iopRe, le: s.condition.iopLe, onRe: (v) => setIn("condition", "iopRe", v), onLe: (v) => setIn("condition", "iopLe", v), ph: ["mmHg", "mmHg"] },
-                ]} />
-              </div>
             </Block>
           </>
         )}
@@ -399,18 +393,24 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                   <thead>
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
                       <th className={`${thCls} w-8`}>#</th>
-                      {["Eye", "Medicine", "Dose", "How often", "For"].map((h) => <th key={h} className={thCls}>{h}</th>)}
+                      {["Route", "Eye", "Medicine", "Dose", "How often", "For"].map((h) => <th key={h} className={thCls}>{h}</th>)}
                       {editable && <th className="w-9" />}
                     </tr>
                   </thead>
                   <tbody>
-                    {s.meds.length === 0 && <tr><td colSpan={7} className="px-3 py-3 text-sm text-[var(--color-ink-400)]">No medicines added.</td></tr>}
+                    {s.meds.length === 0 && <tr><td colSpan={8} className="px-3 py-3 text-sm text-[var(--color-ink-400)]">No medicines added.</td></tr>}
                     {s.meds.map((m, i) => (
-                      <tr key={i} className="border-b border-[var(--color-border)] last:border-0">
+                      <Fragment key={i}>
+                      <tr className={m.instructions || editable ? "" : "border-b border-[var(--color-border)] last:border-0"}>
                         <td className="px-3 py-1 text-xs tabular-nums text-[var(--color-ink-400)]">{i + 1}</td>
-                        {(["eye", "name", "dose", "frequency", "duration"] as const).map((f) => (
-                          <td key={f} className={`px-1.5 py-1 ${f === "name" ? "w-[34%]" : f === "eye" ? "w-16" : ""}`}>
-                            {MED_OPTS[f] ? (
+                        {(["route", "eye", "name", "dose", "frequency", "duration"] as const).map((f) => (
+                          <td key={f} className={`px-1.5 py-1 ${f === "name" ? "w-[30%]" : f === "eye" ? "w-16" : f === "route" ? "w-28" : ""}`}>
+                            {f === "route" ? (
+                              <select value={m.route ?? ""} disabled={!editable} onChange={(e) => setMed(i, "route", e.target.value)} className={inputCls}>
+                                <option value="">-</option>
+                                {[...new Set([...(m.route ? [m.route] : []), ...ROUTE_OPTIONS])].map((r) => <option key={r}>{r}</option>)}
+                              </select>
+                            ) : MED_OPTS[f] ? (
                               <SuggestField storeKey={MED_OPTS[f]!.storeKey} builtIns={MED_OPTS[f]!.builtIns} value={m[f]} onChange={(x) => setMed(i, f, x)} apply={(_, pk) => pk} disabled={!editable}>
                                 {(sp) => <input {...sp} value={m[f]} disabled={!editable} onChange={(e) => setMed(i, f, e.target.value)} placeholder={editable && f === "duration" ? "e.g. 2 weeks" : ""} className={inputCls} />}
                               </SuggestField>
@@ -427,14 +427,25 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                           <td className="px-1"><button type="button" onClick={() => set("meds", s.meds.filter((_, j) => j !== i))} className="rounded-lg p-1.5 text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-600" aria-label="Remove medicine"><Trash2 size={14} /></button></td>
                         )}
                       </tr>
+                      {(m.instructions || editable) && (
+                        <tr className="border-b border-[var(--color-border)] last:border-0">
+                          <td />
+                          <td colSpan={editable ? 6 : 5} className="px-1.5 pb-2">
+                            <input value={m.instructions ?? ""} disabled={!editable} onChange={(e) => setMed(i, "instructions", e.target.value)}
+                              placeholder="Instructions / tapering, e.g. Tapering: 1 drop · QID × 7 days → TID × 7 days" className={`${inputCls} italic`} />
+                          </td>
+                        </tr>
+                      )}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>
                 {editable && (
-                  <button type="button" onClick={() => set("meds", [...s.meds, { name: "", dose: "", eye: "", frequency: "", duration: "" }])}
-                    className="flex w-full items-center justify-center gap-1.5 border-t border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
-                    <Plus size={13} /> Add medicine
-                  </button>
+                  <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 p-3">
+                    {/* The same "Add medication" row as the EMR plan, with the tapering dose levels */}
+                    <MedicationEntry addLabel="Add medicine" defaultEye={["RE", "LE", "OU"].includes(s.procedure.eye) ? s.procedure.eye : "OU"}
+                      onAdd={(m) => set("meds", [...s.meds, { name: m.name, dose: m.dose, eye: m.eye, frequency: m.frequency, duration: m.duration, route: m.route, instructions: m.instructions }])} />
+                  </div>
                 )}
               </div>
             </Block>

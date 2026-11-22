@@ -315,10 +315,8 @@ async function loadForDischarge(admissionId: string) {
   const { admission: a, otCase: c } = l;
   if (!inOt(a) || !c.endedAt || !c.outcomeSavedAt) return { l, error: "End the operation and record its status first." };
   if (c.otNotesChoice !== "NOW" || !c.otNotes) return { l, error: "Complete the OT notes first." };
-  // "Now" means the summary was completed in OT, after the operation ended
-  if (c.wardNotesChoice !== "NOW" || !a.forms.some((f) => f.key === "discharge" && f.updatedAt > c.endedAt! && isDischargeData(safeJson(f.data)))) {
-    return { l, error: "Complete the discharge summary first." };
-  }
+  // The discharge summary is created at this click and signed with the OTP; only the post-op notes come first
+  if (c.wardNotesChoice !== "NOW") return { l, error: "Complete the post-op notes first." };
   return { l, error: "" };
 }
 

@@ -16,6 +16,7 @@ export function Tabs({
   keepMounted = false,
   contentClassName,
   overviewContent,
+  hideBar = false,
 }: {
   tabs: { id: string; label: string; icon?: ReactNode; badge?: number; content: ReactNode; hidden?: boolean; tabBarHidden?: boolean }[];
   defaultTab?: string;
@@ -28,6 +29,8 @@ export function Tabs({
   contentClassName?: string;
   /** Shown in place of the tab contents while Overview is on (tabs stay mounted). */
   overviewContent?: ReactNode;
+  /** The caller draws its own tab bar (the Chrome-style one); only the contents are shown here. */
+  hideBar?: boolean;
 }) {
   const [internalActive, setInternalActive] = useState(defaultTab ?? tabs[0]?.id);
   const requestedActive = controlledActive ?? internalActive;
@@ -132,7 +135,7 @@ export function Tabs({
     <div className="w-full">
 
       {/* ══ Mobile nav — 2-column grid (< 768px) ══════════════════════════════ */}
-      <div className="md:hidden mb-4">
+      {!hideBar && <div className="md:hidden mb-4">
         <div
           className="rounded-xl overflow-hidden border border-[var(--color-border,#E2E8F0)]"
           role="tablist"
@@ -213,10 +216,10 @@ export function Tabs({
             })}
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* ══ Desktop nav — horizontal underline tabs (≥ 768px) ════════════════ */}
-      <div
+      {!hideBar && <div
         className="hidden md:flex flex-wrap items-center gap-1 border-b border-[var(--color-border)] mb-5"
         role="tablist"
       >
@@ -258,10 +261,10 @@ export function Tabs({
 
         {/* Overview toggle — sits at the far end of the tab bar */}
         {onOverviewToggle && overviewPill("ml-auto mb-1")}
-      </div>
+      </div>}
 
       {/* Mobile Overview toggle — sits below the grid */}
-      {onOverviewToggle && (
+      {onOverviewToggle && !hideBar && (
         <div className="md:hidden flex justify-end mb-3">
           {overviewPill()}
         </div>

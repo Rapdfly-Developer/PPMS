@@ -16,7 +16,7 @@ import { CASHLESS_TYPES, paymentLabel, parsePaymentDocs, SUPERSEDED } from "@/li
 import type { FileData } from "@/app/(app)/ipd/[admissionId]/PatientFile";
 
 /** Category shown as the coloured badge, as on the patient Time Stamp. */
-const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "discharge"> = {
+const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "discharge" | "note" | "dose"> = {
   DETAILS_UPDATED: "update",
   TYPE_CHANGED: "update",
   FORM_FROZEN: "form",
@@ -162,7 +162,23 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     take: 200,
     select: { action: true, newValue: true, userName: true, timestamp: true },
   });
+  // Notes and doses are kept in the forms themselves: each one is a timestamped line of the activity
+  const parseJson = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
+  const noteEvents = [
+    ...a.doctorNotes.flatMap((n) => [
+      { at: n.createdAt.toISOString(), by: n.byName, text: "Doctor's note added", detail: "", kind: "note" as const },
+      ...(n.editedAt ? [{ at: n.editedAt.toISOString(), by: n.byName, text: "Doctor's note edited", detail: "", kind: "note" as const }] : []),
+    ]),
+    ...(((parseJson(a.forms.find((f) => f.key === "nurse")?.data ?? "{}").entries ?? []) as { at?: string; by?: string; editedAt?: string }[]).flatMap((e) => [
+      ...(e.at ? [{ at: e.at, by: e.by ?? "", text: "Nurse note added", detail: "", kind: "note" as const }] : []),
+      ...(e.editedAt ? [{ at: e.editedAt, by: e.by ?? "", text: "Nurse note edited", detail: "", kind: "note" as const }] : []),
+    ])),
+    ...(((parseJson(a.forms.find((f) => f.key === "treatment")?.data ?? "{}").log ?? []) as { at?: string; by?: string; text?: string; kind?: string }[])
+      .filter((e) => e.kind === "dose" && e.at)
+      .map((e) => ({ at: e.at as string, by: e.by ?? "", text: "Dose given", detail: String(e.text ?? "").replace(/ given/, ""), kind: "dose" as const }))),
+  ];
   const activity = [
+    ...noteEvents,
     ...audit.map((l) => {
       let detail = "";
       try {

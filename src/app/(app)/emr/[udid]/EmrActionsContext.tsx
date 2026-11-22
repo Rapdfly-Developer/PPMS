@@ -52,6 +52,10 @@ export interface IpdNoteInfo {
   /** Saves the values that replace parts of the EMR (post-op medications, surgery, discharge note). */
   save: (patch: Partial<IpdValues>) => Promise<unknown>;
   /** The Treatment Chart's medicines as the note shows them (chart drugs less pending removes, plus pending adds). */
+  /** Set when the user may discharge: the Discharge button asks to create the discharge summary instead of just taking a note. */
+  onDischarge?: () => void;
+  /** Set when the patient cannot be discharged now: why (shown when Discharge is clicked). */
+  dischargeBlock?: string;
   meds?: { list: { id: string; name: string; dose: string; route: string; eye: string; frequency: string; instructions: string }[] };
 }
 

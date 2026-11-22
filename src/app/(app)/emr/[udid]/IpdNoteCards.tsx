@@ -127,6 +127,7 @@ export function IpdDispositionCard({ visit, udid, readOnly }: { visit: any; udid
   const [panel, setPanel] = useState<"" | "follow" | "discharge">(() => (visit.followUpDate || visit.inViewOf ? "follow" : ipd?.values.dischargeNote ? "discharge" : ""));
   const note = useSaved(ipd?.values.dischargeNote ?? "", (v) => void ipd?.save({ dischargeNote: v }));
   if (!ipd) return null;
+  const [blockedShown, setBlockedShown] = useState(false);
   const toggle = (p: "follow" | "discharge") => setPanel((cur) => (cur === p ? "" : p));
   return (
     <Card>
@@ -134,8 +135,11 @@ export function IpdDispositionCard({ visit, udid, readOnly }: { visit: any; udid
       {!readOnly && (
         <div className="mb-2 flex flex-wrap gap-3">
           <DispositionToggle icon={<CalendarCheck size={16} />} label="Follow up review" active={panel === "follow"} onClick={() => toggle("follow")} />
-          <DispositionToggle icon={<LogOut size={16} />} label="Discharge" active={panel === "discharge"} onClick={() => toggle("discharge")} />
+          <DispositionToggle icon={<LogOut size={16} />} label="Discharge" active={panel === "discharge"} onClick={() => (ipd.onDischarge ? ipd.onDischarge() : ipd.dischargeBlock ? setBlockedShown((v) => !v) : toggle("discharge"))} />
         </div>
+      )}
+      {blockedShown && ipd.dischargeBlock && (
+        <p className="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{ipd.dischargeBlock}</p>
       )}
       <div className="flex flex-col gap-4">
         {(panel === "follow" || (readOnly && (visit.followUpDate || visit.inViewOf))) && (

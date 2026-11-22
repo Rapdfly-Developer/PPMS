@@ -125,6 +125,7 @@ export async function saveForm(admissionId: string, key: string, data: unknown):
       const prev = JSON.parse(row.data);
       const incoming = JSON.parse(json);
       if (Array.isArray(prev?.log)) { incoming.log = prev.log; next = JSON.stringify(incoming); }
+      if (prev?.doseFirst && typeof prev.doseFirst === "object") { incoming.doseFirst = prev.doseFirst; next = JSON.stringify(incoming); }
     } catch { /* stored data unreadable: overwrite */ }
   }
   await prisma.ipdForm.upsert({
@@ -353,13 +354,19 @@ export async function addFormLog(
   const e = typeof entry === "string" ? { text: entry } : entry;
   const t = (e.text ?? "").trim();
   if (!t) return { error: "Enter the note." };
-  if (e.kind === "dose" && doseFrozen(e.meta?.date, e.meta?.slot)) return { error: "This dose is locked: it can be changed for 24 hours only." };
   const kind = ["dose", "food", "vitals", "note"].includes(e.kind ?? "") ? e.kind : undefined;
   const meta = e.meta && typeof e.meta === "object" && JSON.stringify(e.meta).length < 2000 ? e.meta : undefined;
   const row = admission.forms.find((f) => f.key === key);
   let data: Record<string, unknown> = {};
   try { data = row ? JSON.parse(row.data) : {}; } catch { data = {}; }
   const log = Array.isArray(data.log) ? (data.log as LogEntry[]) : [];
+  if (e.kind === "dose") {
+    if (doseLocked(data, log, e.meta?.drugId, e.meta?.date, e.meta?.slot)) return { error: "This dose is locked: it can be changed for 24 hours from its first edit only." };
+    // The 24 hours start at the first edit of this dose and are kept even if the tick is undone
+    const dk = doseKey(e.meta?.drugId, e.meta?.slot, e.meta?.date);
+    const first = (data.doseFirst && typeof data.doseFirst === "object" ? data.doseFirst : {}) as Record<string, string>;
+    if (!first[dk]) data.doseFirst = { ...first, [dk]: new Date().toISOString() };
+  }
   data.log = [...log, { at: new Date().toISOString(), by: user.name, text: t.slice(0, 2000), ...(kind ? { kind } : {}), ...(meta ? { meta } : {}) }];
   await prisma.ipdForm.upsert({
     where: { admissionId_key: { admissionId, key } },
@@ -370,9 +377,19 @@ export async function addFormLog(
   return {};
 }
 
-/** A dose tick (or its undo) is allowed for 24 hours after its slot time. */
-function doseFrozen(date: unknown, slot: unknown): boolean {
+const doseKey = (drugId: unknown, slot: unknown, date: unknown) => `${String(drugId)}|${String(slot)}|${String(date)}`;
+
+/**
+ * A dose tick (and its undo) can be changed for 24 hours from the FIRST time it was edited; then it is frozen.
+ * Before its first edit it can be ticked until 24 hours after its slot time.
+ */
+function doseLocked(data: Record<string, unknown>, log: LogEntry[], drugId: unknown, date: unknown, slot: unknown): boolean {
   if (typeof date !== "string" || typeof slot !== "string") return false;
+  const stored = (data.doseFirst && typeof data.doseFirst === "object" ? (data.doseFirst as Record<string, string>) : {})[doseKey(drugId, slot, date)];
+  // Older ticks have no stored first edit: use the earliest tick on record
+  const firstLog = log.filter((x) => x.kind === "dose" && x.meta?.drugId === drugId && x.meta?.slot === slot && x.meta?.date === date).map((x) => Date.parse(x.at)).filter((n) => !Number.isNaN(n)).sort((a, b) => a - b)[0];
+  const first = stored ? Date.parse(stored) : firstLog;
+  if (first !== undefined && !Number.isNaN(first)) return Date.now() > first + 24 * 3600 * 1000;
   const at = Date.parse(`${date}T${slot}:00+05:30`);
   return !Number.isNaN(at) && Date.now() > at + 24 * 3600 * 1000;
 }
@@ -381,12 +398,12 @@ function doseFrozen(date: unknown, slot: unknown): boolean {
 export async function removeDoseLog(admissionId: string, drugId: string, slot: string, date: string): Promise<Result> {
   const { admission } = await loadAdmission(admissionId, "ipd.edit");
   if (!logsOpen(admission.status)) return { error: "Entries can't be changed now." };
-  if (doseFrozen(date, slot)) return { error: "This dose is locked: it can be changed for 24 hours only." };
   const row = admission.forms.find((f) => f.key === "treatment");
   if (!row) return {};
   let data: Record<string, unknown> = {};
   try { data = JSON.parse(row.data); } catch { data = {}; }
   const log = Array.isArray(data.log) ? (data.log as LogEntry[]) : [];
+  if (doseLocked(data, log, drugId, date, slot)) return { error: "This dose is locked: it can be changed for 24 hours from its first edit only." };
   const at = log.map((e) => e.kind === "dose" && e.meta?.drugId === drugId && e.meta?.slot === slot && e.meta?.date === date).lastIndexOf(true);
   if (at < 0) return {};
   data.log = log.filter((_, i) => i !== at);

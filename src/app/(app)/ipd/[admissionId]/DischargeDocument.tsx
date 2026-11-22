@@ -2,6 +2,8 @@
 // an "at a glance" panel; each section has a full-width ruled heading; empty
 // sections are left out. Dark inks and solid rules so it prints clearly.
 // Pure markup (no <header>/<nav>: the app's print styles hide those).
+import type { ReactNode } from "react";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
 import { toDateDay } from "@/lib/ist";
 import { admissionTypeText, dischargeTypeLabel, durationEnd, wardTypeText, type DischargeData } from "@/lib/ipd";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
@@ -108,9 +110,9 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
   );
   const badge = h.signed ? tag("SIGNED · OTP VERIFIED", ACCENT) : null;
 
-  const glance: [string, string][] = [
+  const glance: [string, ReactNode][] = [
     surgical
-      ? ["Procedure", `${procedure}${s.procedure.date ? `, ${day(s.procedure.date)}` : ""}`]
+      ? ["Procedure", <span key="p"><SurgeryInline eye={s.procedure.eye} surgery={s.procedure.name} implant={s.procedure.implant} anaesthesia={s.procedure.anaesthesia} />{s.procedure.date ? `, ${day(s.procedure.date)}` : ""}</span>]
       : ["Admission", admissionTypeText(h.type, h.typeOther)],
     ["Condition at discharge", s.condition.general],
     ["Discharge", `${dischargeTypeLabel(s.dischargeType)}${s.dischargeType === "REFERRED" && s.referredTo ? ` to ${s.referredTo}` : ""}`],
@@ -208,7 +210,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
             <Row title="Procedure">
               <Grid head={["Procedure", "Date", "Anaesthesia", "Implant", "Surgeon"]} widths={["30%", "14%", "18%", "20%", "18%"]}
                 rows={[[
-                  <span key="p" className="font-semibold">{procedure || "-"}</span>, day(s.procedure.date) || "-",
+                  <span key="p" className="font-semibold">{procedure ? <SurgeryInline eye={s.procedure.eye} surgery={s.procedure.name} /> : "-"}</span>, day(s.procedure.date) || "-",
                   s.procedure.anaesthesia || "-", s.procedure.implant || "-", s.procedure.surgeon ? dr(s.procedure.surgeon) : "-",
                 ]]} />
               {has(s.procedure.events) && <p className="mt-1"><Label>Intra-operative: </Label>{s.procedure.events}</p>}
@@ -218,9 +220,10 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
 
           <Row title="Medicines on discharge">
             {s.meds.length === 0 ? <p>No medicines prescribed.</p> : (
-              <Grid head={["#", "Eye", "Medicine", "Dose", "How often", "For"]} widths={["5%", "8%", "35%", "13%", "22%", "17%"]}
+              <Grid head={["#", "Route", "Eye", "Medicine", "Dose", "How often", "For"]} widths={["4%", "10%", "7%", "31%", "12%", "19%", "17%"]}
                 rows={s.meds.map((m, i) => [
-                  i + 1, <span key="e" className="font-semibold">{m.eye}</span>, <span key="n" className="font-semibold">{m.name}</span>,
+                  i + 1, m.route ?? "", <span key="e" className="font-semibold">{m.eye}</span>,
+                  <span key="n"><span className="font-semibold">{m.name}</span>{m.instructions && <span className="block text-[10px] font-medium italic">{m.instructions}</span>}</span>,
                   m.dose, m.frequency,
                   <span key="d">{m.duration}{durationEnd(m.duration, s.dischargeDate) && <span className="block text-[10px] font-medium">{durationEnd(m.duration, s.dischargeDate)}</span>}</span>,
                 ])} />

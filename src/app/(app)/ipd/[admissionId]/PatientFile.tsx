@@ -43,6 +43,7 @@ import type { CounsellingImplant } from "@/lib/counselling-sheets";
 import type { PaymentDoc } from "@/lib/counselling";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
+import { ChromeTabBar, applyOrder, useSavedList, type ChromeTab } from "@/components/ui/ChromeTabBar";
 import { DischargeDocument, type DischargeHeader } from "./DischargeDocument";
 import { OtNotesView } from "./OtNotesView";
 import type { OtNotesCopy } from "@/lib/ot";
@@ -109,7 +110,7 @@ export interface FileData {
   /** The patient's latest EMR drug allergy (Counselling edits included). */
   drugAllergy: { text: string; nkda: boolean };
   doctorNotes: { id: string; text: string; by: string; at: string; editedAt?: string | null; data?: unknown }[];
-  activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" }[];
+  activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" | "note" | "dose" }[];
   me: string;
   templates: FileInfo["templates"];
   ctx: FormContext;
@@ -205,6 +206,7 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
   const [confirmFreeze, setConfirmFreeze] = useState(false);
   const [editSummary, setEditSummary] = useState(false);
   const [emrPrompt, setEmrPrompt] = useState(false);
+  const [ordering, setOrdering] = useState(false);
   const router = useRouter();
   const emrHref = (edit: boolean) => {
     const back = encodeURIComponent(`/ipd/${d.id}`);
@@ -277,13 +279,13 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
   switch (keyName) {
     case "otFinal": body = <OtNotesView value={row?.data as OtNotesCopy} f={info} />; break;
     case "summary": body = <LongSummary visitId={d.visitId} complaint={d.complaint} diagnoses={d.diagnoses} />; break;
-    case "investigations": body = <InvestigationsForm f={info} />; break;
+    case "investigations": body = <InvestigationsForm f={info} ordering={ordering} />; break;
     case "counselling": body = <CounsellingSheetForm sheet={d.counsellingSheet} detail={d.counsellingDetail ?? null} value={value} change={change} editable={editable} me={d.me} />; break;
     case "implant": body = <ImplantForm {...props} value={value as ImplantData} change={change} saveNow={saveNow} />; break;
     case "consents": body = <ConsentsForm {...props} value={value as ConsentsData} change={change} saveNow={saveNow} />; break;
     case "checklist": body = <ChecklistForm {...props} value={value as ChecklistData} change={change} saveNow={saveNow} />; break;
     case "education": body = <EducationForm {...props} value={value as EducationData} change={change} saveNow={saveNow} part={part} />; break;
-    case "treatment": body = <TreatmentForm {...props} value={value as TreatmentData} change={change} saveNow={saveNow} />; break;
+    case "treatment": body = <TreatmentForm {...props} doseFirst={(row?.data?.doseFirst ?? {}) as Record<string, string>} value={value as TreatmentData} change={change} saveNow={saveNow} />; break;
     case "nurse": {
       // The treatment and diet charts as they stand (saved data over the defaults), for the doctor's-orders check
       const chart = (key: string) => {
@@ -320,7 +322,16 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{title}</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{title}</h2>
+          {keyName === "investigations" && d.status !== "DISCHARGED" && (
+            <button type="button" onClick={() => setOrdering((v) => !v)}
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap">
+              {ordering ? <X size={13} /> : <Plus size={13} />}
+              {ordering ? "Close" : "Order Investigations"}
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2 ml-auto">
           {keyName === "checklist" && (
             <div className="flex items-center gap-2">
@@ -470,7 +481,7 @@ function Photos({ d, keyName, list, canAdd, onRefresh }: { d: FileData; keyName:
 
 /* ── Doctor's notes and activity ───────────────────────────────────────── */
 
-function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: () => void }) {
+function DoctorNotes({ d, can, onRefresh, onDischarge, dischargeBlock }: { d: FileData; can: Can; onRefresh: () => void; onDischarge?: () => void; dischargeBlock?: string }) {
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
   const [editor, setEditor] = useState<{ noteId: string | null; seed: EmrCopy } | null>(null);
@@ -505,14 +516,14 @@ function DoctorNotes({ d, can, onRefresh }: { d: FileData; can: Can; onRefresh: 
 
       {editor && (
         <NoteEditor key={editor.noteId ?? "new"} admissionId={d.id} udid={d.udid} patient={{ age: d.patient.age, sex: d.patient.sex }}
-          seed={editor.seed} noteId={editor.noteId} drugs={activeDrugs} onDone={() => { setEditor(null); onRefresh(); }} />
+          seed={editor.seed} noteId={editor.noteId} drugs={activeDrugs} onDischarge={onDischarge} dischargeBlock={dischargeBlock} onDone={() => { setEditor(null); onRefresh(); }} />
       )}
 
       {notes.length === 0 ? (
         !editor && <p className="text-sm italic text-[var(--color-ink-400)]">No notes yet.</p>
       ) : (
         <ol className="space-y-1.5">
-          {notes.map((n) => {
+          {notes.filter((n) => n.id !== editor?.noteId).map((n) => {
             const copy = isEmrCopy(n.data) ? n.data : null;
             const isOpen = open === n.id;
             const who = n.by.replace(/^Dr\.?\s*/i, "");
@@ -554,6 +565,8 @@ const ACTIVITY_KINDS: Record<FileData["activity"][number]["kind"], { label: stri
   update: { label: "Update", hex: "#F59E0B" },
   ot: { label: "OT", hex: "#8B5CF6" },
   discharge: { label: "Discharge", hex: "#10B981" },
+  note: { label: "Note", hex: "#6366F1" },
+  dose: { label: "Dose", hex: "#EC4899" },
 };
 
 /* ── Header dialogs ────────────────────────────────────────────────────── */
@@ -648,9 +661,9 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
   if (step === "confirm") {
     return (
       <ConfirmDialog
-        title="Discharge this patient?"
-        message="The discharge summary opens for a final review. After you sign it with the OTP, the file becomes read-only."
-        confirmLabel="Review summary"
+        title="Create the discharge summary?"
+        message="Discharging creates the full discharge summary from this file and opens it for a final review. After you sign it with the OTP, the patient is discharged and the file becomes read-only."
+        confirmLabel="Yes, create summary"
         onConfirm={() => setStep("review")}
         onCancel={onClose}
       />
@@ -794,13 +807,18 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   const rowOf = (key: string) => d.forms.find((f) => f.key === key);
   // Patient education and diet are two tabs (as in Counselling) over the one education form
   type Item = { key: string; form: string; title: string; display: boolean; preOp: boolean; part?: EducationPart };
-  const items = useMemo<Item[]>(() => [
+  const baseItems = useMemo<Item[]>(() => [
     ...fixed.flatMap((f): Item[] => f.key === "education"
       ? [{ key: "education", form: "education", title: "Patient Education", display: false, preOp: !!f.preOpOnly, part: "education" },
          { key: "diet", form: "education", title: "Diet Chart", display: false, preOp: !!f.preOpOnly, part: "diet" }]
       : [{ key: f.key, form: f.key, title: f.key === "summary" ? summaryTitle(d.visitDate) : f.title, display: !!f.display, preOp: !!f.preOpOnly }]),
     ...custom.map((f) => ({ key: f.key, form: f.key, title: f.title, display: false, preOp: false })),
-  ], [fixed, custom, d.visitDate]);
+    // The discharge summary exists only once Discharge was clicked and it was signed
+    ...(d.status === "DISCHARGED" && rowOf("discharge") ? [{ key: "discharge", form: "discharge", title: "Discharge Summary", display: false, preOp: false }] : []),
+  ], [fixed, custom, d.visitDate, d.status, d.forms]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Tabs can be dragged into any order; the order is kept in this browser for this file
+  const [savedOrder, setSavedOrder] = useSavedList(`ppms:ipd-tabs:${d.id}`);
+  const items = useMemo(() => applyOrder(baseItems.map((i) => ({ ...i, id: i.key })), savedOrder), [baseItems, savedOrder]);
   const freezeKeyOf = (i: { form: string; part?: EducationPart }) => (i.part === "diet" ? "diet" : i.form);
   const required = [...new Set(items.map(freezeKeyOf))].filter((k) => FREEZABLE_KEYS.includes(k));
   const frozenCount = required.filter((k) => rowOf(k)?.frozen).length;
@@ -856,21 +874,23 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
     if (r.error) setError(r.error); else { setSel(items[0]?.key ?? "summary"); refresh(); }
   });
 
-  // Chrome-style tabs: the selected tab joins the form panel below it
-  const tabBtn = (key: string, label: React.ReactNode, icon: React.ReactNode, extra?: React.ReactNode) => {
-    const on = sel === key;
-    return (
-      <button key={key} type="button" role="tab" aria-selected={on} data-tab={key} onClick={() => setSel(key)}
-        style={on ? undefined : { borderColor: "transparent" }}
-        className={`shrink-0 inline-flex items-center gap-2 h-10 pl-3 pr-3.5 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
-          on
-            ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
-            : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"
-        }`}>
-        {icon}<span>{label}</span>{extra}
-      </button>
-    );
-  };
+  const barTabs: ChromeTab[] = applyOrder([
+    ...items.map((i): ChromeTab => {
+      const r = rowOf(i.form);
+      const fz = rowOf(freezeKeyOf(i));
+      return {
+        id: i.key, title: i.title,
+        label: <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
+        icon: i.key === "summary" || !FREEZABLE_KEYS.includes(freezeKeyOf(i)) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
+          : fz?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
+        extra: (r?.attachments?.length ?? 0) > 0 ? <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" /> : undefined,
+        closable: tabsOpen && !ALWAYS_TABS.includes(i.key) && !fz?.frozen,
+      };
+    }),
+    ...(otFinal ? [{ id: "otFinal", separatorBefore: true, title: "OT Notes", label: "OT Notes", icon: <Scissors size={14} className="shrink-0 text-violet-600" />, extra: <span className="text-micro font-bold rounded px-1 py-px bg-violet-50 text-violet-700 border border-violet-200">OT</span> } as ChromeTab] : []),
+    { id: "doctorNotes", separatorBefore: !otFinal, title: "Doctor's Notes", label: "Doctor's Notes", icon: <Stethoscope size={14} className="shrink-0 text-[var(--color-primary-600)]" />,
+      extra: d.doctorNotes.some((n) => isEmrCopy(n.data)) ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.filter((n) => isEmrCopy(n.data)).length}</span> : undefined },
+  ], savedOrder);
 
   const selItem = items.find((i) => i.key === sel);
 
@@ -1036,52 +1056,29 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
 
       {/* Forms as tabs | selected form */}
       <div>
-        <div role="tablist" aria-label="Patient file forms" className="sticky top-0 z-20 flex flex-wrap items-end gap-x-1 gap-y-0.5 px-1 pt-1 -mb-px bg-[var(--color-bg)]">
-          {items.map((i) => {
-            const r = rowOf(i.form);
-            const fz = rowOf(freezeKeyOf(i));
-            const formTitle = i.part ? "Patient Education & Diet Chart" : i.title;
-            return tabBtn(
-              i.key,
-              <>{i.title}{i.preOp && <span className="ml-1.5 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}</>,
-              i.key === "summary" || !FREEZABLE_KEYS.includes(freezeKeyOf(i)) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
-                : fz?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
-              <>
-                {(r?.attachments?.length ?? 0) > 0 && <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" />}
-                {tabsOpen && sel === i.key && !ALWAYS_TABS.includes(i.key) && !fz?.frozen && (
-                  <span role="button" tabIndex={0} aria-label={`Remove ${i.title}`} title="Remove this tab"
-                    onClick={(e) => { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); }}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setRemoving({ key: i.form, title: formTitle }); } }}
-                    className="-mr-1 grid h-5 w-5 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-red-50 hover:text-red-600">
-                    <X size={12} />
-                  </span>
-                )}
-              </>,
-            );
-          })}
-          {tabsOpen && d.fileCreated && (
-            <button type="button" onClick={() => { setDialog("addForm"); setError(""); }} title="Add tabs" aria-label="Add tabs"
-              className="shrink-0 mb-1 w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
-              <Plus size={16} />
+        <ChromeTabBar
+          label="Patient file forms"
+          activeId={sel}
+          onSelect={setSel}
+          tabs={barTabs}
+          onReorder={setSavedOrder}
+          onClose={(id) => { const i = items.find((x) => x.key === id); if (i) setRemoving({ key: i.form, title: i.part ? "Patient Education & Diet Chart" : i.title }); }}
+          onAdd={tabsOpen && d.fileCreated ? () => { setDialog("addForm"); setError(""); } : undefined}
+          trailing={
+            <button type="button" onClick={() => setActivityOpen(true)} title="Activity" aria-label="Open the activity timeline"
+              className="shrink-0 mb-1 grid h-8 w-8 place-items-center rounded-full text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-primary-700)]">
+              <History size={16} />
             </button>
-          )}
-          <span className="shrink-0 self-center mx-1 h-5 w-px bg-[var(--color-border)]" />
-          {otFinal && tabBtn("otFinal", "OT Notes", <Scissors size={14} className="shrink-0 text-violet-600" />,
-            <span className="text-micro font-bold rounded px-1 py-px bg-violet-50 text-violet-700 border border-violet-200">OT</span>)}
-          {tabBtn("doctorNotes", "Doctor's Notes", <Stethoscope size={14} className="shrink-0 text-[var(--color-primary-600)]" />,
-            d.doctorNotes.some((n) => isEmrCopy(n.data)) ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.filter((n) => isEmrCopy(n.data)).length}</span> : undefined)}
-          <button type="button" onClick={() => setActivityOpen(true)} title="Activity" aria-label="Open the activity timeline"
-            className="shrink-0 mb-1 grid h-8 w-8 place-items-center rounded-full text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-primary-700)]">
-            <History size={16} />
-          </button>
-        </div>
+          }
+        />
         {activityOpen && (
           <ActivityPanel kicker="Activity" title={d.patient.name} onClose={() => setActivityOpen(false)} kinds={ACTIVITY_KINDS}
             events={d.activity.map((e) => ({ at: e.at, title: e.text, detail: e.detail, by: e.by, kind: e.kind }))} />
         )}
 
         <section className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:p-4 min-w-0 ${sel === items[0]?.key ? "rounded-tl-none" : ""}`}>
-          {sel === "doctorNotes" ? <DoctorNotes d={d} can={can} onRefresh={refresh} />
+          {sel === "doctorNotes" ? <DoctorNotes d={d} can={can} onRefresh={refresh} onDischarge={showDischarge ? () => setDialog("discharge") : undefined}
+            dischargeBlock={showDischarge ? undefined : !can.discharge ? "You do not have the IPD Discharge permission." : status === "DISCHARGED" ? "This patient is already discharged." : status === "IN_OT" ? "The patient is in OT. Discharge is possible after the operation, from the post-op ward." : "This patient is Pre-op. Shift to OT first; after surgery the file returns to the post-op ward and the patient can be discharged from there."} />
             : sel === "otFinal" && otFinal ? (
               <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
             ) : selItem ? (

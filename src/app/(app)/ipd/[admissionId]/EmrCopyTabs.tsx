@@ -25,7 +25,9 @@ type NewMed = NoteMedChanges["add"][number] & { tempId: string };
 const uid = () => `ipd${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 const never = async () => { throw new Error("Not available in the doctor's notes."); };
 
-export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, onDone }: {
+export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, onDone, onDischarge, dischargeBlock }: {
+  onDischarge?: () => void;
+  dischargeBlock?: string;
   admissionId: string; udid: string; patient: { age: number; sex: string };
   /** The draft starts as this copy (the latest note, or the EMR for the first note). */
   seed: EmrCopy;
@@ -53,7 +55,8 @@ export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, on
     setCopy(copyRef.current);
   }, []);
 
-  // The medicine list the tabs show: chart drugs less the pending removes, plus the pending adds
+  // The medicine list the tabs show (Plan tab and Post-op medications): the Treatment Chart's active drugs less the pending removes, plus the pending adds.
+  // Signing the note applies the adds and removes to the Treatment Chart.
   const list = useMemo(() => [
     ...drugs.filter((x) => !stopIds.includes(x.id)).map((x) => ({ id: x.id, name: x.name, dose: x.dose, route: x.route, eye: x.eye, frequency: x.frequency, instructions: x.instructions, start: x.start })),
     ...added.map((m) => ({ id: m.tempId, name: m.name, dose: m.dose, route: m.route, eye: m.eye, frequency: m.frequency, instructions: m.instructions, start: "" })),
@@ -130,7 +133,7 @@ export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, on
     medications: list.map((x) => ({ id: x.id, visitId: `ipdcopy-${admissionId}`, drugName: x.name, dosage: x.dose, frequency: x.frequency, duration: "", instructions: x.instructions, route: x.route, laterality: x.eye, createdAt: x.start })),
   }), [copy, list, admissionId]);
 
-  const ipd = useMemo(() => ({ values: copy.ipd, save: (patch: Partial<EmrCopy["ipd"]>) => run({ t: "ipd", data: patch }), meds: { list } }), [copy.ipd, run, list]);
+  const ipd = useMemo(() => ({ values: copy.ipd, save: (patch: Partial<EmrCopy["ipd"]>) => run({ t: "ipd", data: patch }), meds: { list }, onDischarge, dischargeBlock }), [copy.ipd, run, list, onDischarge, dischargeBlock]);
 
   // Finalize: unmount the tabs first so their pending autosaves reach the draft, then save
   useEffect(() => {
