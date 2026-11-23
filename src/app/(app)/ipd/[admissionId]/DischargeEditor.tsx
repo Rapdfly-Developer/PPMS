@@ -455,13 +455,13 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               )}>
               <div className={`${span2} overflow-x-auto rounded-lg border border-[var(--color-border)]`}>
                 <table className="w-full min-w-[600px] text-sm">
-                  <thead>
+                  {s.meds.length > 0 && <thead>
                     <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
                       <th className={`${thCls} w-8`}>#</th>
                       {["Route", "Eye", "Medicine", "Dose", "How often", "For"].map((h) => <th key={h} className={thCls}>{h}</th>)}
                       {editable && <th className="w-9" />}
                     </tr>
-                  </thead>
+                  </thead>}
                   <tbody>
                     {s.meds.length === 0 && <tr><td colSpan={8} className="px-3 py-3 text-sm text-[var(--color-ink-400)]">No medicines added.</td></tr>}
                     {s.meds.map((m, i) => (
