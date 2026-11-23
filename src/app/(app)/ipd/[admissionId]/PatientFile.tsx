@@ -19,13 +19,13 @@ import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
 import {
   ADMISSION_TYPE_LABEL, ALWAYS_TABS, FREEZABLE_KEYS, IPD_FORMS, IPD_STATUS_LABEL, admissionTypeText, attachOpen, canDischargeNow, canGoToOt, formEditable,
-  tabChoices, tabsFor, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
+  tabChoices, tabsFor, tabColour, isCustomKey, isDischargeData, logsOpen, normalizeDischarge, type DischargeData, type IpdStatus, type LogEntry, WARD_TYPE_LABEL, wardTypeText } from "@/lib/ipd";
 import {
   IMPLANT_VERIFY, isV2, type ChecklistData, type ConsentsData, type EducationData, type FormContext, type ImplantData, type NurseData,
   type OtNotesData, type PostOpData, type TreatmentData,
 } from "@/lib/ipd-forms";
 import { SaveIndicator, useAutoSave } from "@/lib/useAutoSave";
-import { ChipRow, SuggestField } from "./customOptions";
+import { ChipRow, SuggestField, removeCsv } from "./customOptions";
 import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import {
   ChecklistForm, ConsentsForm, DoctorNoteText, EducationForm, ImplantForm, InvestigationsForm, NurseForm,
@@ -33,14 +33,15 @@ import {
 } from "./IpdForms";
 import {
   addCustomForm, getNoteSeed, addFileTabs, addFormAttachment, addFormLog, removeDoseLog,changeAdmissionType, confirmDischarge, createIpdFile,
-  freezeForm, unfreezeForm, noteDrugStopped, removeFileTab, requestDischargeOtp, saveForm, shiftToOt, updateAdmissionDetails,
+  freezeForm, unfreezeForm, noteDrugStopped, removeFileTab, requestDischargeOtp, setIpdTabColour, saveForm, shiftToOt, updateAdmissionDetails,
 } from "../actions";
 import { FileTabsDialog, summaryTitle } from "./FileTabsDialog";
 export { summaryTitle };
 import { CounsellingOverview } from "../../counselling/[visitId]/CounsellingPrintOverview";
 import { CounsellingDetail, type CounsellingDetailData } from "../../counselling/[visitId]/CounsellingDetail";
 import type { CounsellingImplant } from "@/lib/counselling-sheets";
-import type { PaymentDoc } from "@/lib/counselling";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
+import { ALL_IMPLANTS, ANAESTHESIA_OPTIONS, SURGERY_OPTIONS, type PaymentDoc } from "@/lib/counselling";
 import { useVisitSummaryState, VisitSummaryTabBody } from "../../patients/[udid]/VisitSummaryTabs";
 import { DischargeEditor, type DischargeContext } from "./DischargeEditor";
 import { ChromeTabBar, applyOrder, useSavedList, type ChromeTab } from "@/components/ui/ChromeTabBar";
@@ -89,6 +90,8 @@ export interface FileData {
   status: string;
   /** Tabs chosen for the file (with the two it always has); empty until the file is created. */
   fileTabs: string[];
+  /** Colours given to tabs (form key to colour id), shared by everyone in the hospital. */
+  tabColours: Record<string, string>;
   fileCreated: boolean;
   /** Date of the admitting visit (the long summary's day). */
   visitDate: string;
@@ -110,7 +113,7 @@ export interface FileData {
   /** The patient's latest EMR drug allergy (Counselling edits included). */
   drugAllergy: { text: string; nkda: boolean };
   doctorNotes: { id: string; text: string; by: string; at: string; editedAt?: string | null; data?: unknown }[];
-  activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" | "note" | "dose" }[];
+  activity: { at: string; by: string; text: string; detail: string; kind: "admission" | "form" | "update" | "ot" | "discharge" | "note" | "dose"; form?: string }[];
   me: string;
   templates: FileInfo["templates"];
   ctx: FormContext;
@@ -142,7 +145,20 @@ const btnGhost = "inline-flex items-center gap-1.5 text-xs sm:text-sm font-mediu
 
 /* ── Small pieces ──────────────────────────────────────────────────────── */
 
-export function Modal({ title, children, onClose, wide }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean }) {
+export function Modal({ title, children, onClose, wide, sheet }: { title: string; children: React.ReactNode; onClose: () => void; wide?: boolean; /** Opens as a full page sheet instead of a small popup. */ sheet?: boolean }) {
+  if (sheet) {
+    return (
+      <div className="fixed inset-0 z-[200] flex flex-col bg-[var(--color-surface-sunken)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] bg-white px-4 py-3 sm:px-6">
+          <p className="text-base font-bold text-[var(--color-ink-900)]">{title}</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]" aria-label="Close"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+          <div className="mx-auto w-full max-w-5xl rounded-2xl bg-white p-4 sm:p-6 shadow-sm border border-[var(--color-border)]">{children}</div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
@@ -206,6 +222,8 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
   const [confirmFreeze, setConfirmFreeze] = useState(false);
   const [editSummary, setEditSummary] = useState(false);
   const [emrPrompt, setEmrPrompt] = useState(false);
+  // The tab's colour shows beside the form's heading
+  const headDot = tabColour(d.tabColours?.[part === "diet" ? "diet" : keyName])?.dot;
   const [ordering, setOrdering] = useState(false);
   const router = useRouter();
   const emrHref = (edit: boolean) => {
@@ -323,7 +341,7 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{title}</h2>
+          <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{headDot && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: headDot }} />}{title}</h2>
           {keyName === "investigations" && d.status !== "DISCHARGED" && (
             <button type="button" onClick={() => setOrdering((v) => !v)}
               className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border border-[#B2DEDA] bg-[#EEF8F7] text-[#0F766E] hover:bg-[#DCF3F1] transition-colors whitespace-nowrap">
@@ -337,7 +355,7 @@ export function FormPanel({ d, keyName, title, display, row, freezeRow, can, onR
             <div className="flex items-center gap-2">
               <label className="shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">Handed over to OT by</label>
               <input value={value.handedOverBy ?? ""} disabled={!editable} onChange={(e) => change({ ...value, handedOverBy: e.target.value })} placeholder={editable ? "Nurse name" : "-"}
-                className="w-44 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)]/50 disabled:cursor-default" />
+                className="w-44 rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:border-transparent disabled:bg-transparent disabled:px-0 disabled:shadow-none disabled:resize-none disabled:appearance-none disabled:opacity-100 disabled:cursor-default disabled:[&::-webkit-calendar-picker-indicator]:hidden" />
               {editable && !value.handedOverBy && <button type="button" onClick={() => change({ ...value, handedOverBy: d.me })} className={btnGhost}>Me</button>}
             </div>
           )}
@@ -510,13 +528,13 @@ function DoctorNotes({ d, can, onRefresh, onDischarge, dischargeBlock }: { d: Fi
             {pending ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Add Note
           </button>
         )}
-        <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Doctor&apos;s Notes</h2>
+        <h2 className="flex items-center gap-2 text-sm sm:text-base font-bold text-[var(--color-ink-900)]">{tabColour(d.tabColours?.doctorNotes) && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: tabColour(d.tabColours?.doctorNotes)?.dot }} />}Doctor&apos;s Notes</h2>
       </div>
       <ErrorLine text={error} />
 
       {editor && (
         <NoteEditor key={editor.noteId ?? "new"} admissionId={d.id} udid={d.udid} patient={{ age: d.patient.age, sex: d.patient.sex }}
-          seed={editor.seed} noteId={editor.noteId} drugs={activeDrugs} onDischarge={onDischarge} dischargeBlock={dischargeBlock} onDone={() => { setEditor(null); onRefresh(); }} />
+          seed={editor.seed} noteId={editor.noteId} drugs={activeDrugs} orders={d.orders as unknown as Record<string, unknown>[]} onDischarge={onDischarge} dischargeBlock={dischargeBlock} onDone={() => { setEditor(null); onRefresh(); }} />
       )}
 
       {notes.length === 0 ? (
@@ -614,10 +632,19 @@ function TypeDialog({ d, onClose, onDone }: { d: FileData; onClose: () => void; 
   const [other, setOther] = useState(d.typeOther ?? "");
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
+  // Going to Pre-op asks for the surgery and implant details (filled from the counselling sheet or the file, when there is one)
+  const toPreOp = type === "PRE_OP" && d.type !== "PRE_OP";
+  const cs = d.counsellingSheet;
+  const [surgery, setSurgery] = useState(d.surgery ?? cs?.surgery ?? "");
+  const [eye, setEye] = useState(d.laterality ?? cs?.laterality ?? "");
+  const [anaesthesia, setAnaesthesia] = useState(d.anaesthesia ?? cs?.anaesthesia ?? "");
+  const [implant, setImplant] = useState(d.implant ?? cs?.implant ?? "");
+  const [date, setDate] = useState(istInput(d.surgeryDate) || (cs?.dateOfSurgery ? istInput(cs.dateOfSurgery) : ""));
   const save = () => start(async () => {
-    const r = await changeAdmissionType(d.id, type, other);
+    const r = await changeAdmissionType(d.id, type, other, toPreOp ? { surgery, laterality: eye, anaesthesia, implant, date } : undefined);
     if (r.error) setError(r.error); else onDone();
   });
+  const lbl = "mb-1 block text-caption font-medium uppercase tracking-wide text-[var(--color-ink-400)]";
   return (
     <Modal title="Change type of admission" onClose={onClose}>
       <div className="flex flex-wrap gap-2">
@@ -629,20 +656,51 @@ function TypeDialog({ d, onClose, onDone }: { d: FileData; onClose: () => void; 
         ))}
       </div>
       {type === "OTHERS" && <input value={other} onChange={(e) => setOther(e.target.value)} placeholder="Describe…" className={`${inputCls} mt-3`} />}
-      <p className="mt-3 text-caption text-[var(--color-ink-400)]">Switching to Pre-op imports the counselling sheet if the patient has one and none was imported yet. Forms that apply only to Pre-op are shown or hidden accordingly.</p>
+      {toPreOp && (
+        <div className="mt-4 space-y-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-3">
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-ink-600)]">Surgery and implant details</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className={lbl}>Eye and surgery <span className="text-red-500">*</span></label>
+              <div className="flex items-center gap-2">
+                <div className="flex shrink-0 gap-1.5">{["RE", "LE", "OU"].map((e) => (
+                  <button key={e} type="button" onClick={() => setEye(eye === e ? "" : e)} className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${eye === e ? "border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white" : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)]"}`}>{e}</button>
+                ))}</div>
+                <input list="pre-surgery" value={surgery} onChange={(e) => setSurgery(e.target.value)} placeholder="e.g. Phacoemulsification" className={`${inputCls} min-w-0 flex-1`} />
+                <datalist id="pre-surgery">{SURGERY_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist>
+              </div>
+            </div>
+            <div><label className={lbl}>Date of surgery</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputCls} /></div>
+            <div><label className={lbl}>Anaesthesia</label>
+              <input list="pre-anaesthesia" value={anaesthesia} onChange={(e) => setAnaesthesia(e.target.value)} className={inputCls} />
+              <datalist id="pre-anaesthesia">{ANAESTHESIA_OPTIONS.map((x) => <option key={x} value={x} />)}</datalist></div>
+            <div><label className={lbl}>Implant</label>
+              <input list="pre-implant" value={implant} onChange={(e) => setImplant(e.target.value)} placeholder="None, or the implant" className={inputCls} />
+              <datalist id="pre-implant">{ALL_IMPLANTS.map((x) => <option key={x} value={x} />)}</datalist></div>
+          </div>
+          {/* The surgery name as the file banner will show it */}
+          {surgery.trim() && (
+            <div className="rounded-lg bg-white px-3 py-2 ring-1 ring-[var(--color-border)]">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Will show as</p>
+              <p className="mt-0.5 text-sm font-bold text-[var(--color-ink-900)]"><SurgeryInline eye={eye} surgery={surgery.trim()} implant={implant} anaesthesia={anaesthesia.trim()} /></p>
+            </div>
+          )}
+        </div>
+      )}
+      <p className="mt-3 text-caption text-[var(--color-ink-400)]">Switching to Pre-op adds the counselling sheet to this file. If the patient has none yet, a counselling form is created for them in the Counselling module. Forms that apply only to Pre-op are shown or hidden accordingly.</p>
       <div className="mt-4 space-y-3">
         <ErrorLine text={error} />
         <div className="flex justify-end gap-2">
           <button onClick={onClose} className={btnGhost}>Cancel</button>
-          <button disabled={pending || type === d.type && (type !== "OTHERS" || other === (d.typeOther ?? ""))} onClick={save} className={btnPrimary}>Change</button>
+          <button disabled={pending || (toPreOp && !surgery.trim()) || type === d.type && (type !== "OTHERS" || other === (d.typeOther ?? ""))} onClick={save} className={btnPrimary}>Change</button>
         </div>
       </div>
     </Modal>
   );
 }
 
-function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary: DischargeData; onClose: () => void; onDone: () => void }) {
-  const [step, setStep] = useState<"confirm" | "review">("confirm");
+/** The discharge summary as a tab of the file: review it, then sign with the OTP. */
+function DischargeSheet({ d, summary, onDone }: { d: FileData; summary: DischargeData; onDone: () => void }) {
   const [text, setText] = useState<DischargeData>(summary);
   const [notes, setNotes] = useState("");
   const [otpSentTo, setOtpSentTo] = useState("");
@@ -658,27 +716,17 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
     const r = await confirmDischarge(d.id, code, text, notes);
     if (r.error) setError(r.error); else onDone();
   });
-  if (step === "confirm") {
-    return (
-      <ConfirmDialog
-        title="Create the discharge summary?"
-        message="Discharging creates the full discharge summary from this file and opens it for a final review. After you sign it with the OTP, the patient is discharged and the file becomes read-only."
-        confirmLabel="Yes, create summary"
-        onConfirm={() => setStep("review")}
-        onCancel={onClose}
-      />
-    );
-  }
   return (
-    <Modal title="Discharge summary · review & sign" onClose={onClose} wide>
+    <div className="space-y-4">
+      <h2 className="text-sm sm:text-base font-bold text-[var(--color-ink-900)]">Discharge Summary</h2>
       <div className="space-y-4">
-        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2 max-h-[55vh] overflow-y-auto">
+        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2">
           <DischargeEditor value={text} onChange={setText} editable ctx={dischargeCtx(d)} />
         </div>
         <div>
           <label className={labelCls}>Additional notes (optional)</label>
           {/* Keyword chips with "+ Custom" and a type-ahead list */}
-          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} /></div>
+          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} onRemove={(x) => setNotes(removeCsv(notes, x))} /></div>
           <SuggestField storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} value={notes} onChange={setNotes}>
             {(sp) => <textarea {...sp} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />}
           </SuggestField>
@@ -700,7 +748,7 @@ function DischargeDialog({ d, summary, onClose, onDone }: { d: FileData; summary
           <ErrorLine text={error} />
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
 
@@ -750,6 +798,7 @@ export function dischargeCtx(d: FileData): DischargeContext {
     doctorNotes: d.doctorNotes.map((n) => ({ text: n.text, at: n.at })),
     drugs: Array.isArray(t?.drugs) ? t.drugs.filter((dr: { stopped?: boolean }) => !dr.stopped) : [],
     signed: d.status === "DISCHARGED" && d.dischargedBy && d.dischargedAt ? { by: d.dischargedBy, at: discharge?.frozenAt ?? d.dischargedAt } : null,
+    draft: d.defaults.discharge as DischargeData,
   };
 }
 
@@ -805,6 +854,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   const fixed = tabsFor(d.type, d.fileTabs);
   const custom = d.forms.filter((f) => isCustomKey(f.key));
   const rowOf = (key: string) => d.forms.find((f) => f.key === key);
+  // The discharge summary opens as a tab once Discharge is confirmed
+  const [dischargeTab, setDischargeTab] = useState(false);
   // Patient education and diet are two tabs (as in Counselling) over the one education form
   type Item = { key: string; form: string; title: string; display: boolean; preOp: boolean; part?: EducationPart };
   const baseItems = useMemo<Item[]>(() => [
@@ -814,13 +865,13 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
       : [{ key: f.key, form: f.key, title: f.key === "summary" ? summaryTitle(d.visitDate) : f.title, display: !!f.display, preOp: !!f.preOpOnly }]),
     ...custom.map((f) => ({ key: f.key, form: f.key, title: f.title, display: false, preOp: false })),
     // The discharge summary exists only once Discharge was clicked and it was signed
-    ...(d.status === "DISCHARGED" && rowOf("discharge") ? [{ key: "discharge", form: "discharge", title: "Discharge Summary", display: false, preOp: false }] : []),
-  ], [fixed, custom, d.visitDate, d.status, d.forms]); // eslint-disable-line react-hooks/exhaustive-deps
+    ...((d.status === "DISCHARGED" && rowOf("discharge")) || dischargeTab ? [{ key: "discharge", form: "discharge", title: "Discharge Summary", display: false, preOp: false }] : []),
+  ], [fixed, custom, d.visitDate, d.status, d.forms, dischargeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   // Tabs can be dragged into any order; the order is kept in this browser for this file
   const [savedOrder, setSavedOrder] = useSavedList(`ppms:ipd-tabs:${d.id}`);
   const items = useMemo(() => applyOrder(baseItems.map((i) => ({ ...i, id: i.key })), savedOrder), [baseItems, savedOrder]);
   const freezeKeyOf = (i: { form: string; part?: EducationPart }) => (i.part === "diet" ? "diet" : i.form);
-  const required = [...new Set(items.map(freezeKeyOf))].filter((k) => FREEZABLE_KEYS.includes(k));
+  const required = [...new Set(items.map(freezeKeyOf))].filter((k) => FREEZABLE_KEYS.includes(k) && k !== "discharge");
   const frozenCount = required.filter((k) => rowOf(k)?.frozen).length;
   const allFrozen = frozenCount === required.length;
 
@@ -828,6 +879,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
   // A form hidden by a type change falls back to the first form
   const otFinal = rowOf("otFinal");
   const sel = items.some((i) => i.key === picked) || picked === "doctorNotes" || (picked === "otFinal" && !!otFinal) ? picked : (items[0]?.key ?? "summary");
+  const seen = useRef(new Set<string>());
+  seen.current.add(sel);
   const [dialog, setDialog] = useState<null | "details" | "type" | "ot" | "discharge" | "addForm">(null);
   const [removing, setRemoving] = useState<{ key: string; title: string } | null>(null);
   const [activityOpen, setActivityOpen] = useState(false);
@@ -846,7 +899,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
     if (r.error) setError(r.error); else refresh();
   });
   // Tabs: picked when the file is created, added or removed later
-  const choices = tabChoices(d.type, !!d.counsellingSheet).map((f) => ({ key: f.key as string, title: f.title, preOp: !!f.preOpOnly }));
+  const choices = tabChoices(d.type, !!d.counsellingSheet).map((f) => ({ key: f.key as string, title: f.title, preOp: !!f.preOpOnly, dot: tabColour(d.tabColours?.[f.key as string])?.dot }));
   const always = ALWAYS_TABS.map((k) => ({ key: k, title: k === "summary" ? summaryTitle(d.visitDate) : IPD_FORMS.find((f) => f.key === k)?.title ?? k }));
   const tabsOpen = can.edit && (status === "ADMITTED" || status === "POST_OP");
   const createFile = async (tabs: string[]) => {
@@ -884,13 +937,17 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
         icon: i.key === "summary" || !FREEZABLE_KEYS.includes(freezeKeyOf(i)) ? <FileText size={14} className="shrink-0 text-[var(--color-ink-400)]" />
           : fz?.frozen ? <CheckCircle2 size={14} className="shrink-0 text-emerald-600" /> : <Circle size={14} className="shrink-0 text-[var(--color-ink-300)]" />,
         extra: (r?.attachments?.length ?? 0) > 0 ? <Camera size={12} className="shrink-0 text-[var(--color-ink-400)]" /> : undefined,
-        closable: tabsOpen && !ALWAYS_TABS.includes(i.key) && !fz?.frozen,
+        closable: i.key === "discharge" ? d.status !== "DISCHARGED" : tabsOpen && !ALWAYS_TABS.includes(i.key) && !fz?.frozen,
       };
     }),
     ...(otFinal ? [{ id: "otFinal", separatorBefore: true, title: "OT Notes", label: "OT Notes", icon: <Scissors size={14} className="shrink-0 text-violet-600" />, extra: <span className="text-micro font-bold rounded px-1 py-px bg-violet-50 text-violet-700 border border-violet-200">OT</span> } as ChromeTab] : []),
     { id: "doctorNotes", separatorBefore: !otFinal, title: "Doctor's Notes", label: "Doctor's Notes", icon: <Stethoscope size={14} className="shrink-0 text-[var(--color-primary-600)]" />,
       extra: d.doctorNotes.some((n) => isEmrCopy(n.data)) ? <span className="text-micro font-bold rounded-full px-1.5 bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]">{d.doctorNotes.filter((n) => isEmrCopy(n.data)).length}</span> : undefined },
-  ], savedOrder);
+  ], savedOrder).map((t) => ({ ...t, colour: tabColour(d.tabColours?.[t.id]), colourable: can.edit }));
+  const colourTab = (id: string, colour: string | null) => start(async () => {
+    const r = await setIpdTabColour(d.id, id, colour);
+    if (r.error) setError(r.error); else refresh();
+  });
 
   const selItem = items.find((i) => i.key === sel);
 
@@ -974,7 +1031,7 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
             {/* Right: surgery (or admission) | dates, in one glass panel */}
             <div className="lg:w-[52%] shrink-0 rounded-2xl bg-white/[0.08] ring-1 ring-white/15 backdrop-blur-sm grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0 px-4 py-3">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">{d.surgery ? "Surgery" : "Admission"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/50">{d.surgery ? "Surgery" : d.diagnoses.length > 0 ? "Diagnosis" : "Admission"}</p>
                 <p className="mt-1 text-base sm:text-lg font-bold text-white leading-snug">
                   {d.surgery ? (
                     <>
@@ -989,7 +1046,9 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
                         </span>
                       )}
                     </>
-                  ) : admissionTypeText(d.type, d.typeOther)}
+                  ) : d.diagnoses.length > 0
+                    ? d.diagnoses.map((x) => [x.laterality, x.description].filter(Boolean).join(" ")).join(", ")
+                    : admissionTypeText(d.type, d.typeOther)}
                 </p>
                 <p className="mt-1 text-caption text-white/70">
                   {admissionTypeText(d.type, d.typeOther)}
@@ -1062,7 +1121,8 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           onSelect={setSel}
           tabs={barTabs}
           onReorder={setSavedOrder}
-          onClose={(id) => { const i = items.find((x) => x.key === id); if (i) setRemoving({ key: i.form, title: i.part ? "Patient Education & Diet Chart" : i.title }); }}
+          onColour={can.edit ? colourTab : undefined}
+          onClose={(id) => { if (id === "discharge") { setDischargeTab(false); setSel(items[0]?.key ?? "summary"); return; } const i = items.find((x) => x.key === id); if (i) setRemoving({ key: i.form, title: i.part ? "Patient Education & Diet Chart" : i.title }); }}
           onAdd={tabsOpen && d.fileCreated ? () => { setDialog("addForm"); setError(""); } : undefined}
           trailing={
             <button type="button" onClick={() => setActivityOpen(true)} title="Activity" aria-label="Open the activity timeline"
@@ -1073,17 +1133,31 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
         />
         {activityOpen && (
           <ActivityPanel kicker="Activity" title={d.patient.name} onClose={() => setActivityOpen(false)} kinds={ACTIVITY_KINDS}
-            events={d.activity.map((e) => ({ at: e.at, title: e.text, detail: e.detail, by: e.by, kind: e.kind }))} />
+            events={d.activity.map((e) => ({ at: e.at, title: e.text, detail: e.detail, by: e.by, kind: e.kind, tab: tabColour(d.tabColours?.[e.form ?? ""])?.dot ?? null }))} />
         )}
 
         <section className={`rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3 sm:p-4 min-w-0 ${sel === items[0]?.key ? "rounded-tl-none" : ""}`}>
-          {sel === "doctorNotes" ? <DoctorNotes d={d} can={can} onRefresh={refresh} onDischarge={showDischarge ? () => setDialog("discharge") : undefined}
+          {/* Every tab opened so far stays mounted (just hidden), so what was typed in one is still there when you come back */}
+          {[...seen.current].map((k) => {
+            const visible = k === sel;
+            const it = items.find((i) => i.key === k);
+            if (k === "doctorNotes") {
+              return (
+                <div key="doctorNotes" hidden={!visible}>
+                  <DoctorNotes d={d} can={can} onRefresh={refresh} onDischarge={showDischarge ? () => setDialog("discharge") : undefined}
             dischargeBlock={showDischarge ? undefined : !can.discharge ? "You do not have the IPD Discharge permission." : status === "DISCHARGED" ? "This patient is already discharged." : status === "IN_OT" ? "The patient is in OT. Discharge is possible after the operation, from the post-op ward." : "This patient is Pre-op. Shift to OT first; after surgery the file returns to the post-op ward and the patient can be discharged from there."} />
-            : sel === "otFinal" && otFinal ? (
-              <FormPanel key="otFinal" d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} />
-            ) : selItem ? (
-              <FormPanel key={`${selItem.key}-${rowOf(freezeKeyOf(selItem))?.frozen ? "f" : "o"}-${d.status}`} d={d} keyName={selItem.form} title={selItem.title} display={selItem.display} row={rowOf(selItem.form)} freezeRow={rowOf(freezeKeyOf(selItem))} can={can} onRefresh={refresh} part={selItem.part} />
-            ) : null}
+                </div>
+              );
+            }
+            if (k === "otFinal") return otFinal ? <div key="otFinal" hidden={!visible}><FormPanel d={d} keyName="otFinal" title="OT Notes" row={otFinal} can={can} onRefresh={refresh} /></div> : null;
+            if (!it) return null;
+            if (k === "discharge" && d.status !== "DISCHARGED") return <div key="discharge" hidden={!visible}><DischargeSheet d={d} summary={summaryNow} onDone={() => { setDischargeTab(false); refresh(); }} /></div>;
+            return (
+              <div key={`${it.key}-${rowOf(freezeKeyOf(it))?.frozen ? "f" : "o"}-${d.status}${it.key === "treatment" ? `-${d.doctorNotes.map((n) => n.editedAt ?? n.at).join(",")}` : ""}`} hidden={!visible}>
+                <FormPanel d={d} keyName={it.form} title={it.title} display={it.display} row={rowOf(it.form)} freezeRow={rowOf(freezeKeyOf(it))} can={can} onRefresh={refresh} part={it.part} />
+              </div>
+            );
+          })}
         </section>
       </div>
 
@@ -1098,7 +1172,15 @@ export function PatientFile({ data: d, can }: { data: FileData; can: Can }) {
           onCancel={() => setDialog(null)}
         />
       )}
-      {dialog === "discharge" && <DischargeDialog d={d} summary={summaryNow} onClose={() => setDialog(null)} onDone={() => { setDialog(null); refresh(); }} />}
+      {dialog === "discharge" && (
+        <ConfirmDialog
+          title="Create the discharge summary?"
+          message="Discharging creates the full discharge summary from this file in its own tab for a final review. After you sign it with the OTP, the patient is discharged and the file becomes read-only."
+          confirmLabel="Yes, create summary"
+          onConfirm={() => { setDialog(null); setDischargeTab(true); setSel("discharge"); }}
+          onCancel={() => setDialog(null)}
+        />
+      )}
       {dialog === "addForm" && (
         <FileTabsDialog
           title="Add tabs"

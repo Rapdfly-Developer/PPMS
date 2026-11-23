@@ -16,7 +16,7 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { checkOwnPassword, keepLockedConsents, withUnlock } from "@/lib/consent-lock";
 import { SUPERSEDED } from "@/lib/counselling";
 import {
-  ALWAYS_TABS, FREEZABLE_KEYS, IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys, tabChoices,
+  ALWAYS_TABS, FREEZABLE_KEYS, TAB_COLOURS, TAB_COLOUR_CATEGORY, IPD_FORMS, attachOpen, canDischargeNow, canGoToOt, formEditable, isCustomKey, isDischargeData, logsOpen, requiredKeys, tabChoices,
   type LogEntry, WARD_TYPE_LABEL,
 } from "@/lib/ipd";
 
@@ -76,24 +76,93 @@ export async function updateAdmissionDetails(admissionId: string, data: {
   return {};
 }
 
-export async function changeAdmissionType(admissionId: string, type: string, other: string): Promise<Result> {
+/**
+ * Edit the surgery details (surgery, eye, implant, anaesthesia) from the OT notes. They are the file's own
+ * details, so they change on the admission, the Counselling record and the advised surgery on the visit.
+ */
+export async function updateSurgeryDetails(admissionId: string, data: { surgery: string; laterality: string; implant: string; anaesthesia: string }): Promise<Result> {
+  const { user, admission } = await loadAdmission(admissionId, "ipd.edit", "ot.notes");
+  if (admission.status === "DISCHARGED") return { error: "The patient is discharged; the file is read-only." };
+  const surgery = (data.surgery ?? "").trim().slice(0, 200);
+  const laterality = (data.laterality ?? "").trim();
+  const implant = (data.implant ?? "").trim().slice(0, 200);
+  const anaesthesia = (data.anaesthesia ?? "").trim().slice(0, 100);
+  if (!surgery) return { error: "Enter the surgery." };
+  if (laterality && !["RE", "LE", "OU"].includes(laterality)) return { error: "Invalid eye." };
+  await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { surgery, laterality: laterality || null, implant: implant || null, anaesthesia: anaesthesia || null } });
+  if (admission.counsellingVisitId) {
+    await prisma.counsellingRecord.updateMany({ where: { visitId: admission.counsellingVisitId }, data: { procedure: surgery, laterality: laterality || null, implant: implant || null, anaesthesia: anaesthesia || null } });
+  }
+  const visitIds = [...new Set([admission.visitId, admission.counsellingVisitId].filter((x): x is string => !!x))];
+  await prisma.visit.updateMany({ where: { id: { in: visitIds }, surgeryAdvised: true }, data: { advisedSurgeryName: surgery, advisedSurgeryEye: laterality || null, advisedSurgeryImplant: implant || null, advisedSurgeryAnaesthesia: anaesthesia || null } });
+  await audit(user.id, user.name, admissionId, "SURGERY_DETAILS_CHANGED", { surgery, laterality, implant, anaesthesia });
+  refresh(admissionId, admission.visit.patient.udid);
+  return {};
+}
+
+/** Gives a tab a colour (or clears it). Shared by everyone in the hospital. */
+export async function setIpdTabColour(admissionId: string, key: string, colour: string | null): Promise<Result> {
+  const { admission } = await loadAdmission(admissionId, "ipd.edit", "ot.notes");
+  if (!/^[a-zA-Z0-9_-]{1,60}$/.test(key)) return { error: "Unknown tab." };
+  if (colour && !TAB_COLOURS.some((c) => c.id === colour)) return { error: "Unknown colour." };
+  const hospitalId = (await prisma.visit.findUnique({ where: { id: admission.visitId }, select: { hospitalId: true } }))?.hospitalId;
+  if (!hospitalId) return { error: "No hospital for this file." };
+  const where = { category: TAB_COLOUR_CATEGORY, value: key, hospitalId };
+  if (!colour) {
+    await prisma.chipOption.deleteMany({ where });
+  } else {
+    const row = await prisma.chipOption.findFirst({ where });
+    if (row) await prisma.chipOption.update({ where: { id: row.id }, data: { label: colour, active: true } });
+    else await prisma.chipOption.create({ data: { ...where, label: colour } });
+  }
+  refresh(admissionId);
+  return {};
+}
+
+export async function changeAdmissionType(admissionId: string, type: string, other: string, details?: { surgery: string; laterality: string; anaesthesia: string; implant: string; date: string }): Promise<Result> {
   const { user, scope, admission } = await loadAdmission(admissionId, "ipd.admit");
   if (admission.status !== "ADMITTED") return { error: "The type of admission can't be changed after the file is shifted to OT." };
   if (!["CONSERVATIVE", "PRE_OP", "OTHERS"].includes(type)) return { error: "Select the type of admission." };
   if (type === "OTHERS" && !other.trim()) return { error: "Describe the type of admission." };
+  // Switching to Pre-op asks for the surgery and implant details
+  const sd = type === "PRE_OP" && details ? {
+    surgery: (details.surgery ?? "").trim().slice(0, 200), laterality: ["RE", "LE", "OU"].includes(details.laterality) ? details.laterality : "",
+    anaesthesia: (details.anaesthesia ?? "").trim().slice(0, 100), implant: (details.implant ?? "").trim().slice(0, 200),
+    date: /^d{4}-d{2}-d{2}$/.test(details.date ?? "") ? details.date : "",
+  } : null;
+  if (type === "PRE_OP" && admission.admissionType !== "PRE_OP" && !sd?.surgery) return { error: "Enter the surgery." };
 
   // Surgery details already imported stay; switching to Pre-op imports the
   // counselling sheet if there is one and nothing was imported yet.
-  const pre = type === "PRE_OP" && !admission.counsellingVisitId ? await counsellingSheetFor(admission.visit.patientId, scope) : null;
+  let pre = type === "PRE_OP" && !admission.counsellingVisitId ? await counsellingSheetFor(admission.visit.patientId, scope) : null;
+  // No counselling yet: the counselling form is created for this patient in the Counselling module (the visit enters its list)
+  // and its sheet becomes the file's Counselling Sheet tab.
+  if (type === "PRE_OP" && !admission.counsellingVisitId && !pre) {
+    const visitId = admission.visitId;
+    const name = sd?.surgery || admission.surgery?.trim() || "To be decided";
+    await prisma.visit.update({ where: { id: visitId }, data: { surgeryAdvised: true, advisedSurgeryName: name, ...(admission.laterality ? { advisedSurgeryEye: admission.laterality } : {}) } });
+    await prisma.counsellingRecord.upsert({ where: { visitId }, create: { visitId, status: "PENDING" }, update: {} });
+    pre = await counsellingSheetFor(admission.visit.patientId, scope);
+  }
   const patch = {
     admissionType: type,
     admissionTypeOther: type === "OTHERS" ? other.trim() : null,
     ...(pre ? {
-      counsellingVisitId: pre.visitId, surgery: pre.surgery, laterality: pre.laterality, implant: pre.implant,
+      counsellingVisitId: pre.visitId, surgery: pre.surgery === "To be decided" ? admission.surgery : pre.surgery, laterality: pre.laterality, implant: pre.implant,
       anaesthesia: pre.anaesthesia, surgeryDate: pre.date ? new Date(pre.date) : null,
     } : {}),
   };
-  await prisma.ipdAdmission.update({ where: { id: admissionId }, data: patch });
+  // The Pre-op tabs (Counselling Sheet, Consents, Surgery Checklist, OT notes ...) join the file when it becomes Pre-op
+  const preTabs = type === "PRE_OP" ? IPD_FORMS.filter((f) => f.preOpOnly && !f.atDischarge).map((f) => f.key as string).filter((k) => !admission.fileTabs.includes(k)) : [];
+  await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { ...patch, ...(preTabs.length ? { fileTabs: [...admission.fileTabs, ...preTabs] } : {}) } });
+  if (sd?.surgery) {
+    // The surgery and implant details given here are the file's and the counselling's
+    const date = sd.date ? new Date(`${sd.date}T00:00:00+05:30`) : null;
+    const cv = pre?.visitId ?? admission.counsellingVisitId ?? admission.visitId;
+    await prisma.ipdAdmission.update({ where: { id: admissionId }, data: { surgery: sd.surgery, laterality: sd.laterality || null, implant: sd.implant || null, anaesthesia: sd.anaesthesia || null, surgeryDate: date } });
+    await prisma.counsellingRecord.updateMany({ where: { visitId: cv }, data: { procedure: sd.surgery, laterality: sd.laterality || null, implant: sd.implant || null, anaesthesia: sd.anaesthesia || null, dateOfSurgery: date } });
+    await prisma.visit.updateMany({ where: { id: cv }, data: { surgeryAdvised: true, advisedSurgeryName: sd.surgery, advisedSurgeryEye: sd.laterality || null, advisedSurgeryImplant: sd.implant || null, advisedSurgeryAnaesthesia: sd.anaesthesia || null, advisedSurgeryDate: date } });
+  }
   await audit(user.id, user.name, admissionId, "TYPE_CHANGED", { from: admission.admissionType, to: type, other: patch.admissionTypeOther });
   refresh(admissionId, admission.visit.patient.udid);
   return {};
@@ -244,6 +313,28 @@ export async function addIpdInvestigationOrder(
   if (existing.some((o) => norm(o.testName) === norm(data.testName))) return {};
   await prisma.investigationOrder.create({ data: { visitId: admission.visitId, ...data } });
   await writeAudit(user.id, "InvestigationOrder", admission.visitId, "ADD", { ...data, from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
+/** An investigation is frozen 2 months after it was ordered (as in the EMR). */
+const INV_FROZEN = "This investigation is frozen: ordered more than 2 months ago, no changes can be made.";
+const invFrozen = (createdAt: Date) => { const lim = new Date(createdAt); lim.setMonth(lim.getMonth() + 2); return Date.now() > lim.getTime(); };
+
+export async function deleteIpdInvestigationOrder(admissionId: string, orderId: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  if (invFrozen(order.createdAt)) return { error: INV_FROZEN };
+  await prisma.investigationOrder.delete({ where: { id: order.id } });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "DELETE", { from: "IPD" });
+  refreshReports(admissionId);
+  return {};
+}
+
+export async function updateIpdInvestigationNotes(admissionId: string, orderId: string, doctorNotes: string): Promise<Result> {
+  const { user, order } = await reportOrder(admissionId, orderId);
+  if (invFrozen(order.createdAt)) return { error: INV_FROZEN };
+  await prisma.investigationOrder.update({ where: { id: order.id }, data: { doctorNotes: doctorNotes.trim().slice(0, 2000) || null } });
+  await writeAudit(user.id, "InvestigationOrder", order.id, "UPDATE_DOCTOR_NOTES", { from: "IPD" });
   refreshReports(admissionId);
   return {};
 }
@@ -513,7 +604,9 @@ export async function getNoteSeed(admissionId: string, postOpMeds: string[]): Pr
   const istDay = (d: Date) => new Date(d.getTime() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
   const surgeryDate = admission.surgeryDate ? istDay(admission.surgeryDate) : "";
   const pod = surgeryDate ? Math.round((new Date(`${istDay(new Date())}T00:00:00Z`).getTime() - new Date(`${surgeryDate}T00:00:00Z`).getTime()) / 86400000) : -1;
-  const eye = admission.laterality ?? "";
+  // The operated eye: the admission's, else the one advised in counselling
+  const advised = admission.laterality ? null : (await prisma.visit.findUnique({ where: { id: admission.counsellingVisitId ?? admission.visitId }, select: { advisedSurgeryEye: true } }))?.advisedSurgeryEye;
+  const eye = admission.laterality ?? advised ?? "";
   const surgery = admission.surgery ?? "";
   const label = [eye, surgery].filter(Boolean).join(" ");
   // The EMR keeps the operated eye as a [RE] / [LE] / [OU] tag in front of the complaint
@@ -523,6 +616,9 @@ export async function getNoteSeed(admissionId: string, postOpMeds: string[]): Pr
     [tagged ? surgery : label, admission.anaesthesia].filter(Boolean).join(" · "),
     pod >= 0 ? `Post Op Day ${pod}` : "",
   ].filter(Boolean).join(" ");
+  // Laterality and "since" are filled in the complaint: the tag and the days from the day of surgery, as the EMR stores them
+  const eyeTag = ["[RE] ", "[LE] ", "[OU] "].find((t) => chiefComplaint.startsWith(t)) ?? "";
+  const chiefComplaintFilled = pod >= 1 ? `${eyeTag}[${pod} days] ${chiefComplaint.slice(eyeTag.length)}` : chiefComplaint;
   const surgeon = (visit?.doctor.name ?? "").replace(/^Dr\.?\s*/i, "");
 
   // Systemic and family history come from the earlier details: the admitting visit, else the patient's latest earlier visit that has them
@@ -547,9 +643,15 @@ export async function getNoteSeed(admissionId: string, postOpMeds: string[]): Pr
     if (list.length) postOp = [JSON.stringify(list)];
   }
 
-  const copy = buildEmrCopy({ generalExam: { chiefComplaint, pmhOtherText: firstWith((g) => g.pmhOtherText), familyHistory: firstWith((g) => g.familyHistory) } }, {
+  // The surgery as the file banner shows it: eye, surgery, + implant, then the anaesthesia
+  const implantName = admission.counsellingVisitId
+    ? (await prisma.counsellingRecord.findUnique({ where: { visitId: admission.counsellingVisitId }, select: { implant: true } }))?.implant ?? ""
+    : "";
+  const bannerName = [label, implantName && !/^(none|nil|na|-)$/i.test(implantName.trim()) ? `+ ${implantName.trim()}` : ""].filter(Boolean).join(" ")
+    + (admission.anaesthesia ? ` · ${admission.anaesthesia}` : "");
+  const copy = buildEmrCopy({ generalExam: { chiefComplaint: chiefComplaintFilled, pmhOtherText: firstWith((g) => g.pmhOtherText), familyHistory: firstWith((g) => g.familyHistory) } }, {
     postOpMeds: postOp,
-    surgeryName: label,
+    surgeryName: bannerName,
     surgeryDate,
     surgeon,
   });
@@ -668,7 +770,7 @@ export async function confirmDischarge(admissionId: string, code: string, summar
   if (!isDischargeData(summary)) return { error: "The discharge summary is incomplete." };
   if (!summary.diagnosis.trim()) return { error: "Add the diagnosis to the discharge summary." };
   // The date of discharge defaults to the day it is signed
-  if (!summary.dischargeDate) summary = { ...summary, dischargeDate: istTodayStr() };
+  summary = { ...summary, dischargeDate: new Date().toISOString() };
 
   const now = new Date();
   await prisma.$transaction([

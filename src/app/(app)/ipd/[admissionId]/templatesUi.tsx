@@ -827,3 +827,158 @@ export function EducationSetsDialog({ stage, surgery, standard, others, template
     </>
   );
 }
+
+/* ── OT procedure steps: the library, like the education sets ──────────── */
+
+/**
+ * The one button on the procedure steps, like the Education sets: this surgery's starter and
+ * the doctor's own sets first, then their other sets. Search narrows the list, a row opens to
+ * show its steps, "Use" puts the set on the notes, "New set" and "Save current steps" add your own,
+ * and a set of yours can be renamed or deleted.
+ */
+export function OtStepsLibrary({ surgery, starter, library = [], templates, current, onUse }: {
+  surgery: string | null;
+  starter: string[];
+  /** Ready-made sets for other procedures. */
+  library?: { id: string; label: string; steps: string[] }[];
+  templates: SavedTemplate[];
+  current: string[];
+  onUse: (steps: string[], name: string) => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"" | "new" | "current">("");
+  const [name, setName] = useState("");
+  const [text, setText] = useState("");
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [pending, start] = useTransition();
+
+  const s0 = (surgery ?? "").toLowerCase();
+  const groups = useMemo(() => {
+    const mine = templates.filter((t) => t.kind === "OT");
+    const forThis = mine.filter((t) => s0 && (t.surgery ?? "").toLowerCase() === s0);
+    const others = mine.filter((t) => !forThis.includes(t));
+    const row = (t: SavedTemplate) => ({ id: t.id, label: t.name, sub: t.surgery ? `My set · ${t.surgery}` : "My set", points: t.items, mine: true });
+    const all = [
+      { title: surgery ? `For ${surgery}` : "For this surgery", sets: [{ id: "starter", label: `Starter set${surgery ? ` · ${surgery}` : ""}`, sub: "Prebuilt", points: starter, mine: false }, ...forThis.map(row)] },
+      { title: "My other sets", sets: others.map(row) },
+      { title: "Other procedures", sets: library.filter((x) => x.steps.join("|") !== starter.join("|")).map((x) => ({ id: x.id, label: x.label, sub: "Prebuilt", points: x.steps, mine: false })) },
+    ];
+    const t = q.trim().toLowerCase();
+    return all.map((g) => ({ ...g, sets: t ? g.sets.filter((x) => `${x.label} ${x.sub} ${x.points.join(" ")}`.toLowerCase().includes(t)) : g.sets })).filter((g) => g.sets.length > 0);
+  }, [q, starter, library, templates, s0, surgery]);
+
+  const close = () => { setOpen(false); setQ(""); setOpenId(null); setMode(""); setName(""); setText(""); setConfirmId(""); setError(""); };
+  const lines = (mode === "current" ? current : text.split("\n")).map((l) => l.trim()).filter(Boolean);
+  const save = () => start(async () => {
+    const r = await saveIpdTemplate("OT", name, surgery, lines);
+    if (r.error) { setError(r.error); return; }
+    if (mode === "new") onUse(lines, name.trim());
+    router.refresh();
+    close();
+  });
+  const rename = (t: { id: string; label: string }) => {
+    const n = (names[t.id] ?? t.label).trim();
+    if (!n || n === t.label) return;
+    start(async () => { const r = await renameIpdTemplate(t.id, n); if (r.error) setError(r.error); else { setError(""); router.refresh(); } });
+  };
+  const remove = (id: string) => start(async () => {
+    const r = await deleteIpdTemplate(id);
+    if (r.error) setError(r.error); else { setConfirmId(null); setError(""); router.refresh(); }
+  });
+
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)} title="Procedure sets" aria-label="Procedure sets"
+        className="grid h-8 w-8 place-items-center rounded-full bg-white text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary-200)] transition-colors hover:bg-[var(--color-primary-50)] focus:outline-none">
+        <FolderOpen size={14} />
+      </button>
+      {open && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3" onMouseDown={(e) => { if (e.target === e.currentTarget) close(); }}>
+          <div className="flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--color-ink-900)]">Procedure sets</p>
+              <button type="button" onClick={close} aria-label="Close" className="rounded-full p-1.5 text-[var(--color-ink-400)] hover:bg-[var(--color-surface-sunken)]"><X size={16} /></button>
+            </div>
+
+            {mode ? (
+              <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto p-4">
+                <input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder={mode === "current" ? "Name this set (saves the steps on the notes now)" : "Name this set"} className={inp} />
+                {mode === "new"
+                  ? <textarea value={text} onChange={(e) => setText(e.target.value)} rows={7} placeholder="One step per line" className={`${inp} resize-none`} />
+                  : <p className="text-xs text-[var(--color-ink-500)]">{lines.length} step{lines.length === 1 ? "" : "s"} from the notes will be saved.</p>}
+                {error && <p className="text-xs text-red-600">{error}</p>}
+                <div className="flex justify-end gap-1.5">
+                  <button type="button" onClick={() => { setMode(""); setError(""); }} className={btnG}>Cancel</button>
+                  <button type="button" disabled={pending || !name.trim() || lines.length === 0} onClick={save}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)] disabled:opacity-50">
+                    {pending && <Loader2 size={12} className="animate-spin" />} {mode === "new" ? "Save and use" : "Save set"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] px-4 py-2.5">
+                  <div className="relative min-w-[10rem] flex-1">
+                    <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-ink-300)]" />
+                    <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search sets or surgeries" className={`${inp} pl-8`} />
+                  </div>
+                  <button type="button" onClick={() => { setMode("current"); setName(`My ${surgery || "OT"} set`); }} disabled={!current.some((x) => x.trim())} className={btnG}><BookmarkPlus size={12} /> Save current steps</button>
+                  <button type="button" onClick={() => setMode("new")} className={btnG}><Plus size={12} /> New set</button>
+                </div>
+                <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-3">
+                  {groups.length === 0 && <p className="py-6 text-center text-sm text-[var(--color-ink-400)]">No sets match.</p>}
+                  {groups.map((g) => (
+                    <Fragment key={g.title}>
+                      <p className="px-1 pt-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{g.title}</p>
+                      {g.sets.map((x) => {
+                        const expanded = openId === x.id;
+                        return (
+                          <div key={x.id} className="rounded-xl border border-[var(--color-border)] bg-white">
+                            <div className="flex items-center gap-2 px-3 py-2">
+                              <button type="button" onClick={() => setOpenId(expanded ? null : x.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                                <ChevronDown size={14} className={`shrink-0 text-[var(--color-ink-400)] transition-transform ${expanded ? "" : "-rotate-90"}`} />
+                                <span className="min-w-0">
+                                  <span className="block truncate text-[13px] font-semibold text-[var(--color-ink-900)]"><MatchHighlight text={x.label} term={q} /></span>
+                                  <span className="block text-[11px] text-[var(--color-ink-400)]">{x.sub} · {x.points.length} steps</span>
+                                </span>
+                              </button>
+                              {x.mine && (confirmId === x.id ? (
+                                <span className="flex shrink-0 items-center gap-1">
+                                  <button type="button" disabled={pending} onClick={() => remove(x.id)} className="rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Delete</button>
+                                  <button type="button" onClick={() => setConfirmId(null)} className="px-2 py-1.5 text-xs font-semibold text-[var(--color-ink-500)]">Keep</button>
+                                </span>
+                              ) : (
+                                <button type="button" onClick={() => setConfirmId(x.id)} aria-label={`Delete ${x.label}`} className="shrink-0 rounded-lg p-1.5 text-[var(--color-ink-300)] hover:bg-red-50 hover:text-red-600"><Trash2 size={14} /></button>
+                              ))}
+                              <button type="button" onClick={() => { onUse(x.points, x.label); close(); }}
+                                className="inline-flex h-8 shrink-0 items-center rounded-full bg-[var(--color-primary-600)] px-3.5 text-xs font-semibold text-white hover:bg-[var(--color-primary-700)]">Use</button>
+                            </div>
+                            {expanded && (
+                              <div className="space-y-2 border-t border-[var(--color-border)]/70 px-3 py-2">
+                                {x.mine && <input value={names[x.id] ?? x.label} onChange={(e) => setNames({ ...names, [x.id]: e.target.value })} onBlur={() => rename(x)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); rename(x); } }} className={inp} aria-label="Rename this set" />}
+                                <ol className="list-decimal space-y-1 pl-5 text-[12.5px] text-[var(--color-ink-700)]">
+                                  {x.points.map((p, i) => <li key={i}>{p}</li>)}
+                                </ol>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                  {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+                </div>
+              </>
+            )}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}

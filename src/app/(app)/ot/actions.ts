@@ -354,7 +354,7 @@ export async function dischargeFromOt(admissionId: string, code: string, summary
   if (a.dischargeOtp !== code.trim()) return { error: "Incorrect OTP. Please try again." };
   if (!isDischargeData(summary)) return { error: "The discharge summary is incomplete." };
   if (!summary.diagnosis.trim()) return { error: "Add the diagnosis to the discharge summary." };
-  const s = summary.dischargeDate ? summary : { ...summary, dischargeDate: istTodayStr() };
+  const s = { ...summary, dischargeDate: new Date().toISOString() };
   const now = new Date();
   await prisma.$transaction([
     prisma.ipdForm.upsert({

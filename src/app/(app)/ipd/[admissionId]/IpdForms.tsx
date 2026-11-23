@@ -12,7 +12,8 @@ import {
   CalendarDays, Clock, Eye, FlaskConical, Minus, Pencil, Trash2, X, Utensils, Sun, Sunrise, Sunset, Moon, Pill, Droplet, History,
 } from "lucide-react";
 import { printInPlace } from "@/lib/print-in-place";
-import { ChipRow, SuggestField, SelectWithCustom } from "./customOptions";
+import { ChipRow, SuggestField, SelectWithCustom, removeLine, useCustomOptions } from "./customOptions";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { ConsentTabBar } from "@/components/ui/ConsentTabBar";
 import { ConsentLockBar, SignedConsentUpload, SignedConsentView } from "@/components/ui/SignedConsent";
 import { isConsentLocked } from "@/lib/consent-lock-state";
@@ -23,9 +24,11 @@ import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { implantGroup } from "@/lib/counselling";
 import { implantFieldsFor, type CounsellingImplant, type ImplantDoc } from "@/lib/counselling-sheets";
 import { NewInvestigations } from "../../emr/[udid]/InvestigationsTab";
-import { addIpdExtraReport, addIpdInvestigationOrder, attachIpdReport, removeIpdExtraReport, removeIpdReport } from "../actions";
+import { addIpdExtraReport, addIpdInvestigationOrder, attachIpdReport, removeIpdExtraReport, removeIpdReport, updateSurgeryDetails } from "../actions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
-import { EducationSetsDialog, LoadOtTemplate, ManageMine, SaveAsMine, type SavedTemplate } from "./templatesUi";
+import { EducationSetsDialog, OtStepsLibrary, type SavedTemplate } from "./templatesUi";
+import { otKeywords, otSetLibrary } from "@/lib/ipd";
+import { DispositionToggle } from "@/app/(app)/emr/[udid]/DispositionPanel";
 import {
   CONSENT_DECLARATION, CONSENT_LANGUAGES, DIET_TYPES, EYES,
   IMPLANT_VERIFY, MEAL_AMOUNTS, NURSE_QUICK_NOTES, POSTOP_EXAM, POSTOP_NORMAL, PREOP_CHECKLIST,
@@ -48,10 +51,12 @@ export interface FileInfo {
   surgeryDate: string | null;
   shiftedToOtAt: string | null;
   ctx: FormContext;
-  orders: { id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string; extraResultRefs: string | null; priority?: string; doctorNotes?: string | null }[];
+  orders: { status?: string | null; id: string; testName: string; laterality: string | null; notes: string | null; resultRef: string | null; resultAt: string | null; createdAt: string; extraResultRefs: string | null; priority?: string; doctorNotes?: string | null }[];
   emrMeds: { name: string; dose: string; frequency: string; route: string; eye: string; instructions: string }[];
   payment: { type: string | null; mode: string | null; scheme: string | null; policy: string | null; eligibleBy: string | null; eligibleAt: string | null } | null;
   templates: SavedTemplate[];
+  /** The Counselling sheet, when the file has one (its implant details show in the OT notes banner). */
+  counsellingSheet?: { implantInfo?: CounsellingImplant } | null;
 }
 
 export type NewLog = { text: string; kind: LogEntry["kind"]; meta?: Record<string, unknown> };
@@ -72,7 +77,7 @@ export interface FormProps<T> {
 
 /* ── UI primitives ─────────────────────────────────────────────────────── */
 
-const inp = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:bg-[var(--color-surface-sunken)]/50 disabled:text-[var(--color-ink-800)] disabled:cursor-default";
+const inp = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1.5 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:text-[var(--color-ink-800)] disabled:border-transparent disabled:bg-transparent disabled:px-0 disabled:shadow-none disabled:resize-none disabled:appearance-none disabled:opacity-100 disabled:cursor-default disabled:[&::-webkit-calendar-picker-indicator]:hidden";
 /** Label on the same line as its field. */
 const lblIn = "shrink-0 whitespace-nowrap text-[10.5px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]";
 const rowIn = "flex items-center gap-2 min-w-0";
@@ -171,7 +176,7 @@ function Field({ label, value, onChange, disabled, type = "text", placeholder, l
             {(sp) => <input {...sp} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} w-full`} />}
           </SuggestField>
         </div>
-        {!disabled && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} isOn={(x) => value === x} onPick={onChange} /></div>}
+        {!disabled && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} isOn={(x) => value === x} onPick={onChange} onRemove={() => onChange("")} /></div>}
       </div>
     );
   }
@@ -196,11 +201,11 @@ function Area({ label, value, onChange, disabled, placeholder, rows = 3, opts, c
 }) {
   const box = opts ? (
     <div className="min-w-0">
-      {!disabled && !chipsBelow && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
+      {!disabled && !chipsBelow && <div className="mb-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} onRemove={(x) => onChange(removeLine(value, x))} /></div>}
       <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} disabled={disabled}>
         {(sp) => <textarea {...sp} value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />}
       </SuggestField>
-      {!disabled && chipsBelow && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} /></div>}
+      {!disabled && chipsBelow && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} onRemove={(x) => onChange(removeLine(value, x))} /></div>}
     </div>
   ) : (
     <textarea value={value} disabled={disabled} rows={rows} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : placeholder} className={`${inp} resize-y leading-relaxed`} />
@@ -898,7 +903,7 @@ export function EducationForm({ value: v, change, editable, canLog, addLog, log,
 }
 
 /** A list of education points: tick when explained, remove, and add a point. */
-function PointList({ points, onChange, editable, datesOf }: { points: EduPoint[]; onChange: (p: EduPoint[]) => void; editable: boolean; datesOf?: (text: string) => string }) {
+function PointList({ points, onChange, editable, datesOf, noTick }: { points: EduPoint[]; onChange: (p: EduPoint[]) => void; editable: boolean; datesOf?: (text: string) => string; /** No explained tick (the OT procedure steps). */ noTick?: boolean }) {
   // One point at a time can be edited in place (pencil, then Enter or click away)
   const [editing, setEditing] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
@@ -919,13 +924,13 @@ function PointList({ points, onChange, editable, datesOf }: { points: EduPoint[]
           ) : (
             <div className={`flex-1 min-w-0 flex items-center gap-2.5 rounded-xl border px-3.5 py-2 text-[13px] leading-snug transition-colors ${p.done ? "border-emerald-200 bg-emerald-50/60 text-[var(--color-ink-800)]" : "border-[var(--color-border)] bg-white text-[var(--color-ink-700)] hover:border-[var(--color-primary-200)]"}`}>
               {/* Only the circle ticks the point */}
-              <button type="button" role="checkbox" aria-checked={p.done} aria-label={`Point ${i + 1} explained`} disabled={!editable}
+              {!noTick && <button type="button" role="checkbox" aria-checked={p.done} aria-label={`Point ${i + 1} explained`} disabled={!editable}
                 onClick={() => onChange(points.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))}
                 className={`-m-1 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full ${editable ? "cursor-pointer" : "cursor-default"}`}>
                 <span className={`w-[18px] h-[18px] rounded-full flex items-center justify-center transition-colors ${p.done ? "bg-emerald-500 text-white" : "border-2 border-[var(--color-ink-200)] bg-white"}`}>
                   {p.done && <Check size={11} strokeWidth={3} />}
                 </span>
-              </button>
+              </button>}
               <span className="w-5 shrink-0 text-right text-[12px] font-semibold tabular-nums text-[var(--color-ink-400)]">{i + 1}.</span>
               {/* The text opens for editing */}
               <span className={`min-w-0 flex-1 ${editable ? "cursor-text" : ""}`} onClick={editable ? () => { setEditing(i); setDraft(p.text); } : undefined}>{datesOf ? datesOf(p.text) : p.text}</span>
@@ -960,7 +965,7 @@ function NoteBox({ value, onChange, disabled }: { value: string; onChange: (v: s
   }, [value]);
   return (
     <textarea ref={ref} rows={1} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} placeholder={disabled ? "-" : "Add a note"}
-      className="block min-h-[34px] w-full resize-none overflow-hidden rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
+      className="block min-h-[34px] w-full resize-none overflow-hidden rounded-xl border border-[var(--color-border)] bg-white px-3 py-1.5 text-[13px] leading-relaxed text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:border-transparent disabled:bg-transparent disabled:px-0 disabled:shadow-none disabled:resize-none disabled:appearance-none disabled:opacity-100 disabled:cursor-default disabled:[&::-webkit-calendar-picker-indicator]:hidden" />
   );
 }
 
@@ -970,6 +975,29 @@ function NoteBox({ value, onChange, disabled }: { value: string; onChange: (v: s
  * The Library changes the set or keeps the doctor's own sets.
  */
 /** "+ Add a point or a medication": pick one, then a single line for a point or the medication form. */
+/** "Add a step": a dashed button that opens one line to type (Enter adds it). */
+function AddLine({ label, placeholder, onAdd }: { label: string; placeholder: string; onAdd: (text: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const add = () => { const t = text.trim(); if (t) onAdd(t); setText(""); };
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)]/50 py-2 text-xs font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
+        <Plus size={14} strokeWidth={2.5} /> {label}
+      </button>
+    );
+  }
+  return (
+    <div className="mt-3 flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/50 p-2.5">
+      <input autoFocus value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } if (e.key === "Escape") { setText(""); setOpen(false); } }}
+        placeholder={placeholder} className="h-9 min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-white px-3 text-[13px] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)]" />
+      <button type="button" disabled={!text.trim()} onClick={add} className="h-9 rounded-xl bg-[var(--color-primary-600)] px-4 text-xs font-semibold text-white disabled:opacity-50">Add</button>
+      <button type="button" onClick={() => { setText(""); setOpen(false); }} aria-label="Close" className="grid h-6 w-6 place-items-center rounded-full text-[var(--color-ink-400)] hover:bg-white"><X size={13} /></button>
+    </div>
+  );
+}
+
 function AddPointOrMed({ eye, onPoint, onMed }: { eye: string; onPoint: (text: string) => void; onMed: (m: MedicationDraft) => void }) {
   const [mode, setMode] = useState<"" | "choose" | "point" | "medication">("");
   const [text, setText] = useState("");
@@ -1031,7 +1059,7 @@ export function ExplainPanel({ value, onChange, editable, noteChips = EDU_NOTE_C
             <span className={miniLbl}>Language</span>
             <div className="w-40">
               <SelectWithCustom storeKey="languages" builtIns={CONSENT_LANGUAGES} value={v.language} onChange={(x) => onChange({ language: x })} disabled={!editable}
-                className="h-7 w-full rounded-full border border-[var(--color-border)] bg-white px-2.5 text-[12px] text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:bg-transparent" />
+                className="h-7 w-full rounded-full border border-[var(--color-border)] bg-white px-2.5 text-[12px] text-[var(--color-ink-800)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-200)] disabled:border-transparent disabled:bg-transparent disabled:px-0 disabled:shadow-none disabled:resize-none disabled:appearance-none disabled:opacity-100 disabled:cursor-default disabled:[&::-webkit-calendar-picker-indicator]:hidden" />
             </div>
           </div>
           <button type="button" disabled={!editable} onClick={() => onChange({ teachBack: !v.teachBack })}
@@ -1046,7 +1074,7 @@ export function ExplainPanel({ value, onChange, editable, noteChips = EDU_NOTE_C
             <NoteBox value={v.notes} onChange={(x) => onChange({ notes: x })} disabled={!editable} />
             {editable && (
               <div className="[&_button]:!px-2 [&_button]:!py-0.5 [&_span]:!text-[11px] [&_button]:!text-[11px]">
-                <ChipRow storeKey={noteKey} builtIns={noteChips} prefix="+ " isOn={(x) => v.notes.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange({ notes: addLine(v.notes, x) })} />
+                <ChipRow storeKey={noteKey} builtIns={noteChips} prefix="+ " isOn={(x) => v.notes.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange({ notes: addLine(v.notes, x) })} onRemove={(x) => onChange({ notes: removeLine(v.notes, x) })} />
               </div>
             )}
           </div>
@@ -1291,7 +1319,7 @@ function DietStageEditor({ stage, s, set, editable, canLog, addLog, log, planOnl
               <NoteBox value={s.dietNote ?? ""} onChange={(x) => set({ dietNote: x })} disabled={!editable} />
               {editable && (
                 <div className="[&_button]:!px-2 [&_button]:!py-0.5 [&_span]:!text-[11px] [&_button]:!text-[11px]">
-                  <ChipRow storeKey="diet_notes" builtIns={DIET_NOTE_CHIPS} prefix="+ " isOn={(x) => (s.dietNote ?? "").split("\n").some((l) => l.trim() === x)} onPick={(x) => set({ dietNote: addLine(s.dietNote ?? "", x) })} />
+                  <ChipRow storeKey="diet_notes" builtIns={DIET_NOTE_CHIPS} prefix="+ " isOn={(x) => (s.dietNote ?? "").split("\n").some((l) => l.trim() === x)} onPick={(x) => set({ dietNote: addLine(s.dietNote ?? "", x) })} onRemove={(x) => set({ dietNote: removeLine(s.dietNote ?? "", x) })} />
                 </div>
               )}
             </div>
@@ -2217,6 +2245,41 @@ export function NurseForm({ value: v, change, saveNow, canLog, log, f, treatment
 
 export function OtNotesForm({ value: v, change, editable, template, f }: FormProps<OtNotesData> & { template: string[] }) {
   const set = (k: keyof OtNotesData, x: string) => change({ ...v, [k]: x });
+  const [teamEdit, setTeamEdit] = useState(false);
+  // Findings, events and instructions: three cards that open on click, with keywords for this kind of surgery
+  const kw = otKeywords(v.procedure || f.ctx.surgery);
+  const [notePanel, setNotePanel] = useState<"" | "findings" | "events" | "instructions">(() => (v.findings ? "findings" : v.complications && v.complications !== "None" ? "events" : v.instructions ? "instructions" : ""));
+  // Names typed for the assistant, anaesthetist and scrub nurse join a library (kept on this device) that fills them in next time
+  const assistantLib = useCustomOptions("ot_assistant", []);
+  const anaesthetistLib = useCustomOptions("ot_anaesthetist", []);
+  const scrubLib = useCustomOptions("ot_scrub_nurse", []);
+  const closeTeamEdit = () => {
+    assistantLib.add(v.assistant ?? ""); anaesthetistLib.add(v.anaesthetist ?? ""); scrubLib.add(v.scrubNurse ?? "");
+    if (surgeryEdit === "edit") saveSurgery(); else setTeamEdit(false);
+  };
+  // The surgery fields belong to the whole file: editing them asks first and then changes them everywhere
+  const [surgeryEdit, setSurgeryEdit] = useState<null | "warn" | "edit">(null);
+  const [sd, setSd] = useState({ surgery: "", laterality: "", implant: "", anaesthesia: "" });
+  const [sdError, setSdError] = useState("");
+  const [sdPending, startSd] = useTransition();
+  const openSurgeryEdit = () => { setSd({ surgery: fixed.procedure ?? "", laterality: v.eye || f.ctx.eye || "", implant: fixed.implant ?? "", anaesthesia: v.anaesthesia || f.ctx.anaesthesia || "" }); setSdError(""); setSurgeryEdit("warn"); };
+  const saveSurgery = () => startSd(async () => {
+    const r = await updateSurgeryDetails(f.id, sd);
+    if (r.error) { setSdError(r.error); return; }
+    change({ ...v, procedure: sd.surgery, implant: sd.implant, eye: sd.laterality, anaesthesia: sd.anaesthesia });
+    setSurgeryEdit(null);
+    setTeamEdit(false);
+  });
+  // Implant details from the Counselling sheet, for the banner
+  const implantInfo = f.counsellingSheet?.implantInfo;
+  const implantBits: [string, string][] = (() => {
+    if (!implantInfo) return [];
+    const kind = implantGroup(f.ctx.surgery ?? "");
+    const fields: [string, keyof CounsellingImplant][] = kind === "IOL"
+      ? [["Manufacturer", "manufacturer"], ["Model", "model"], ["Power", "power"], ["A-constant", "aConstant"], ["Lot", "lot"], ["Serial", "serial"], ["Expiry", "expiry"]]
+      : implantFieldsFor(kind).map((x): [string, keyof CounsellingImplant] => [x.label, x.key as keyof CounsellingImplant]);
+    return fields.flatMap(([label, key]) => { const x = implantInfo[key]; return typeof x === "string" && x.trim() ? [[label, x.trim()] as [string, string]] : []; });
+  })();
   // Procedure, implant and surgeon are fixed: they always follow the file
   const fixed = { procedure: f.ctx.surgery ?? v.procedure, implant: f.ctx.implant ?? v.implant, surgeon: f.ctx.doctor || v.surgeon };
   useEffect(() => {
@@ -2249,75 +2312,145 @@ export function OtNotesForm({ value: v, change, editable, template, f }: FormPro
   };
   return (
     <div className="space-y-3">
-      <Card title="Operation details">
-        <div className="grid grid-cols-1 gap-x-5 gap-y-2 lg:grid-cols-2">
-          <Field label="Procedure" lw="w-24" value={fixed.procedure} onChange={() => undefined} disabled />
-          <Field label="Implant" lw="w-24" value={fixed.implant} onChange={() => undefined} disabled />
-          <Field label="Surgeon" lw="w-24" value={fixed.surgeon} onChange={() => undefined} disabled />
-          <div className={rowIn}><label className={`${lblIn} w-24`}>Eye</label><Seg options={EYES} value={v.eye} onChange={(x) => set("eye", x)} disabled={!editable} /></div>
-          <Field label="Assistant" lw="w-24" value={v.assistant} onChange={(x) => set("assistant", x)} disabled={!editable} />
-          <Field label="Anaesthetist" lw="w-24" value={v.anaesthetist} onChange={(x) => set("anaesthetist", x)} disabled={!editable} />
-          <Field label="Scrub nurse" lw="w-24" value={v.scrubNurse} onChange={(x) => set("scrubNurse", x)} disabled={!editable} />
-          <Field label="Anaesthesia" lw="w-24" value={v.anaesthesia} onChange={(x) => set("anaesthesia", x)} disabled={!editable} opts={FO.otAnaesthesia} />
+      {/* Operation details as a banner: the surgery as in the patient banner, then the team. Only the assistant, anaesthetist and scrub nurse are edited (pencil). */}
+      <section className="rounded-2xl border border-[var(--color-primary-100)] bg-gradient-to-br from-[var(--color-primary-50)] via-white to-white shadow-[0_2px_14px_rgba(20,120,110,0.07)]">
+        <div className="flex items-start justify-between gap-3 px-5 pt-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-primary-700)]">Operation details</p>
+          {editable && (
+            <div className="flex items-center gap-1.5">
+            <button type="button" onClick={() => (teamEdit ? closeTeamEdit() : setTeamEdit(true))} aria-label={teamEdit ? "Done editing the team" : "Edit the team"} title={teamEdit ? "Done (saves)" : "Edit this banner"}
+              className={`grid h-7 w-7 place-items-center rounded-full ring-1 transition ${teamEdit ? "bg-[var(--color-primary-600)] text-white ring-[var(--color-primary-600)]" : "bg-white text-[var(--color-ink-500)] ring-[var(--color-border)] hover:text-[var(--color-primary-700)]"}`}>
+              {teamEdit ? <Check size={13} /> : <Pencil size={13} />}
+            </button>
+            </div>
+          )}
         </div>
-      </Card>
-      <Card title="Procedure steps" sub="Step-by-step, from the template for this surgery"
-        right={editable && (
-          <div className="flex flex-wrap items-center gap-1.5">
-            <LoadOtTemplate templates={f.templates} surgery={v.procedure || f.ctx.surgery} starter={template} onLoad={(steps) => change({ ...v, steps: [...steps] })} />
-            <SaveAsMine kind="OT" surgery={v.procedure || f.ctx.surgery} items={v.steps} defaultName={`My ${v.procedure || f.ctx.surgery || "OT"} template`} label="Save as my template" />
-            <ManageMine kind="OT" templates={f.templates} title="My OT note templates" />
-          </div>
-        )}>
-        <ol className="space-y-1.5">
-          {v.steps.map((s, i) => (
-            <li key={i} data-step={i}
-              className={`flex items-start gap-2 rounded-lg transition-colors ${drag?.from === i ? "opacity-50" : ""} ${drag && drag.to === i && drag.from !== i ? "bg-[var(--color-primary-50)] ring-1 ring-[var(--color-primary-300)]" : ""}`}>
-              {editable && (
-                <span role="button" tabIndex={-1} aria-label="Drag to reorder" title="Drag to reorder"
-                  onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); setDrag({ from: i, to: i }); }}
-                  onPointerMove={(e) => moveTo(e.clientX, e.clientY)}
-                  onPointerUp={(e) => dropStep(e.clientX, e.clientY)}
-                  onPointerCancel={() => setDrag(null)}
-                  className="mt-1.5 h-6 shrink-0 flex items-center cursor-grab active:cursor-grabbing touch-none text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]">
-                  <GripVertical size={16} />
+        <div className="px-5 pb-3 pt-1">
+          {surgeryEdit === "edit" ? (
+            <div className="mt-1 rounded-xl bg-white/80 p-3 ring-1 ring-amber-200">
+              <div className="grid grid-cols-1 items-end gap-x-3 gap-y-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_auto_minmax(0,1.3fr)_minmax(0,1.5fr)]">
+                <div className="min-w-0"><label className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Surgery</label><input value={sd.surgery} onChange={(e) => setSd({ ...sd, surgery: e.target.value })} className={`${inp} !py-1`} /></div>
+                <div><label className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Eye</label><Seg options={EYES} value={sd.laterality} onChange={(x) => setSd({ ...sd, laterality: x })} /></div>
+                <div className="min-w-0"><label className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Implant</label><input value={sd.implant} onChange={(e) => setSd({ ...sd, implant: e.target.value })} className={`${inp} !py-1`} /></div>
+                <div className="min-w-0"><label className="mb-0.5 block text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Anaesthesia</label>
+                  <SuggestField storeKey={FO.otAnaesthesia.storeKey} builtIns={FO.otAnaesthesia.builtIns} value={sd.anaesthesia} onChange={(x) => setSd({ ...sd, anaesthesia: x })} apply={(_, pick) => pick} className="relative">
+                    {(sp) => <input {...sp} value={sd.anaesthesia} onChange={(e) => setSd({ ...sd, anaesthesia: e.target.value })} className={`${inp} !py-1`} />}
+                  </SuggestField>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="text-[11px] font-semibold text-amber-700">Saving (tick) changes these details everywhere in the system.</p>
+                <ErrorText text={sdError} />
+                <button type="button" onClick={() => { setSurgeryEdit(null); setSdError(""); }} className="ml-auto text-[11px] font-semibold text-[var(--color-ink-500)] hover:underline">Cancel the surgery changes</button>
+              </div>
+            </div>
+          ) : (
+            <p className={`text-lg font-bold leading-snug tracking-tight text-[var(--color-ink-900)] sm:text-xl ${teamEdit ? "cursor-pointer rounded-lg ring-1 ring-dashed ring-[var(--color-primary-200)] hover:bg-white/70" : ""}`}
+              onClick={teamEdit ? openSurgeryEdit : undefined} title={teamEdit ? "Click to edit the surgery details (changes them everywhere in the system)" : undefined}>
+              {fixed.procedure
+                ? <SurgeryInline eye={v.eye || f.ctx.eye} surgery={fixed.procedure} implant={fixed.implant} anaesthesia={v.anaesthesia || f.ctx.anaesthesia} />
+                : <span className="text-[var(--color-ink-300)]">-</span>}
+            </p>
+          )}
+          {implantBits.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {implantBits.map(([k, x]) => (
+                <span key={k} className="inline-flex items-baseline gap-1 rounded-full bg-white px-2.5 py-0.5 text-[11px] ring-1 ring-[var(--color-border)]">
+                  <span className="font-semibold text-[var(--color-ink-400)]">{k}</span><span className="font-bold text-[var(--color-ink-800)]">{x}</span>
                 </span>
-              )}
-              <span className="mt-1.5 w-6 h-6 shrink-0 rounded-md bg-[var(--color-primary-50)] text-[var(--color-primary-700)] text-xs font-bold flex items-center justify-center">{i + 1}</span>
-              {editable ? (
-                <>
-                  <textarea value={s} onChange={(e) => setStep(i, e.target.value)} rows={1} className={`${inp} resize-y`} />
-                  <span className="flex shrink-0 mt-1">
-                    <button type="button" onClick={() => change({ ...v, steps: v.steps.filter((_, j) => j !== i) })} className="p-1 text-[var(--color-ink-300)] hover:text-red-600" aria-label="Remove step"><Trash2 size={14} /></button>
-                  </span>
-                </>
-              ) : <p className="pt-1.5 text-sm text-[var(--color-ink-800)]">{s}</p>}
-            </li>
+              ))}
+            </div>
+          )}
+        </div>
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 rounded-b-2xl border-t border-[var(--color-primary-100)] bg-white/70 px-5 py-3 lg:grid-cols-4">
+          {([
+            ["Surgeon", fixed.surgeon ? (fixed.surgeon.toLowerCase().startsWith("dr") ? fixed.surgeon : `Dr. ${fixed.surgeon}`) : "", null, ""],
+            ["Assistant", v.assistant, "assistant", "ot_assistant"],
+            ["Anaesthetist", v.anaesthetist, "anaesthetist", "ot_anaesthetist"],
+            ["Scrub nurse", v.scrubNurse, "scrubNurse", "ot_scrub_nurse"],
+          ] as [string, string, keyof OtNotesData | null, string][]).map(([label, val, key, lib]) => (
+            <div key={label} className="min-w-0">
+              <dt className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">{label}</dt>
+              <dd className="mt-0.5">
+                {key && teamEdit && editable
+                  ? <SuggestField storeKey={lib} builtIns={[]} value={val} onChange={(x) => set(key, x)} apply={(_, pick) => pick} className="relative">
+                      {(sp) => <input {...sp} value={val} onChange={(e) => set(key, e.target.value)} onBlur={() => { sp.onBlur?.(); (key === "assistant" ? assistantLib : key === "anaesthetist" ? anaesthetistLib : scrubLib).add(val); }} placeholder="Type or pick a name" className={`${inp} !py-1`} />}
+                    </SuggestField>
+                  : <span className={`text-sm font-semibold ${val ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-300)]"}`}>{val || "-"}</span>}
+              </dd>
+            </div>
           ))}
-        </ol>
-        {editable && <button type="button" onClick={() => change({ ...v, steps: [...v.steps, ""] })} className={`${btnG} mt-2`}><Plus size={13} /> Add step</button>}
-      </Card>
-      <Card title="Findings, events & instructions">
-        <div className="space-y-2.5">
-          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
-            <label className={`${lblIn} sm:pt-2`}>Intra-operative findings</label>
-            <Area value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={2} opts={FO.otFindings} chipsBelow />
-          </div>
-          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
-            <label className={`${lblIn} sm:pt-2`}>Complications</label>
+        </dl>
+      </section>
+      {surgeryEdit === "warn" && (
+        <ConfirmDialog title="Edit the surgery details?" message="These details belong to the whole patient file. Changing the surgery, eye, implant or anaesthesia here will change them everywhere in the system: the file banner, Counselling, the OT list and the printed documents."
+          confirmLabel="Yes, edit" onConfirm={() => setSurgeryEdit("edit")} onCancel={() => setSurgeryEdit(null)} />
+      )}
+      {/* Procedure steps: the same look and actions as the Patient Education points */}
+      <section className="rounded-2xl border border-[var(--color-border)] bg-white shadow-[0_1px_2px_rgba(20,36,43,0.04),0_4px_14px_rgba(20,36,43,0.04)]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)]/70 px-4 py-2.5">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-primary-100)] text-[var(--color-primary-700)]"><BookOpen size={14} /></span>
             <div className="min-w-0">
-              <SuggestField storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} value={v.complications} onChange={(x) => set("complications", x)} disabled={!editable} className="relative">
-                {(sp) => <input {...sp} value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} w-full`} />}
-              </SuggestField>
-              {editable && <div className="mt-1.5"><ChipRow storeKey="ot_complications" builtIns={["None", "Posterior capsule rent", "Vitreous loss", "Iris prolapse", "Zonular dialysis"]} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} /></div>}
+              <p className="text-micro font-bold uppercase tracking-[0.16em] text-[var(--color-primary-600)]">Procedure steps</p>
+              <h3 className="flex min-w-0 items-center gap-2 text-[13.5px] font-semibold tracking-tight text-[var(--color-ink-900)]">
+                {fixed.procedure
+                  ? <SurgeryInline className="truncate" eye={v.eye || f.ctx.eye} surgery={fixed.procedure} anaesthesia={v.anaesthesia || f.ctx.anaesthesia} />
+                  : <span className="truncate">Procedure</span>}
+              </h3>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-1 sm:grid-cols-[9rem_1fr] sm:gap-3">
-            <label className={`${lblIn} sm:pt-2`}>Post-operative instructions</label>
-            <Area value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={2} opts={FO.otInstructions} chipsBelow />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="whitespace-nowrap text-[11.5px] font-medium tabular-nums text-[var(--color-ink-500)]">{v.steps.length} step{v.steps.length === 1 ? "" : "s"}</span>
+            {editable && (
+              <OtStepsLibrary surgery={v.procedure || f.ctx.surgery} starter={template} library={otSetLibrary({ implant: fixed.implant, anaesthesia: v.anaesthesia || f.ctx.anaesthesia })} templates={f.templates} current={v.steps} onUse={(steps) => change({ ...v, steps: [...steps] })} />
+            )}
           </div>
         </div>
-      </Card>
+        <div className="px-4 py-4">
+          {v.steps.length === 0 && !editable && <p className="text-sm italic text-[var(--color-ink-400)]">No steps.</p>}
+          <PointList noTick editable={editable} points={v.steps.map((text) => ({ text, done: false }))}
+            onChange={(pts) => change({ ...v, steps: pts.map((x) => x.text) })} />
+          {editable && <AddLine label="Add a step" placeholder="Type a step, then Enter" onAdd={(text) => change({ ...v, steps: [...v.steps, text] })} />}
+        </div>
+      </section>
+      {/* Findings, events and instructions: cards like the Patient Disposition, each opens on click */}
+      <section className="rounded-2xl border border-[var(--color-border)] bg-white p-4 shadow-[0_1px_2px_rgba(20,36,43,0.04)]">
+        <p className="mb-3 text-label font-medium text-[var(--color-ink-700)] sm:text-sm">Findings, events &amp; instructions</p>
+        <div className="mb-3 flex flex-wrap gap-3">
+          {([
+            ["findings", "Intra-operative findings", !!v.findings],
+            ["events", "Events / complications", !!v.complications && v.complications !== "None"],
+            ["instructions", "Post-operative instructions", !!v.instructions],
+          ] as const).map(([k, label, filled]) => (
+            <span key={k} className="relative">
+              <DispositionToggle icon={<Pencil size={15} />} label={label} active={notePanel === k} onClick={() => setNotePanel(notePanel === k ? "" : k)} />
+              {filled && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="Filled" />}
+            </span>
+          ))}
+        </div>
+        {notePanel === "findings" && (
+          <div className="rounded-xl border border-[var(--color-border)] p-4">
+            <p className="mb-2 text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)]">Intra-operative findings</p>
+            <Area value={v.findings} onChange={(x) => set("findings", x)} disabled={!editable} rows={3} opts={{ storeKey: `ot_findings_${kw.group}`, builtIns: kw.findings }} chipsBelow />
+          </div>
+        )}
+        {notePanel === "events" && (
+          <div className="rounded-xl border border-[var(--color-border)] p-4">
+            <p className="mb-2 text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)]">Events / complications</p>
+            <SuggestField storeKey={`ot_complications_${kw.group}`} builtIns={kw.complications} value={v.complications} onChange={(x) => set("complications", x)} disabled={!editable}>
+              {(sp) => <input {...sp} value={v.complications} disabled={!editable} onChange={(e) => set("complications", e.target.value)} className={`${inp} w-full`} />}
+            </SuggestField>
+            {editable && <div className="mt-1.5"><ChipRow storeKey={`ot_complications_${kw.group}`} builtIns={kw.complications} isOn={(x) => v.complications === x} onPick={(x) => set("complications", x)} onRemove={() => set("complications", "")} /></div>}
+          </div>
+        )}
+        {notePanel === "instructions" && (
+          <div className="rounded-xl border border-[var(--color-border)] p-4">
+            <p className="mb-2 text-caption font-semibold uppercase tracking-widest text-[var(--color-ink-400)]">Post-operative instructions</p>
+            <Area value={v.instructions} onChange={(x) => set("instructions", x)} disabled={!editable} rows={3} opts={{ storeKey: `ot_instructions_${kw.group}`, builtIns: kw.instructions }} chipsBelow />
+          </div>
+        )}
+      </section>
     </div>
   );
 }

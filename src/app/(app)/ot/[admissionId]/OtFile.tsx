@@ -11,7 +11,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { fileHref } from "@/lib/file-href";
 import { printInPlace } from "@/lib/print-in-place";
-import { normalizeDischarge, isDischargeData, wardTypeText, type DischargeData } from "@/lib/ipd";
+import { normalizeDischarge, isDischargeData, tabColour, wardTypeText, type DischargeData } from "@/lib/ipd";
 import { defaultPostOp, isV2, type OtNotesData, type PostOpData } from "@/lib/ipd-forms";
 import {
   ABORT_REASON_KEYWORDS, ANAESTHESIA_DELAY_KEYWORDS, ANAESTHESIA_DELAY_MIN, EVENT_REASON_KEYWORDS, INTRAOP_KEYWORDS,
@@ -22,7 +22,7 @@ import { ErrorLine, FormPanel, LongSummary, Modal, dischargeCtx, summaryTitle, t
 import { OtNotesView } from "../../ipd/[admissionId]/OtNotesView";
 import { PostOpForm, Seg } from "../../ipd/[admissionId]/IpdForms";
 import { DischargeEditor } from "../../ipd/[admissionId]/DischargeEditor";
-import { ChipRow, SuggestField, replaceTail, useCustomOptions } from "../../ipd/[admissionId]/customOptions";
+import { ChipRow, SuggestField, removeCsv, replaceTail, useCustomOptions } from "../../ipd/[admissionId]/customOptions";
 import { FIELD_OPTIONS } from "@/lib/ipd-field-options";
 import { useSuggest } from "@/components/ui/Suggest";
 import {
@@ -362,12 +362,14 @@ export function OtFile({ d, oc, items: given, draft, can }: { d: FileData; oc: O
   };
   const tabBtn = (key: string, title: string, done: boolean) => {
     const on = sel?.key === key;
+    const col = tabColour(d.tabColours?.[key]);
     return (
       <button key={key} type="button" role="tab" aria-selected={on} data-tab={key} onClick={() => setPicked(key)}
-        style={on ? undefined : { borderColor: "transparent" }}
+        style={{ ...(on ? {} : { borderColor: "transparent" }), ...(col ? { background: `linear-gradient(180deg, ${col.tint} 0%, ${on ? "var(--color-surface)" : "#ffffff"} 100%)`, boxShadow: on ? `0 0 0 1px ${col.dot}66, 0 -3px 14px -3px ${col.dot}88, inset 0 2.5px 0 ${col.dot}` : `0 0 0 1px ${col.dot}40, 0 5px 14px -6px ${col.dot}` } : {}) }}
         className={`shrink-0 inline-flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-t-xl border border-b-0 text-xs font-semibold whitespace-nowrap transition-colors ${
           on ? "bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-900)] shadow-[0_-1px_4px_rgba(15,23,42,0.05)]"
             : "bg-transparent text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] hover:text-[var(--color-ink-700)]"}`}>
+        {col && <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: col.dot }} />}
         {done ? <ShieldCheck size={13} className="shrink-0 text-[var(--color-primary-600)]" /> : <Circle size={13} className="shrink-0 text-[var(--color-ink-300)]" />}
         {title}
       </button>
@@ -757,15 +759,15 @@ function DischargeFromOt({ d, oc, outcome, onClose, onDone }: { d: FileData; oc:
     if (r.error) setError(r.error); else onDone(r.udid ?? d.udid);
   });
   return (
-    <Modal title="Discharge summary · review & sign" onClose={onClose} wide>
+    <Modal title="Discharge summary · review & sign" onClose={onClose} sheet>
       <div className="space-y-4">
-        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2 max-h-[55vh] overflow-y-auto">
+        <div className="rounded-xl bg-[var(--color-surface-sunken)]/50 p-2">
           <DischargeEditor value={text} onChange={setText} editable ctx={dischargeCtx(d)} />
         </div>
         <div>
           <label className={labelCls}>Additional notes (optional)</label>
           {/* Keyword chips with "+ Custom" and a type-ahead list */}
-          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} /></div>
+          <div className="mb-1.5"><ChipRow storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} prefix="+ " isOn={(x) => notes.includes(x)} onPick={(x) => setNotes(notes.includes(x) ? notes : (notes.trim() ? `${notes.trim()}, ${x}` : x))} onRemove={(x) => setNotes(removeCsv(notes, x))} /></div>
           <SuggestField storeKey={FIELD_OPTIONS.billingRemarks.storeKey} builtIns={FIELD_OPTIONS.billingRemarks.builtIns} value={notes} onChange={setNotes}>
             {(sp) => <textarea {...sp} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="e.g. insurance, billing remarks…" className={inputCls} />}
           </SuggestField>

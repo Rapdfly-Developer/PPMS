@@ -2,18 +2,21 @@
 
 import { toDateDay } from "@/lib/ist";
 import { Fragment, useRef, useState } from "react";
+import { DISCHARGE_SECTIONS, DEFAULT_DISCHARGE_TABS, layoutOf, placedSections, type DischargeLayout } from "@/lib/ipd";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Trash2, FileText, ShieldCheck, X } from "lucide-react";
 import { fileHref } from "@/lib/file-href";
-import { ChipRow, SuggestField } from "./customOptions";
+import { ChipRow, SuggestField, removeLine } from "./customOptions";
 import { FIELD_OPTIONS as FO, type FieldOptions } from "@/lib/ipd-field-options";
-import { DISCHARGE_TYPES, courseFromNotes, durationEnd, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
+import { DISCHARGE_TYPES, courseFromFile, durationEnd, invListFromOrders, medsFromDrugs, type DischargeData, type DischargeMed } from "@/lib/ipd";
+import { SurgeryInline } from "@/components/ui/SurgeryInline";
+import { CourseTimeline } from "./CourseTimeline";
 import { WeekdayHint } from "@/components/ui/WeekdayHint";
 import { MedicationEntry } from "@/components/emr/MedicationEntry";
 import { ROUTE_OPTIONS } from "@/app/(app)/emr/[udid]/PlanTab";
 
 /* ── Styling ───────────────────────────────────────────────────────────── */
 
-const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-[13px] text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] disabled:border-transparent disabled:bg-[var(--color-surface-sunken)]/40 disabled:cursor-default";
+const inputCls = "w-full rounded-lg border border-[var(--color-border)] bg-white px-2.5 py-1 text-[13px] text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-300)] focus:border-[var(--color-primary-400)] disabled:border-transparent disabled:bg-transparent disabled:px-0 disabled:shadow-none disabled:resize-none disabled:appearance-none disabled:opacity-100 disabled:cursor-default disabled:[&::-webkit-calendar-picker-indicator]:hidden";
 const linkBtn = "inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-700)] hover:underline";
 const thCls = "px-3 py-1.5 text-left text-[11px] font-semibold text-[var(--color-ink-500)]";
 
@@ -25,6 +28,8 @@ export interface DischargeContext {
   doctorNotes: { text: string; at: string }[];
   drugs: { name: string; dose: string; eye: string; frequency: string; route?: string; instructions?: string }[];
   signed: { by: string; at: string } | null;
+  /** The draft built from the file, used to fill a section when it is added. */
+  draft: DischargeData;
 }
 
 const rows = (s: string, min = 2) => Math.max(min, Math.min(12, s.split("\n").length + 1));
@@ -41,6 +46,8 @@ const FOLLOW_PICKS = ["Post-operative review", "IOP check", "Suture removal", "R
 // screens (long ones span both). Keyword chips sit directly under their field.
 
 const cellCls = "min-w-0";
+/** A value shown as plain text (not a box) when it can't be edited. */
+const Plain = ({ v }: { v: string }) => <p className="whitespace-pre-line py-0.5 text-[13px] text-[var(--color-ink-800)]">{v.trim() ? v : "-"}</p>;
 const cellLbl = "mb-1 block text-[11px] font-semibold text-[var(--color-ink-500)]";
 const span2 = "lg:col-span-2";
 
@@ -58,7 +65,15 @@ function Block({ title, action, children }: { n?: number; title: string; action?
 }
 
 /** A labelled cell for any control. */
-function Row({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
+function Row({ label, children, wide, plain }: { label: string; children: React.ReactNode; wide?: boolean; /** Read-only: the label and the value share one line. */ plain?: boolean }) {
+  if (plain) {
+    return (
+      <div className={`${cellCls} ${wide ? span2 : ""} flex items-baseline gap-2`}>
+        <span className="min-w-[5.5rem] shrink-0 text-[12px] font-semibold text-[var(--color-ink-500)]">{label}</span>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+    );
+  }
   return (
     <div className={`${cellCls} ${wide ? span2 : ""}`}>
       <label className={cellLbl}>{label}</label>
@@ -70,6 +85,7 @@ function Row({ label, children, wide }: { label: string; children: React.ReactNo
 function Field({ label, value, onChange, editable, type = "text", placeholder, wide }: {
   label: string; value: string; onChange: (v: string) => void; editable: boolean; type?: string; placeholder?: string; wide?: boolean;
 }) {
+  if (!editable) return <Row plain label={label} wide={wide}><Plain v={value} /></Row>;
   return (
     <Row label={label} wide={wide}>
       <div className="flex min-w-0 flex-wrap items-center gap-2">
@@ -89,6 +105,7 @@ function Area({ label, value, onChange, editable, placeholder, min = 2, opts, wi
   /** Keyword chips with "+ Custom" and a type-ahead list, under the box. */
   opts?: FieldOptions; wide?: boolean;
 }) {
+  if (!editable) { const t = <Plain v={value} />; return label ? <Row plain label={label} wide={wide}>{t}</Row> : <div className={`${cellCls} ${span2}`}>{t}</div>; }
   const area = (sp?: object) => (
     <textarea {...sp} value={value} disabled={!editable} onChange={(e) => onChange(e.target.value)} rows={rows(value, min)} placeholder={editable ? placeholder : "-"} className={`${inputCls} resize-y leading-relaxed`} />
   );
@@ -97,7 +114,7 @@ function Area({ label, value, onChange, editable, placeholder, min = 2, opts, wi
       <SuggestField storeKey={opts.storeKey} builtIns={opts.builtIns} value={value} onChange={onChange} disabled={!editable}>
         {(sp) => area(sp)}
       </SuggestField>
-      {editable && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} limit={6} /></div>}
+      {editable && <div className="mt-1.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => value.split("\n").some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} onRemove={(x) => onChange(removeLine(value, x))} limit={6} /></div>}
     </div>
   ) : area();
   return label ? <Row label={label} wide={wide}>{box}</Row> : <div className={`${cellCls} ${span2}`}>{box}</div>;
@@ -109,6 +126,7 @@ function PickField({ label, storeKey, options, value, onChange, editable, placeh
   /** Quick-pick buttons under the field (the type-ahead list stays either way). */
   chips?: boolean;
 }) {
+  if (!editable) return <Row plain label={label} wide={wide}><Plain v={value} /></Row>;
   return (
     <Row label={label} wide={wide}>
       <SuggestField storeKey={storeKey} builtIns={options} value={value} onChange={onChange} apply={(_, pick) => pick} disabled={!editable} className="relative min-w-0">
@@ -122,7 +140,7 @@ function PickField({ label, storeKey, options, value, onChange, editable, placeh
 /** Quick-pick buttons that fill a field; "+ Custom" adds your own. */
 function Picks({ storeKey, options, value, onPick, editable }: { storeKey: string; options: string[]; value: string; onPick: (v: string) => void; editable: boolean }) {
   if (!editable) return null;
-  return <div className="mt-1.5"><ChipRow storeKey={storeKey} builtIns={options} isOn={(o) => value === o} onPick={onPick} /></div>;
+  return <div className="mt-1.5"><ChipRow storeKey={storeKey} builtIns={options} isOn={(o) => value === o} onPick={onPick} onRemove={() => onPick("")} /></div>;
 }
 
 /** Discharge medicine columns that have a type-ahead list. */
@@ -184,16 +202,16 @@ function CourseList({ value, onChange, editable, opts }: { value: string; onChan
       {items.map((it, i) => (
         <div key={i} className="group grid grid-cols-1 items-start gap-1 sm:grid-cols-[8.75rem_minmax(0,1fr)_auto] sm:gap-2.5">
           {it.date ? <span className="mt-1.5 inline-flex w-fit items-center rounded-md bg-[var(--color-surface-sunken)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-ink-600)]">{it.date}</span> : <span className="hidden sm:block" />}
-          <textarea value={it.text} disabled={!editable} rows={Math.max(1, Math.ceil(it.text.length / 95))}
+          {!editable ? <p className="py-0.5 text-[13px] text-[var(--color-ink-800)]">{it.text}</p> : <textarea value={it.text} disabled={!editable} rows={Math.max(1, Math.ceil(it.text.length / 95))}
             onChange={(e) => save(items.map((x, j) => (j === i ? { ...x, text: e.target.value.replace(/\n/g, " ") } : x)))}
-            className={`${inputCls} resize-none leading-snug`} />
+            className={`${inputCls} resize-none leading-snug`} />}
           {editable && <button type="button" onClick={() => save(items.filter((_, j) => j !== i))} className="mt-1 rounded p-1 text-[var(--color-ink-300)] opacity-0 hover:text-red-600 focus:opacity-100 group-hover:opacity-100" aria-label="Remove entry"><X size={14} /></button>}
         </div>
       ))}
       {editable && (
         <>
           <button type="button" onClick={() => save([...items.filter((x) => x.date || x.text.trim()), { date: today, text: "" }])} className={linkBtn}><Plus size={12} /> Add entry</button>
-          <div className="pt-0.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => lines.some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} limit={6} /></div>
+          <div className="pt-0.5"><ChipRow storeKey={opts.storeKey} builtIns={opts.builtIns} prefix="+ " isOn={(x) => lines.some((l) => l.trim() === x)} onPick={(x) => onChange(addLine(value, x))} onRemove={(x) => onChange(removeLine(value, x))} limit={6} /></div>
         </>
       )}
     </div>
@@ -202,16 +220,19 @@ function CourseList({ value, onChange, editable, opts }: { value: string; onChan
 
 /** Vision and IOP for each eye on one line: Vision RE, Vision LE, IOP RE, IOP LE. */
 function EyeGrid({ editable, cells }: { editable: boolean; cells: { label: string; re: string; le: string; onRe: (v: string) => void; onLe: (v: string) => void; ph: [string, string]; numeric?: RegExp }[] }) {
-  const fields = cells.flatMap((c) => [
-    { key: `${c.label}-re`, label: `${c.label} RE`, value: c.re, onChange: c.onRe, ph: c.ph[0], numeric: c.numeric },
-    { key: `${c.label}-le`, label: `${c.label} LE`, value: c.le, onChange: c.onLe, ph: c.ph[1], numeric: c.numeric },
-  ]);
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4">
-      {fields.map((f) => (
-        <div key={f.key} className="min-w-0">
-          <label className={cellLbl}>{f.label}</label>
-          <input value={f.value} disabled={!editable} inputMode={f.numeric ? "decimal" : undefined} onChange={(e) => { if (!f.numeric || f.numeric.test(e.target.value)) f.onChange(e.target.value); }} placeholder={editable ? f.ph : "-"} className={inputCls} />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {cells.map((c) => (
+        <div key={c.label} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 p-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">{c.label}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {([["RE", c.re, c.onRe, c.ph[0]], ["LE", c.le, c.onLe, c.ph[1]]] as [string, string, (v: string) => void, string][]).map(([eye, value, onChange, ph]) => (
+              <div key={eye} className="min-w-0">
+                <label className={cellLbl}>{eye}</label>
+                {!editable ? <Plain v={value} /> : <input value={value} inputMode={c.numeric ? "decimal" : undefined} onChange={(e) => { if (!c.numeric || c.numeric.test(e.target.value)) onChange(e.target.value); }} placeholder={ph} className={`${inputCls} bg-white`} />}
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>
@@ -220,7 +241,12 @@ function EyeGrid({ editable, cells }: { editable: boolean; cells: { label: strin
 
 /* ── Editor ────────────────────────────────────────────────────────────── */
 
-const STEPS = ["Discharge", "Clinical", "Procedure & course", "Medicines & follow-up"] as const;
+
+/** The discharge date and time, as recorded (not editable). */
+const stamp = (v: string) => {
+  const d = new Date(v.length === 10 ? `${v}T00:00:00+05:30` : v);
+  return Number.isNaN(d.getTime()) ? "-" : d.toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+};
 
 export function DischargeEditor({ value: s, onChange, editable, ctx }: {
   value: DischargeData; onChange: (v: DischargeData) => void; editable: boolean; ctx: DischargeContext;
@@ -229,30 +255,76 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
   const setIn = <K extends "findings" | "procedure" | "condition">(k: K, f: keyof DischargeData[K], v: string) => onChange({ ...s, [k]: { ...s[k], [f]: v } });
   const setMed = (i: number, f: keyof DischargeMed, v: string) => set("meds", s.meds.map((m, j) => (j === i ? { ...m, [f]: v } : m)));
   const showProcedure = ctx.surgical || !!s.procedure.name;
-  const [step, setStep] = useState(0);
-  const steps = STEPS;
-  const last = steps.length - 1;
+  const layout = layoutOf(s);
+  const setLayout = (l: DischargeLayout) => onChange({ ...s, layout: l });
+  const [stepRaw, setStep] = useState(0);
+  const step = Math.max(0, Math.min(stepRaw, layout.tabs.length - 1));
+  const last = layout.tabs.length - 1;
+  const curTab = layout.tabs[step];
+  const [ask, setAsk] = useState<null | { kind: "tab" | "section"; id: string }>(null);
+  const [addTab, setAddTab] = useState(false);
+  const [addSec, setAddSec] = useState(false);
+  const [newTabName, setNewTabName] = useState("");
+  const [newSecName, setNewSecName] = useState("");
+  const placed = placedSections(layout);
+  const available = Object.keys(DISCHARGE_SECTIONS).filter((id) => !placed.has(id) && !(id === "procedure" && !showProcedure));
+  const missingTabs = DEFAULT_DISCHARGE_TABS.filter((t) => !layout.tabs.some((x) => x.id === t.id));
 
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
-      {/* Step tabs: one short page at a time instead of one long scroll */}
-      <div className="flex gap-1 overflow-x-auto border-b border-[var(--color-border)] px-3 pt-2">
-        {steps.map((name, i) => (
-          <button key={name} type="button" onClick={() => setStep(i)}
-            className={`-mb-px flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-xs font-semibold transition-colors ${step === i ? "border-[var(--color-ink-900)] text-[var(--color-ink-900)]" : "border-transparent text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"}`}>
-            <span className={`grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold ${step === i ? "bg-[var(--color-ink-900)] text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>{i + 1}</span>
-            {name}
-          </button>
-        ))}
-      </div>
+  /** The data a section shows, taken from the file again, when it is added. */
+  const fillOf = (id: string): Partial<DischargeData> => {
+    const d = ctx.draft;
+    switch (id) {
+      case "discharge": return { consultant: d.consultant };
+      case "diagnosis": return { diagnosis: d.diagnosis, complaints: d.complaints, history: d.history, allergies: d.allergies };
+      case "exam": return { findings: d.findings };
+      case "investigations": return { invList: invListFromOrders(ctx.orders), investigations: d.investigations };
+      case "procedure": return { procedure: d.procedure };
+      case "course": return { course: courseFromFile({ admittedOn: ctx.admittedOn, doctor: s.consultant, typeText: ctx.typeText, procedure: d.procedure, orders: ctx.orders, doctorNotes: ctx.doctorNotes }) };
+      case "condition": return { condition: d.condition };
+      case "meds": return { meds: medsFromDrugs(ctx.drugs) };
+      case "advice": return { advice: d.advice, warning: d.warning };
+      case "followup": return { followUpDate: d.followUpDate, followUpNote: d.followUpNote };
+      default: return {};
+    }
+  };
+  const withTab = (fn: (t: DischargeLayout["tabs"][number]) => DischargeLayout["tabs"][number]) => layout.tabs.map((t, i) => (i === step ? fn(t) : t));
+  const addSection = (id: string) => { onChange({ ...s, ...fillOf(id), layout: { ...layout, tabs: withTab((t) => ({ ...t, sections: [...t.sections, id] })) } }); setAddSec(false); };
+  const addCustomSection = () => {
+    const title = newSecName.trim(); if (!title) return;
+    const cid = Math.random().toString(36).slice(2, 8);
+    setLayout({ tabs: withTab((t) => ({ ...t, sections: [...t.sections, "c:" + cid] })), custom: [...layout.custom, { id: cid, title, text: "" }] });
+    setNewSecName(""); setAddSec(false);
+  };
+  const removeSection = (id: string) => {
+    setLayout({ tabs: layout.tabs.map((t) => ({ ...t, sections: t.sections.filter((x) => x !== id) })), custom: layout.custom.filter((c) => "c:" + c.id !== id) });
+    setAsk(null);
+  };
+  const removeTab = (id: string) => {
+    if (layout.tabs.length <= 1) return;
+    const gone = layout.tabs.find((t) => t.id === id);
+    setLayout({ tabs: layout.tabs.filter((t) => t.id !== id), custom: layout.custom.filter((c) => !gone?.sections.includes("c:" + c.id)) });
+    setAsk(null); setStep(0);
+  };
+  const addPresetTab = (t: DischargeLayout["tabs"][number]) => {
+    const secs = t.sections.filter((id) => !placed.has(id) && !(id === "procedure" && !showProcedure));
+    const fill = secs.reduce<Partial<DischargeData>>((acc, id) => ({ ...acc, ...fillOf(id) }), {});
+    onChange({ ...s, ...fill, layout: { ...layout, tabs: [...layout.tabs, { ...t, sections: secs }] } });
+    setStep(layout.tabs.length); setAddTab(false);
+  };
+  const addBlankTab = () => {
+    const name = newTabName.trim(); if (!name) return;
+    setLayout({ ...layout, tabs: [...layout.tabs, { id: "t-" + Math.random().toString(36).slice(2, 8), name, sections: [] }] });
+    setStep(layout.tabs.length); setNewTabName(""); setAddTab(false);
+  };
 
-      <div className="space-y-5 p-4 sm:p-5">
-        {step === 0 && (
-          <>
-            <Block title="Discharge">
+  const sections: Record<string, React.ReactNode> = {
+    discharge: (
+<Block title="Discharge">
               <div className={`${span2} grid grid-cols-1 items-end gap-x-5 gap-y-3 sm:grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[auto_minmax(0,1fr)_auto]`}>
-                <Field label="Date of discharge" type="date" value={s.dischargeDate} onChange={(v) => set("dischargeDate", v)} editable={editable} />
-                <Field label="Consultant" value={s.consultant} onChange={(v) => set("consultant", v)} editable={editable} />
+                <Row plain label="Date and time of discharge">
+                  <p className="py-1 text-[13px] font-medium text-[var(--color-ink-800)]">{stamp(s.dischargeDate)}</p>
+                </Row>
+                <Field label="Consultant" value={s.consultant} onChange={(v) => set("consultant", v)} editable={false} />
                 <Row label="Type of discharge">
                   <div className="inline-flex flex-wrap gap-0.5 rounded-lg border border-[var(--color-border)] p-0.5">
                     {DISCHARGE_TYPES.map((t) => (
@@ -266,22 +338,21 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               </div>
               {s.dischargeType === "REFERRED" && <PickField storeKey={FO.dcReferredTo.storeKey} options={[...FO.dcReferredTo.builtIns]} label="Referred to" value={s.referredTo} onChange={(v) => set("referredTo", v)} editable={editable} placeholder="Hospital / doctor" wide />}
             </Block>
-            <Block title="Diagnosis and complaints">
-              <Row label="Diagnosis">
-                <LineList value={s.diagnosis} onChange={(v) => set("diagnosis", v)} editable={editable} numbered placeholder="e.g. LE Senile immature cataract" addLabel="Add diagnosis" />
+    ),
+    diagnosis: (
+<Block title="Diagnosis and complaints">
+              <Row plain={!editable} label="Diagnosis">
+                <LineList value={s.diagnosis} onChange={(v) => set("diagnosis", v)} editable={false} numbered placeholder="e.g. LE Senile immature cataract" addLabel="Add diagnosis" />
               </Row>
-              <Row label="Presenting complaints">
-                <LineList value={s.complaints} onChange={(v) => set("complaints", v)} editable={editable} placeholder="e.g. Blurred vision LE × 6 months" addLabel="Add complaint" />
+              <Row plain={!editable} label="Presenting complaints">
+                <LineList value={s.complaints} onChange={(v) => set("complaints", v)} editable={false} placeholder="e.g. Blurred vision LE × 6 months" addLabel="Add complaint" />
               </Row>
-              <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={editable} placeholder="Medical / surgical / family history" opts={FO.dcHistory} wide={false} />
-              <PickField label="Allergies" storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onChange={(v) => set("allergies", v)} editable={editable} placeholder="Drug / other allergies" />
+              <Area label="Past history" value={s.history} onChange={(v) => set("history", v)} editable={false} placeholder="Medical / surgical / family history" opts={FO.dcHistory} wide={false} />
+              <PickField label="Allergies" storeKey="dc_allergies" options={["No known drug allergies"]} value={s.allergies} onChange={(v) => set("allergies", v)} editable={false} placeholder="Drug / other allergies" />
             </Block>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <Block title="Examination on admission">
+    ),
+    exam: (
+<Block title="Examination on admission">
               <div className={span2}>
                 <EyeGrid editable={editable} cells={[
                   { label: "Vision", re: s.findings.vaRe, le: s.findings.vaLe, onRe: (v) => setIn("findings", "vaRe", v), onLe: (v) => setIn("findings", "vaLe", v), ph: ["6/9", "6/12"] },
@@ -291,7 +362,9 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               <Area label="Anterior segment" value={s.findings.anterior} onChange={(v) => setIn("findings", "anterior", v)} editable={editable} placeholder={"RE: …\nLE: …"} opts={FO.dcAnterior} wide={false} />
               <Area label="Posterior segment" value={s.findings.posterior} onChange={(v) => setIn("findings", "posterior", v)} editable={editable} placeholder={"RE: …\nLE: …"} opts={FO.dcPosterior} wide={false} />
             </Block>
-            <Block title="Investigations"
+    ),
+    investigations: (
+<Block title="Investigations"
               action={editable && ctx.orders.length > 0 && (
                 <button type="button" onClick={() => set("invList", invListFromOrders(ctx.orders))} className={linkBtn}><RefreshCw size={12} /> Refresh from orders</button>
               )}>
@@ -303,7 +376,7 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface-sunken)]/60">
-                          {["Investigation", "Eye", "Done on", "Report"].map((h) => <th key={h} className={thCls}>{h}</th>)}
+                          {["Investigation", "Eye", "Done on", "Report"].map((h) => <th key={h} className={`${thCls} uppercase tracking-wider`}>{h}</th>)}
                           {editable && <th className="w-9" />}
                         </tr>
                       </thead>
@@ -312,13 +385,13 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                           const order = ctx.orders.find((o) => o.id === r.id);
                           return (
                             <tr key={r.id} className="border-b border-[var(--color-border)] last:border-0">
-                              <td className="px-3 py-1.5 font-semibold text-[var(--color-ink-800)]">{r.test}</td>
-                              <td className="px-3 py-1.5 text-[var(--color-ink-700)]">{r.eye || "-"}</td>
-                              <td className="whitespace-nowrap px-3 py-1.5 text-[var(--color-ink-600)]">{r.ordered ? fmtDay(r.ordered) : "-"}</td>
+                              <td className="px-3 py-1.5 text-[13px] font-semibold text-[var(--color-ink-800)]">{r.test}</td>
+                              <td className="px-3 py-1.5">{r.eye ? <span className="rounded-md bg-[var(--color-surface-sunken)] px-1.5 py-0.5 text-[11px] font-semibold text-[var(--color-ink-600)]">{r.eye}</span> : <span className="text-[var(--color-ink-300)]">-</span>}</td>
+                              <td className="whitespace-nowrap px-3 py-1.5 text-xs text-[var(--color-ink-600)]">{r.ordered ? fmtDay(r.ordered) : "-"}</td>
                               <td className="whitespace-nowrap px-3 py-1.5">
                                 {r.received ? (
                                   <span className="inline-flex items-center gap-2">
-                                    <span className="text-xs font-semibold text-emerald-700">Received {fmtDay(r.received)}</span>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">Received {fmtDay(r.received)}</span>
                                     {order?.resultRef && (
                                       <a href={fileHref(order.resultRef)!} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-primary-700)] hover:underline"><FileText size={12} /> View</a>
                                     )}
@@ -342,49 +415,41 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               </div>
               <Area label="Key findings" value={s.investigations} onChange={(v) => set("investigations", v)} editable={editable} min={1} placeholder="e.g. FFA: no leakage. OCT macula: normal foveal contour." opts={FO.dcFindings} />
             </Block>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            {showProcedure && (
-              <Block title="Procedure">
-                {/* Eye, surgery and anaesthesia read as one line, like the file banner */}
-                <div className={`${span2} grid grid-cols-1 gap-3 sm:grid-cols-[auto_minmax(0,2fr)_minmax(0,1.4fr)]`}>
-                  <Row label="Eye">
-                    <div className="inline-flex gap-0.5 rounded-lg border border-[var(--color-border)] p-0.5">
-                      {["RE", "LE", "OU"].map((e) => (
-                        <button key={e} type="button" disabled={!editable} onClick={() => setIn("procedure", "eye", s.procedure.eye === e ? "" : e)}
-                          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-default ${s.procedure.eye === e ? "bg-[var(--color-primary-600)] text-white" : "text-[var(--color-ink-600)] enabled:hover:bg-[var(--color-surface-sunken)]"}`}>{e}</button>
-                      ))}
-                    </div>
-                  </Row>
-                  <PickField chips={false} storeKey={FO.dcSurgery.storeKey} options={[...FO.dcSurgery.builtIns]} label="Surgery" value={s.procedure.name} onChange={(v) => setIn("procedure", "name", v)} editable={editable} />
-                  <PickField chips={false} storeKey={FO.dcAnaesthesia.storeKey} options={[...FO.dcAnaesthesia.builtIns]} label="Anaesthesia" value={s.procedure.anaesthesia} onChange={(v) => setIn("procedure", "anaesthesia", v)} editable={editable} />
-                </div>
-                <div className={`${span2} grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4`}>
-                  <Field label="Date of surgery" type="date" value={s.procedure.date} onChange={(v) => setIn("procedure", "date", v)} editable={editable} />
-                  <Field label="Surgeon" value={s.procedure.surgeon} onChange={(v) => setIn("procedure", "surgeon", v)} editable={editable} />
-                  <PickField chips={false} storeKey={FO.dcImplant.storeKey} options={[...FO.dcImplant.builtIns]} label="Implant" value={s.procedure.implant} onChange={(v) => setIn("procedure", "implant", v)} editable={editable} />
-                  <PickField chips={false} label="Intra-operative events" storeKey="dc_intraop" options={["Uneventful", "PC rent, managed", "Vitreous loss, anterior vitrectomy done"]} value={s.procedure.events} onChange={(v) => setIn("procedure", "events", v)} editable={editable} />
+    ),
+    procedure: (
+<Block title="Procedure">
+                {/* Same format as the patient file banner, as a minimal card */}
+                <div className={`${span2} rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 px-4 py-3`}>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--color-ink-400)]">Surgery</p>
+                  <p className="mt-0.5 text-sm font-bold text-[var(--color-ink-900)]">
+                    <SurgeryInline eye={s.procedure.eye} surgery={s.procedure.name} implant={s.procedure.implant} anaesthesia={s.procedure.anaesthesia} />
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-[var(--color-ink-500)]">
+                    {s.procedure.date && <span className="font-semibold">DOS <b className="text-[var(--color-ink-800)]">{fmtDay(`${s.procedure.date}T00:00:00+05:30`)}</b></span>}
+                    {s.procedure.surgeon && <span className="font-semibold">Surgeon <b className="text-[var(--color-ink-800)]">{s.procedure.surgeon}</b></span>}
+                    {s.procedure.events && <span className="font-semibold">Events <b className="text-[var(--color-ink-800)]">{s.procedure.events}</b></span>}
+                  </div>
                 </div>
               </Block>
-            )}
-            <Block title="Course in hospital"
+    ),
+    course: (
+<Block title="Course in hospital"
               action={editable && ctx.doctorNotes.length > 0 && (
-                <button type="button" onClick={() => set("course", courseFromNotes(ctx.doctorNotes))} className={linkBtn}><RefreshCw size={12} /> Fill from doctor&apos;s notes</button>
+                <button type="button" onClick={() => set("course", courseFromFile({ admittedOn: ctx.admittedOn, doctor: s.consultant, typeText: ctx.typeText, procedure: s.procedure, orders: ctx.orders, doctorNotes: ctx.doctorNotes }))} className={linkBtn}><RefreshCw size={12} /> Fill from doctor&apos;s notes</button>
               )}>
-              <div className={span2}><CourseList value={s.course} onChange={(v) => set("course", v)} editable={editable} opts={FO.dcCourse} /></div>
+              <div className={span2}>
+                <CourseTimeline value={s.course} onChange={(v) => set("course", v)} editable={editable} admittedOn={ctx.admittedOn}
+                  chips={<ChipRow storeKey={FO.dcCourse.storeKey} builtIns={FO.dcCourse.builtIns} prefix="+ " isOn={(x) => s.course.split("\n").some((l) => l.trim() === x)} onPick={(x) => set("course", addLine(s.course, x))} onRemove={(x) => set("course", removeLine(s.course, x))} limit={6} />} />
+              </div>
             </Block>
-            <Block title="Condition at discharge">
+    ),
+    condition: (
+<Block title="Condition at discharge">
               <PickField label="General condition" storeKey="dc_condition" options={CONDITION_PICKS} value={s.condition.general} onChange={(v) => setIn("condition", "general", v)} editable={editable} />
             </Block>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <Block title="Medicines on discharge"
+    ),
+    meds: (
+<Block title="Medicines on discharge"
               action={editable && ctx.drugs.some((d) => d.name?.trim()) && (
                 <button type="button" onClick={() => set("meds", medsFromDrugs(ctx.drugs))} className={linkBtn}><RefreshCw size={12} /> Import from treatment chart</button>
               )}>
@@ -449,7 +514,9 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                 )}
               </div>
             </Block>
-            <Block title="Advice">
+    ),
+    advice: (
+<Block title="Advice">
               <Row label="Care, activity & diet">
                 <LineList value={s.advice} onChange={(v) => set("advice", v)} editable={editable} placeholder="Advice point" addLabel="Add advice" />
               </Row>
@@ -457,7 +524,9 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                 <LineList value={s.warning.split("\n").filter((l) => !/^return to the hospital/i.test(l.trim())).join("\n")} onChange={(v) => set("warning", v)} editable={editable} placeholder="Warning sign" addLabel="Add warning sign" />
               </Row>
             </Block>
-            <Block title="Follow-up">
+    ),
+    followup: (
+<Block title="Follow-up">
               <Row label="Review on">
                 <div className="flex flex-wrap items-center gap-2">
                   <input type="date" value={s.followUpDate} disabled={!editable} onChange={(e) => set("followUpDate", e.target.value)} className={`${inputCls} !w-36 flex-none`} />
@@ -473,7 +542,9 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
               </Row>
               <PickField label="In view of" storeKey="dc_follow" options={FOLLOW_PICKS} value={s.followUpNote} onChange={(v) => set("followUpNote", v)} editable={editable} placeholder="Reason for review" />
             </Block>
-            <Block title="Sign-off">
+    ),
+    signoff: (
+<Block title="Sign-off">
               <div className={span2}>
                 {ctx.signed ? (
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
@@ -484,14 +555,128 @@ export function DischargeEditor({ value: s, onChange, editable, ctx }: {
                 )}
               </div>
             </Block>
-          </>
-        )}
+    ),
+  };
 
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-white">
+      {/* Tabs: one short page at a time. Tabs can be removed and added back. */}
+      <div className="flex items-end gap-1 overflow-x-auto border-b border-[var(--color-border)] px-3 pt-2">
+        {layout.tabs.map((t, i) => (
+          <div key={t.id} className={`group/tab -mb-px flex shrink-0 items-center border-b-2 transition-colors ${step === i ? "border-[var(--color-ink-900)]" : "border-transparent"}`}>
+            <button type="button" onClick={() => setStep(i)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold ${step === i ? "text-[var(--color-ink-900)]" : "text-[var(--color-ink-400)] hover:text-[var(--color-ink-700)]"}`}>
+              <span className={`grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold ${step === i ? "bg-[var(--color-ink-900)] text-white" : "bg-[var(--color-surface-sunken)] text-[var(--color-ink-500)]"}`}>{i + 1}</span>
+              {t.name}
+            </button>
+            {editable && layout.tabs.length > 1 && (
+              <button type="button" aria-label={`Remove the ${t.name} tab`} title="Remove this tab" onClick={() => setAsk({ kind: "tab", id: t.id })}
+                className="mr-1 rounded p-0.5 text-[var(--color-ink-300)] opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover/tab:opacity-100"><X size={12} /></button>
+            )}
+          </div>
+        ))}
+        {editable && (
+          <button type="button" onClick={() => setAddTab((v) => !v)} aria-label="Add a tab" title="Add a tab"
+            className={`mb-1 ml-1 grid size-6 shrink-0 place-items-center rounded-full border border-dashed transition ${addTab ? "border-[var(--color-primary-500)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]" : "border-[var(--color-border)] text-[var(--color-ink-400)] hover:border-[var(--color-primary-400)] hover:text-[var(--color-primary-700)]"}`}>
+            <Plus size={13} />
+          </button>
+        )}
+      </div>
+
+      {editable && addTab && (
+        <div className="m-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 p-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">Add a tab</p>
+          {missingTabs.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5">
+              {missingTabs.map((t) => (
+                <button key={t.id} type="button" onClick={() => addPresetTab(t)} className="rounded-full border border-[var(--color-border)] bg-white px-3 py-1 text-xs font-semibold text-[var(--color-ink-700)] hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)]">
+                  + {t.name} <span className="font-normal text-[var(--color-ink-400)]">({t.sections.map((x) => DISCHARGE_SECTIONS[x].title).join(", ")})</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <input value={newTabName} onChange={(e) => setNewTabName(e.target.value)} placeholder="Or name a new tab" onKeyDown={(e) => { if (e.key === "Enter") addBlankTab(); }} className={`${inputCls} max-w-[220px]`} />
+            <button type="button" disabled={!newTabName.trim()} onClick={addBlankTab} className="rounded-lg bg-[var(--color-primary-600)] px-3 py-1 text-xs font-semibold text-white disabled:opacity-40">Add tab</button>
+          </div>
+        </div>
+      )}
+
+      {ask?.kind === "tab" && (
+        <div className="m-3 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+          <span>Remove the <b>{layout.tabs.find((t) => t.id === ask.id)?.name}</b> tab and all of its sections from this summary? You can add them back later.</span>
+          <button type="button" onClick={() => removeTab(ask.id)} className="rounded-lg bg-red-600 px-3 py-1 font-semibold text-white">Remove tab</button>
+          <button type="button" onClick={() => setAsk(null)} className="rounded-lg px-2.5 py-1 font-semibold text-red-700 hover:bg-red-100">Keep</button>
+        </div>
+      )}
+
+      <div className="space-y-5 p-4 sm:p-5">
+        {(curTab?.sections ?? []).map((id) => {
+          const custom = layout.custom.find((c) => "c:" + c.id === id);
+          if (id === "procedure" && !showProcedure) return null;
+          const node = custom
+            ? (
+              <Block title={custom.title}>
+                <div className={span2}>
+                  <Area value={custom.text} onChange={(v) => setLayout({ ...layout, custom: layout.custom.map((c) => (c.id === custom.id ? { ...c, text: v } : c)) })} editable={editable} min={2} placeholder="Write here" />
+                </div>
+              </Block>
+            )
+            : sections[id];
+          if (!node) return null;
+          const title = custom ? custom.title : DISCHARGE_SECTIONS[id]?.title;
+          return (
+            <div key={id} className="group/sec relative">
+              {editable && (
+                <button type="button" onClick={() => setAsk({ kind: "section", id })} aria-label={`Remove ${title}`} title="Remove this section"
+                  className="absolute -right-1 -top-1 z-10 rounded-lg p-1 text-[var(--color-ink-300)] opacity-0 transition hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover/sec:opacity-100"><Trash2 size={14} /></button>
+              )}
+              {ask?.kind === "section" && ask.id === id && (
+                <div className="mb-2 flex flex-wrap items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+                  <span>Remove <b>{title}</b> from this summary?</span>
+                  <button type="button" onClick={() => removeSection(id)} className="rounded-lg bg-red-600 px-3 py-1 font-semibold text-white">Remove</button>
+                  <button type="button" onClick={() => setAsk(null)} className="rounded-lg px-2.5 py-1 font-semibold text-red-700 hover:bg-red-100">Keep</button>
+                </div>
+              )}
+              {node}
+            </div>
+          );
+        })}
+
+        {(curTab?.sections.length ?? 0) === 0 && <p className="rounded-xl border border-dashed border-[var(--color-border)] px-4 py-6 text-center text-sm text-[var(--color-ink-400)]">This tab is empty{editable ? ". Add a section below." : "."}</p>}
+
+        {editable && (
+          <div>
+            <button type="button" onClick={() => setAddSec((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[var(--color-primary-300)] px-3 py-1.5 text-xs font-semibold text-[var(--color-primary-700)] transition hover:bg-[var(--color-primary-50)]">
+              <Plus size={12} /> Add a section
+            </button>
+            {addSec && (
+              <div className="mt-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)]/40 p-3">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-[var(--color-ink-500)]">Add a section (filled from the file)</p>
+                {available.length === 0 ? <p className="mb-2 text-xs text-[var(--color-ink-400)]">Every section is already in the summary.</p> : (
+                  <div className="mb-3 grid gap-1.5 sm:grid-cols-2">
+                    {available.map((id) => (
+                      <button key={id} type="button" onClick={() => addSection(id)} className="rounded-lg border border-[var(--color-border)] bg-white px-3 py-2 text-left transition hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-50)]">
+                        <span className="block text-xs font-semibold text-[var(--color-ink-800)]">{DISCHARGE_SECTIONS[id].title}</span>
+                        <span className="block text-[11px] text-[var(--color-ink-400)]">{DISCHARGE_SECTIONS[id].about}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <input value={newSecName} onChange={(e) => setNewSecName(e.target.value)} placeholder="Or write your own, give it a title" onKeyDown={(e) => { if (e.key === "Enter") addCustomSection(); }} className={`${inputCls} max-w-[260px]`} />
+                  <button type="button" disabled={!newSecName.trim()} onClick={addCustomSection} className="rounded-lg bg-[var(--color-primary-600)] px-3 py-1 text-xs font-semibold text-white disabled:opacity-40">Add</button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-[var(--color-border)] px-4 py-2.5">
         <button type="button" disabled={step === 0} onClick={() => setStep(step - 1)} className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)] disabled:opacity-40"><ChevronLeft size={13} /> Back</button>
-        <span className="text-[11px] text-[var(--color-ink-400)]">Step {step + 1} of {steps.length}</span>
+        <span className="text-[11px] text-[var(--color-ink-400)]">Tab {step + 1} of {layout.tabs.length}</span>
         <button type="button" disabled={step === last} onClick={() => setStep(step + 1)} className="inline-flex items-center gap-1 rounded-lg bg-[var(--color-ink-900)] px-3.5 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-30">Next <ChevronRight size={13} /></button>
       </div>
     </div>

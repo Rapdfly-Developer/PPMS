@@ -18,6 +18,7 @@ import type { FileData } from "@/app/(app)/ipd/[admissionId]/PatientFile";
 /** Category shown as the coloured badge, as on the patient Time Stamp. */
 const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "discharge" | "note" | "dose"> = {
   DETAILS_UPDATED: "update",
+  SURGERY_DETAILS_CHANGED: "update",
   TYPE_CHANGED: "update",
   FORM_FROZEN: "form",
   FORM_ADDED: "form",
@@ -39,6 +40,7 @@ const ACTIVITY_KIND: Record<string, "admission" | "form" | "update" | "ot" | "di
 
 const ACTIVITY_TEXT: Record<string, string> = {
   DETAILS_UPDATED: "Ward / floor / file details updated",
+  SURGERY_DETAILS_CHANGED: "Surgery details changed",
   TYPE_CHANGED: "Type of admission changed",
   FORM_FROZEN: "Form frozen",
   FORM_ADDED: "Form added",
@@ -72,6 +74,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
         select: {
           id: true, date: true, finalizedAt: true, status: true,
           followUpDate: true,
+          hospitalId: true,
           hospital: { select: { name: true, address: true, contact: true, logoUrl: true } },
           doctor: { select: { name: true, qualifications: true, medicalRegNumber: true } },
           patient: { select: { id: true, name: true, udid: true, uhid: true, age: true, sex: true, mobile: true, photoUrl: true } },
@@ -91,7 +94,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     // Reports replaced by a No Show retake are history (as in Counselling)
     where: { visit: { patientId: v.patient.id, ...scope }, status: { not: SUPERSEDED } },
     orderBy: { createdAt: "desc" },
-    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true, priority: true, doctorNotes: true },
+    select: { id: true, testName: true, laterality: true, notes: true, resultRef: true, resultAt: true, extraResultRefs: true, updatedAt: true, createdAt: true, priority: true, doctorNotes: true, status: true },
   });
 
   // EMR details for the discharge draft: the admitting visit first, then the
@@ -110,7 +113,12 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
       posteriorSegment: { select: { re: true, le: true } },
     },
   });
-  const ordered = [...emrVisits.filter((x) => x.id === v.id), ...emrVisits.filter((x) => x.id !== v.id)];
+  // The doctor's notes of this admission are the latest word: newest first, then the admitting visit, then older visits
+  const noteVisits = a.doctorNotes
+    .map((n) => { try { return n.data ? (JSON.parse(n.data) as { v?: number; visit?: unknown } | null) : null; } catch { return null; } })
+    .filter((x): x is { v: number; visit: Record<string, unknown> } => !!x && x.v === 2 && typeof x.visit === "object")
+    .map((x) => x.visit as unknown as (typeof emrVisits)[number]);
+  const ordered = [...noteVisits, ...emrVisits.filter((x) => x.id === v.id), ...emrVisits.filter((x) => x.id !== v.id)];
   const firstWith = <T,>(pick: (x: (typeof emrVisits)[number]) => T | null | undefined, ok: (t: T) => boolean = () => true): T | null => {
     for (const x of ordered) { const t = pick(x); if (t != null && ok(t)) return t; }
     return null;
@@ -166,16 +174,16 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
   const parseJson = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
   const noteEvents = [
     ...a.doctorNotes.flatMap((n) => [
-      { at: n.createdAt.toISOString(), by: n.byName, text: "Doctor's note added", detail: "", kind: "note" as const },
-      ...(n.editedAt ? [{ at: n.editedAt.toISOString(), by: n.byName, text: "Doctor's note edited", detail: "", kind: "note" as const }] : []),
+      { at: n.createdAt.toISOString(), by: n.byName, text: "Doctor's note added", detail: "", kind: "note" as const, form: "doctorNotes" },
+      ...(n.editedAt ? [{ at: n.editedAt.toISOString(), by: n.byName, text: "Doctor's note edited", detail: "", kind: "note" as const, form: "doctorNotes" }] : []),
     ]),
     ...(((parseJson(a.forms.find((f) => f.key === "nurse")?.data ?? "{}").entries ?? []) as { at?: string; by?: string; editedAt?: string }[]).flatMap((e) => [
-      ...(e.at ? [{ at: e.at, by: e.by ?? "", text: "Nurse note added", detail: "", kind: "note" as const }] : []),
-      ...(e.editedAt ? [{ at: e.editedAt, by: e.by ?? "", text: "Nurse note edited", detail: "", kind: "note" as const }] : []),
+      ...(e.at ? [{ at: e.at, by: e.by ?? "", text: "Nurse note added", detail: "", kind: "note" as const, form: "nurse" }] : []),
+      ...(e.editedAt ? [{ at: e.editedAt, by: e.by ?? "", text: "Nurse note edited", detail: "", kind: "note" as const, form: "nurse" }] : []),
     ])),
     ...(((parseJson(a.forms.find((f) => f.key === "treatment")?.data ?? "{}").log ?? []) as { at?: string; by?: string; text?: string; kind?: string }[])
       .filter((e) => e.kind === "dose" && e.at)
-      .map((e) => ({ at: e.at as string, by: e.by ?? "", text: "Dose given", detail: String(e.text ?? "").replace(/ given/, ""), kind: "dose" as const }))),
+      .map((e) => ({ at: e.at as string, by: e.by ?? "", text: "Dose given", detail: String(e.text ?? "").replace(/ given/, ""), kind: "dose" as const, form: "treatment" }))),
   ];
   const activity = [
     ...noteEvents,
@@ -192,13 +200,19 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
           detail = [nv?.ward && `Ward ${nv.ward}`, nv?.floor && `Floor ${nv.floor}`, nv?.fileNo && `File ${nv.fileNo}`].filter(Boolean).join(" · ");
         }
       } catch { /* ignore */ }
-      return { at: l.timestamp.toISOString(), by: l.userName ?? "", text: ACTIVITY_TEXT[l.action] ?? l.action, detail, kind: ACTIVITY_KIND[l.action] ?? "update" };
+      let form = "";
+      try { const nv = l.newValue ? JSON.parse(l.newValue) : null; if (typeof nv?.key === "string") form = nv.key; } catch { /* ignore */ }
+      return { at: l.timestamp.toISOString(), by: l.userName ?? "", text: ACTIVITY_TEXT[l.action] ?? l.action, detail, kind: ACTIVITY_KIND[l.action] ?? "update", form };
     }),
     { at: (v.finalizedAt ?? a.createdAt).toISOString(), by: v.doctor.name, text: "Admitted (EMR finalized & signed)", detail: admissionTypeText(a.admissionType, a.admissionTypeOther), kind: "admission" as const },
     ...(a.returnedFromOtAt ? [{ at: a.returnedFromOtAt.toISOString(), by: "", text: "Back to ward (post-op)", detail: "", kind: "ot" as const }] : []),
   ].sort((x, y) => y.at.localeCompare(x.at));
 
   const parse = (s: string) => { try { return JSON.parse(s); } catch { return {}; } };
+
+  // The colours given to the tabs, shared by everyone in the hospital
+  const colourRows = await prisma.chipOption.findMany({ where: { category: "ipd_tab_colour", hospitalId: v.hospitalId, active: true }, select: { value: true, label: true } });
+  const tabColours: Record<string, string> = Object.fromEntries(colourRows.map((r) => [r.value, r.label]));
 
   // The doctor's own OT templates and education sets (staff use their doctor's)
   const ownerId = user.role === "DOCTOR" ? user.profileId : await getOwnerDoctorId(user.id);
@@ -257,9 +271,14 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
           .map((m) => ({ name: m.name, dose: m.dose, eye: m.eye, frequency: m.frequency }));
         return [...chart, ...post];
       })(),
-      education: educationAdvice(education),
+      education: [educationAdvice(education), firstWith((x) => (x as { adviseNotes?: string | null }).adviseNotes, (t) => !!String(t).trim())?.trim()].filter(Boolean).join("\n"),
       diet: education.meals.filter((m) => m.diet.trim()).map((m) => ({ time: m.meal, item: m.diet })),
-      followUpDate: v.followUpDate,
+      followUpDate: (firstWith((x) => (x as { followUpDate?: unknown }).followUpDate, (t) => !!t) as Date | string | null) ?? v.followUpDate,
+      ot: (() => {
+        const row = a.forms.find((f) => f.key === "otFinal") ?? a.forms.find((f) => f.key === "otNotes");
+        const x = row ? parse(row.data) : null;
+        return x && x.v === 2 ? { surgeon: x.surgeon, anaesthesia: x.anaesthesia, eye: x.eye, implant: x.implant, procedure: x.procedure, complications: x.complications } : null;
+      })(),
     }),
   };
 
@@ -295,6 +314,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     fileNo: a.fileNo,
     status: a.status,
     fileTabs: a.fileTabs,
+    tabColours,
     counsellingVisitId: a.counsellingVisitId,
     fileCreated: !!a.fileCreatedAt,
     visitDate: v.date.toISOString(),
@@ -325,7 +345,7 @@ export async function loadIpdFileData(admissionId: string, user: SessionUser, re
     orders: orders.map((o) => ({
       id: o.id, testName: o.testName, laterality: o.laterality, notes: o.notes, resultRef: o.resultRef,
       resultAt: o.resultRef ? (o.resultAt ?? o.updatedAt).toISOString() : null, createdAt: o.createdAt.toISOString(),
-      extraResultRefs: o.extraResultRefs, priority: o.priority, doctorNotes: o.doctorNotes,
+      extraResultRefs: o.extraResultRefs, priority: o.priority, doctorNotes: o.doctorNotes, status: o.status,
     })),
     doctorNotes: a.doctorNotes.map((n) => ({ id: n.id, text: n.text, by: n.byName, at: n.createdAt.toISOString(), editedAt: n.editedAt?.toISOString() ?? null, data: n.data ? parse(n.data) : null })),
     activity,

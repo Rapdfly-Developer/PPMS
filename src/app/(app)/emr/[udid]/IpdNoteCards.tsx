@@ -5,11 +5,11 @@
 // Follow up review / Discharge disposition in the Plan tab.
 
 import { useState } from "react";
-import { CalendarCheck, LogOut, Pill, X } from "lucide-react";
+import { CalendarCheck, LogOut, Pill, Share2, X } from "lucide-react";
 import { MedicationEntry } from "@/components/emr/MedicationEntry";
 import type { PostOpMed } from "@/lib/ipd-emr-copy";
 import { Card } from "@/components/ui/Card";
-import { DispositionToggle, FollowUpdatesPanel } from "./DispositionPanel";
+import { DispositionToggle, FollowUpdatesPanel, ReferralPanel } from "./DispositionPanel";
 import { useEmrActions, useIpdNote } from "./EmrActionsContext";
 
 const box = "w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-sunken)] px-3 py-2 text-sm text-[var(--color-ink-800)] placeholder:text-[var(--color-ink-300)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-400)] focus:border-transparent disabled:opacity-100";
@@ -93,7 +93,7 @@ export function IpdPostOpMedsCard({ readOnly }: { readOnly: boolean }) {
 }
 
 /** History of present illness in the notes: three plain fields (surgery, date, surgeon). */
-export function IpdHpiCard({ readOnly }: { readOnly: boolean }) {
+export function IpdHpiCard({ readOnly, extra }: { readOnly: boolean; /** Shown inside this card under the three fields (the added HOPI). */ extra?: React.ReactNode }) {
   const ipd = useIpdNote();
   const name = useSaved(ipd?.values.surgeryName ?? "", (v) => void ipd?.save({ surgeryName: v }));
   const date = useSaved(ipd?.values.surgeryDate ?? "", (v) => void ipd?.save({ surgeryDate: v }));
@@ -117,6 +117,7 @@ export function IpdHpiCard({ readOnly }: { readOnly: boolean }) {
           <input {...surgeon} onChange={(e) => surgeon.onChange(e.target.value)} disabled={readOnly} className={box} />
         </div>
       </div>
+      {extra && <div className="mt-3 border-t border-[var(--color-border)] pt-3">{extra}</div>}
     </Card>
   );
 }
@@ -124,17 +125,18 @@ export function IpdHpiCard({ readOnly }: { readOnly: boolean }) {
 /** Plan tab disposition for the notes: Follow up review or Discharge. */
 export function IpdDispositionCard({ visit, udid, readOnly }: { visit: any; udid: string; readOnly: boolean }) { // eslint-disable-line @typescript-eslint/no-explicit-any
   const ipd = useIpdNote();
-  const [panel, setPanel] = useState<"" | "follow" | "discharge">(() => (visit.followUpDate || visit.inViewOf ? "follow" : ipd?.values.dischargeNote ? "discharge" : ""));
+  const [panel, setPanel] = useState<"" | "follow" | "referral" | "discharge">(() => (visit.followUpDate || visit.inViewOf ? "follow" : visit.referralEnabled ? "referral" : ipd?.values.dischargeNote ? "discharge" : ""));
   const note = useSaved(ipd?.values.dischargeNote ?? "", (v) => void ipd?.save({ dischargeNote: v }));
   if (!ipd) return null;
   const [blockedShown, setBlockedShown] = useState(false);
-  const toggle = (p: "follow" | "discharge") => setPanel((cur) => (cur === p ? "" : p));
+  const toggle = (p: "follow" | "referral" | "discharge") => setPanel((cur) => (cur === p ? "" : p));
   return (
     <Card>
       <p className="mb-3 text-label font-medium text-[var(--color-ink-700)] sm:text-sm">Patient Disposition</p>
       {!readOnly && (
         <div className="mb-2 flex flex-wrap gap-3">
           <DispositionToggle icon={<CalendarCheck size={16} />} label="Follow up review" active={panel === "follow"} onClick={() => toggle("follow")} />
+          <DispositionToggle icon={<Share2 size={16} />} label="Referral" active={panel === "referral"} onClick={() => toggle("referral")} />
           <DispositionToggle icon={<LogOut size={16} />} label="Discharge" active={panel === "discharge"} onClick={() => (ipd.onDischarge ? ipd.onDischarge() : ipd.dischargeBlock ? setBlockedShown((v) => !v) : toggle("discharge"))} />
         </div>
       )}
@@ -144,6 +146,9 @@ export function IpdDispositionCard({ visit, udid, readOnly }: { visit: any; udid
       <div className="flex flex-col gap-4">
         {(panel === "follow" || (readOnly && (visit.followUpDate || visit.inViewOf))) && (
           <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0"><FollowUpdatesPanel visit={visit} udid={udid} priorVisits={[]} /></fieldset>
+        )}
+        {(panel === "referral" || (readOnly && visit.referralEnabled)) && (
+          <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0"><ReferralPanel visit={visit} udid={udid} /></fieldset>
         )}
         {(panel === "discharge" || (readOnly && ipd.values.dischargeNote)) && (
           <div className="rounded-xl border border-[var(--color-border)] p-4">

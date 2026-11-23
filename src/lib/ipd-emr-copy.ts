@@ -157,7 +157,7 @@ export function noteEmrData(copy: EmrCopy): Record<string, any> {
     ...v,
     generalExam: {
       ...(v.generalExam ?? {}),
-      hpi: hpiSentence(copy.ipd), hpiFields: null,
+      hpi: [hpiSentence(copy.ipd), (v.generalExam?.hpi ?? "").trim()].filter(Boolean).join(" "), hpiFields: null,
       medications: JSON.stringify(medsOf(copy).map((m) => ({ drugName: m.name, dosage: m.dose, frequency: m.frequency, duration: "", laterality: m.eye }))),
       pastMedicalHistory: JSON.stringify(surgery ? [{ name: `Surgery: ${surgery}` }] : []),
     },
@@ -193,7 +193,8 @@ export function noteSummaryProse(copy: EmrCopy): string {
 
 /** "Underwent LE Trabeculectomy on 12 Nov 2026 by Dr. Name." from the three history fields. */
 export function hpiSentence(ipd: IpdValues): string {
-  const name = (ipd.surgeryName ?? "").trim();
+  // The surgery name may carry the anaesthesia after " · " (as in the banner); the sentence names the surgery only
+  const name = (ipd.surgeryName ?? "").split(" · ")[0].trim();
   if (!name) return "";
   const on = ipd.surgeryDate ? ` on ${dayOf(ipd.surgeryDate)}` : "";
   const by = (ipd.surgeon ?? "").trim() ? ` by Dr. ${(ipd.surgeon ?? "").trim().replace(/^Dr\.?\s*/i, "")}` : "";

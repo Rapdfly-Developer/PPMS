@@ -5,6 +5,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, X } from "lucide-react";
+import { TAB_COLOURS } from "@/lib/ipd";
 
 export interface ChromeTab {
   id: string;
@@ -18,6 +19,10 @@ export interface ChromeTab {
   title?: string;
   /** A thin vertical line before this tab. */
   separatorBefore?: boolean;
+  /** The tab's colour (a dot, a soft tint and an accent line on the open tab). */
+  colour?: { id: string; dot: string; tint: string } | null;
+  /** Offers the colour picker on this tab. */
+  colourable?: boolean;
 }
 
 /** Applies a saved order to a list of ids; ids that are not in the saved order keep their place at the end. */
@@ -48,8 +53,10 @@ export function useSavedList(storageKey: string): [string[], (v: string[]) => vo
 }
 
 export function ChromeTabBar({
-  tabs, activeId, onSelect, onReorder, onClose, onAdd, reopen, onReopen, trailing, label = "Tabs", dragDisabled, variant = "chrome",
+  tabs, activeId, onSelect, onReorder, onClose, onAdd, reopen, onReopen, trailing, label = "Tabs", dragDisabled, variant = "chrome", onColour,
 }: {
+  /** Called when a colour is picked for a tab (null clears it). */
+  onColour?: (tabId: string, colourId: string | null) => void;
   tabs: ChromeTab[];
   activeId: string;
   onSelect: (id: string) => void;
@@ -71,7 +78,25 @@ export function ChromeTabBar({
   const [dragId, setDragId] = useState<string | null>(null);
   const [over, setOver] = useState<{ id: string; after: boolean } | null>(null);
   const [menu, setMenu] = useState(false);
+  const [palette, setPalette] = useState<string | null>(null);
+  // Hold a tab (or right-click it) to pick its colour
+  const press = useRef<{ timer: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
+  const pressed = useRef(false);
+  const stopPress = () => { if (press.current) { clearTimeout(press.current.timer); press.current = null; } };
+  const startPress = (e: React.PointerEvent, id: string) => {
+    if (!onColour || e.button > 0 || (e.target as HTMLElement).closest("button[aria-label^='Close'], [data-palette]")) return;
+    stopPress(); pressed.current = false;
+    press.current = { x: e.clientX, y: e.clientY, timer: setTimeout(() => { pressed.current = true; press.current = null; setPalette(id); }, 450) };
+  };
+  const movePress = (e: React.PointerEvent) => { if (press.current && Math.hypot(e.clientX - press.current.x, e.clientY - press.current.y) > 6) stopPress(); };
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!palette) return;
+    const off = (e: MouseEvent) => { if (!(e.target as HTMLElement).closest?.("[data-palette]")) setPalette(null); };
+    document.addEventListener("mousedown", off);
+    return () => document.removeEventListener("mousedown", off);
+  }, [palette]);
 
   useEffect(() => {
     if (!menu) return;
@@ -101,9 +126,20 @@ export function ChromeTabBar({
         const dropAfter = over?.id === t.id && over.after && dragId !== t.id;
         return (
           <div key={t.id} data-tab={t.id}
-            style={!underline && !on ? { borderColor: "transparent" } : undefined}
+            style={underline ? undefined : {
+              ...(!on ? { borderColor: "transparent" } : {}),
+              ...(t.colour ? {
+                background: `linear-gradient(180deg, ${t.colour.tint} 0%, ${on ? "var(--color-surface)" : "#ffffff"} 100%)`,
+                boxShadow: on
+                  ? `0 0 0 1px ${t.colour.dot}66, 0 -3px 14px -3px ${t.colour.dot}88`
+                  : `0 0 0 1px ${t.colour.dot}40, 0 5px 14px -6px ${t.colour.dot}`,
+              } : {}),
+            }}
+            title={onColour ? "Hold to choose a colour" : undefined}
+            onPointerDown={(e) => startPress(e, t.id)} onPointerMove={movePress} onPointerUp={stopPress} onPointerLeave={stopPress} onPointerCancel={stopPress}
+            onContextMenu={(e) => { if (onColour) { e.preventDefault(); stopPress(); setPalette(t.id); } }}
             draggable={canDrag}
-            onDragStart={(e) => { setDragId(t.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.id); }}
+            onDragStart={(e) => { stopPress(); setDragId(t.id); e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", t.id); }}
             onDragOver={(e) => {
               if (!dragId) return;
               e.preventDefault(); e.dataTransfer.dropEffect = "move";
@@ -122,10 +158,23 @@ export function ChromeTabBar({
             {t.separatorBefore && !underline && <span aria-hidden className="pointer-events-none absolute -left-1.5 top-1/2 h-5 w-px -translate-y-1/2 bg-[var(--color-border)]" />}
             {dropBefore && <span className="absolute -left-[3px] top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--color-primary-500)]" />}
             {dropAfter && <span className="absolute -right-[3px] top-1.5 bottom-1.5 w-[3px] rounded-full bg-[var(--color-primary-500)]" />}
-            <button type="button" role="tab" aria-selected={on} onClick={() => onSelect(t.id)}
+            <button type="button" role="tab" aria-selected={on} onClick={() => { if (pressed.current) { pressed.current = false; return; } onSelect(t.id); }}
               className={`inline-flex h-full items-center outline-none ${underline ? "gap-1.5 px-4 py-2.5" : `gap-2 pl-3 ${t.closable && onClose && on ? "pr-1" : "pr-3.5"}`} ${canDrag ? "cursor-grab active:cursor-grabbing" : ""}`}>
+              {t.colour && <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: t.colour.dot }} />}
               {t.icon}<span>{t.label}</span>{t.extra}
             </button>
+            {onColour && palette === t.id && (
+              <div data-palette className="absolute left-1/2 top-full z-40 mt-1.5 w-[10.5rem] -translate-x-1/2 rounded-2xl border border-[var(--color-border)] bg-white p-3 shadow-xl">
+                <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-wider text-[var(--color-ink-400)]">Tab colour</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {TAB_COLOURS.map((c) => (
+                    <button key={c.id} type="button" title={c.name} aria-label={c.name} onClick={() => { onColour(t.id, c.id); setPalette(null); }}
+                      className={`size-5 rounded-full transition hover:scale-110 ${t.colour?.id === c.id ? "ring-2 ring-[var(--color-ink-600)] ring-offset-1" : "ring-1 ring-black/5"}`} style={{ background: c.dot }} />
+                  ))}
+                </div>
+                <button type="button" onClick={() => { onColour(t.id, null); setPalette(null); }} className="mt-2.5 w-full rounded-lg py-1 text-[11px] font-semibold text-[var(--color-ink-500)] hover:bg-[var(--color-surface-sunken)]">No colour</button>
+              </div>
+            )}
             {t.closable && onClose && on && (
               <button type="button" aria-label={`Close ${t.title ?? "tab"}`} title="Close this tab"
                 onClick={(e) => { e.stopPropagation(); onClose(t.id); }}
@@ -134,6 +183,7 @@ export function ChromeTabBar({
               </button>
             )}
             {underline && on && <span aria-hidden className="absolute left-0 right-0 -bottom-px h-[2px] bg-[var(--color-primary-600)]" />}
+            {!underline && on && t.colour && <span aria-hidden className="pointer-events-none absolute inset-x-3 top-0 h-[2.5px] rounded-b-full" style={{ background: t.colour.dot }} />}
           </div>
         );
       })}

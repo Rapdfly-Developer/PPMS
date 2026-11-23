@@ -13,11 +13,15 @@ import { EmrActionsProvider, type EmrActions } from "@/app/(app)/emr/[udid]/EmrA
 import { GeneralExamTab } from "@/app/(app)/emr/[udid]/GeneralExamTab";
 import { OphthalmicExamTab } from "@/app/(app)/emr/[udid]/OphthalmicExamTab";
 import { PlanTab } from "@/app/(app)/emr/[udid]/PlanTab";
+import { InvestigationsTab } from "@/app/(app)/emr/[udid]/InvestigationsTab";
 import { applyCopyOp, reviveDates, type CopyOp, type EmrCopy, type MergeKey } from "@/lib/ipd-emr-copy";
-import { finalizeDoctorNote, type NoteMedChanges } from "../actions";
+import {
+  addIpdExtraReport, addIpdInvestigationOrder, attachIpdReport, deleteIpdInvestigationOrder, finalizeDoctorNote, removeIpdExtraReport, removeIpdReport, updateIpdInvestigationNotes,
+  type NoteMedChanges,
+} from "../actions";
 
-type TabKey = "general" | "ophthalmic" | "plan";
-const TABS: { key: TabKey; label: string }[] = [{ key: "general", label: "General" }, { key: "ophthalmic", label: "Ophthalmic" }, { key: "plan", label: "Plan" }];
+type TabKey = "general" | "ophthalmic" | "investigations" | "plan";
+const TABS: { key: TabKey; label: string }[] = [{ key: "general", label: "General" }, { key: "ophthalmic", label: "Ophthalmic" }, { key: "investigations", label: "Investigations" }, { key: "plan", label: "Plan" }];
 
 export interface ChartDrug { id: string; name: string; dose: string; route: string; eye: string; frequency: string; instructions: string; start: string }
 type NewMed = NoteMedChanges["add"][number] & { tempId: string };
@@ -25,7 +29,9 @@ type NewMed = NoteMedChanges["add"][number] & { tempId: string };
 const uid = () => `ipd${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 const never = async () => { throw new Error("Not available in the doctor's notes."); };
 
-export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, onDone, onDischarge, dischargeBlock }: {
+export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, orders = [], onDone, onDischarge, dischargeBlock }: {
+  /** The patient's investigation orders: the same records as the EMR and the Investigation Reports tab, so they stay in sync. */
+  orders?: Record<string, unknown>[];
   onDischarge?: () => void;
   dischargeBlock?: string;
   admissionId: string; udid: string; patient: { age: number; sex: string };
@@ -115,9 +121,17 @@ export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, on
       addMedication: async (_v: string, _u: string, m: Parameters<typeof toNew>[0]) => { setAdded((cur) => [...cur, toNew(m)]); },
       removeMedication: async (id: string) => { drop(id); },
       updateMedication: async (id: string, _u: string, m: Parameters<typeof toNew>[0]) => { drop(id); setAdded((cur) => [...cur, toNew(m)]); },
-      clearAllMedications: async () => { for (const x of listRef.current) drop(x.id); },
-      addInvestigationOrder: never,
-      deleteInvestigationOrder: never,
+      // Clear All in the Plan tab clears what was added in this note (not the chart's medicines)
+      clearAllMedications: async () => { setAdded([]); },
+      // Investigations are the patient's real orders (the same as the EMR and the Investigation Reports tab), so they are saved at once, not held in the draft
+      addInvestigationOrder: async (_v: string, _u: string, data: { category: string; testName: string; priority: string; laterality?: string; notes?: string }) => { await addIpdInvestigationOrder(admissionId, data); },
+      deleteInvestigationOrder: async (id: string) => { await deleteIpdInvestigationOrder(admissionId, id); },
+      updateInvestigationStatus: async () => undefined,
+      attachResult: async (id: string, _u: string, ref: string) => attachIpdReport(admissionId, id, ref),
+      removeResult: async (id: string) => removeIpdReport(admissionId, id),
+      addExtraResult: async (id: string, _u: string, ref: string) => addIpdExtraReport(admissionId, id, ref),
+      removeExtraResult: async (id: string, _u: string, ref: string) => removeIpdExtraReport(admissionId, id, ref),
+      updateInvestigationDoctorNotes: async (id: string, _u: string, text: string) => { await updateIpdInvestigationNotes(admissionId, id, text); },
       saveSurgicalCounselling: never,
       clearSurgicalCounselling: never,
       saveAdmission: never,
@@ -129,9 +143,11 @@ export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, on
   const visit = useMemo(() => ({
     ...reviveDates(copy.visit),
     id: `ipdcopy-${admissionId}`,
-    diagnoses: [], investigationOrders: [], dispense: null, ipdAdmission: null, counsellingRecord: null,
-    medications: list.map((x) => ({ id: x.id, visitId: `ipdcopy-${admissionId}`, drugName: x.name, dosage: x.dose, frequency: x.frequency, duration: "", instructions: x.instructions, route: x.route, laterality: x.eye, createdAt: x.start })),
-  }), [copy, list, admissionId]);
+    diagnoses: [], investigationOrders: orders, dispense: null, ipdAdmission: null, counsellingRecord: null,
+    // The Plan tab's prescription starts empty in every new note: only the medicines added in this note show there.
+    // (The General tab's Post-op medications and the Treatment Chart keep the full list.)
+    medications: added.map((m) => ({ id: m.tempId, visitId: `ipdcopy-${admissionId}`, drugName: m.name, dosage: m.dose, frequency: m.frequency, duration: "", instructions: m.instructions, route: m.route, laterality: m.eye, createdAt: "" })),
+  }), [copy, added, admissionId, orders]);
 
   const ipd = useMemo(() => ({ values: copy.ipd, save: (patch: Partial<EmrCopy["ipd"]>) => run({ t: "ipd", data: patch }), meds: { list }, onDischarge, dischargeBlock }), [copy.ipd, run, list, onDischarge, dischargeBlock]);
 
@@ -176,6 +192,7 @@ export function NoteEditor({ admissionId, udid, patient, seed, noteId, drugs, on
                 canViewVA canViewRefraction canViewColour canViewIOP canViewAnterior canViewPosterior canViewOculoplasty
               />
             )}
+            {tab === "investigations" && <InvestigationsTab visit={visit} priorVisits={[]} udid={udid} readOnly={false} />}
             {tab === "plan" && <PlanTab visit={visit} udid={udid} patientSex={patient.sex} priorVisits={[]} readOnly={false} medicationsReadOnly={false} canViewMedications />}
           </EmrActionsProvider>
         )}

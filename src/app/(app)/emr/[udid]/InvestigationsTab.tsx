@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { SingleChipSelect } from "@/components/ui/Chip";
 import { ORDER_PRIORITIES, LATERALITY } from "@/lib/constants";
 import { INV_CATALOG } from "@/lib/investigation-catalog";
-import { addInvestigationOrder, updateInvestigationStatus, attachResult, removeResult, addExtraResult, removeExtraResult, deleteInvestigationOrder, updateInvestigationDoctorNotes } from "./actions";
+import { useEmrActions } from "./EmrActionsContext";
 import { ReportFilesMenu, type ReportFile } from "@/components/emr/ReportFilesMenu";
 import { parseExtraResults } from "@/lib/investigation-extra-results";
 import { KeywordInput } from "@/components/emr/KeywordField";
@@ -196,6 +196,7 @@ function InvestigationCard({
 }: {
   order: any; udid: string; readOnly: boolean; onView: (url: string) => void;
 }) {
+  const emrActions = useEmrActions();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, startDelete]           = useTransition();
 
@@ -205,12 +206,12 @@ function InvestigationCard({
   const { savePaused } = useEMRSaveContext();
   useAutoSave(doctorNotes, async (v) => {
     if (readOnly) return;
-    await updateInvestigationDoctorNotes(order.id, udid, v);
+    await emrActions.updateInvestigationDoctorNotes(order.id, udid, v);
   }, undefined, { flushOnUnmount: true, paused: savePaused });
 
   const handleDelete = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
-    startDelete(async () => { await deleteInvestigationOrder(order.id, udid); });
+    startDelete(async () => { await emrActions.deleteInvestigationOrder(order.id, udid); });
   };
 
   return (
@@ -246,9 +247,9 @@ function InvestigationCard({
               files={reportFiles(order)}
               locked={readOnly}
               onView={onView}
-              onReplace={(url) => attachResult(order.id, udid, url)}
-              onAddMore={(url) => addExtraResult(order.id, udid, url)}
-              onDelete={(f) => (f.main ? removeResult(order.id, udid) : removeExtraResult(order.id, udid, f.ref))}
+              onReplace={(url) => emrActions.attachResult(order.id, udid, url)}
+              onAddMore={(url) => emrActions.addExtraResult(order.id, udid, url)}
+              onDelete={(f) => (f.main ? emrActions.removeResult(order.id, udid) : emrActions.removeExtraResult(order.id, udid, f.ref))}
             />
           ) : !readOnly ? (
             <span data-overview-hide className="contents"><UploadButton orderId={order.id} udid={udid} /></span>
@@ -303,6 +304,7 @@ function PreviousInvestigationCard({
 }: {
   order: any; udid: string; readOnly: boolean; uploadedAt?: string; onView: (url: string) => void;
 }) {
+  const emrActions = useEmrActions();
   const frozen = new Date() > addMonths(new Date(order.createdAt), FREEZE_MONTHS);
   const locked = readOnly || frozen;
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -312,12 +314,12 @@ function PreviousInvestigationCard({
   const { savePaused } = useEMRSaveContext();
   useAutoSave(doctorNotes, async (v) => {
     if (locked) return;
-    await updateInvestigationDoctorNotes(order.id, udid, v);
+    await emrActions.updateInvestigationDoctorNotes(order.id, udid, v);
   }, undefined, { flushOnUnmount: true, paused: savePaused });
 
   const handleDeleteOrder = () => {
     if (!confirmDelete) { setConfirmDelete(true); setTimeout(() => setConfirmDelete(false), 3500); return; }
-    startBusy(async () => { await deleteInvestigationOrder(order.id, udid); });
+    startBusy(async () => { await emrActions.deleteInvestigationOrder(order.id, udid); });
   };
 
   const inViewOf = order.notes ? order.notes.replace(/^[•·]\s*/gm, "").split(/\r?\n/).filter(Boolean).join(", ") : "";
@@ -426,9 +428,9 @@ function PreviousInvestigationCard({
             files={reportFiles(order)}
             locked={locked}
             onView={onView}
-            onReplace={(url) => attachResult(order.id, udid, url)}
-            onAddMore={(url) => addExtraResult(order.id, udid, url)}
-            onDelete={(f) => (f.main ? removeResult(order.id, udid) : removeExtraResult(order.id, udid, f.ref))}
+            onReplace={(url) => emrActions.attachResult(order.id, udid, url)}
+            onAddMore={(url) => emrActions.addExtraResult(order.id, udid, url)}
+            onDelete={(f) => (f.main ? emrActions.removeResult(order.id, udid) : emrActions.removeExtraResult(order.id, udid, f.ref))}
           />
         </div>
       </div>
@@ -438,6 +440,7 @@ function PreviousInvestigationCard({
 }
 
 function UploadButton({ orderId, udid, label = "File", addMore = false }: { orderId: string; udid: string; label?: string; /** Keep the current file and attach this one as well. */ addMore?: boolean }) {
+  const emrActions = useEmrActions();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [, startTransition] = useTransition();
@@ -455,7 +458,7 @@ function UploadButton({ orderId, udid, label = "File", addMore = false }: { orde
       const json = await res.json();
       if (!res.ok || json.error) throw new Error(json.error ?? "Upload failed");
       startTransition(async () => {
-        const result = addMore ? await addExtraResult(orderId, udid, json.url) : await attachResult(orderId, udid, json.url);
+        const result = addMore ? await emrActions.addExtraResult(orderId, udid, json.url) : await emrActions.attachResult(orderId, udid, json.url);
         if (result?.error) setError(result.error);
       });
     } catch (err: any) {
@@ -636,6 +639,7 @@ export function NewInvestigations({
   /** Custom order call (IPD); defaults to ordering on the visit. */
   place?: (d: { category: string; testName: string; priority: string; laterality: string; notes: string }) => Promise<unknown>;
 }) {
+  const emrActions = useEmrActions();
   const [viewUrl, setViewUrl] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState(Object.keys(INV_CATALOG)[0]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -703,7 +707,7 @@ export function NewInvestigations({
         const catFromCustom = customTests.find((t) => t.name === testName)?.category;
         const cat = catFromCatalog ?? catFromCustom ?? "Other";
         const d = { category: cat, testName, priority, laterality, notes: testNotes[testName] ?? "" };
-        if (place) await place(d); else await addInvestigationOrder(visit.id, udid, d);
+        if (place) await place(d); else await emrActions.addInvestigationOrder(visit.id, udid, d);
       }
       setSelected([]);
       setTestNotes({});

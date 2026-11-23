@@ -210,6 +210,8 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const [weight, setWeight] = useState(ge?.weight ?? "");
   const [complaints, setComplaints] = useState<Complaint[]>(() => parseComplaints(ge?.chiefComplaint ?? ""));
   const [hpi, setHpi] = useState(ge?.hpi ?? "");
+  // IPD notes: the EMR's HPI card (with templates) shows once added, or when the note already has one
+  const [hpiAdded, setHpiAdded] = useState(() => !!(ge?.hpi ?? "").trim() || hasHpiFields(parseJSON<HpiFields>(ge?.hpiFields, {})));
   // Structured HPI selections (dropdowns) and whether the box shows raw text for editing.
   const [hpiFields, setHpiFields] = useState<HpiFields>(() => parseJSON<HpiFields>(ge?.hpiFields, {}));
   const [hpiEditing, setHpiEditing] = useState(false);
@@ -384,6 +386,90 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
   const hasAllergies  = nkda || !!allergies.trim();
   const hasVitals     = !!(bp || pulse || temperature || weight);
 
+  const hpiInner = (
+    <>
+        {overview || openCards.hpi || ipd ? (
+          <FieldWithHistory
+            label={ipd ? "HOPI" : "HISTORY OF PRESENT ILLNESS"}
+            headerExtra={
+              <span className="flex items-center gap-3">
+                <CardChevron open onClick={() => toggleCard("hpi")} />
+                <button
+                  type="button"
+                  data-overview-hide
+                  role="switch"
+                  aria-checked={hpiTemplate}
+                  onClick={() => { setHpiTemplate((v) => !v); setHpiEditing(false); }}
+                  className={`inline-flex items-center gap-1.5 rounded-full border pl-1 pr-2.5 py-0.5 text-caption font-medium transition-colors ${
+                    hpiTemplate
+                      ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
+                      : "border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)]"
+                  }`}
+                >
+                  <span className={`relative w-6 h-3.5 rounded-full transition-colors ${hpiTemplate ? "bg-[var(--color-primary-600)]" : "bg-[var(--color-ink-300)]"}`}>
+                    <span className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all ${hpiTemplate ? "left-3" : "left-0.5"}`} />
+                  </span>
+                  {hpiTemplate ? "Template On" : "Template Off"}
+                </button>
+              </span>
+            }
+            history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}
+          >
+            {!hpiTemplate ? (
+              <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+            ) : (
+            <div className="flex flex-col gap-2.5">
+              {!readOnly && (
+                <HpiBuilder
+                  fields={hpiFieldsView}
+                  onChange={setHpiFieldsFromBuilder}
+                  disabled={readOnly}
+                  onGenerate={() => { if (hpi.trim()) setConfirmHpiReplace(true); else generateHpi(); }}
+                />
+              )}
+              {confirmHpiReplace && createPortal(
+                <ConfirmDialog
+                  title="Replace HPI?"
+                  message="The current HPI text will be replaced with the newly generated one."
+                  confirmLabel="Replace"
+                  onConfirm={() => { setConfirmHpiReplace(false); generateHpi(); }}
+                  onCancel={() => setConfirmHpiReplace(false)}
+                />,
+                document.body,
+              )}
+              {hpi.trim() && !hpiEditing ? (
+                <div className="relative rounded-xl border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50/60 px-3.5 py-2.5">
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      data-overview-hide
+                      onClick={() => setHpiEditing(true)}
+                      className="absolute top-2 right-2 text-caption font-medium px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  <HpiFormatted text={hpi} />
+                </div>
+              ) : hpiEditing && (
+                <div className="flex flex-col gap-1">
+                  <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
+                  {hpiEditing && (
+                    <button type="button" onClick={() => setHpiEditing(false)} className="self-end text-caption font-medium text-[var(--color-primary-700)] hover:underline">
+                      Done
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            )}
+          </FieldWithHistory>
+        ) : (
+          <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />
+        )}
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
@@ -391,7 +477,7 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
       </div>
 
       {/* CHIEF COMPLAINT */}
-      <div className={ipd ? "pointer-events-none" : undefined} {...(overview && !hasCC ? { "data-overview-empty-section": "" } : {})}>
+      <div {...(overview && !hasCC ? { "data-overview-empty-section": "" } : {})}>
       <Card>
         <FieldWithHistory
           label="CHIEF COMPLAINT"
@@ -515,93 +601,29 @@ export function GeneralExamTab({ visit, priorVisits, udid, readOnly, patient }: 
                 )}
               </div>
             ))}
+            {/* In the IPD notes a new, empty complaint line can be added */}
+            {ipd && !readOnly && (
+              <button type="button" onClick={() => setComplaints((prev) => [...prev, emptyComplaint()])}
+                className="inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
+                <Plus size={13} /> Add complaint
+              </button>
+            )}
           </div>
         </FieldWithHistory>
       </Card>
       </div>
 
-      {/* HISTORY OF PRESENT ILLNESS (the IPD notes copy shows surgery, date and surgeon) */}
-      {ipd ? <IpdHpiCard readOnly={readOnly} /> : <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
+      {/* HISTORY OF PRESENT ILLNESS. In the IPD notes the surgery card comes first and Add HOPI adds the EMR's HPI field (with its templates) inside that same card */}
+      {ipd ? (
+        <IpdHpiCard readOnly={readOnly} extra={hpiAdded ? hpiInner : (!readOnly ? (
+          <button type="button" onClick={() => setHpiAdded(true)}
+            className="inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--color-primary-700)] hover:bg-[var(--color-primary-50)]">
+            <Plus size={13} /> Add HOPI
+          </button>
+        ) : null)} />
+      ) : <div {...(overview && !hasHpi ? { "data-overview-empty-section": "" } : {})}>
       <Card>
-        {overview || openCards.hpi ? (
-          <FieldWithHistory
-            label="HISTORY OF PRESENT ILLNESS"
-            headerExtra={
-              <span className="flex items-center gap-3">
-                <CardChevron open onClick={() => toggleCard("hpi")} />
-                <button
-                  type="button"
-                  data-overview-hide
-                  role="switch"
-                  aria-checked={hpiTemplate}
-                  onClick={() => { setHpiTemplate((v) => !v); setHpiEditing(false); }}
-                  className={`inline-flex items-center gap-1.5 rounded-full border pl-1 pr-2.5 py-0.5 text-caption font-medium transition-colors ${
-                    hpiTemplate
-                      ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)]"
-                      : "border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:border-[var(--color-primary-300)]"
-                  }`}
-                >
-                  <span className={`relative w-6 h-3.5 rounded-full transition-colors ${hpiTemplate ? "bg-[var(--color-primary-600)]" : "bg-[var(--color-ink-300)]"}`}>
-                    <span className={`absolute top-0.5 w-2.5 h-2.5 rounded-full bg-white shadow transition-all ${hpiTemplate ? "left-3" : "left-0.5"}`} />
-                  </span>
-                  {hpiTemplate ? "Template On" : "Template Off"}
-                </button>
-              </span>
-            }
-            history={histFor((g) => g.hpi)} currentValue={hpi} onLoad={readOnly ? undefined : setHpi}
-          >
-            {!hpiTemplate ? (
-              <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
-            ) : (
-            <div className="flex flex-col gap-2.5">
-              {!readOnly && (
-                <HpiBuilder
-                  fields={hpiFieldsView}
-                  onChange={setHpiFieldsFromBuilder}
-                  disabled={readOnly}
-                  onGenerate={() => { if (hpi.trim()) setConfirmHpiReplace(true); else generateHpi(); }}
-                />
-              )}
-              {confirmHpiReplace && createPortal(
-                <ConfirmDialog
-                  title="Replace HPI?"
-                  message="The current HPI text will be replaced with the newly generated one."
-                  confirmLabel="Replace"
-                  onConfirm={() => { setConfirmHpiReplace(false); generateHpi(); }}
-                  onCancel={() => setConfirmHpiReplace(false)}
-                />,
-                document.body,
-              )}
-              {hpi.trim() && !hpiEditing ? (
-                <div className="relative rounded-xl border border-sky-200 border-l-4 border-l-sky-400 bg-sky-50/60 px-3.5 py-2.5">
-                  {!readOnly && (
-                    <button
-                      type="button"
-                      data-overview-hide
-                      onClick={() => setHpiEditing(true)}
-                      className="absolute top-2 right-2 text-caption font-medium px-2 py-0.5 rounded-full border border-[var(--color-border)] bg-white text-[var(--color-ink-500)] hover:text-[var(--color-primary-700)] hover:border-[var(--color-primary-300)] transition-colors"
-                    >
-                      Edit
-                    </button>
-                  )}
-                  <HpiFormatted text={hpi} />
-                </div>
-              ) : hpiEditing && (
-                <div className="flex flex-col gap-1">
-                  <KeywordTextarea fieldKey="ge_hpi" value={hpi} onChange={setHpi} disabled={readOnly} rows={3} placeholder="Onset, character, duration, aggravating/relieving factors..." />
-                  {hpiEditing && (
-                    <button type="button" onClick={() => setHpiEditing(false)} className="self-end text-caption font-medium text-[var(--color-primary-700)] hover:underline">
-                      Done
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-            )}
-          </FieldWithHistory>
-        ) : (
-          <ClosedCardHeader label="HISTORY OF PRESENT ILLNESS" onClick={() => toggleCard("hpi")} />
-        )}
+{hpiInner}
       </Card>
       </div>}
 

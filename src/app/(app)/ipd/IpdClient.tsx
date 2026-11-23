@@ -86,6 +86,19 @@ function Avatar({ r }: { r: IpdRow }) {
 
 /** Surgery as a chip, with the laterality in bold (same as the Counselling list). */
 function SurgeryText({ r }: { r: IpdRow }) {
+  if (!r.surgery && r.diagnoses.length > 0) {
+    // No surgery: the diagnosis, as the other modules show it
+    return (
+      <span className="flex min-w-0 flex-wrap gap-1">
+        {r.diagnoses.map((d, i) => (
+          <span key={i} className="clinical-diagnosis-chip inline-flex max-w-full items-center gap-1 rounded-full border px-2.5 py-0.5 text-caption">
+            {d.laterality && <span className="clinical-laterality shrink-0">{d.laterality}</span>}
+            <span className="break-words">{d.description}</span>
+          </span>
+        ))}
+      </span>
+    );
+  }
   if (!r.surgery) {
     return (
       <span className="block min-w-0">
@@ -158,7 +171,7 @@ function Table({ list, onOpen }: { list: IpdRow[]; onOpen: (r: IpdRow) => void }
       <ListCols />
       <thead>
         <tr className="border-b border-[var(--color-border)]">
-          {["Patient", "Surgery", "Dates", "Completion"].map((h) => (
+          {["Patient", list.every((r) => !r.surgery) ? "Diagnosis" : list.some((r) => !r.surgery) ? "Surgery / Diagnosis" : "Surgery", "Dates", "Completion"].map((h) => (
             <th key={h} className="px-4 py-2.5 text-left text-micro sm:text-caption font-bold uppercase tracking-widest text-[var(--color-ink-400)]">{h}</th>
           ))}
         </tr>
@@ -182,7 +195,7 @@ function MobileCard({ r }: { r: IpdRow }) {
     <Link href={profileHref(r)} className="block rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-3 hover:border-[var(--color-primary-300)] transition-colors">
       <PatientCell r={r} />
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-caption sm:text-xs">
-        <span className="text-[var(--color-ink-400)]">Surgery</span>
+        <span className="text-[var(--color-ink-400)]">{r.surgery ? "Surgery" : "Diagnosis"}</span>
         <SurgeryText r={r} />
         <span className="text-[var(--color-ink-400)]">Dates</span>
         <Dates r={r} />

@@ -87,8 +87,15 @@ export function RemoveCustom({ onRemove, label }: { onRemove: () => void; label:
 const chipBase = "inline-flex items-center rounded-full border text-xs font-medium transition-colors";
 
 /** A row of option chips (built-in + custom) with "+ Custom". */
-export function ChipRow({ storeKey, builtIns, isOn, onPick, editable = true, prefix = "", tone, limit = 8 }: {
+/** The text without this keyword's line (one keyword per line). */
+export const removeLine = (value: string, pick: string) => value.split("\n").filter((l) => l.trim() !== pick).join("\n");
+/** The text without this keyword (comma separated). */
+export const removeCsv = (value: string, pick: string) => value.split(",").map((x) => x.trim()).filter((x) => x && x !== pick).join(", ");
+
+export function ChipRow({ storeKey, builtIns, isOn, onPick, onRemove, editable = true, prefix = "", tone, limit = 8 }: {
   storeKey: string; builtIns: readonly string[]; isOn?: (v: string) => boolean; onPick: (v: string) => void;
+  /** Double tap on a chosen keyword takes it out of the text again. */
+  onRemove?: (v: string) => void;
   editable?: boolean; prefix?: string; tone?: (v: string) => string | undefined;
   /** How many chips show before "+ n more". */
   limit?: number;
@@ -105,7 +112,7 @@ export function ChipRow({ storeKey, builtIns, isOn, onPick, editable = true, pre
         const on = isOn?.(c) ?? false;
         return (
           <span key={c} className={`${chipBase} ${on ? (tone?.(c) ?? "bg-[var(--color-primary-600)] border-[var(--color-primary-600)] text-white") : "border-[var(--color-border)] text-[var(--color-ink-600)] hover:bg-[var(--color-surface-sunken)]"}`}>
-            <button type="button" disabled={!editable} onClick={() => pick(c)} className="px-2.5 py-1 disabled:cursor-default">{prefix}{c}</button>
+            <button type="button" disabled={!editable} onClick={() => pick(c)} onDoubleClick={() => { if (onRemove && (isOn?.(c) ?? false)) onRemove(c); }} title={onRemove && on ? "Double tap to remove" : undefined} className="px-2.5 py-1 disabled:cursor-default">{prefix}{c}</button>
             {editable && o.isCustom(c) && <span className="pr-1.5"><RemoveCustom label={c} onRemove={() => o.remove(c)} /></span>}
           </span>
         );

@@ -5,7 +5,7 @@
 import type { ReactNode } from "react";
 import { SurgeryInline } from "@/components/ui/SurgeryInline";
 import { toDateDay } from "@/lib/ist";
-import { admissionTypeText, dischargeTypeLabel, durationEnd, wardTypeText, type DischargeData } from "@/lib/ipd";
+import { applyLayout, placedSections, admissionTypeText, dischargeTypeLabel, durationEnd, wardTypeText, type DischargeData } from "@/lib/ipd";
 import { IpdPrintHeader } from "@/app/ipd-print/IpdPrintHeader";
 
 export interface DischargeHeader {
@@ -23,6 +23,7 @@ const TEXT = "#111111", RULE = "#404040", SHADE = "#D4D4D4", TINT = "#E6EFEE", A
 const exact = "[print-color-adjust:exact] [-webkit-print-color-adjust:exact]";
 const day = (s?: string | null) =>
   s ? toDateDay(new Date(s.length === 10 ? `${s}T00:00:00+05:30` : s), "en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "";
+const dayTime = (s?: string | null) => (s && s.length > 10 ? dateTime(s) : day(s));
 const dateTime = (s: string) =>
   new Date(s).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
 const SEX: Record<string, string> = { MALE: "Male", FEMALE: "Female", OTHER: "Other" };
@@ -91,7 +92,10 @@ function Grid({ head, rows, widths }: { head: string[]; rows: React.ReactNode[][
   );
 }
 
-export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeData }) {
+export function DischargeDocument({ h, s: saved }: { h: DischargeHeader; s: DischargeData }) {
+  // Sections the doctor removed leave no trace in the printed summary
+  const s = applyLayout(saved);
+  const placed = saved.layout ? placedSections(saved.layout) : null;
   const surgical = has(s.procedure.name, s.procedure.implant);
   const diagnoses = lines(s.diagnosis);
   const consultant = s.consultant || h.doctor;
@@ -139,7 +143,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
             specialty={h.specialty ?? null}
             kicker="Clinical Report"
             title="Discharge Summary"
-            dateText={`Discharged ${day(s.dischargeDate) || "-"}`}
+            dateText={`Discharged ${dayTime(s.dischargeDate) || "-"}`}
             badge={badge}
             boxes={[
               ["Patient", h.patient.name],
@@ -147,7 +151,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
               ["Phone", h.patient.mobile ?? ""],
               ["Hospital No. / IP No.", [h.patient.id, h.fileNo].filter(Boolean).join(" / ")],
               ["Admitted", day(h.admittedOn)],
-              ["Discharged", day(s.dischargeDate)],
+              ["Discharged", dayTime(s.dischargeDate)],
               ["Ward / Floor", [h.ward && `Ward ${h.ward}`, wardTypeText(h.wardType), h.floor && `Floor ${h.floor}`].filter(Boolean).join(", ")],
               ["Admission", admissionTypeText(h.type, h.typeOther)],
             ]}
@@ -218,7 +222,7 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
           )}
           {has(s.course) && <Row title="Course in hospital"><Course v={s.course} /></Row>}
 
-          <Row title="Medicines on discharge">
+          {(!placed || placed.has("meds")) && <Row title="Medicines on discharge">
             {s.meds.length === 0 ? <p>No medicines prescribed.</p> : (
               <Grid head={["#", "Route", "Eye", "Medicine", "Dose", "How often", "For"]} widths={["4%", "10%", "7%", "31%", "12%", "19%", "17%"]}
                 rows={s.meds.map((m, i) => [
@@ -228,9 +232,11 @@ export function DischargeDocument({ h, s }: { h: DischargeHeader; s: DischargeDa
                   <span key="d">{m.duration}{durationEnd(m.duration, s.dischargeDate) && <span className="block text-[10px] font-medium">{durationEnd(m.duration, s.dischargeDate)}</span>}</span>,
                 ])} />
             )}
-          </Row>
+          </Row>}
 
           {has(s.advice) && <Row title="Advice"><Bullets v={s.advice} /></Row>}
+
+          {(saved.layout?.custom ?? []).filter((c) => placed?.has("c:" + c.id) && has(c.text)).map((c) => <Row key={c.id} title={c.title}><Bullets v={c.text} /></Row>)}
 
           {(has(s.warning) || s.followUpDate) && (
             <div className={`mt-2.5 grid gap-3 break-inside-avoid ${has(s.warning) && s.followUpDate ? "grid-cols-[1fr_auto]" : "grid-cols-1"}`}>

@@ -11,7 +11,7 @@ import { format, isToday } from "date-fns";
 export const summaryTitle = (visitDate: string) =>
   isToday(new Date(visitDate)) ? "Today's Long Summary" : `Long Summary · ${format(new Date(visitDate), "d MMM yyyy, EEE")}`;
 
-export interface TabChoice { key: string; title: string; preOp?: boolean }
+export interface TabChoice { key: string; title: string; preOp?: boolean; /** The colour given to this tab. */ dot?: string }
 
 function Tick({ on, locked }: { on: boolean; locked?: boolean }) {
   return (
@@ -75,7 +75,7 @@ export function FileTabsDialog({ title, sub, always, choices, initial, confirmLa
                   on ? "border-[var(--color-primary-300)] bg-[var(--color-primary-50)] text-[var(--color-ink-900)]" : "border-[var(--color-border)] text-[var(--color-ink-700)] hover:bg-[var(--color-surface-sunken)]"
                 }`}>
                 <Tick on={on} />
-                <span className="flex-1 min-w-0">{c.title}</span>
+                <span className="flex min-w-0 flex-1 items-center gap-2">{c.dot && <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.dot }} />}{c.title}</span>
                 {c.preOp && <span className="shrink-0 text-micro font-bold rounded px-1 py-px bg-amber-50 text-amber-700 border border-amber-200">Pre-op</span>}
               </button>
             );
