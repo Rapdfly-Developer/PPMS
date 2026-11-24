@@ -8,6 +8,10 @@ const config: CapacitorConfig = {
   server: {
     url: "https://ppmsai.com",
     cleartext: false,
+    // Cashfree's auto-pay approval page is on another host. Without this the app
+    // hands it to the phone browser, which loses the session id and shows
+    // "subs_session_id is not present or is invalid".
+    allowNavigation: ["*.cashfree.com", "cashfree.com", "*.cashfree.net", "*.cardinalcommerce.com", "*.modirum.com"],
   },
   android: {
     buildOptions: {
