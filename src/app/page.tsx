@@ -112,8 +112,8 @@ const JSON_LD = {
           a: "Records can be imported from spreadsheets or an existing system during onboarding. Paper records can be attached to a patient as a scanned document, and the text is extracted so it becomes searchable.",
         },
         {
-          q: "Is the 7-day free trial limited in any way?",
-          a: "The trial gives full access to the platform for 7 days. No card is required and nothing is charged when the trial ends; you choose whether to continue.",
+          q: "Is the 30-day free trial limited in any way?",
+          a: "The trial gives full access to the platform for 30 days. No card is required and nothing is charged when the trial ends; you choose whether to continue.",
         },
         {
           q: "Who can see a patient's record?",

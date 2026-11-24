@@ -142,7 +142,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
         </p>
         <p className="text-xs text-red-700 mt-0.5">
           {status === "TRIAL_EXPIRED"
-            ? `Your 7-day trial ended on ${fmt(data.trialEndsAt)}. Activate a paid license to restore full access.`
+            ? `Your 30-day trial ended on ${fmt(data.trialEndsAt)}. Activate a paid license to restore full access.`
             : `Your subscription expired on ${fmt(data.subscriptionEndsAt)}. Renew now to restore access.`}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -725,7 +725,7 @@ const PLAN_TIERS: PlanTier[] = [
     name: "Starter",
     tag: "Individual Doctors",
     price: "Free",
-    priceSub: "7-Day Trial",
+    priceSub: "30-Day Trial",
     features: [
       { label: "Patient Records (EMR)",     included: true  },
       { label: "Appointments",              included: true  },
@@ -1098,7 +1098,7 @@ function RenewalTab({ data }: { data: LicenseFullData }) {
           {
             label: "Plan",
             value: data.status === "TRIAL_ACTIVE" ? "Free Trial" : data.plan ? `${PLAN_CONFIG[data.plan]?.name ?? data.plan} (${data.plan === "YEARLY" ? "Annual" : "Monthly"})` : "-",
-            sub: data.status === "TRIAL_ACTIVE" ? "7-day evaluation" : data.plan === "YEARLY" ? "Billed annually" : "Billed monthly",
+            sub: data.status === "TRIAL_ACTIVE" ? "30-day evaluation" : data.plan === "YEARLY" ? "Billed annually" : "Billed monthly",
           },
           {
             label: expired ? "Expired On" : "Expires On",

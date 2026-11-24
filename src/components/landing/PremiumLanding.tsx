@@ -479,8 +479,8 @@ const FAQ_ITEMS: FaqItem[] = [
     a: "Records can be imported from spreadsheets or an existing system during onboarding. Anything already captured on paper can be attached to a patient as a scanned document and stored with the record.",
   },
   {
-    q: "Is the 7-day free trial limited in any way?",
-    a: "The trial gives full access to the platform for 7 days. No card is required to start, and nothing is charged when the trial ends; you choose whether to continue.",
+    q: "Is the 30-day free trial limited in any way?",
+    a: "The trial gives full access to the platform for 30 days. No card is required to start, and nothing is charged when the trial ends; you choose whether to continue.",
   },
   {
     q: "Who can see a patient's record?",
@@ -510,7 +510,7 @@ const PLANS = [
       "Prescriptions & billing",
       "Email support",
     ],
-    cta: "Start 7-day free trial",
+    cta: "Start 30-day free trial",
     featured: false,
   },
   {
@@ -527,7 +527,7 @@ const PLANS = [
       "Analytics dashboard",
       "Priority support",
     ],
-    cta: "Start 7-day free trial",
+    cta: "Start 30-day free trial",
     featured: true,
   },
   {
@@ -543,7 +543,7 @@ const PLANS = [
       "Priority support",
       "Dedicated onboarding",
     ],
-    cta: "Start 7-day free trial",
+    cta: "Start 30-day free trial",
     featured: false,
   },
 ];
@@ -629,7 +629,7 @@ export function PremiumLanding() {
                   href="/license"
                   className="group inline-flex items-center justify-between gap-3 rounded-full bg-emerald-950 py-2 pl-7 pr-2 text-[15px] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(6,60,45,0.6)]"
                 >
-                  Start 7-day free trial
+                  Start 30-day free trial
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/12 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[3px] group-hover:-translate-y-[2px] group-hover:scale-105">
                     <ArrowUpRight size={17} strokeWidth={1.25} aria-hidden="true" />
                   </span>
@@ -781,12 +781,12 @@ export function PremiumLanding() {
         <SectionHead
           eyebrow="Pricing"
           title="Priced per practice, not per patient."
-          lede="Start with a 7-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans, first year 75% off on Yearly."
+          lede="Start with a 30-day free trial, no card required. First month 75% off on Monthly and 5 Doctors plans, first year 75% off on Yearly."
         />
         <Reveal>
           <div className="mx-auto mt-4 flex w-max items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 ring-1 ring-inset ring-emerald-600/[0.15]">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            <span className="text-[13px] font-semibold text-emerald-800">7-Day Free Trial, no credit card required</span>
+            <span className="text-[13px] font-semibold text-emerald-800">30-Day Free Trial, no credit card required</span>
           </div>
         </Reveal>
 

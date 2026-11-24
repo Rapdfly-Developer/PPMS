@@ -1243,7 +1243,7 @@ export default function LoginPage() {
                       Start your free trial
                     </span>
                     <span className="block" style={{ fontSize: "var(--fs-sm)", color: T.muted, marginTop: "1px" }}>
-                      7 days · Unlimited modules · No credit card
+                      30 days · Unlimited modules · No credit card
                     </span>
                   </span>
                 </button>

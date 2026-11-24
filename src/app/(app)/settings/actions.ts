@@ -94,7 +94,7 @@ export async function createHospitalWithUser(data: {
     });
 
     // No per-hospital license: the hospital is covered by the doctor's license.
-    // Ensure the doctor has one (7-day trial) if they don't yet.
+    // Ensure the doctor has one (30-day trial) if they don't yet.
     const hasLicense = await prisma.tenantLicense.findUnique({ where: { doctorId: doctor.id } });
     if (!hasLicense) {
       const trialEndsAt = new Date();

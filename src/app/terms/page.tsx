@@ -231,7 +231,7 @@ export default function TermsPage() {
             </P>
             <SubHead>Free trial</SubHead>
             <P>
-              New accounts receive a 7-day free trial with full access to platform features. No
+              New accounts receive a 30-day free trial with full access to platform features. No
               payment is required to start the trial. At the end of the trial period, access
               continues on a read-only basis until a paid plan is activated, or the account is
               closed.

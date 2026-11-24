@@ -161,7 +161,7 @@ export default function RefundPage() {
           {/* 2. Free trial */}
           <SectionCard id="trial" icon={<Clock size={16} strokeWidth={1.5} />} title="Free trial period">
             <P>
-              RF Health offers a <strong className="font-semibold text-emerald-950">7-day free trial</strong>{" "}
+              RF Health offers a <strong className="font-semibold text-emerald-950">30-day free trial</strong>{" "}
               to all new accounts. During the trial you have full access to all platform features.
               No payment is required to start a trial.
             </P>

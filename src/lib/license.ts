@@ -128,7 +128,7 @@ export async function getLicenseForHospital(hospitalId: string): Promise<License
 
 export async function createTrialLicense(doctorId: string) {
   const trialEndsAt = new Date();
-  trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+  trialEndsAt.setDate(trialEndsAt.getDate() + 30);
 
   const license = await prisma.tenantLicense.create({
     data: { doctorId, trialEndsAt },

@@ -203,7 +203,7 @@ export function Nav() {
                 href="/login"
                 className="rounded-full bg-emerald-950 px-6 py-4 text-center text-[15px] font-semibold text-white"
               >
-                Start 7-day free trial
+                Start 30-day free trial
               </a>
               <a
                 href={href("#contact")}
