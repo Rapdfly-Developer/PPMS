@@ -63,9 +63,9 @@ export function SplashOverlay() {
       <img
         src="/landing/logo-rf-health.webp"
         alt=""
-        width={110}
-        height={110}
-        style={{ display: "block" }}
+        width={360}
+        height={360}
+        style={{ display: "block", width: "min(86vw, 360px)", height: "auto" }}
       />
     </div>
   );
