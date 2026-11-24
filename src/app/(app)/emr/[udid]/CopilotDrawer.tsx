@@ -616,7 +616,7 @@ export function CopilotDrawer({
       className="fixed inset-0 z-50 flex items-end justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Co-pilot Assistance"
+      aria-label="Vili Guidance"
     >
       {/* Backdrop */}
       <div
@@ -650,7 +650,7 @@ export function CopilotDrawer({
             {view === "decision-support" && (
               <button
                 onClick={() => setView("guidance")}
-                aria-label="Back to Co-pilot Assistance"
+                aria-label="Back to Vili Guidance"
                 className="shrink-0 -ml-1 mr-0.5 p-1.5 rounded-lg hover:bg-black/5 text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] transition-colors"
               >
                 <ChevronLeft size={16} />
@@ -658,7 +658,7 @@ export function CopilotDrawer({
             )}
             <Sparkles size={16} className="text-[var(--color-primary-600)] shrink-0" />
             <h2 className="text-label sm:text-sm font-bold text-[var(--color-primary-800)]">
-              {view === "decision-support" ? "AI Clinical Copilot" : "Co-pilot Assistance"}
+              {view === "decision-support" ? "AI Clinical Copilot" : "Vili Guidance"}
             </h2>
             <span className="shrink-0 text-micro sm:text-caption font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-600)] border border-[var(--color-primary-100)] ml-1">
               AI · guidance only
@@ -666,7 +666,7 @@ export function CopilotDrawer({
           </div>
           <button
             onClick={onClose}
-            aria-label="Close Co-pilot Assistance"
+            aria-label="Close Vili Guidance"
             className="shrink-0 ml-2 p-1.5 rounded-lg hover:bg-black/5 text-[var(--color-ink-500)] hover:text-[var(--color-ink-800)] transition-colors"
           >
             <X size={16} />

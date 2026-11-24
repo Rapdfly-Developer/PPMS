@@ -331,6 +331,7 @@ export default async function PatientDetailedEMR({
   const canViewOculoplasty = userCan(user, "emr.oculoplasty.view");
   const canViewOphthalmic = canViewVA || canViewRefraction || canViewColour || canViewIOP || canViewAnterior || canViewPosterior || canViewOculoplasty;
   const canUseCopilot = userCan(user, "emr.copilot.view");
+  const canUseChat = userCan(user, "emr.chatbot.view");
 
   // Closed by the EOD sweep rather than finalized & signed by the doctor
   const autoClosed =
@@ -576,6 +577,8 @@ export default async function PatientDetailedEMR({
             udid={udid}
             canMarkUnavailable={activeVisit.status === "IN_PROGRESS" && !viewOnlySource && (userCan(user, "emr.create") || canPartialDispense)}
             canUseCopilot={canUseCopilot}
+            canUseChat={canUseChat}
+            chatGreetingName={user.role === "DOCTOR" ? "Doctor" : user.name.split(" ")[0] || "there"}
             decisionSupportSlot={
               canUseCopilot && activeVisit.status !== "CLOSED"
                 ? getAllRegisteredPlugins()

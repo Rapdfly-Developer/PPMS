@@ -24,6 +24,7 @@ const PERMISSION_IMPLICATIONS: Record<string, string[]> = {
   "emr.edit": ["emr.view"],
   "emr.print": ["emr.view"],
   "emr.copilot.view": ["emr.view"],
+  "emr.chatbot.view": ["emr.view"],
   "emr.general.edit": ["emr.general.view", "emr.view"],
   "emr.va.edit": ["emr.va.view", "emr.view"],
   "refraction.create": ["refraction.view", "emr.view"],

@@ -2,16 +2,19 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { FolderOpen, Sparkles, UserX } from "lucide-react";
+import { FolderOpen, Sparkles, MessageCircle, UserX } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { markPatientUnavailable } from "./actions";
 import { useEmrTabs } from "./EmrTabsContext";
 import { CopilotDrawer } from "./CopilotDrawer";
+import { AiChatDrawer } from "./AiChatDrawer";
 
 export function EmrBannerNavButtons({
   priorRecordsCount,
   visitId,
   canUseCopilot,
+  canUseChat,
+  chatGreetingName,
   decisionSupportSlot,
   udid,
   canMarkUnavailable = false,
@@ -19,6 +22,8 @@ export function EmrBannerNavButtons({
   priorRecordsCount: number;
   visitId: string;
   canUseCopilot: boolean;
+  canUseChat: boolean;
+  chatGreetingName: string;
   decisionSupportSlot?: ReactNode;
   udid: string;
   /** Shows the "Patient unavailable" button (open visit, and the role may close it). */
@@ -26,6 +31,7 @@ export function EmrBannerNavButtons({
 }) {
   const { setActiveTab } = useEmrTabs();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const router = useRouter();
   const [confirmUnavailable, setConfirmUnavailable] = useState(false);
   const [unavailableError, setUnavailableError] = useState("");
@@ -64,7 +70,16 @@ export function EmrBannerNavButtons({
             className="flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white/80 border border-white/15 transition-colors"
           >
             <Sparkles size={12} />
-            Co-pilot Assistance
+            Vili Guidance
+          </button>
+        )}
+        {canUseChat && (
+          <button
+            onClick={() => setChatOpen(true)}
+            className="flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white/80 border border-white/15 transition-colors"
+          >
+            <MessageCircle size={12} />
+            Vili Chat
           </button>
         )}
         {canMarkUnavailable && (
@@ -96,6 +111,7 @@ export function EmrBannerNavButtons({
           decisionSupportSlot={decisionSupportSlot}
         />
       )}
+      {chatOpen && <AiChatDrawer visitId={visitId} greetingName={chatGreetingName} onClose={() => setChatOpen(false)} />}
     </>
   );
 }
