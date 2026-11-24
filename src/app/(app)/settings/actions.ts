@@ -98,7 +98,7 @@ export async function createHospitalWithUser(data: {
     const hasLicense = await prisma.tenantLicense.findUnique({ where: { doctorId: doctor.id } });
     if (!hasLicense) {
       const trialEndsAt = new Date();
-      trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+      trialEndsAt.setDate(trialEndsAt.getDate() + 30);
       await prisma.tenantLicense.create({ data: { doctorId: doctor.id, trialEndsAt } });
     }
 
