@@ -118,7 +118,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
   const { status, remainingDays } = data;
   const expired = status === "SUBSCRIPTION_EXPIRED" || status === "TRIAL_EXPIRED";
   const urgent  = !expired && remainingDays <= 7 && remainingDays > 0;
-  const warning = !expired && !urgent && remainingDays <= 30 && remainingDays > 0;
+  const warning = !expired && !urgent && status !== "TRIAL_ACTIVE" && remainingDays <= 30 && remainingDays > 0;
   const trial   = status === "TRIAL_ACTIVE";
   const active  = status === "SUBSCRIBED";
   const none    = status === "NO_LICENSE";
@@ -166,7 +166,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
       <div>
         <p className="text-sm font-semibold text-red-800">Grace Period Warning, {remainingDays} day{remainingDays !== 1 ? "s" : ""} left</p>
         <p className="text-xs text-red-700 mt-0.5">
-          Your license expires on {fmt(data.subscriptionEndsAt)}. Renew immediately to avoid service interruption.
+          Your license expires on {fmt(data.subscriptionEndsAt ?? data.trialEndsAt)}. Renew immediately to avoid service interruption.
         </p>
       </div>
     </div>
@@ -178,7 +178,7 @@ function StatusBanner({ data }: { data: LicenseFullData }) {
       <div>
         <p className="text-sm font-semibold text-amber-800">Renewal Reminder, {remainingDays} days left</p>
         <p className="text-xs text-amber-700 mt-0.5">
-          Your license expires on {fmt(data.subscriptionEndsAt)}. Consider renewing soon to avoid interruption.
+          Your license expires on {fmt(data.subscriptionEndsAt ?? data.trialEndsAt)}. Consider renewing soon to avoid interruption.
         </p>
       </div>
     </div>
