@@ -61,7 +61,7 @@ export function SplashOverlay() {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src="/landing/logo-rf-health.webp"
+        src="/splash/splash-logo.webp"
         alt=""
         width={360}
         height={360}
