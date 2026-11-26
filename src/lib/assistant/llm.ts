@@ -115,6 +115,7 @@ export async function* streamChat(opts: {
     throw new AssistantError("not_configured", "No AI provider key is configured.");
   }
 
+  const failures: string[] = [];
   for (const provider of providers) {
     let produced = false;
     try {
@@ -149,6 +150,7 @@ export async function* streamChat(opts: {
       if (!res.ok || !res.body) {
         const detail = (await res.text().catch(() => "")).slice(0, 300);
         console.error(`[assistant] ${provider.name} answered ${res.status}; trying the next provider. ${detail}`);
+        failures.push(`${provider.name} ${res.status}`);
         continue;
       }
       for await (const event of readStream(res.body, !!opts.tool)) {
@@ -160,12 +162,14 @@ export async function* streamChat(opts: {
       }
       if (produced) return;
       console.error(`[assistant] ${provider.name} returned an empty answer; trying the next provider`);
+      failures.push(`${provider.name} empty`);
     } catch (err) {
       // Once part of an answer is out, a second provider would repeat it.
       if (produced) throw err;
       console.error(`[assistant] ${provider.name} failed; trying the next provider`, err);
+      failures.push(`${provider.name} ${err instanceof Error ? err.name : "error"}`);
     }
   }
 
-  throw new AssistantError("unavailable", "No AI provider could answer.");
+  throw new AssistantError("unavailable", failures.join(", "));
 }

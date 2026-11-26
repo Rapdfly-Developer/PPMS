@@ -197,7 +197,8 @@ export async function POST(req: Request) {
     first = await chunks.next();
   } catch (err) {
     if (!(err instanceof AssistantError)) console.error("[assistant] chat failed", err);
-    return json("The AI service is busy or unavailable right now. Please try again in a minute.", 502);
+    const detail = err instanceof AssistantError && err.message ? ` (${err.message})` : "";
+    return json(`The AI service is busy or unavailable right now. Please try again in a minute.${detail}`, 502);
   }
   if (first.done) {
     return json("The AI did not return an answer. Please try again.", 502);
