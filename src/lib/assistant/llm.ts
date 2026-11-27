@@ -7,9 +7,9 @@
  * plugin later without changes.
  *
  * Environment:
- *   GROQ_API_KEY, GEMINI_API_KEY   one or both
- *   GROQ_MODEL, GEMINI_MODEL       optional model overrides
- *   ASSISTANT_PRIMARY              "groq" (default) or "gemini"
+ *   VILI_CHAT_GROQ_API_KEY, VILI_CHAT_GEMINI_API_KEY   one or both
+ *   VILI_CHAT_GROQ_MODEL, VILI_CHAT_GEMINI_MODEL       optional model overrides
+ *   VILI_CHAT_PRIMARY              "groq" (default) or "gemini"
  */
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -35,23 +35,23 @@ export class AssistantError extends Error {
 const REQUEST_TIMEOUT_MS = 90_000;
 
 function configuredProviders(): Provider[] {
-  const groq: Provider | null = process.env.GROQ_API_KEY
+  const groq: Provider | null = process.env.VILI_CHAT_GROQ_API_KEY
     ? {
         name: "groq",
         url: "https://api.groq.com/openai/v1/chat/completions",
-        apiKey: process.env.GROQ_API_KEY,
-        model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
+        apiKey: process.env.VILI_CHAT_GROQ_API_KEY,
+        model: process.env.VILI_CHAT_GROQ_MODEL || "openai/gpt-oss-120b",
       }
     : null;
-  const gemini: Provider | null = process.env.GEMINI_API_KEY
+  const gemini: Provider | null = process.env.VILI_CHAT_GEMINI_API_KEY
     ? {
         name: "gemini",
         url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-        apiKey: process.env.GEMINI_API_KEY,
-        model: process.env.GEMINI_MODEL || "gemini-3.6-flash",
+        apiKey: process.env.VILI_CHAT_GEMINI_API_KEY,
+        model: process.env.VILI_CHAT_GEMINI_MODEL || "gemini-3.6-flash",
       }
     : null;
-  const order = process.env.ASSISTANT_PRIMARY === "gemini" ? [gemini, groq] : [groq, gemini];
+  const order = process.env.VILI_CHAT_PRIMARY === "gemini" ? [gemini, groq] : [groq, gemini];
   return order.filter((p): p is Provider => p !== null);
 }
 

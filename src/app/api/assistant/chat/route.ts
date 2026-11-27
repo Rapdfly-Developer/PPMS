@@ -142,7 +142,7 @@ export async function POST(req: Request) {
   if (!patient) return json("Visit not found", 404);
 
   if (!assistantConfigured()) {
-    return json("Vili Chat is not set up yet. Add GROQ_API_KEY or GEMINI_API_KEY to the server environment.", 503);
+    return json("Vili Chat is not set up yet. Add VILI_CHAT_GROQ_API_KEY or VILI_CHAT_GEMINI_API_KEY to the server environment.", 503);
   }
 
   const scrub = makeScrubber(patient);
