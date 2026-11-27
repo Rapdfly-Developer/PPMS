@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { roleHome } from "@/lib/rbac";
+import { MARKETING_SITE_ORIGIN, isAndroidWebView, marketingSitePath } from "@/lib/marketing-site";
 
 // ── External plugin CORS ──────────────────────────────────────────────────
 // One entry per registered external plugin — add a line when a new external
@@ -59,6 +60,22 @@ export default auth((req) => {
     subdomain = parts[0];
   }
   const isStaticFile = /\.(?:jpg|jpeg|png|gif|svg|ico|webp|avif|woff2?|ttf|otf|css|js|json|txt|xml)$/i.test(pathname);
+
+  // ── Marketing website on the main domain ───────────────────────────────────
+  // ppmsai.com/www serve the separate "ppms-website" project for a few paths
+  // (see src/lib/marketing-site.ts). Clinic subdomains are left alone. Vercel
+  // preview hosts are included so the routing can be checked before release.
+  const isMainHost = !subdomain || subdomain === "www" || subdomain === "ppmsai" || host.endsWith(".vercel.app");
+  if (isMainHost && (req.method === "GET" || req.method === "HEAD")) {
+    const sitePath = marketingSitePath(pathname, {
+      isLoggedIn,
+      isAndroidApp: isAndroidWebView(req.headers.get("user-agent")),
+    });
+    if (sitePath) {
+      return NextResponse.rewrite(new URL(sitePath + req.nextUrl.search, MARKETING_SITE_ORIGIN));
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
   if (subdomain && subdomain !== "www" && subdomain !== "ppmsai" && !pathname.startsWith("/sub/") && !isStaticFile) {
     const url = req.nextUrl.clone();
     url.pathname = `/sub/${subdomain}${pathname}`;
